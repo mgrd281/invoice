@@ -15,6 +15,7 @@ export interface ShopifySettings {
   lastImport?: string // ISO date string
   defaultTaxRate: number // Default tax rate for imported orders
   defaultPaymentTerms: number // Default payment terms in days
+  autoSendEmail: boolean // Automatically send invoice email to customer
 }
 
 const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
@@ -26,6 +27,7 @@ const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   importInterval: 60, // 1 hour
   defaultTaxRate: 19, // 19% German VAT
   defaultPaymentTerms: 14, // 14 days payment terms
+  autoSendEmail: false, // Default to false for safety
 }
 
 // ========================================

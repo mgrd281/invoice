@@ -31,7 +31,8 @@ import {
   X,
   Database,
   TrendingUp,
-  Activity
+  Activity,
+  Mail
 } from 'lucide-react'
 
 interface ShopifySettings {
@@ -44,6 +45,7 @@ interface ShopifySettings {
   lastImport?: string
   defaultTaxRate: number
   defaultPaymentTerms: number
+  autoSendEmail: boolean
 }
 
 interface ShopifyOrder {
@@ -98,6 +100,7 @@ export default function ShopifyPage() {
     importInterval: 60,
     defaultTaxRate: 19,
     defaultPaymentTerms: 14,
+    autoSendEmail: false,
   })
 
   const [orders, setOrders] = useState<ShopifyOrder[]>([])
@@ -1029,7 +1032,30 @@ export default function ShopifyPage() {
                       onCheckedChange={(checked) =>
                         setSettings(prev => ({ ...prev, autoImport: checked }))
                       }
+                    />
+                  </div>
 
+                  {/* Auto Send Email Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
+                        <Mail className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <Label htmlFor="autoSendEmail" className="text-base font-medium">
+                          Automatischen E-Mail-Versand aktivieren
+                        </Label>
+                        <p className="text-sm text-gray-500">
+                          Rechnungen automatisch per E-Mail an Kunden senden
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="autoSendEmail"
+                      checked={settings.autoSendEmail}
+                      onCheckedChange={(checked) =>
+                        setSettings(prev => ({ ...prev, autoSendEmail: checked }))
+                      }
                     />
                   </div>
 

@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       autoImport: false,
       importInterval: 60,
       defaultTaxRate: 19,
-      defaultPaymentTerms: 14
+      defaultPaymentTerms: 14,
+      autoSendEmail: true // Enable auto-send for testing
     }
 
     console.log('🔄 Updating Shopify settings with complete data...')

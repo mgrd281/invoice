@@ -1,6 +1,8 @@
 // Webhooks-System für automatische Systemaktualisierungen von Shopify
 import { NextRequest, NextResponse } from 'next/server'
 import { IdempotencyManager, withIdempotency } from '@/lib/idempotency'
+import { getShopifySettings } from '@/lib/shopify-settings'
+import { sendInvoiceEmail } from '@/lib/email-service'
 import crypto from 'crypto'
 
 interface ShopifyWebhookPayload {
@@ -47,7 +49,7 @@ function verifyShopifyWebhook(body: string, signature: string, secret: string): 
     const hmac = crypto.createHmac('sha256', secret)
     hmac.update(body, 'utf8')
     const calculatedSignature = hmac.digest('base64')
-    
+
     return crypto.timingSafeEqual(
       Buffer.from(signature, 'base64'),
       Buffer.from(calculatedSignature, 'base64')
@@ -61,12 +63,12 @@ function verifyShopifyWebhook(body: string, signature: string, secret: string): 
 // معالجة إنشاء طلب جديد
 async function handleOrderCreate(payload: ShopifyWebhookPayload) {
   console.log(`📦 New order created: ${payload.id}`)
-  
+
   try {
     // التحقق من وجود الطلب مسبقاً
     const fingerprint = IdempotencyManager.createRequestFingerprint(payload)
     const check = IdempotencyManager.checkIdempotency(payload.id.toString(), fingerprint)
-    
+
     if (check.exists) {
       console.log(`✅ Order ${payload.id} already exists as invoice ${check.invoiceId}`)
       return { success: true, invoiceId: check.invoiceId, duplicate: true }
@@ -112,6 +114,34 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
       if (response.ok) {
         const result = await response.json()
         console.log(`✅ Auto-created invoice ${result.id} for order ${payload.id}`)
+
+        // Check if auto-send email is enabled
+        const settings = getShopifySettings()
+        if (settings.autoSendEmail && payload.email) {
+          console.log(`📧 Auto-sending email to ${payload.email} for invoice ${result.invoiceNumber || result.number}`)
+          try {
+            const emailResult = await sendInvoiceEmail(
+              result.id,
+              payload.email,
+              payload.name || payload.email,
+              result.invoiceNumber || result.number,
+              undefined, // Default company name
+              undefined, // Default subject
+              undefined, // Default message
+              `${payload.total_price} ${payload.currency || 'EUR'}`,
+              new Date().toISOString().split('T')[0] // Due date (today)
+            )
+
+            if (emailResult.success) {
+              console.log(`✅ Email sent successfully: ${emailResult.messageId}`)
+            } else {
+              console.error(`❌ Failed to send email: ${emailResult.error}`)
+            }
+          } catch (emailError) {
+            console.error('❌ Error in auto-send email process:', emailError)
+          }
+        }
+
         return { success: true, invoiceId: result.id, created: true }
       } else {
         throw new Error(`Failed to create invoice: ${response.status}`)
@@ -130,15 +160,15 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
 // معالجة تحديث طلب
 async function handleOrderUpdate(payload: ShopifyWebhookPayload) {
   console.log(`🔄 Order updated: ${payload.id}`)
-  
+
   try {
     // البحث عن الفاتورة المرتبطة
     const existingInvoiceId = global.orderToInvoiceMap?.get(payload.id.toString())
-    
+
     if (existingInvoiceId) {
       // تحديث حالة الفاتورة حسب حالة الطلب
       const newStatus = mapShopifyStatusToInvoiceStatus(payload.financial_status || '')
-      
+
       const updateResponse = await fetch(`/api/invoices/${existingInvoiceId}`, {
         method: 'PATCH',
         headers: {
@@ -176,11 +206,11 @@ async function handleOrderUpdate(payload: ShopifyWebhookPayload) {
 // معالجة استرداد
 async function handleRefundCreate(payload: any) {
   console.log(`💰 Refund created for order: ${payload.order_id}`)
-  
+
   try {
     // البحث عن الفاتورة المرتبطة
     const existingInvoiceId = global.orderToInvoiceMap?.get(payload.order_id.toString())
-    
+
     if (existingInvoiceId) {
       // حساب مبلغ الاسترداد
       const refundAmount = payload.transactions
@@ -312,9 +342,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Webhook processing error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Unknown error',
         topic: request.headers.get('X-Shopify-Topic'),
         processedAt: new Date().toISOString()
