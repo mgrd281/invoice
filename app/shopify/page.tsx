@@ -845,7 +845,7 @@ export default function ShopifyPage() {
                           placeholder="mystore.myshopify.com"
                           value={settings.shopDomain}
                           onChange={(e) =>
-                            setSettings(prev => ({ ...prev, shopDomain: e.target.value }))
+                            setSettings(prev => ({ ...prev, shopDomain: e.target.value.trim() }))
                           }
                           className="h-11"
                         />
@@ -864,7 +864,7 @@ export default function ShopifyPage() {
                           placeholder="shpat_..."
                           value={settings.accessToken}
                           onChange={(e) =>
-                            setSettings(prev => ({ ...prev, accessToken: e.target.value }))
+                            setSettings(prev => ({ ...prev, accessToken: e.target.value.trim() }))
                           }
                           className="h-11"
                         />
@@ -958,9 +958,9 @@ export default function ShopifyPage() {
                       )}
 
                       {connectionStatus === 'error' && (
-                        <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-2 rounded-lg" title={message}>
                           <XCircle className="h-4 w-4" />
-                          <span className="text-sm font-medium">Verbindungsfehler</span>
+                          <span className="text-sm font-medium">Fehler: {message || 'Verbindungsfehler'}</span>
                         </div>
                       )}
                     </div>
