@@ -208,7 +208,11 @@ export default function ShopifyPage() {
         setMessage(data.message)
       } else {
         setConnectionStatus('error')
-        setMessage(data.error || data.message || 'Verbindungsfehler')
+        let errorMsg = data.error || data.message || 'Verbindungsfehler'
+        if (data.debug) {
+          errorMsg += ` (Domain: ${data.debug.domain}, Token: ${data.debug.tokenPrefix}...)`
+        }
+        setMessage(errorMsg)
       }
     } catch (error) {
       setConnectionStatus('error')

@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json({
         success: false,
-        error: result.message
+        error: result.message,
+        debug: {
+          domain: settings.shopDomain,
+          tokenPrefix: settings.accessToken?.substring(0, 10),
+          apiVersion: settings.apiVersion
+        }
       }, { status: 400 })
     }
   } catch (error) {

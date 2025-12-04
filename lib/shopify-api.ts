@@ -109,6 +109,15 @@ export class ShopifyAPI {
 
   constructor(settings?: ShopifySettings) {
     this.settings = settings || getShopifySettings()
+
+    // Sanitize settings
+    if (this.settings.shopDomain) {
+      this.settings.shopDomain = this.settings.shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '').trim()
+    }
+    if (this.settings.accessToken) {
+      this.settings.accessToken = this.settings.accessToken.trim()
+    }
+
     this.baseUrl = `https://${this.settings.shopDomain}/admin/api/${this.settings.apiVersion}`
   }
 
