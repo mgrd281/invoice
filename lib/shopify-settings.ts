@@ -27,7 +27,7 @@ const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   importInterval: 60, // 1 hour
   defaultTaxRate: 19, // 19% German VAT
   defaultPaymentTerms: 14, // 14 days payment terms
-  autoSendEmail: false, // Default to false for safety
+  autoSendEmail: true, // Default to true to ensure it works on Vercel
 }
 
 // ========================================
