@@ -1,46 +1,46 @@
 #!/bin/bash
 
-# إعداد ملف البيئة للتطبيق
-echo "🔧 إعداد ملف البيئة..."
+# Umgebungsvariablen für die Anwendung einrichten
+echo "🔧 Umgebung wird eingerichtet..."
 
-# إنشاء ملف .env.local إذا لم يكن موجوداً
+# .env.local erstellen, falls nicht vorhanden
 if [ ! -f .env.local ]; then
-    echo "📝 إنشاء ملف .env.local..."
+    echo "📝 Erstelle .env.local..."
     cp env-template.txt .env.local
-    echo "✅ تم إنشاء ملف .env.local"
+    echo "✅ .env.local wurde erstellt"
 else
-    echo "⚠️  ملف .env.local موجود بالفعل"
-    echo "هل تريد استبداله؟ (y/n)"
+    echo "⚠️  .env.local existiert bereits"
+    echo "Möchten Sie sie überschreiben? (y/n)"
     read -r response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
         cp env-template.txt .env.local
-        echo "✅ تم تحديث ملف .env.local"
+        echo "✅ .env.local wurde aktualisiert"
     else
-        echo "❌ تم إلغاء العملية"
+        echo "❌ Vorgang abgebrochen"
         exit 0
     fi
 fi
 
-# إنشاء مجلد التخزين
+# Speicherverzeichnis erstellen
 mkdir -p user-storage
-echo "✅ تم إنشاء مجلد التخزين"
+echo "✅ Speicherverzeichnis erstellt"
 
-# تثبيت التبعيات إذا لزم الأمر
+# Abhängigkeiten installieren, falls nötig
 if [ ! -d node_modules ]; then
-    echo "📦 تثبيت التبعيات..."
+    echo "📦 Installiere Abhängigkeiten..."
     npm install
 fi
 
 echo ""
-echo "🎉 تم إعداد البيئة بنجاح!"
+echo "🎉 Umgebung erfolgreich eingerichtet!"
 echo ""
-echo "📋 الخطوات التالية:"
-echo "1. تحرير ملف .env.local لإضافة إعدادات الإيميل الخاصة بك"
-echo "2. تشغيل التطبيق: npm run dev"
-echo "3. فتح المتصفح على: http://localhost:3000"
+echo "📋 Nächste Schritte:"
+echo "1. Bearbeiten Sie .env.local, um Ihre E-Mail-Einstellungen hinzuzufügen"
+echo "2. Starten Sie die Anwendung: npm run dev"
+echo "3. Öffnen Sie den Browser unter: http://localhost:3000"
 echo ""
-echo "💡 نصائح:"
-echo "- اتركي EMAIL_DEV_MODE=true للتطوير (محاكاة الإرسال)"
-echo "- غيري إلى EMAIL_DEV_MODE=false للإنتاج مع إعدادات SMTP صحيحة"
-echo "- استخدمي Gmail مع App Password للسهولة"
+echo "💡 Tipps:"
+echo "- Lassen Sie EMAIL_DEV_MODE=true für Entwicklung (E-Mail-Simulation)"
+echo "- Ändern Sie zu EMAIL_DEV_MODE=false für Produktion mit korrekten SMTP-Einstellungen"
+echo "- Verwenden Sie Gmail mit App-Passwort für einfache Einrichtung"
 echo ""
