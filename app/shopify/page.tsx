@@ -12,12 +12,12 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AdvancedShopifyImport from '@/components/advanced-shopify-import'
-import { 
-  Settings as SettingsIcon, 
-  Download, 
-  RefreshCw, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Settings as SettingsIcon,
+  Download,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   ExternalLink,
   ShoppingCart,
@@ -102,7 +102,7 @@ export default function ShopifyPage() {
 
   const [orders, setOrders] = useState<ShopifyOrder[]>([])
   const [totalOrdersCount, setTotalOrdersCount] = useState<number>(0)
-  
+
   // Force display function to use totalCount
   const getDisplayCount = () => {
     console.log('🔍 getDisplayCount called:', {
@@ -119,11 +119,11 @@ export default function ShopifyPage() {
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown')
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState<string[]>([])
-  
+
   // Date range states
   const [startDate, setStartDate] = useState('2024-06-06')
   const [endDate, setEndDate] = useState('2025-12-31') // Erweitert bis Ende 2025
-  
+
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>('any') // any, paid, pending, cancelled, refunded
   const [searchQuery, setSearchQuery] = useState('')
@@ -151,7 +151,7 @@ export default function ShopifyPage() {
     try {
       const response = await fetch('/api/shopify/settings')
       const data = await response.json()
-      
+
       if (data.success) {
         setSettings(data.settings)
       }
@@ -163,16 +163,16 @@ export default function ShopifyPage() {
   const saveSettings = async () => {
     setLoading(true)
     setErrors([])
-    
+
     try {
       const response = await fetch('/api/shopify/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         setMessage('Einstellungen erfolgreich gespeichert!')
         setTimeout(() => setMessage(''), 3000)
@@ -190,13 +190,13 @@ export default function ShopifyPage() {
     setTesting(true)
     setConnectionStatus('unknown')
     setMessage('')
-    
+
     try {
       const response = await fetch('/api/shopify/test-connection')
-      
-      
+
+
       const data = await response.json()
-      
+
       if (data.success) {
         setConnectionStatus('success')
         setMessage(data.message)
@@ -214,11 +214,11 @@ export default function ShopifyPage() {
 
   const loadOrders = async () => {
     setLoading(true)
-    
+
     try {
       const response = await fetch('/api/shopify/import?limit=1000000&financial_status=any')
       const data = await response.json()
-      
+
       if (data.success) {
         console.log('🔍 DEBUG loadOrders:', {
           totalCount: data.totalCount,
@@ -244,7 +244,7 @@ export default function ShopifyPage() {
     console.log('🔍 Loading orders for date range:', startDate, 'to', endDate, 'with status:', statusFilter)
     setLoading(true)
     setMessage('')
-    
+
     try {
       const params = new URLSearchParams({
         limit: '1000000', // UNLIMITED: Backend handles pagination automatically - 1 Million Bestellungen
@@ -252,34 +252,34 @@ export default function ShopifyPage() {
         created_at_min: `${startDate}T00:00:00Z`,
         created_at_max: `${endDate}T23:59:59Z`
       })
-      
+
       console.log('🔧 FIXED: Using financial_status=paid for maximum results')
-      
+
       console.log('📡 Fetching orders with Shopify API:', params.toString())
-      
+
       const response = await fetch(`/api/shopify/import?${params}`)
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       console.log('📥 Legacy orders response:', data)
-      
+
       if (data.success) {
         let filteredOrders = data.orders || []
-        
+
         // Apply search filter if provided
         if (searchQuery.trim()) {
           const query = searchQuery.toLowerCase()
-          filteredOrders = filteredOrders.filter((order: any) => 
+          filteredOrders = filteredOrders.filter((order: any) =>
             order.name?.toLowerCase().includes(query) ||
             order.customer?.name?.toLowerCase().includes(query) ||
             order.customer?.email?.toLowerCase().includes(query) ||
             order.id?.toString().includes(query)
           )
         }
-        
+
         console.log('🔍 DEBUG loadOrdersWithDateRange:', {
           totalCount: data.totalCount,
           fetchedCount: data.fetchedCount,
@@ -291,9 +291,9 @@ export default function ShopifyPage() {
         setTotalOrdersCount(data.totalCount || data.orders?.length || 0)
         const totalCount = data.totalCount || data.orders?.length || 0
         const filteredCount = filteredOrders.length
-        
+
         let message = `${filteredCount} von ${totalCount} Bestellungen geladen (${startDate} bis ${endDate})`
-        
+
         if (totalCount === 250) {
           message += ` ⚠️ (FALLBACK-MODUS: Auf 250 begrenzt - Unlimited-System hat Fehler)`
         } else if (totalCount > 250) {
@@ -301,14 +301,14 @@ export default function ShopifyPage() {
         } else {
           message += ` (UNLIMITED-MODUS)`
         }
-        
+
         if (statusFilter !== 'any') {
           message += ` (Status: ${statusFilter})`
         }
         if (searchQuery.trim() && filteredCount !== totalCount) {
           message += ` - ${filteredCount} nach Filterung`
         }
-        
+
         setMessage(message)
         setTimeout(() => setMessage(''), 10000)
       } else {
@@ -351,7 +351,7 @@ export default function ShopifyPage() {
 
     setStartDate(start.toISOString().split('T')[0])
     setEndDate(end.toISOString().split('T')[0])
-    
+
     // Auto-load orders with new date range
     setTimeout(() => loadOrdersWithDateRange(), 100)
   }
@@ -392,7 +392,7 @@ export default function ShopifyPage() {
       const customerEmail = (order.customer?.email || '').toLowerCase()
       const orderId = order.id.toString()
 
-      return searchTerms.some(term => 
+      return searchTerms.some(term =>
         orderName.includes(term) ||
         customerName.includes(term) ||
         customerEmail.includes(term) ||
@@ -412,7 +412,7 @@ export default function ShopifyPage() {
     setMessage('')
 
     try {
-      const selectedOrdersList = orders.filter(order => 
+      const selectedOrdersList = orders.filter(order =>
         selectedOrders.has(order.id.toString())
       )
 
@@ -428,7 +428,7 @@ export default function ShopifyPage() {
 
       const response = await fetch('/api/shopify/move-to-invoices', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-user-info': JSON.stringify(userInfo)
         },
@@ -469,10 +469,10 @@ export default function ShopifyPage() {
     console.log('Settings enabled:', settings.enabled)
     console.log('Importing state:', importing)
     console.log('Date range:', startDate, 'to', endDate)
-    
+
     setImporting(true)
     setMessage('')
-    
+
     try {
       const importData = {
         limit: 50000, // Legacy system supports up to 50k for import
@@ -489,14 +489,14 @@ export default function ShopifyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(importData)
       })
-      
+
       const data = await response.json()
-      
+
       console.log('📥 Legacy import response:', data)
-      
+
       if (data.success) {
         let message = ''
-        
+
         if (data.imported > 0) {
           message = `✅ ${data.imported} Bestellungen erfolgreich importiert!`
           if (data.skipped > 0) {
@@ -510,15 +510,15 @@ export default function ShopifyPage() {
         } else {
           message = `ℹ️ Keine Bestellungen im ausgewählten Zeitraum gefunden (${startDate} - ${endDate})`
         }
-        
+
         // Zeige dass Legacy jetzt auch unlimited ist
         if (data.imported > 0 || data.skipped > 0) {
           message += ` 🚀 (Legacy System jetzt mit Unlimited Import!)`
         }
-        
+
         setMessage(message)
         loadOrdersWithDateRange() // Refresh with current date range
-        
+
         // Show success message longer for imports
         setTimeout(() => setMessage(''), 12000)
       } else {
@@ -541,7 +541,7 @@ export default function ShopifyPage() {
       refunded: { variant: 'destructive', label: 'Erstattet' },
       cancelled: { variant: 'outline', label: 'Storniert' }
     }
-    
+
     const config = statusMap[status] || { variant: 'outline', label: status }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -822,7 +822,7 @@ export default function ShopifyPage() {
                     <Switch
                       id="enabled"
                       checked={settings.enabled}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setSettings(prev => ({ ...prev, enabled: checked }))
                       }
                     />
@@ -834,7 +834,7 @@ export default function ShopifyPage() {
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <h3 className="text-lg font-semibold text-gray-900">Verbindungseinstellungen</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label htmlFor="shopDomain" className="text-sm font-medium text-gray-700">
@@ -844,10 +844,9 @@ export default function ShopifyPage() {
                           id="shopDomain"
                           placeholder="mystore.myshopify.com"
                           value={settings.shopDomain}
-                          onChange={(e) => 
+                          onChange={(e) =>
                             setSettings(prev => ({ ...prev, shopDomain: e.target.value }))
                           }
-                          disabled={!settings.enabled}
                           className="h-11"
                         />
                         <p className="text-xs text-gray-500 leading-relaxed">
@@ -864,10 +863,9 @@ export default function ShopifyPage() {
                           type="password"
                           placeholder="shpat_..."
                           value={settings.accessToken}
-                          onChange={(e) => 
+                          onChange={(e) =>
                             setSettings(prev => ({ ...prev, accessToken: e.target.value }))
                           }
-                          disabled={!settings.enabled}
                           className="h-11"
                         />
                         <p className="text-xs text-gray-500 leading-relaxed">
@@ -883,7 +881,7 @@ export default function ShopifyPage() {
                       <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                       <h3 className="text-lg font-semibold text-gray-900">Erweiterte Einstellungen</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="space-y-3">
                         <Label htmlFor="apiVersion" className="text-sm font-medium text-gray-700">
@@ -892,10 +890,9 @@ export default function ShopifyPage() {
                         <Input
                           id="apiVersion"
                           value={settings.apiVersion}
-                          onChange={(e) => 
+                          onChange={(e) =>
                             setSettings(prev => ({ ...prev, apiVersion: e.target.value }))
                           }
-                          disabled={!settings.enabled}
                           className="h-11"
                         />
                       </div>
@@ -910,10 +907,9 @@ export default function ShopifyPage() {
                           min="0"
                           max="100"
                           value={settings.defaultTaxRate}
-                          onChange={(e) => 
+                          onChange={(e) =>
                             setSettings(prev => ({ ...prev, defaultTaxRate: parseFloat(e.target.value) || 0 }))
                           }
-                          disabled={!settings.enabled}
                           className="h-11"
                         />
                       </div>
@@ -928,10 +924,9 @@ export default function ShopifyPage() {
                           min="1"
                           max="365"
                           value={settings.defaultPaymentTerms}
-                          onChange={(e) => 
+                          onChange={(e) =>
                             setSettings(prev => ({ ...prev, defaultPaymentTerms: parseInt(e.target.value) || 14 }))
                           }
-                          disabled={!settings.enabled}
                           className="h-11"
                         />
                       </div>
@@ -943,7 +938,7 @@ export default function ShopifyPage() {
                     <div className="flex items-center gap-4">
                       <Button
                         onClick={testConnection}
-                        disabled={!settings.enabled || testing}
+                        disabled={testing}
                         variant="outline"
                         className="h-11 px-6"
                       >
@@ -1015,10 +1010,10 @@ export default function ShopifyPage() {
                     <Switch
                       id="autoImport"
                       checked={settings.autoImport}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setSettings(prev => ({ ...prev, autoImport: checked }))
                       }
-                      disabled={!settings.enabled}
+
                     />
                   </div>
 
@@ -1028,7 +1023,7 @@ export default function ShopifyPage() {
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       <h3 className="text-lg font-semibold text-gray-900">Import-Einstellungen</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label htmlFor="importInterval" className="text-sm font-medium text-gray-700">
@@ -1040,10 +1035,10 @@ export default function ShopifyPage() {
                           min="5"
                           max="1440"
                           value={settings.importInterval}
-                          onChange={(e) => 
+                          onChange={(e) =>
                             setSettings(prev => ({ ...prev, importInterval: parseInt(e.target.value) || 60 }))
                           }
-                          disabled={!settings.enabled || !settings.autoImport}
+                          disabled={!settings.autoImport}
                           className="h-11"
                         />
                         <p className="text-xs text-gray-500 leading-relaxed">
@@ -1102,7 +1097,7 @@ export default function ShopifyPage() {
                   Vorschau der verfügbaren Bestellungen in Ihrem Shopify-Shop
                 </CardDescription>
               </CardHeader>
-              
+
               {/* Advanced Filters */}
               <div className="px-6 pb-4">
                 <div className="space-y-4">
@@ -1198,7 +1193,7 @@ export default function ShopifyPage() {
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Alle auswählen ({getFilteredOrders().length})
                         </Button>
-                        
+
                         {selectedOrders.size > 0 && (
                           <>
                             <Button
@@ -1209,7 +1204,7 @@ export default function ShopifyPage() {
                               <XCircle className="h-4 w-4 mr-2" />
                               Auswahl aufheben
                             </Button>
-                            
+
                             <Button
                               onClick={convertSelectedToInvoices}
                               disabled={convertingOrders || selectedOrders.size === 0}
@@ -1226,10 +1221,10 @@ export default function ShopifyPage() {
                           </>
                         )}
                       </div>
-                      
+
                       <div className="text-sm text-green-700 flex items-center">
                         <AlertCircle className="h-4 w-4 mr-1" />
-                        {selectedOrders.size > 0 
+                        {selectedOrders.size > 0
                           ? `${selectedOrders.size} von ${getFilteredOrders().length} Bestellungen ausgewählt`
                           : `${getDisplayCount()} Bestellungen verfügbar`
                         }
@@ -1237,7 +1232,7 @@ export default function ShopifyPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Quick Date Buttons */}
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Button
@@ -1293,7 +1288,7 @@ export default function ShopifyPage() {
               <CardContent>
                 {orders.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {settings.enabled ? 
+                    {settings.enabled ?
                       'Keine Bestellungen gefunden. Klicken Sie auf "Aktualisieren" um Bestellungen zu laden.' :
                       'Shopify Integration ist nicht aktiviert.'
                     }
@@ -1301,13 +1296,12 @@ export default function ShopifyPage() {
                 ) : (
                   <div className="space-y-4">
                     {getFilteredOrders().map((order) => (
-                      <div 
-                        key={order.id} 
-                        className={`border rounded-lg p-4 transition-colors ${
-                          selectedOrders.has(order.id.toString()) 
-                            ? 'border-green-500 bg-green-50' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                      <div
+                        key={order.id}
+                        className={`border rounded-lg p-4 transition-colors ${selectedOrders.has(order.id.toString())
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">
@@ -1353,16 +1347,16 @@ export default function ShopifyPage() {
                                 const customerAny = order.customer as any
                                 const firstName = customerAny?.first_name
                                 const lastName = customerAny?.last_name
-                                
+
                                 // Try to build name from available data
                                 if (customerName && customerName !== 'undefined' && customerName.trim() !== '') {
                                   return customerName
                                 }
-                                
+
                                 if (firstName && lastName && firstName !== 'undefined' && lastName !== 'undefined') {
                                   return `${firstName} ${lastName}`
                                 }
-                                
+
                                 // Enhanced fallback with order info
                                 return `Kunde ${order.name}` // e.g., "Kunde #3307"
                               })()
@@ -1372,11 +1366,11 @@ export default function ShopifyPage() {
                             <strong>E-Mail:</strong> {
                               (() => {
                                 const email = order.customer?.email || (order as any).email
-                                
+
                                 if (email && email !== 'undefined' && email.trim() !== '' && !email.includes('noreply')) {
                                   return email
                                 }
-                                
+
                                 // Enhanced fallback with shop domain
                                 return `kunde@karinex.com`
                               })()
@@ -1388,14 +1382,14 @@ export default function ShopifyPage() {
                                 const shipping = (order as any).shipping_address
                                 const billing = order.billing_address
                                 const defaultAddr = order.customer?.default_address
-                                
+
                                 // NEW Priority: Shipping → Billing → Default (as requested)
                                 const address1 = shipping?.address1 || billing?.address1 || defaultAddr?.address1
-                                const city = shipping?.city || billing?.city || defaultAddr?.city || 
-                                           shipping?.province || billing?.province || defaultAddr?.province
+                                const city = shipping?.city || billing?.city || defaultAddr?.city ||
+                                  shipping?.province || billing?.province || defaultAddr?.province
                                 const zip = shipping?.zip || billing?.zip || defaultAddr?.zip
                                 const country = shipping?.country || billing?.country || defaultAddr?.country
-                                
+
                                 // Check if we have any real address data
                                 if (address1 && address1 !== 'undefined' && address1.trim() !== '') {
                                   const parts = []
@@ -1412,7 +1406,7 @@ export default function ShopifyPage() {
                                   }
                                   return parts.join(', ')
                                 }
-                                
+
                                 // Enhanced fallback address for digital products
                                 return `Karinex Digital Store, Online-Kunde, 10115 Berlin`
                               })()
@@ -1432,7 +1426,7 @@ export default function ShopifyPage() {
                         </div>
                       </div>
                     ))}
-                    
+
                     {/* Show message if search has no results */}
                     {searchQuery && getFilteredOrders().length === 0 && orders.length > 0 && (
                       <div className="text-center py-8 text-gray-500">
@@ -1469,7 +1463,7 @@ export default function ShopifyPage() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Beim Import werden nur bezahlte Bestellungen als Rechnungen erstellt. 
+                    Beim Import werden nur bezahlte Bestellungen als Rechnungen erstellt.
                     Bereits importierte Bestellungen werden übersprungen.
                   </AlertDescription>
                 </Alert>
@@ -1546,7 +1540,7 @@ export default function ShopifyPage() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>🚀 Legacy System (UNLIMITED):</strong> Das Legacy System wurde komplett überarbeitet und unterstützt jetzt UNBEGRENZTEN Import mit Cursor-based Pagination! 
+                  <strong>🚀 Legacy System (UNLIMITED):</strong> Das Legacy System wurde komplett überarbeitet und unterstützt jetzt UNBEGRENZTEN Import mit Cursor-based Pagination!
                   Kein 250-Limit mehr - importieren Sie so viele Bestellungen wie Sie möchten. Für erweiterte Features wie Background Jobs verwenden Sie den Tab "Erweiterte Import".
                 </AlertDescription>
               </Alert>
@@ -1621,7 +1615,7 @@ export default function ShopifyPage() {
                     Vorschau der verfügbaren Bestellungen (bis zu 100.000 Bestellungen)
                   </CardDescription>
                 </CardHeader>
-                
+
                 {/* Advanced Filters */}
                 <div className="px-6 pb-4">
                   <div className="space-y-4">
@@ -1704,7 +1698,7 @@ export default function ShopifyPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       {orders.length > 0 && (
                         <div className="flex gap-2">
                           <Button
@@ -1744,7 +1738,7 @@ export default function ShopifyPage() {
                       <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span>
-                            {selectedOrders.size > 0 
+                            {selectedOrders.size > 0
                               ? `${selectedOrders.size} von ${getFilteredOrders().length} Bestellungen ausgewählt`
                               : `${getDisplayCount()} Bestellungen verfügbar`
                             }
@@ -1753,7 +1747,7 @@ export default function ShopifyPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Quick Date Buttons */}
                   <div className="flex flex-wrap gap-2 mt-4">
                     <Button
@@ -1798,11 +1792,11 @@ export default function ShopifyPage() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <CardContent>
                   {orders.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      {settings.enabled ? 
+                      {settings.enabled ?
                         'Keine Bestellungen gefunden. Klicken Sie auf "Aktualisieren" um Bestellungen zu laden.' :
                         'Shopify Integration ist nicht aktiviert.'
                       }
@@ -1810,13 +1804,12 @@ export default function ShopifyPage() {
                   ) : (
                     <div className="space-y-4">
                       {getFilteredOrders().map((order) => (
-                        <div 
-                          key={order.id} 
-                          className={`border rounded-lg p-4 transition-colors ${
-                            selectedOrders.has(order.id.toString()) 
-                              ? 'border-green-500 bg-green-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                        <div
+                          key={order.id}
+                          className={`border rounded-lg p-4 transition-colors ${selectedOrders.has(order.id.toString())
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                            }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
@@ -1854,7 +1847,7 @@ export default function ShopifyPage() {
                               </Button>
                             </div>
                           </div>
-                          
+
                           <div className="text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-2">
                             <div>
                               <strong>Kunde:</strong> {
@@ -1863,16 +1856,16 @@ export default function ShopifyPage() {
                                   const customerAny = order.customer as any
                                   const firstName = customerAny?.first_name
                                   const lastName = customerAny?.last_name
-                                  
+
                                   // Try to build name from available data
                                   if (customerName && customerName !== 'undefined' && customerName.trim() !== '') {
                                     return customerName
                                   }
-                                  
+
                                   if (firstName && lastName && firstName !== 'undefined' && lastName !== 'undefined') {
                                     return `${firstName} ${lastName}`
                                   }
-                                  
+
                                   // Enhanced fallback with order info
                                   return `Kunde ${order.name}` // e.g., "Kunde #3307"
                                 })()
@@ -1882,11 +1875,11 @@ export default function ShopifyPage() {
                               <strong>E-Mail:</strong> {
                                 (() => {
                                   const email = order.customer?.email || (order as any).email
-                                  
+
                                   if (email && email !== 'undefined' && email.trim() !== '' && !email.includes('noreply')) {
                                     return email
                                   }
-                                  
+
                                   // Enhanced fallback with shop domain
                                   return `kunde@karinex.com`
                                 })()
@@ -1899,14 +1892,14 @@ export default function ShopifyPage() {
                                   const shipping = (order as any).shipping_address
                                   const billing = order.billing_address
                                   const defaultAddr = order.customer?.default_address
-                                  
+
                                   // NEW Priority: Shipping → Billing → Default (as requested)
                                   const address1 = shipping?.address1 || billing?.address1 || defaultAddr?.address1
-                                  const city = shipping?.city || billing?.city || defaultAddr?.city || 
-                                             shipping?.province || billing?.province || defaultAddr?.province
+                                  const city = shipping?.city || billing?.city || defaultAddr?.city ||
+                                    shipping?.province || billing?.province || defaultAddr?.province
                                   const zip = shipping?.zip || billing?.zip || defaultAddr?.zip
                                   const country = shipping?.country || billing?.country || defaultAddr?.country
-                                  
+
                                   // Check if we have any real address data
                                   if (address1 && address1 !== 'undefined' && address1.trim() !== '') {
                                     const parts = []
@@ -1923,7 +1916,7 @@ export default function ShopifyPage() {
                                     }
                                     return parts.join(', ')
                                   }
-                                  
+
                                   // Enhanced fallback address for digital products
                                   return `Karinex Digital Store, Online-Kunde, 10115 Berlin`
                                 })()
