@@ -671,24 +671,41 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     }
   }
 
+  // Helper function to check if a value is real
+  const isRealValue = (value: any): boolean => {
+    return value &&
+      value !== 'MISSING' &&
+      value !== 'NULL' &&
+      value !== 'undefined' &&
+      value.toString().trim() !== ''
+  }
+
   // Priority 4: Real company name
   if (!customerName) {
     const company = extractedInfo.company ||
-      order.billing_address?.company ||
-      (order as any).shipping_address?.company ||
-      (order.customer?.default_address?.company) || ''
-    if (company && company !== 'MISSING' && company !== 'NULL' && company.trim() !== '') {
+      (isRealValue(order.billing_address?.company) ? order.billing_address?.company : '') ||
+      (isRealValue((order as any).shipping_address?.company) ? (order as any).shipping_address?.company : '') ||
+      (isRealValue(order.customer?.default_address?.company) ? order.customer?.default_address?.company : '')
+
+    if (company) {
       customerName = company.trim()
-      console.log('✅ Using REAL company name:', customerName)
+      console.log('✅ Using REAL company name as customer name:', customerName)
     }
   }
 
   // If NO real name found, leave empty or use minimal fallback
   if (!customerName) {
     console.log('❌ No real customer name found in Shopify data')
-    // Only use order number as minimal identifier, no fake names
-    customerName = `Order ${order.name || order.id}`
-    console.log('⚠️ Using minimal fallback:', customerName)
+
+    // Try email username as fallback before Order ID
+    if ((order as any).email) {
+      customerName = (order as any).email.split('@')[0]
+      console.log('⚠️ Using email username as fallback:', customerName)
+    } else {
+      // Only use order number as minimal identifier
+      customerName = `Order ${order.name || order.id}`
+      console.log('⚠️ Using minimal fallback:', customerName)
+    }
   }
 
   // Extract ONLY real email from Shopify - no fake emails
@@ -733,13 +750,6 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   })
 
   // Enhanced address extraction with priority for real data
-  // Helper function to check if a value is real (not null, not empty, not "MISSING", not "NULL")
-  const isRealValue = (value: any): boolean => {
-    return value &&
-      value !== 'MISSING' &&
-      value !== 'NULL' &&
-      value.toString().trim() !== ''
-  }
 
   // Extract real address data with SHIPPING ADDRESS PRIORITY (as requested by user)
   // NEW Priority: 1. Shipping Address, 2. Billing Address, 3. Default Address
