@@ -75,7 +75,10 @@ function loadShopifySettingsFromFile(): ShopifySettings {
     const fs = require('fs')
     const path = require('path')
 
-    const settingsPath = path.join(process.cwd(), 'user-storage', 'shopify-settings.json')
+    const isVercel = process.env.VERCEL === '1'
+    const settingsPath = isVercel
+      ? path.join('/tmp', 'shopify-settings.json')
+      : path.join(process.cwd(), 'user-storage', 'shopify-settings.json')
 
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf8')
@@ -96,7 +99,9 @@ function saveShopifySettingsToFile(settings: ShopifySettings): void {
     const fs = require('fs')
     const path = require('path')
 
-    const userStorageDir = path.join(process.cwd(), 'user-storage')
+    const isVercel = process.env.VERCEL === '1'
+    // On Vercel, we can only write to /tmp
+    const userStorageDir = isVercel ? '/tmp' : path.join(process.cwd(), 'user-storage')
     const settingsPath = path.join(userStorageDir, 'shopify-settings.json')
 
     // Create directory if it doesn't exist

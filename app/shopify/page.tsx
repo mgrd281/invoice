@@ -192,7 +192,13 @@ export default function ShopifyPage() {
     setMessage('')
 
     try {
-      const response = await fetch('/api/shopify/test-connection')
+      const response = await fetch('/api/shopify/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ settings }),
+      })
 
 
       const data = await response.json()
