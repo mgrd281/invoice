@@ -1,0 +1,373 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { FileText, UserPlus, Eye, EyeOff, ArrowLeft, Check } from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth-compat'
+
+export default function RegisterPage() {
+  const router = useRouter()
+  const { login } = useAuth()
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    companyName: '',
+    acceptTerms: false,
+    acceptNewsletter: false
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    // Validierung
+    if (formData.password !== formData.confirmPassword) {
+      setError('Die Passwörter stimmen nicht überein.')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.acceptTerms) {
+      setError('Bitte akzeptieren Sie die Nutzungsbedingungen.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      // Basic validation
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+        throw new Error('Bitte füllen Sie alle Pflichtfelder aus.')
+      }
+
+      if (!formData.email.includes('@')) {
+        throw new Error('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
+      }
+
+      if (formData.password.length < 6) {
+        throw new Error('Das Passwort muss mindestens 6 Zeichen lang sein.')
+      }
+
+      // Check if email already exists (demo simulation)
+      const existingEmails = ['demo@rechnungsprofi.de', 'test@example.com', 'max@mustermann.de']
+      if (existingEmails.includes(formData.email)) {
+        throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte verwenden Sie eine andere.')
+      }
+
+      // 1. Registrierung simulieren (in Production würde hier die echte Registrierung stattfinden)
+      console.log('📝 Registering user:', {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        companyName: formData.companyName
+      })
+      
+      // Simulate registration delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // 2. E-Mail-Verifizierungscode senden
+      console.log('📧 Sending verification email...')
+      const verificationResponse = await fetch('/api/auth/email-verification/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          name: `${formData.firstName} ${formData.lastName}`.trim()
+        })
+      })
+      
+      const verificationData = await verificationResponse.json()
+      
+      if (!verificationData.success) {
+        throw new Error(verificationData.error || 'E-Mail-Verifizierung konnte nicht gesendet werden.')
+      }
+      
+      console.log('✅ Verification email sent successfully')
+      
+      // 3. Zur Verifizierungsseite weiterleiten
+      const verifyUrl = `/auth/verify-email?email=${encodeURIComponent(formData.email)}`
+      router.push(verifyUrl)
+      
+    } catch (error: any) {
+      console.error('❌ Registration error:', error)
+      setError(error.message || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+      </div>
+
+      <div className="relative w-full max-w-md">
+        {/* Back to Home Button */}
+        <div className="mb-6">
+          <Link href="/">
+            <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Zurück zur Startseite
+            </Button>
+          </Link>
+        </div>
+
+        {/* Register Card */}
+        <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-md">
+          <CardHeader className="text-center pb-6">
+            <div className="flex justify-center mb-4">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
+                <FileText className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Konto erstellen
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Registrieren Sie sich für RechnungsProfi
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                    Vorname
+                  </label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="Max"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                    Nachname
+                  </label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Mustermann"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="companyName" className="text-sm font-medium text-gray-700">
+                  Firmenname (optional)
+                </label>
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  type="text"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  placeholder="Mustermann GmbH"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  E-Mail-Adresse
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="max@mustermann.de"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Passwort
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Mindestens 8 Zeichen"
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                  Passwort bestätigen
+                </label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Passwort wiederholen"
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-start">
+                  <input
+                    type="checkbox"
+                    name="acceptTerms"
+                    checked={formData.acceptTerms}
+                    onChange={handleChange}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                    required
+                  />
+                  <span className="ml-2 text-sm text-gray-600">
+                    Ich akzeptiere die{' '}
+                    <Link href="/terms" className="text-blue-600 hover:text-blue-500">
+                      Nutzungsbedingungen
+                    </Link>{' '}
+                    und{' '}
+                    <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
+                      Datenschutzerklärung
+                    </Link>
+                  </span>
+                </label>
+
+                <label className="flex items-start">
+                  <input
+                    type="checkbox"
+                    name="acceptNewsletter"
+                    checked={formData.acceptNewsletter}
+                    onChange={handleChange}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">
+                    Ich möchte den Newsletter mit Updates und Tipps erhalten (optional)
+                  </span>
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Konto wird erstellt...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Konto erstellen
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-gray-600">
+                Bereits ein Konto?{' '}
+                <Link href="/auth/login" className="text-blue-600 hover:text-blue-500 font-medium">
+                  Jetzt anmelden
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+
+        {/* Benefits */}
+        <div className="mt-4 bg-white/60 backdrop-blur-sm rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">Ihre Vorteile:</h3>
+          <div className="space-y-2 text-xs text-gray-600">
+            <div className="flex items-center">
+              <Check className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+              Professionelle Rechnungen nach deutschem Recht
+            </div>
+            <div className="flex items-center">
+              <Check className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+              Automatische Shopify-Integration
+            </div>
+            <div className="flex items-center">
+              <Check className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+              DSGVO-konforme Datenverwaltung
+            </div>
+            <div className="flex items-center">
+              <Check className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+              Kostenlose 30-Tage-Testphase
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,20 @@
+{
+    "shopify": {
+        "enabled": true,
+        "shopDomain": "45dv93-bk.myshopify.com",
+        "adminUrl": "https://admin.shopify.com/store/45dv93-bk",
+        "apiKey": "SHOPIFY_API_KEY_PLACEHOLDER",
+        "secretKey": "SHOPIFY_SECRET_KEY_PLACEHOLDER",
+        "accessToken": "SHOPIFY_ACCESS_TOKEN_PLACEHOLDER",
+        "apiVersion": "2024-01",
+        "autoImport": false,
+        "importInterval": 60,
+        "defaultTaxRate": 19,
+        "defaultPaymentTerms": 14
+    },
+    "setup": {
+        "quickStart": true,
+        "setupDate": "2025-09-25",
+        "status": "ready"
+    }
+}

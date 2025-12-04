@@ -1,0 +1,25 @@
+# انسخ هذا المحتوى بالكامل والصقه في ملف .env.local
+
+# تفعيل الإرسال الحقيقي
+EMAIL_DEV_MODE="false"
+
+# إعدادات Gmail SMTP
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="mgrdegh90@gmail.com"
+SMTP_PASS="REPLACE_WITH_YOUR_APP_PASSWORD"
+
+# عنوان المرسل
+EMAIL_FROM="mgrdegh90@gmail.com"
+EMAIL_FROM_NAME="RechnungsProfi"
+
+# NextAuth (مطلوب)
+NEXTAUTH_SECRET="rechnungsprofi-email-verification-secret-key-2024-very-long-string"
+NEXTAUTH_URL="http://localhost:3000"
+
+# اختياري
+EMAIL_CC=""
+EMAIL_REPLY_TO="mgrdegh90@gmail.com"
+
+# ملاحظة: استبدل REPLACE_WITH_YOUR_APP_PASSWORD بكلمة مرور التطبيق الحقيقية من Gmail

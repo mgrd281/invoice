@@ -1,0 +1,290 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  name            String?
+  image           String?
+  emailVerified   DateTime?
+  role            UserRole  @default(USER)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  uploadJobs      UploadJob[]
+  auditLogs       AuditLog[]
+}
+
+model Organization {
+  id                String             @id @default(uuid())
+  name              String
+  slug              String             @unique
+  address           String
+  zipCode           String
+  city              String
+  country           String             @default("DE")
+  taxId             String?
+  bankName          String?
+  iban              String?
+  bic               String?
+  logoUrl           String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  users             User[]
+  customers         Customer[]
+  orders            Order[]
+  invoiceTemplates  InvoiceTemplate[]
+  invoices          Invoice[]
+  taxRates          TaxRate[]
+  uploadJobs        UploadJob[]
+  auditLogs         AuditLog[]
+  shopifyConnection ShopifyConnection?
+}
+
+model Account {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String?
+  accessToken       String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?
+  sessionState      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Customer {
+  id                String    @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  name              String
+  email             String?
+  address           String
+  zipCode           String
+  city              String
+  country           String    @default("DE")
+  taxId             String?
+  shopifyCustomerId String?   @unique(map: "Customer_shopifyCustomerId_key") // Add a unique constraint for this field
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  orders            Order[]
+  invoices          Invoice[]
+
+  @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
+}
+
+model Order {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  orderNumber    String
+  orderDate      DateTime
+  totalAmount    Decimal      @db.Decimal(10, 2)
+  currency       String       @default("EUR")
+  status         OrderStatus  @default(PENDING)
+  shopifyOrderId String?      @unique(map: "Order_shopifyOrderId_key") // Add a unique constraint for this field
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  invoices       Invoice[]
+
+  @@unique([organizationId, orderNumber])
+  @@unique([organizationId, shopifyOrderId], name: "unique_shopify_order_per_organization")
+}
+
+model InvoiceTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  htmlContent    String
+  cssContent     String
+  isDefault      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  invoices       Invoice[]
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  orderId         String?
+  order           Order?        @relation(fields: [orderId], references: [id])
+  templateId      String
+  template        InvoiceTemplate @relation(fields: [templateId], references: [id])
+  invoiceNumber   String
+  issueDate       DateTime
+  serviceDate     DateTime?
+  dueDate         DateTime
+  totalNet        Decimal       @db.Decimal(10, 2)
+  totalGross      Decimal       @db.Decimal(10, 2)
+  totalTax        Decimal       @db.Decimal(10, 2)
+  currency        String        @default("EUR")
+  status          InvoiceStatus @default(DRAFT)
+  pdfUrl          String?
+  immutableHash   String?
+  auditLogId      String?
+  auditLog        AuditLog?     @relation(fields: [auditLogId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  items           InvoiceItem[]
+  payments        Payment[]
+
+  @@unique([organizationId, invoiceNumber])
+}
+
+model InvoiceItem {
+  id            String    @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description   String
+  quantity      Decimal   @db.Decimal(10, 2)
+  unitPrice     Decimal   @db.Decimal(10, 2)
+  taxRateId     String
+  taxRate       TaxRate   @relation(fields: [taxRateId], references: [id])
+  netAmount     Decimal   @db.Decimal(10, 2)
+  grossAmount   Decimal   @db.Decimal(10, 2)
+  taxAmount     Decimal   @db.Decimal(10, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model TaxRate {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  name           String
+  rate           Decimal       @db.Decimal(5, 4) // e.g., 0.19 for 19%
+  isDefault      Boolean       @default(false)
+  invoiceItems   InvoiceItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount        Decimal   @db.Decimal(10, 2)
+  paymentDate   DateTime
+  method        String
+  transactionId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model UploadJob {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  fileName       String
+  fileUrl        String
+  status         UploadStatus @default(PENDING)
+  totalRows      Int?
+  processedRows  Int?
+  failedRows     Int?
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model AuditLog {
+  id             String    @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id])
+  action         String
+  entityType     String
+  entityId       String?
+  details        Json?
+  ipAddress      String?
+  createdAt      DateTime  @default(now())
+
+  invoices       Invoice[] // For linking finalized invoices to their audit log entry
+}
+
+model ShopifyConnection {
+  id             String       @id @default(uuid())
+  organizationId String       @unique // One-to-one per organization
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  shopName       String
+  accessToken    String // Encrypted
+  scopes         String
+  isActive       Boolean      @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+
