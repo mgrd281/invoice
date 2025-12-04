@@ -15,17 +15,38 @@ interface ShopifySettings {
 
 // Get Shopify settings (fallback implementation)
 function getShopifySettings(): ShopifySettings {
+  // Try to read from reliable storage first (same as in shopify-settings.ts)
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const isVercel = process.env.VERCEL === '1'
+    const settingsPath = isVercel
+      ? path.join('/tmp', 'shopify-settings.json')
+      : path.join(process.cwd(), 'user-storage', 'shopify-settings.json')
+
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf8')
+      const settings = JSON.parse(data)
+      // Sanitize loaded settings
+      if (settings.shopDomain) settings.shopDomain = settings.shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '').trim()
+      if (settings.accessToken) settings.accessToken = settings.accessToken.trim()
+      return settings
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not load settings from storage in import route:', e)
+  }
+
   const settings = {
     enabled: true,
-    shopDomain: process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com',
-    accessToken: process.env.SHOPIFY_ACCESS_TOKEN || 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
-    apiVersion: '2024-01',
+    shopDomain: (process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com').replace(/^https?:\/\//, '').replace(/\/$/, '').trim(),
+    accessToken: (process.env.SHOPIFY_ACCESS_TOKEN || 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER').trim(),
+    apiVersion: '2025-10',
     autoImport: false,
     importInterval: 60,
     defaultTaxRate: 19,
     defaultPaymentTerms: 14
   }
-  
+
   // Validate settings
   if (!settings.shopDomain || !settings.accessToken) {
     console.error('❌ Missing Shopify credentials:', {
@@ -33,7 +54,7 @@ function getShopifySettings(): ShopifySettings {
       hasAccessToken: !!settings.accessToken
     })
   }
-  
+
   return settings
 }
 
@@ -42,32 +63,32 @@ async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
   // COMPLETE fields to bypass PII masking
   const completeFields = [
     // Basic order fields
-    'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax', 
+    'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
     'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
-    
+
     // Complete customer fields (to bypass PII masking)
     'customer[id]', 'customer[email]', 'customer[first_name]', 'customer[last_name]',
-    'customer[phone]', 'customer[created_at]', 'customer[updated_at]', 'customer[state]', 
+    'customer[phone]', 'customer[created_at]', 'customer[updated_at]', 'customer[state]',
     'customer[verified_email]', 'customer[tax_exempt]',
-    
+
     // Complete default address fields
     'customer[default_address][id]', 'customer[default_address][first_name]', 'customer[default_address][last_name]',
     'customer[default_address][company]', 'customer[default_address][address1]', 'customer[default_address][address2]',
     'customer[default_address][city]', 'customer[default_address][zip]', 'customer[default_address][province]',
     'customer[default_address][country]', 'customer[default_address][country_code]', 'customer[default_address][phone]',
-    
+
     // Complete billing address fields  
     'billing_address[first_name]', 'billing_address[last_name]', 'billing_address[company]',
     'billing_address[address1]', 'billing_address[address2]', 'billing_address[city]',
-    'billing_address[zip]', 'billing_address[province]', 'billing_address[country]', 
+    'billing_address[zip]', 'billing_address[province]', 'billing_address[country]',
     'billing_address[country_code]', 'billing_address[phone]',
-    
+
     // Complete shipping address fields
     'shipping_address[first_name]', 'shipping_address[last_name]', 'shipping_address[company]',
     'shipping_address[address1]', 'shipping_address[address2]', 'shipping_address[city]',
     'shipping_address[zip]', 'shipping_address[province]', 'shipping_address[country]',
     'shipping_address[country_code]', 'shipping_address[phone]',
-    
+
     // Line items and taxes
     'line_items', 'tax_lines'
   ].join(',')
@@ -94,7 +115,7 @@ async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
   }
 
   const url = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders.json?${urlParams}`
-  
+
   const response = await fetch(url, {
     headers: {
       'X-Shopify-Access-Token': settings.accessToken,
@@ -114,13 +135,13 @@ async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
 async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: any) {
   console.log('🚀 Starting UNLIMITED fetch with cursor pagination')
   console.log('📋 Input params:', params)
-  
+
   let allOrders: any[] = []
   let cursor: string | undefined
   let hasNextPage = true
   let pageCount = 0
   const maxPages = Math.min(Math.ceil(params.limit / 250) || 10000, 10000) // Maximal 10000 Seiten (2.5 Million Orders)
-  
+
   console.log(`📊 Planning to fetch max ${maxPages} pages  // UNLIMITED fetch with cursor-based pagination - NO LIMIT!`)
   while (hasNextPage && pageCount < 10000) { // Maximum 10000 pages × 250 = 2,500,000 orders
     pageCount++
@@ -129,43 +150,43 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
     const urlParams = new URLSearchParams({
       limit: '250' // Shopify Maximum per page
     })
-    
+
     // Request COMPLETE customer data including ALL address fields to bypass PII masking
     if (!cursor) {
       // Only add fields on first request (not when paginating)
       // EXPANDED fields to request ALL customer data explicitly
       const completeFields = [
         // Basic order fields
-        'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax', 
+        'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
         'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
-        
+
         // Complete customer fields (to bypass PII masking)
         'customer[id]', 'customer[email]', 'customer[first_name]', 'customer[last_name]',
-        'customer[phone]', 'customer[created_at]', 'customer[updated_at]', 'customer[state]', 
+        'customer[phone]', 'customer[created_at]', 'customer[updated_at]', 'customer[state]',
         'customer[verified_email]', 'customer[tax_exempt]',
-        
+
         // Complete default address fields
         'customer[default_address][id]', 'customer[default_address][first_name]', 'customer[default_address][last_name]',
         'customer[default_address][company]', 'customer[default_address][address1]', 'customer[default_address][address2]',
         'customer[default_address][city]', 'customer[default_address][zip]', 'customer[default_address][province]',
         'customer[default_address][country]', 'customer[default_address][country_code]', 'customer[default_address][phone]',
-        
+
         // Complete billing address fields  
         'billing_address[first_name]', 'billing_address[last_name]', 'billing_address[company]',
         'billing_address[address1]', 'billing_address[address2]', 'billing_address[city]',
-        'billing_address[zip]', 'billing_address[province]', 'billing_address[country]', 
+        'billing_address[zip]', 'billing_address[province]', 'billing_address[country]',
         'billing_address[country_code]', 'billing_address[phone]',
-        
+
         // Complete shipping address fields
         'shipping_address[first_name]', 'shipping_address[last_name]', 'shipping_address[company]',
         'shipping_address[address1]', 'shipping_address[address2]', 'shipping_address[city]',
         'shipping_address[zip]', 'shipping_address[province]', 'shipping_address[country]',
         'shipping_address[country_code]', 'shipping_address[phone]',
-        
+
         // Line items and taxes
         'line_items', 'tax_lines'
       ].join(',')
-      
+
       urlParams.append('fields', completeFields)
       console.log('📋 Requesting COMPLETE customer data to bypass PII masking')
     }
@@ -177,7 +198,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
     } else {
       // Only add filters on first request (no cursor)
       urlParams.append('status', 'any')  // CRITICAL: Required to get all orders!
-      
+
       // Add financial_status filter
       if (params.financial_status && params.financial_status !== 'any') {
         urlParams.append('financial_status', params.financial_status)
@@ -217,7 +238,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
     console.log(`📋 Page ${pageCount} URL params:`, urlParams.toString())
 
     const url = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders.json?${urlParams}`
-    
+
     try {
       const response = await fetch(url, {
         headers: {
@@ -229,26 +250,26 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
       if (!response.ok) {
         const errorText = await response.text()
         console.error(`❌ Shopify API Error ${response.status}:`, errorText)
-        
+
         if (response.status === 429) {
           console.log('⏳ Rate limited, waiting 2 seconds...')
           await new Promise(resolve => setTimeout(resolve, 2000))
           continue
         }
-        
+
         if (response.status === 400) {
           console.error('❌ Bad Request - Invalid parameters:', {
             url,
             params: urlParams.toString()
           })
         }
-        
+
         throw new Error(`Shopify API error: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
       const data = await response.json()
       const orders = data.orders || []
-      
+
       allOrders.push(...orders)
       console.log(`📦 Page ${pageCount}: ${orders.length} orders (Total: ${allOrders.length})`)
 
@@ -281,7 +302,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
   }
 
   console.log(`🎉 UNLIMITED fetch completed: ${allOrders.length} total orders from ${pageCount} pages`)
-  
+
   // Get total count from Shopify API for accurate UI display
   let totalCount = allOrders.length
   try {
@@ -295,7 +316,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
     if (params.created_at_max) {
       countParams.append('created_at_max', params.created_at_max)
     }
-    
+
     const countUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders/count.json?${countParams}`
     const countResponse = await fetch(countUrl, {
       headers: {
@@ -303,7 +324,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
         'Content-Type': 'application/json'
       }
     })
-    
+
     if (countResponse.ok) {
       const countData = await countResponse.json()
       totalCount = countData.count || allOrders.length
@@ -312,7 +333,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
   } catch (countError) {
     console.warn('⚠️ Could not get total count, using fetched count:', countError)
   }
-  
+
   return { orders: allOrders, totalCount }
 }
 
@@ -340,11 +361,11 @@ async function testShopifyConnection(settings: ShopifySettings) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
+    const {
       limit = 25000, // Erhöht von 50 auf 25000 für bessere Performance
       financial_status = 'any', // Geändert von 'paid' zu 'any' um alle Bestellungen zu importieren
       created_at_min,
-      created_at_max 
+      created_at_max
     } = body
 
     console.log('📥 Shopify Import Request:')
@@ -353,7 +374,7 @@ export async function POST(request: NextRequest) {
     console.log(`   Date Range: ${created_at_min} bis ${created_at_max}`)
 
     const settings = getShopifySettings()
-    
+
     if (!settings.enabled) {
       return NextResponse.json({
         success: false,
@@ -376,9 +397,9 @@ export async function POST(request: NextRequest) {
     const fetchResult = await fetchShopifyOrdersUnlimited(settings, importParams)
     const orders = fetchResult.orders
     const totalCount = fetchResult.totalCount
-    
+
     console.log(`📦 Fetched ${orders.length} orders from Shopify (Total available: ${totalCount})`)
-    
+
     // For now, just return the orders (import functionality can be added later)
     const apiResult = {
       success: true,
@@ -389,7 +410,7 @@ export async function POST(request: NextRequest) {
       totalCount: totalCount,
       fetchedCount: orders.length
     }
-    
+
     return NextResponse.json({
       success: apiResult.success,
       imported: apiResult.imported,
@@ -404,9 +425,9 @@ export async function POST(request: NextRequest) {
         let customerName = `${firstName} ${lastName}`.trim()
         if (!customerName) {
           customerName = order.billing_address?.company ||
-                        order.customer?.email ||
-                        order.email ||
-                        (order.customer?.id ? `Shopify Kunde #${order.customer.id}` : 'Unbekannt')
+            order.customer?.email ||
+            order.email ||
+            (order.customer?.id ? `Shopify Kunde #${order.customer.id}` : 'Unbekannt')
         }
         const customerEmail = order.customer?.email || order.email || ''
 
@@ -443,8 +464,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error importing Shopify orders:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Fehler beim Importieren der Shopify-Bestellungen',
         details: error instanceof Error ? error.message : 'Unbekannter Fehler'
       },
@@ -457,27 +478,27 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     console.log('🚀 GET /api/shopify/import - Starting request')
-    
+
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '25000')
     const financial_status = searchParams.get('financial_status') || 'any'
     const created_at_min = searchParams.get('created_at_min')
     const created_at_max = searchParams.get('created_at_max')
-    
+
     console.log('📅 Shopify API Request Parameters:')
     console.log(`   Limit: ${limit}`)
     console.log(`   Financial Status: ${financial_status}`)
     console.log(`   Date Range: ${created_at_min} bis ${created_at_max}`)
-    
+
     console.log('⚙️ Loading Shopify settings...')
     const settings = getShopifySettings()
-    console.log('⚙️ Settings loaded:', { 
-      enabled: settings.enabled, 
+    console.log('⚙️ Settings loaded:', {
+      enabled: settings.enabled,
       shopDomain: settings.shopDomain,
       hasAccessToken: !!settings.accessToken,
-      apiVersion: settings.apiVersion 
+      apiVersion: settings.apiVersion
     })
-    
+
     if (!settings.enabled) {
       console.log('❌ Shopify integration is disabled')
       return NextResponse.json({
@@ -490,7 +511,7 @@ export async function GET(request: NextRequest) {
     console.log('🔗 Testing Shopify connection...')
     const connectionTest = await testShopifyConnection(settings)
     console.log('🔗 Connection test result:', connectionTest)
-    
+
     if (!connectionTest.success) {
       console.error('❌ Shopify connection failed:', connectionTest.message)
       return NextResponse.json({
@@ -514,17 +535,17 @@ export async function GET(request: NextRequest) {
     console.log('🚀 Starting unlimited fetch...')
     let orders: any[] = []
     let totalCount = 0
-    
+
     try {
       console.log('🚀 Attempting unlimited fetch with cursor pagination...')
       console.log('📋 Order params for unlimited fetch:', orderParams)
-      
+
       // Force the correct parameters for unlimited fetch (respect Shopify's 250 limit per page)
       const unlimitedParams = {
         ...orderParams,
         limit: 250 // Shopify maximum per page, unlimited via pagination
       }
-      
+
       const unlimitedResult = await fetchShopifyOrdersUnlimited(settings, unlimitedParams)
       orders = unlimitedResult.orders
       totalCount = unlimitedResult.totalCount
@@ -534,7 +555,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error message:', error instanceof Error ? error.message : 'Unknown error')
       console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack')
       console.log('🔄 Falling back to regular fetch with enhanced parameters...')
-      
+
       // Enhanced fallback with correct parameters
       try {
         const fallbackParams = {
@@ -543,7 +564,7 @@ export async function GET(request: NextRequest) {
         }
         orders = await fetchShopifyOrders(settings, fallbackParams)
         console.log(`⚠️ Enhanced fallback completed: ${orders.length} orders`)
-        
+
         // If we got exactly 250, there might be more - try multiple pages manually
         if (orders.length === 250) {
           console.log('🔄 Trying to fetch more pages manually...')
@@ -558,7 +579,7 @@ export async function GET(request: NextRequest) {
             console.log('⚠️ Page 2 fetch failed, continuing with page 1 results')
           }
         }
-        
+
       } catch (fallbackError) {
         console.error('❌ Both fetch methods failed!')
         console.error('  - Unlimited fetch error:', error instanceof Error ? error.message : 'Unknown error')
@@ -568,35 +589,35 @@ export async function GET(request: NextRequest) {
         throw new Error(`Beide Fetch-Methoden fehlgeschlagen. Unlimited: ${error instanceof Error ? error.message : 'Unknown'}, Fallback: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown'}`)
       }
     }
-    
+
     // Get total count from Shopify API for better UI display (if not already set by unlimited fetch)
     if (totalCount === 0) {
       totalCount = orders.length
       try {
-      const countParams = new URLSearchParams()
-      if (orderParams.financial_status && orderParams.financial_status !== 'any') {
-        countParams.append('financial_status', orderParams.financial_status)
-      }
-      if (orderParams.created_at_min) {
-        countParams.append('created_at_min', orderParams.created_at_min)
-      }
-      if (orderParams.created_at_max) {
-        countParams.append('created_at_max', orderParams.created_at_max)
-      }
-      
-      const countUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders/count.json?${countParams}`
-      const countResponse = await fetch(countUrl, {
-        headers: {
-          'X-Shopify-Access-Token': settings.accessToken,
-          'Content-Type': 'application/json'
+        const countParams = new URLSearchParams()
+        if (orderParams.financial_status && orderParams.financial_status !== 'any') {
+          countParams.append('financial_status', orderParams.financial_status)
         }
-      })
-      
-      if (countResponse.ok) {
-        const countData = await countResponse.json()
-        totalCount = countData.count || orders.length
-        console.log(`📊 Total orders available: ${totalCount} (fetched: ${orders.length})`)
-      }
+        if (orderParams.created_at_min) {
+          countParams.append('created_at_min', orderParams.created_at_min)
+        }
+        if (orderParams.created_at_max) {
+          countParams.append('created_at_max', orderParams.created_at_max)
+        }
+
+        const countUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders/count.json?${countParams}`
+        const countResponse = await fetch(countUrl, {
+          headers: {
+            'X-Shopify-Access-Token': settings.accessToken,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (countResponse.ok) {
+          const countData = await countResponse.json()
+          totalCount = countData.count || orders.length
+          console.log(`📊 Total orders available: ${totalCount} (fetched: ${orders.length})`)
+        }
       } catch (countError) {
         console.warn('⚠️ Could not get total count, using fetched count:', countError)
       }
@@ -613,9 +634,9 @@ export async function GET(request: NextRequest) {
         let customerName = `${firstName} ${lastName}`.trim()
         if (!customerName) {
           customerName = order.billing_address?.company ||
-                        order.customer?.email ||
-                        order.email ||
-                        (order.customer?.id ? `Shopify Kunde #${order.customer.id}` : 'Unbekannt')
+            order.customer?.email ||
+            order.email ||
+            (order.customer?.id ? `Shopify Kunde #${order.customer.id}` : 'Unbekannt')
         }
         const customerEmail = order.customer?.email || order.email || ''
 
@@ -654,8 +675,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching Shopify orders:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Fehler beim Abrufen der Shopify-Bestellungen',
         details: error instanceof Error ? error.message : 'Unbekannter Fehler'
       },
