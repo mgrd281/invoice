@@ -222,7 +222,7 @@ export default function ShopifyTestPage() {
             <div className="space-y-2 text-sm">
               <p><strong>Shop Domain:</strong> 45dv93-bk.myshopify.com</p>
               <p><strong>Admin URL:</strong> https://admin.shopify.com/store/45dv93-bk</p>
-              <p><strong>API Version:</strong> 2027-01</p>
+              <p><strong>API Version:</strong> 2025-01</p>
               <p><strong>API-Schlüssel:</strong> 7d4ea1cf...f8dd (gekürzt)</p>
               <p><strong>Geheimer API-Schlüssel:</strong> 1e24702b...0bc9 (gekürzt)</p>
               <p><strong>Admin API-Token:</strong> SHOPIFY_ACCESS_TOKEN_PLACEHOLDER...dd6 (gekürzt)</p>
