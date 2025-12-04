@@ -21,7 +21,7 @@ const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   enabled: false,
   shopDomain: '',
   accessToken: '',
-  apiVersion: '2024-01',
+  apiVersion: '2025-10',
   autoImport: false,
   importInterval: 60, // 1 hour
   defaultTaxRate: 19, // 19% German VAT
@@ -40,7 +40,7 @@ export function getShopifySettings(): ShopifySettings {
     // Server-side: load from file or database
     return loadShopifySettingsFromFile()
   }
-  
+
   // Client-side: load from localStorage
   const stored = localStorage.getItem('shopify-settings')
   if (stored) {
@@ -50,7 +50,7 @@ export function getShopifySettings(): ShopifySettings {
       console.error('Error parsing Shopify settings:', error)
     }
   }
-  
+
   return DEFAULT_SHOPIFY_SETTINGS
 }
 
@@ -74,9 +74,9 @@ function loadShopifySettingsFromFile(): ShopifySettings {
   try {
     const fs = require('fs')
     const path = require('path')
-    
+
     const settingsPath = path.join(process.cwd(), 'user-storage', 'shopify-settings.json')
-    
+
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf8')
       return { ...DEFAULT_SHOPIFY_SETTINGS, ...JSON.parse(data) }
@@ -84,7 +84,7 @@ function loadShopifySettingsFromFile(): ShopifySettings {
   } catch (error) {
     console.error('Error loading Shopify settings from file:', error)
   }
-  
+
   return DEFAULT_SHOPIFY_SETTINGS
 }
 
@@ -95,15 +95,15 @@ function saveShopifySettingsToFile(settings: ShopifySettings): void {
   try {
     const fs = require('fs')
     const path = require('path')
-    
+
     const userStorageDir = path.join(process.cwd(), 'user-storage')
     const settingsPath = path.join(userStorageDir, 'shopify-settings.json')
-    
+
     // Create directory if it doesn't exist
     if (!fs.existsSync(userStorageDir)) {
       fs.mkdirSync(userStorageDir, { recursive: true })
     }
-    
+
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2))
   } catch (error) {
     console.error('Error saving Shopify settings to file:', error)
@@ -119,29 +119,29 @@ function saveShopifySettingsToFile(settings: ShopifySettings): void {
  */
 export function validateShopifySettings(settings: ShopifySettings): string[] {
   const errors: string[] = []
-  
+
   if (settings.enabled) {
     if (!settings.shopDomain) {
       errors.push('Shop Domain ist erforderlich')
     } else if (!settings.shopDomain.includes('.myshopify.com')) {
       errors.push('Shop Domain muss im Format "mystore.myshopify.com" sein')
     }
-    
+
     if (!settings.accessToken) {
       errors.push('Access Token ist erforderlich')
     } else if (settings.accessToken.length < 20) {
       errors.push('Access Token scheint ungültig zu sein')
     }
-    
+
     if (settings.defaultTaxRate < 0 || settings.defaultTaxRate > 100) {
       errors.push('Steuersatz muss zwischen 0% und 100% liegen')
     }
-    
+
     if (settings.defaultPaymentTerms < 1 || settings.defaultPaymentTerms > 365) {
       errors.push('Zahlungsziel muss zwischen 1 und 365 Tagen liegen')
     }
   }
-  
+
   return errors
 }
 
@@ -156,7 +156,7 @@ export async function testShopifyConnection(settings: ShopifySettings): Promise<
         'Content-Type': 'application/json',
       },
     })
-    
+
     if (response.ok) {
       const data = await response.json()
       return {
