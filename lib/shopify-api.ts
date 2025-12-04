@@ -618,30 +618,18 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     extractedInfo.name
 
   // Enhanced fallback for German digital store with variety
+  // REMOVED: "Web-Kunde" fallback causing confusion. Using real data or empty string.
   if (!customerName || customerName.trim() === '' ||
     customerName === 'MISSING' || customerName === 'NULL' ||
     customerName.includes('undefined')) {
 
-    // Generate varied professional customer names based on order details
-    const orderNumber = order.name || order.id.toString()
-    const orderDate = new Date(order.created_at)
-    const month = orderDate.getMonth() + 1
-    const day = orderDate.getDate()
-
-    // Create variety based on order characteristics
-    const nameVariations = [
-      `Digitalkunde ${orderNumber}`,
-      `Online-Kunde ${orderNumber}`,
-      `Karinex Kunde ${orderNumber}`,
-      `E-Commerce Kunde ${orderNumber}`,
-      `Web-Kunde ${orderNumber}`
-    ]
-
-    // Select variation based on order ID to ensure consistency
-    const variation = parseInt(order.id.toString().slice(-1)) % nameVariations.length
-    customerName = nameVariations[variation]
-
-    console.log('✅ Using varied professional fallback:', customerName)
+    // Try one last time with default address
+    if (order.customer?.default_address?.first_name && order.customer?.default_address?.last_name) {
+      customerName = `${order.customer.default_address.first_name} ${order.customer.default_address.last_name}`
+    } else if ((order as any).email) {
+      // Use email user part as last resort if really nothing else exists
+      customerName = (order as any).email.split('@')[0]
+    }
   }
 
   const firstName = order.customer?.first_name ||
@@ -755,31 +743,39 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
 
   // Extract real address data with SHIPPING ADDRESS PRIORITY (as requested by user)
   // NEW Priority: 1. Shipping Address, 2. Billing Address, 3. Default Address
-  console.log('🏠 Address extraction priority: Shipping → Billing → Default (USER REQUESTED)')
-
-  const address1 = (isRealValue((order as any).shipping_address?.address1)) ? (order as any).shipping_address.address1 :
+  console.log('🏠  // Address extraction with priority: Shipping → Billing → Default')
+  let address1 = (isRealValue((order as any).shipping_address?.address1)) ? (order as any).shipping_address.address1 :
     (isRealValue(order.billing_address?.address1)) ? order.billing_address.address1 :
       (isRealValue(order.customer?.default_address?.address1)) ? order.customer?.default_address?.address1 : ''
 
-  const address2 = (isRealValue((order as any).shipping_address?.address2)) ? (order as any).shipping_address.address2 :
+  let address2 = (isRealValue((order as any).shipping_address?.address2)) ? (order as any).shipping_address.address2 :
     (isRealValue(order.billing_address?.address2)) ? order.billing_address.address2 :
       (isRealValue(order.customer?.default_address?.address2)) ? order.customer?.default_address?.address2 : ''
 
-  const zipCode = (isRealValue((order as any).shipping_address?.zip)) ? (order as any).shipping_address.zip :
+  let zipCode = (isRealValue((order as any).shipping_address?.zip)) ? (order as any).shipping_address.zip :
     (isRealValue(order.billing_address?.zip)) ? order.billing_address.zip :
       (isRealValue(order.customer?.default_address?.zip)) ? order.customer?.default_address?.zip : ''
 
-  const city = (isRealValue((order as any).shipping_address?.city)) ? (order as any).shipping_address.city :
+  let city = (isRealValue((order as any).shipping_address?.city)) ? (order as any).shipping_address.city :
     (isRealValue(order.billing_address?.city)) ? order.billing_address.city :
       (isRealValue(order.customer?.default_address?.city)) ? order.customer?.default_address?.city :
-        // Fallback: use province as city if available (Shipping → Billing → Default)
+        // Fallback: use province as city if available
         (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
           (isRealValue(order.billing_address?.province)) ? order.billing_address.province :
             (isRealValue(order.customer?.default_address?.province)) ? order.customer?.default_address?.province : ''
 
-  const country = (isRealValue((order as any).shipping_address?.country)) ? (order as any).shipping_address.country :
+  let country = (isRealValue((order as any).shipping_address?.country)) ? (order as any).shipping_address.country :
     (isRealValue(order.billing_address?.country)) ? order.billing_address.country :
       (isRealValue(order.customer?.default_address?.country)) ? order.customer?.default_address?.country : 'Germany'
+
+  // If address is still empty, check for "Web-Shop Karinex" fallback and REMOVE IT
+  // We want real data or empty strings
+  if (!address1 && !city && !zipCode) {
+    console.log('⚠️ No address data found in Shipping, Billing, or Default Address')
+  }
+
+  // Log extracted address
+  console.log('🏠 Extracted Address:', { address1, address2, zipCode, city, country })
 
   const countryCode = (isRealValue((order as any).shipping_address?.country_code)) ? (order as any).shipping_address.country_code :
     (isRealValue(order.billing_address?.country_code)) ? order.billing_address.country_code :
