@@ -155,6 +155,7 @@ export class ShopifyAPI {
         shop: data.shop
       }
     } catch (error) {
+      console.error('❌ Detailed connection error:', error)
       return {
         success: false,
         message: `Verbindungsfehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
