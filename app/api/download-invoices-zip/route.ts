@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     console.log('ZIP download request received')
     const { invoiceIds } = await request.json()
     console.log('Invoice IDs:', invoiceIds)
-    
+
     if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
       console.log('No invoice IDs provided')
       return NextResponse.json(
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Get invoices from API
     const selectedInvoices = []
-    
+
     for (const invoiceId of invoiceIds) {
       try {
         // Fetch invoice from internal API
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Found ${selectedInvoices.length} invoices`)
-    
+
     if (selectedInvoices.length === 0) {
       console.log('No valid invoices found')
       return NextResponse.json(
@@ -55,17 +55,17 @@ export async function POST(request: NextRequest) {
     for (const invoice of selectedInvoices) {
       try {
         console.log(`Generating PDF for invoice ${invoice.number}`)
-        
+
         // Generate PDF buffer using jsPDF
-        const doc = generateArizonaPDF(invoice)
+        const doc = await generateArizonaPDF(invoice)
         const pdfBuffer = doc.output('arraybuffer')
-        
+
         // Create filename: Rechnung_NUMMER_DATUM.pdf
         const date = new Date(invoice.date).toISOString().split('T')[0]
         const filename = `Rechnung_${invoice.number}_${date}.pdf`
-        
+
         console.log(`Adding ${filename} to ZIP (${pdfBuffer.byteLength} bytes)`)
-        
+
         // Add PDF to ZIP
         zip.file(filename, pdfBuffer)
       } catch (error) {
