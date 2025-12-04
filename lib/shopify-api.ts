@@ -478,6 +478,11 @@ export class ShopifyAPI {
 export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: ShopifySettings): any {
   console.log('🔍 DEBUG: Enhanced customer data extraction for order:', order.name)
 
+  // Log raw customer data for debugging
+  console.log('🔍 Raw Order Customer Data:', JSON.stringify(order.customer, null, 2))
+  console.log('🔍 Raw Order Billing Address:', JSON.stringify(order.billing_address, null, 2))
+  console.log('🔍 Raw Order Shipping Address:', JSON.stringify((order as any).shipping_address, null, 2))
+
   // Log all available data sources
   console.log('📊 Available data sources:', {
     'order.email': order.email,
@@ -593,18 +598,24 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   }
 
   // Extract customer name with enhanced fallback for German customers
-  let customerName = extractedInfo.name || // Priority 1: Extracted from notes/attributes
-    order.customer?.first_name && order.customer?.last_name
-    ? `${order.customer.first_name} ${order.customer.last_name}`
-    : order.customer?.name ||
-    order.customer?.first_name ||
-    order.customer?.last_name ||
+  // Extract customer name with enhanced fallback
+  // Priority:
+  // 1. Billing Address Name (Most reliable for invoices)
+  // 2. Shipping Address Name
+  // 3. Customer Name (often just first/last)
+  // 4. Customer First/Last
+
+  let customerName =
     (order.billing_address?.first_name && order.billing_address?.last_name
       ? `${order.billing_address.first_name} ${order.billing_address.last_name}`
       : order.billing_address?.name) ||
     ((order as any).shipping_address?.first_name && (order as any).shipping_address?.last_name
       ? `${(order as any).shipping_address.first_name} ${(order as any).shipping_address.last_name}`
-      : (order as any).shipping_address?.name)
+      : (order as any).shipping_address?.name) ||
+    (order.customer?.first_name && order.customer?.last_name
+      ? `${order.customer.first_name} ${order.customer.last_name}`
+      : order.customer?.name) ||
+    extractedInfo.name
 
   // Enhanced fallback for German digital store with variety
   if (!customerName || customerName.trim() === '' ||

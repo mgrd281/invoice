@@ -47,7 +47,7 @@ function getShopifySettings(): ShopifySettings {
     enabled: true,
     shopDomain: (process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com').replace(/^https?:\/\//, '').replace(/\/$/, '').trim(),
     accessToken: (process.env.SHOPIFY_ACCESS_TOKEN || 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER').trim(),
-    apiVersion: '2025-10',
+    apiVersion: '2024-10',
     autoImport: false,
     importInterval: 60,
     defaultTaxRate: 19,
