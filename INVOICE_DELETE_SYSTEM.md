@@ -1,59 +1,59 @@
-# ✅ تم تطبيق نظام الحذف المفرد والمجمع للفواتير بالكامل
+# ✅ Einzel- und Massenlöschsystem für Rechnungen vollständig implementiert
 
-## 🎯 جميع معايير القبول محققة
+## 🎯 Alle Akzeptanzkriterien erfüllt
 
-### ✅ زر Löschen لكل صف
-- زر "Löschen" بجانب "Anzeigen" و "PDF" في عمود "Aktionen"
-- أيقونة سلة المهملات (Trash2) مع نص "Löschen"
-- لون أحمر للتمييز (text-red-600 hover:text-red-700)
-- تعطيل الزر أثناء عمليات الحذف
+### ✅ Löschen-Button pro Zeile
+- Button "Löschen" neben "Anzeigen" und "PDF" in der Spalte "Aktionen"
+- Papierkorb-Icon (Trash2) mit Text "Löschen"
+- Rote Farbe zur Unterscheidung (text-red-600 hover:text-red-700)
+- Button während des Löschens deaktiviert
 
-### ✅ عمود Checkboxes
-- عمود اختيار في أقصى اليسار لكل صف
-- مربع اختيار رئيسي في رأس الجدول "Alle auswählen"
-- يعمل على جميع العناصر المعروضة
-- دعم تحديد/إلغاء تحديد جميع العناصر
+### ✅ Checkbox-Spalte
+- Auswahlspalte ganz links in jeder Zeile
+- Haupt-Checkbox im Tabellenkopf "Alle auswählen"
+- Funktioniert auf allen angezeigten Elementen
+- Unterstützung für Alle auswählen/abwählen
 
-### ✅ شريط الإجراءات المجمعة
-- يظهر أعلى الجدول عند وجود تحديد
-- عرض عدد العناصر المحددة
-- زر "Ausgewählte löschen (n)" مع العدد الديناميكي
-- تصميم بصري واضح مع خلفية زرقاء
+### ✅ Massenaktionsleiste
+- Erscheint über der Tabelle bei Auswahl
+- Anzeige der Anzahl ausgewählter Elemente
+- Button "Ausgewählte löschen (n)" mit dynamischer Anzahl
+- Klares visuelles Design mit blauem Hintergrund
 
-### ✅ حوارات التأكيد
-**للحذف المفرد:**
+### ✅ Bestätigungsdialoge
+**Für Einzellöschung:**
 - "Rechnung wirklich löschen?"
-- عرض رقم الفاتورة
-- أزرار: "Abbrechen" / "Ja, löschen"
+- Anzeige der Rechnungsnummer
+- Buttons: "Abbrechen" / "Ja, löschen"
 
-**للحذف المجمع:**
+**Für Massenlöschung:**
 - "(n) Rechnungen wirklich löschen?"
-- عرض عدد الفواتير المحددة
-- أزرار: "Abbrechen" / "Ja, löschen"
+- Anzeige der Anzahl ausgewählter Rechnungen
+- Buttons: "Abbrechen" / "Ja, löschen"
 
-### ✅ ردود الفعل بعد التأكيد
-**النجاح:**
-- Toast notification أخضر
-- "Rechnung gelöscht" أو "(n) Rechnungen gelöscht"
-- تحديث الجدول فوراً دون إعادة تحميل الصفحة
-- إزالة التحديد تلقائياً
+### ✅ Rückmeldung nach Bestätigung
+**Erfolg:**
+- Grüne Toast-Benachrichtigung
+- "Rechnung gelöscht" oder "(n) Rechnungen gelöscht"
+- Sofortige Tabellenaktualisierung ohne Neuladen der Seite
+- Automatische Entfernung der Auswahl
 
-**الفشل:**
-- Toast notification أحمر
-- رسالة خطأ واضحة ومحددة
-- عدم إزالة الصفوف من الواجهة
-- الحفاظ على التحديد الحالي
+**Fehler:**
+- Rote Toast-Benachrichtigung
+- Klare und spezifische Fehlermeldung
+- Zeilen werden nicht aus der Oberfläche entfernt
+- Aktuelle Auswahl wird beibehalten
 
-### ✅ Soft Delete مُطبق
-- إضافة `deleted_at` timestamp للفواتير المحذوفة
-- استثناء السجلات المحذوفة من جميع الاستعلامات
-- إمكانية الاستعادة في المستقبل (البيانات محفوظة)
+### ✅ Soft Delete implementiert
+- Hinzufügen eines `deleted_at` Zeitstempels für gelöschte Rechnungen
+- Ausschluss gelöschter Datensätze aus allen Abfragen
+- Möglichkeit der Wiederherstellung in der Zukunft (Daten bleiben erhalten)
 
-## 🛠️ التطبيق التقني
+## 🛠️ Technische Implementierung
 
-### 1. واجهة المستخدم (`/app/invoices/page.tsx`)
+### 1. Benutzeroberfläche (`/app/invoices/page.tsx`)
 
-#### أ. State Management:
+#### a. State Management:
 ```typescript
 const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set())
 const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -66,9 +66,9 @@ const [deleting, setDeleting] = useState(false)
 const { showToast, ToastContainer } = useToast()
 ```
 
-#### ب. Checkbox Functions:
+#### b. Checkbox-Funktionen:
 ```typescript
-// تحديد/إلغاء تحديد جميع العناصر
+// Alle Elemente auswählen/abwählen
 const handleSelectAll = (checked: boolean) => {
   if (checked) {
     const allIds = new Set(invoices.map(invoice => invoice.id))
@@ -78,7 +78,7 @@ const handleSelectAll = (checked: boolean) => {
   }
 }
 
-// تحديد/إلغاء تحديد عنصر واحد
+// Einzelnes Element auswählen/abwählen
 const handleSelectInvoice = (invoiceId: string, checked: boolean) => {
   const newSelected = new Set(selectedInvoices)
   if (checked) {
@@ -90,15 +90,15 @@ const handleSelectInvoice = (invoiceId: string, checked: boolean) => {
 }
 ```
 
-#### ج. Delete Functions:
+#### c. Löschfunktionen:
 ```typescript
-// حذف مفرد
+// Einzellöschung
 const handleDeleteSingle = (invoiceId: string, invoiceNumber: string) => {
   setDeleteTarget({ type: 'single', ids: [invoiceId], invoiceNumber })
   setShowDeleteConfirm(true)
 }
 
-// حذف مجمع
+// Massenlöschung
 const handleDeleteBulk = () => {
   const selectedIds = Array.from(selectedInvoices)
   setDeleteTarget({ type: 'bulk', ids: selectedIds })
@@ -106,7 +106,7 @@ const handleDeleteBulk = () => {
 }
 ```
 
-#### د. Confirmation & API Integration:
+#### d. Bestätigung & API-Integration:
 ```typescript
 const confirmDelete = async () => {
   setDeleting(true)
@@ -122,7 +122,7 @@ const confirmDelete = async () => {
     })
 
     if (response.ok) {
-      // إزالة الفواتير المحذوفة من الحالة
+      // Gelöschte Rechnungen aus dem State entfernen
       setInvoices(prev => prev.filter(invoice => !deleteTarget.ids.includes(invoice.id)))
       setSelectedInvoices(new Set())
       
@@ -145,19 +145,19 @@ const confirmDelete = async () => {
 }
 ```
 
-### 2. API Endpoints
+### 2. API-Endpunkte
 
-#### أ. حذف مفرد (`/app/api/invoices/[id]/route.ts`):
+#### a. Einzellöschung (`/app/api/invoices/[id]/route.ts`):
 ```typescript
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const invoiceId = params.id
     
-    // البحث في CSV invoices
+    // Suche in CSV-Rechnungen
     if (global.csvInvoices) {
       const csvIndex = global.csvInvoices.findIndex((inv: any) => inv.id === invoiceId)
       if (csvIndex !== -1) {
-        // Soft delete: إضافة deleted_at timestamp
+        // Soft Delete: deleted_at Zeitstempel hinzufügen
         global.csvInvoices[csvIndex].deleted_at = new Date().toISOString()
         return NextResponse.json({ 
           success: true, 
@@ -167,11 +167,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       }
     }
 
-    // البحث في all invoices
+    // Suche in allen Rechnungen
     if (global.allInvoices) {
       const allIndex = global.allInvoices.findIndex((inv: any) => inv.id === invoiceId)
       if (allIndex !== -1) {
-        // Soft delete: إضافة deleted_at timestamp
+        // Soft Delete: deleted_at Zeitstempel hinzufügen
         global.allInvoices[allIndex].deleted_at = new Date().toISOString()
         return NextResponse.json({ 
           success: true, 
@@ -181,7 +181,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       }
     }
 
-    // التحقق من Mock invoices (لا يمكن حذفها)
+    // Prüfung auf Mock-Rechnungen (können nicht gelöscht werden)
     const mockInvoiceIds = ['1', '2', '3']
     if (mockInvoiceIds.includes(invoiceId)) {
       return NextResponse.json({
@@ -204,7 +204,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 ```
 
-#### ب. حذف مجمع (`/app/api/invoices/bulk-delete/route.ts`):
+#### b. Massenlöschung (`/app/api/invoices/bulk-delete/route.ts`):
 ```typescript
 export async function DELETE(request: NextRequest) {
   try {
@@ -227,7 +227,7 @@ export async function DELETE(request: NextRequest) {
     const mockInvoiceIds = ['1', '2', '3']
 
     for (const invoiceId of ids) {
-      // تخطي Mock invoices
+      // Mock-Rechnungen überspringen
       if (mockInvoiceIds.includes(invoiceId)) {
         results.mockInvoicesSkipped++
         results.errors.push(`Beispiel-Rechnung ${invoiceId} kann nicht gelöscht werden`)
@@ -236,7 +236,7 @@ export async function DELETE(request: NextRequest) {
 
       let deleted = false
 
-      // محاولة الحذف من CSV invoices
+      // Versuch aus CSV-Rechnungen zu löschen
       if (global.csvInvoices) {
         const csvIndex = global.csvInvoices.findIndex((inv: any) => inv.id === invoiceId)
         if (csvIndex !== -1) {
@@ -247,7 +247,7 @@ export async function DELETE(request: NextRequest) {
         }
       }
 
-      // محاولة الحذف من all invoices
+      // Versuch aus allen Rechnungen zu löschen
       if (global.allInvoices && !deleted) {
         const allIndex = global.allInvoices.findIndex((inv: any) => inv.id === invoiceId)
         if (allIndex !== -1) {
@@ -263,7 +263,7 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // إعداد رسالة الاستجابة
+    // Antwortnachricht vorbereiten
     let message = ''
     if (results.deleted > 0) {
       message = `${results.deleted} Rechnung${results.deleted !== 1 ? 'en' : ''} erfolgreich gelöscht`
@@ -291,20 +291,20 @@ export async function DELETE(request: NextRequest) {
 }
 ```
 
-### 3. Soft Delete Implementation
+### 3. Soft Delete Implementierung
 
-#### تحديث API الفواتير الرئيسي (`/app/api/invoices/route.ts`):
+#### Haupt-Rechnungs-API aktualisieren (`/app/api/invoices/route.ts`):
 ```typescript
 export async function GET() {
   try {
-    // دمج جميع الفواتير
+    // Alle Rechnungen zusammenführen
     const allInvoices = [
       ...mockInvoices,
       ...(global.csvInvoices || []),
       ...(global.allInvoices || [])
     ]
     
-    // تصفية الفواتير المحذوفة (Soft Delete)
+    // Gelöschte Rechnungen filtern (Soft Delete)
     const activeInvoices = allInvoices.filter((invoice: any) => !invoice.deleted_at)
     
     console.log(`Returning ${activeInvoices.length} active invoices (${allInvoices.length - activeInvoices.length} soft-deleted)`)
@@ -316,9 +316,9 @@ export async function GET() {
 }
 ```
 
-## 🎨 واجهة المستخدم
+## 🎨 Benutzeroberfläche
 
-### 1. عمود Checkbox:
+### 1. Checkbox-Spalte:
 ```typescript
 <TableHead className="w-12">
   <input
@@ -331,7 +331,7 @@ export async function GET() {
 </TableHead>
 ```
 
-### 2. شريط الإجراءات المجمعة:
+### 2. Massenaktionsleiste:
 ```typescript
 {selectedInvoices.size > 0 && (
   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
@@ -354,7 +354,7 @@ export async function GET() {
 )}
 ```
 
-### 3. أزرار الإجراءات:
+### 3. Aktionsbuttons:
 ```typescript
 <div className="flex justify-end space-x-2">
   <Link href={`/invoices/${invoice.id}`}>
@@ -384,7 +384,7 @@ export async function GET() {
 </div>
 ```
 
-### 4. حوار التأكيد:
+### 4. Bestätigungsdialog:
 ```typescript
 {showDeleteConfirm && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -425,75 +425,75 @@ export async function GET() {
 )}
 ```
 
-## 🧪 اختبار النظام
+## 🧪 Systemtest
 
-### 1. اختبار الحذف المفرد:
-1. اذهب إلى صفحة "Alle Rechnungen"
-2. انقر على زر "Löschen" لأي فاتورة
-3. تأكد من ظهور حوار "Rechnung wirklich löschen?"
-4. انقر "Ja, löschen"
-5. تحقق من ظهور Toast أخضر "Rechnung gelöscht"
-6. تأكد من اختفاء الفاتورة من الجدول
+### 1. Einzellöschung testen:
+1. Gehen Sie zur Seite "Alle Rechnungen"
+2. Klicken Sie auf den Button "Löschen" bei einer beliebigen Rechnung
+3. Überprüfen Sie, ob der Dialog "Rechnung wirklich löschen?" erscheint
+4. Klicken Sie auf "Ja, löschen"
+5. Überprüfen Sie, ob der grüne Toast "Rechnung gelöscht" erscheint
+6. Stellen Sie sicher, dass die Rechnung aus der Tabelle verschwindet
 
-### 2. اختبار الحذف المجمع:
-1. حدد عدة فواتير باستخدام Checkboxes
-2. تحقق من ظهور شريط الإجراءات المجمعة
-3. انقر "Ausgewählte löschen (n)"
-4. تأكد من ظهور حوار "(n) Rechnungen wirklich löschen?"
-5. انقر "Ja, löschen"
-6. تحقق من ظهور Toast أخضر "(n) Rechnungen gelöscht"
-7. تأكد من اختفاء جميع الفواتير المحددة
+### 2. Massenlöschung testen:
+1. Wählen Sie mehrere Rechnungen mit den Checkboxen aus
+2. Überprüfen Sie, ob die Massenaktionsleiste erscheint
+3. Klicken Sie auf "Ausgewählte löschen (n)"
+4. Überprüfen Sie, ob der Dialog "(n) Rechnungen wirklich löschen?" erscheint
+5. Klicken Sie auf "Ja, löschen"
+6. Überprüfen Sie, ob der grüne Toast "(n) Rechnungen gelöscht" erscheint
+7. Stellen Sie sicher, dass alle ausgewählten Rechnungen verschwinden
 
-### 3. اختبار تحديد الكل:
-1. انقر على Checkbox الرئيسي في رأس الجدول
-2. تحقق من تحديد جميع الفواتير
-3. انقر مرة أخرى لإلغاء التحديد
-4. تحقق من إلغاء تحديد جميع الفواتير
+### 3. Alle auswählen testen:
+1. Klicken Sie auf die Haupt-Checkbox im Tabellenkopf
+2. Überprüfen Sie, ob alle Rechnungen ausgewählt sind
+3. Klicken Sie erneut, um die Auswahl aufzuheben
+4. Überprüfen Sie, ob die Auswahl aller Rechnungen aufgehoben wurde
 
-### 4. اختبار معالجة الأخطاء:
-1. حاول حذف فاتورة وهمية (Mock invoice)
-2. تحقق من ظهور Toast أحمر مع رسالة خطأ
-3. تأكد من عدم اختفاء الفاتورة من الجدول
+### 4. Fehlerbehandlung testen:
+1. Versuchen Sie, eine Mock-Rechnung zu löschen
+2. Überprüfen Sie, ob ein roter Toast mit einer Fehlermeldung erscheint
+3. Stellen Sie sicher, dass die Rechnung nicht aus der Tabelle verschwindet
 
-## 📊 الإحصائيات والمؤشرات
+## 📊 Statistiken und Indikatoren
 
-### الميزات المُطبقة:
-- ✅ **عمود Checkboxes**: تحديد مفرد ومجمع
-- ✅ **زر Löschen**: لكل صف مع أيقونة سلة
-- ✅ **شريط الإجراءات**: للحذف المجمع
-- ✅ **حوارات التأكيد**: مفرد ومجمع
-- ✅ **Toast Notifications**: نجاح وفشل
-- ✅ **Soft Delete**: مع deleted_at timestamp
-- ✅ **API Endpoints**: مفرد ومجمع
-- ✅ **معالجة الأخطاء**: شاملة ومفصلة
-- ✅ **تحديث الواجهة**: فوري دون إعادة تحميل
+### Implementierte Funktionen:
+- ✅ **Checkbox-Spalte**: Einzel- und Massenauswahl
+- ✅ **Löschen-Button**: Pro Zeile mit Papierkorb-Icon
+- ✅ **Aktionsleiste**: Für Massenlöschung
+- ✅ **Bestätigungsdialoge**: Einzel und Masse
+- ✅ **Toast-Benachrichtigungen**: Erfolg und Fehler
+- ✅ **Soft Delete**: Mit deleted_at Zeitstempel
+- ✅ **API-Endpunkte**: Einzel und Masse
+- ✅ **Fehlerbehandlung**: Umfassend und detailliert
+- ✅ **Oberflächenaktualisierung**: Sofort ohne Neuladen
 
-### الأمان والموثوقية:
-- ✅ **تأكيد مزدوج**: حوار تأكيد لكل عملية حذف
-- ✅ **Soft Delete**: إمكانية الاستعادة
-- ✅ **حماية Mock Data**: منع حذف البيانات الوهمية
-- ✅ **معالجة الأخطاء**: رسائل واضحة ومفيدة
-- ✅ **حالات التحميل**: منع العمليات المتعددة
+### Sicherheit und Zuverlässigkeit:
+- ✅ **Doppelte Bestätigung**: Bestätigungsdialog für jeden Löschvorgang
+- ✅ **Soft Delete**: Wiederherstellungsmöglichkeit
+- ✅ **Mock-Daten-Schutz**: Verhindert das Löschen von Beispieldaten
+- ✅ **Fehlerbehandlung**: Klare und hilfreiche Nachrichten
+- ✅ **Ladezustände**: Verhindert mehrfache Operationen
 
-### تجربة المستخدم:
-- ✅ **واجهة بديهية**: تصميم واضح ومألوف
-- ✅ **ردود فعل فورية**: Toast notifications
-- ✅ **حالات التحميل**: مؤشرات بصرية
-- ✅ **إمكانية الوصول**: ARIA labels وkeyboard navigation
-- ✅ **تصميم متجاوب**: يعمل على جميع الأحجام
+### Benutzererfahrung:
+- ✅ **Intuitive Oberfläche**: Klares und vertrautes Design
+- ✅ **Sofortiges Feedback**: Toast-Benachrichtigungen
+- ✅ **Ladezustände**: Visuelle Indikatoren
+- ✅ **Barrierefreiheit**: ARIA-Labels und Tastaturnavigation
+- ✅ **Responsives Design**: Funktioniert auf allen Größen
 
-## 🎉 الخلاصة
+## 🎉 Fazit
 
-✅ **تم تطبيق نظام الحذف المفرد والمجمع بالكامل!**
+✅ **Einzel- und Massenlöschsystem vollständig implementiert!**
 
-**جميع معايير القبول محققة:**
-- 🗑️ **زر Löschen**: لكل صف بجانب Anzeigen و PDF
-- ☑️ **عمود Checkboxes**: مع "Alle auswählen" في الرأس
-- 📊 **شريط الإجراءات**: "Ausgewählte löschen (n)" عند التحديد
-- ❓ **حوارات التأكيد**: مفرد ومجمع بالنصوص المطلوبة
-- ✅ **Toast Notifications**: "Rechnung gelöscht" أو "(n) Rechnungen gelöscht"
-- 🔄 **تحديث فوري**: للجدول دون إعادة تحميل
-- ❌ **معالجة الأخطاء**: رسائل واضحة مع عدم إزالة الصفوف
-- 🗂️ **Soft Delete**: مع deleted_at واستثناء من الاستعلامات
+**Alle Akzeptanzkriterien erfüllt:**
+- 🗑️ **Löschen-Button**: Pro Zeile neben Anzeigen und PDF
+- ☑️ **Checkbox-Spalte**: Mit "Alle auswählen" im Kopf
+- 📊 **Aktionsleiste**: "Ausgewählte löschen (n)" bei Auswahl
+- ❓ **Bestätigungsdialoge**: Einzel und Masse mit erforderlichen Texten
+- ✅ **Toast-Benachrichtigungen**: "Rechnung gelöscht" oder "(n) Rechnungen gelöscht"
+- 🔄 **Sofortige Aktualisierung**: Der Tabelle ohne Neuladen
+- ❌ **Fehlerbehandlung**: Klare Nachrichten ohne Entfernen der Zeilen
+- 🗂️ **Soft Delete**: Mit deleted_at und Ausschluss aus Abfragen
 
-**النظام جاهز للاستخدام الإنتاجي مع جميع الميزات المطلوبة!** 🚀
+**System ist bereit für den produktiven Einsatz mit allen erforderlichen Funktionen!** 🚀

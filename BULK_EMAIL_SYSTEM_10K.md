@@ -1,140 +1,140 @@
-# 🚀 نظام الإرسال الجماعي المتقدم - 10,000 إيميل
+# 🚀 Erweitertes Massen-E-Mail-System - 10.000 E-Mails
 
-## 📋 نظرة عامة
+## 📋 Überblick
 
-تم تطوير نظام إرسال بريد إلكتروني جماعي متقدم يمكنه التعامل مع **10,000 إيميل** في عملية واحدة بضغطة زر واحدة. النظام مصمم للأداء العالي والموثوقية مع واجهة مستخدم سهلة الاستخدام.
+Es wurde ein fortschrittliches Massen-E-Mail-Versandsystem entwickelt, das **10.000 E-Mails** in einem einzigen Vorgang mit nur einem Klick verarbeiten kann. Das System ist auf hohe Leistung und Zuverlässigkeit mit einer benutzerfreundlichen Oberfläche ausgelegt.
 
-## ✨ الميزات الرئيسية
+## ✨ Hauptmerkmale
 
-### 🎯 الأداء المتقدم
-- **دعم 10,000+ إيميل:** معالجة الكميات الضخمة في عملية واحدة
-- **معالجة متوازية:** إرسال متعدد الخيوط لتحسين السرعة
-- **نظام الدفعات الذكي:** تقسيم تلقائي للإيميلات حسب الحجم
-- **تحكم في السرعة:** إعدادات قابلة للتخصيص لتجنب حدود الخادم
+### 🎯 Erweiterte Leistung
+- **Unterstützung für 10.000+ E-Mails:** Verarbeitung riesiger Mengen in einem Vorgang
+- **Parallele Verarbeitung:** Multi-Thread-Versand für verbesserte Geschwindigkeit
+- **Intelligentes Batch-System:** Automatische Aufteilung der E-Mails nach Größe
+- **Geschwindigkeitskontrolle:** Anpassbare Einstellungen zur Vermeidung von Serverlimits
 
-### 📊 تتبع التقدم المباشر
-- **تحديث كل ثانيتين:** مراقبة التقدم في الوقت الفعلي
-- **إحصائيات مفصلة:** عدد المرسل، الفاشل، النسبة المئوية
-- **تقدير الوقت المتبقي:** حساب ذكي للوقت المتوقع للانتهاء
-- **شريط تقدم مرئي:** واجهة بديهية لمتابعة العملية
+### 📊 Live-Fortschrittsverfolgung
+- **Aktualisierung alle 2 Sekunden:** Überwachung des Fortschritts in Echtzeit
+- **Detaillierte Statistiken:** Anzahl gesendet, fehlgeschlagen, Prozentsatz
+- **Verbleibende Zeit:** Intelligente Berechnung der voraussichtlichen Endzeit
+- **Visueller Fortschrittsbalken:** Intuitive Oberfläche zur Verfolgung des Prozesses
 
-### 🛡️ الأمان والموثوقية
-- **معالجة أخطاء شاملة:** عدم توقف العملية عند فشل رسالة واحدة
-- **تسجيل مفصل للأخطاء:** تتبع الفواتير الفاشلة مع أسباب الفشل
-- **تنظيف تلقائي:** إزالة العمليات القديمة بعد ساعة
-- **حدود آمنة:** حماية من الإفراط في الاستخدام
+### 🛡️ Sicherheit und Zuverlässigkeit
+- **Umfassende Fehlerbehandlung:** Prozess stoppt nicht bei Fehler einer einzelnen Nachricht
+- **Detaillierte Fehlerprotokollierung:** Verfolgung fehlgeschlagener Rechnungen mit Fehlerursachen
+- **Automatische Bereinigung:** Entfernung alter Prozesse nach einer Stunde
+- **Sicherheitslimits:** Schutz vor Überbeanspruchung
 
-## 🏗️ البنية التقنية
+## 🏗️ Technische Architektur
 
-### الملفات الأساسية
+### Kerndateien
 
-#### 1. API الإرسال المجمع
-**الملف:** `/app/api/send-bulk-emails/route.ts`
-
-```typescript
-// المميزات الرئيسية:
-- معالجة POST لبدء العملية
-- معالجة GET لتتبع التقدم
-- نظام تخزين مؤقت للعمليات النشطة
-- معالجة متوازية مع تحكم في التزامن
-```
-
-#### 2. واجهة المستخدم المتقدمة
-**الملف:** `/components/bulk-email-sender.tsx`
+#### 1. Massenversand-API
+**Datei:** `/app/api/send-bulk-emails/route.ts`
 
 ```typescript
-// المكونات الرئيسية:
-- إحصائيات مفصلة للعملية
-- شريط تقدم مرئي
-- إعدادات أداء قابلة للتخصيص
-- عرض الأخطاء والتفاصيل
+// Hauptmerkmale:
+- POST-Verarbeitung zum Starten des Prozesses
+- GET-Verarbeitung zur Fortschrittsverfolgung
+- Caching-System für aktive Prozesse
+- Parallele Verarbeitung mit Konkurrenzkontrolle
 ```
 
-#### 3. تكامل مع صفحة الفواتير
-**الملف:** `/app/invoices/page.tsx`
+#### 2. Erweiterte Benutzeroberfläche
+**Datei:** `/components/bulk-email-sender.tsx`
 
 ```typescript
-// التحديثات:
-- زر إرسال جماعي يظهر عند التحديد
-- تكامل مع نظام التحديد الحالي
-- واجهة سلسة مع النظام الموجود
+// Hauptkomponenten:
+- Detaillierte Prozessstatistiken
+- Visueller Fortschrittsbalken
+- Anpassbare Leistungseinstellungen
+- Anzeige von Fehlern und Details
 ```
 
-## ⚙️ إعدادات الأداء الموصى بها
+#### 3. Integration mit Rechnungsseite
+**Datei:** `/app/invoices/page.tsx`
 
-### للكميات المختلفة:
+```typescript
+// Updates:
+- Massenversand-Button erscheint bei Auswahl
+- Integration mit bestehendem Auswahlsystem
+- Nahtlose Schnittstelle mit vorhandenem System
+```
 
-#### 📧 إرسال صغير (< 100 إيميل)
+## ⚙️ Empfohlene Leistungseinstellungen
+
+### Für verschiedene Mengen:
+
+#### 📧 Kleiner Versand (< 100 E-Mails)
 ```javascript
 {
   batchSize: 10,
-  delayBetweenBatches: 1000, // 1 ثانية
+  delayBetweenBatches: 1000, // 1 Sekunde
   maxConcurrent: 5
 }
-// الوقت المقدر: ~10-20 ثانية
+// Geschätzte Zeit: ~10-20 Sekunden
 ```
 
-#### 📧 إرسال متوسط (100-1,000 إيميل)
+#### 📧 Mittlerer Versand (100-1.000 E-Mails)
 ```javascript
 {
   batchSize: 25,
-  delayBetweenBatches: 1500, // 1.5 ثانية
+  delayBetweenBatches: 1500, // 1.5 Sekunden
   maxConcurrent: 8
 }
-// الوقت المقدر: ~1-3 دقائق
+// Geschätzte Zeit: ~1-3 Minuten
 ```
 
-#### 📧 إرسال كبير (1,000-5,000 إيميل)
+#### 📧 Großer Versand (1.000-5.000 E-Mails)
 ```javascript
 {
   batchSize: 50,
-  delayBetweenBatches: 2000, // 2 ثانية
+  delayBetweenBatches: 2000, // 2 Sekunden
   maxConcurrent: 10
 }
-// الوقت المقدر: ~3-10 دقائق
+// Geschätzte Zeit: ~3-10 Minuten
 ```
 
-#### 📧 إرسال ضخم (5,000-10,000+ إيميل)
+#### 📧 Riesiger Versand (5.000-10.000+ E-Mails)
 ```javascript
 {
   batchSize: 100,
-  delayBetweenBatches: 3000, // 3 ثواني
+  delayBetweenBatches: 3000, // 3 Sekunden
   maxConcurrent: 15
 }
-// الوقت المقدر: ~10-30 دقيقة
+// Geschätzte Zeit: ~10-30 Minuten
 ```
 
-## 🚀 كيفية الاستخدام
+## 🚀 Verwendung
 
-### الخطوات البسيطة:
+### Einfache Schritte:
 
-1. **اختيار الفواتير:**
-   - انتقل إلى صفحة "Alle Rechnungen"
-   - حدد الفواتير المطلوب إرسالها (checkbox)
-   - سيظهر زر "X E-Mails senden" تلقائياً
+1. **Rechnungen auswählen:**
+   - Gehen Sie zur Seite "Alle Rechnungen"
+   - Wählen Sie die zu sendenden Rechnungen aus (Checkbox)
+   - Der Button "X E-Mails senden" erscheint automatisch
 
-2. **تخصيص الإعدادات:**
-   - انقر على "إظهار" في قسم إعدادات الأداء
-   - اختر الإعدادات المناسبة لحجم الإرسال
-   - أو انقر "إعدادات موصى بها" للحصول على أفضل إعدادات
+2. **Einstellungen anpassen:**
+   - Klicken Sie auf "Anzeigen" im Bereich Leistungseinstellungen
+   - Wählen Sie die passenden Einstellungen für die Versandgröße
+   - Oder klicken Sie auf "Empfohlene Einstellungen" für die besten Einstellungen
 
-3. **بدء الإرسال:**
-   - انقر "بدء الإرسال الجماعي"
-   - راقب التقدم في الوقت الفعلي
-   - يمكنك إغلاق النافذة - العملية تستمر في الخلفية
+3. **Versand starten:**
+   - Klicken Sie auf "Massenversand starten"
+   - Beobachten Sie den Fortschritt in Echtzeit
+   - Sie können das Fenster schließen - der Prozess läuft im Hintergrund weiter
 
-4. **متابعة النتائج:**
-   - مراقبة عدد الإيميلات المرسلة والفاشلة
-   - مراجعة تفاصيل الأخطاء إن وجدت
-   - الحصول على تقرير نهائي عند الانتهاء
+4. **Ergebnisse überwachen:**
+   - Überwachung der Anzahl gesendeter und fehlgeschlagener E-Mails
+   - Überprüfung von Fehlerdetails, falls vorhanden
+   - Erhalt eines Abschlussberichts nach Beendigung
 
-## 🔧 التكوين التقني
+## 🔧 Technische Konfiguration
 
-### متطلبات البيئة:
+### Systemanforderungen:
 
 ```bash
-# متغيرات البيئة المطلوبة
-EMAIL_DEV_MODE=true  # للتطوير (محاكاة الإرسال)
+# Erforderliche Umgebungsvariablen
+EMAIL_DEV_MODE=true  # Für Entwicklung (Versandsimulation)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
@@ -142,169 +142,169 @@ SMTP_PASS=your-app-password
 EMAIL_FROM=your-email@gmail.com
 ```
 
-### المكتبات المطلوبة:
+### Erforderliche Bibliotheken:
 
 ```bash
-# تم تثبيتها تلقائياً
+# Automatisch installiert
 npm install @radix-ui/react-progress
 npm install nodemailer
 npm install @types/nodemailer
 ```
 
-## 📊 مراقبة الأداء
+## 📊 Leistungsüberwachung
 
-### مؤشرات الأداء الرئيسية:
+### Wichtige Leistungsindikatoren:
 
-#### 📈 الإحصائيات المباشرة
-- **المجموع:** عدد الفواتير المحددة
-- **تم الإرسال:** عدد الإيميلات المرسلة بنجاح
-- **فشل الإرسال:** عدد الإيميلات الفاشلة
-- **النسبة المئوية:** تقدم العملية الإجمالي
+#### 📈 Live-Statistiken
+- **Gesamt:** Anzahl ausgewählter Rechnungen
+- **Gesendet:** Anzahl erfolgreich gesendeter E-Mails
+- **Fehlgeschlagen:** Anzahl fehlgeschlagener E-Mails
+- **Prozentsatz:** Gesamtfortschritt des Prozesses
 
-#### ⏱️ مؤشرات الوقت
-- **الوقت المنقضي:** منذ بداية العملية
-- **الوقت المتبقي:** تقدير ذكي للانتهاء
-- **متوسط الوقت:** لكل إيميل
+#### ⏱️ Zeitindikatoren
+- **Verstrichene Zeit:** Seit Prozessbeginn
+- **Verbleibende Zeit:** Intelligente Schätzung bis zum Ende
+- **Durchschnittszeit:** Pro E-Mail
 
-#### 🔍 تفاصيل الأخطاء
-- **معرف الفاتورة:** للفواتير الفاشلة
-- **سبب الفشل:** تفصيل دقيق للخطأ
-- **الوقت:** متى حدث الخطأ
+#### 🔍 Fehlerdetails
+- **Rechnungs-ID:** Für fehlgeschlagene Rechnungen
+- **Fehlerursache:** Genaue Fehlerbeschreibung
+- **Zeit:** Wann der Fehler auftrat
 
-## 🛠️ استكشاف الأخطاء وإصلاحها
+## 🛠️ Fehlerbehebung
 
-### المشاكل الشائعة والحلول:
+### Häufige Probleme und Lösungen:
 
-#### ❌ "لا توجد فواتير محددة"
-**السبب:** لم يتم تحديد أي فواتير
-**الحل:** حدد فاتورة واحدة على الأقل قبل النقر على زر الإرسال
+#### ❌ "Keine Rechnungen ausgewählt"
+**Ursache:** Es wurden keine Rechnungen ausgewählt
+**Lösung:** Wählen Sie mindestens eine Rechnung aus, bevor Sie auf Senden klicken
 
-#### ❌ "خطأ في بدء عملية الإرسال"
-**السبب:** مشكلة في إعدادات SMTP
-**الحل:** تحقق من متغيرات البيئة للبريد الإلكتروني
+#### ❌ "Fehler beim Starten des Versandprozesses"
+**Ursache:** Problem mit SMTP-Einstellungen
+**Lösung:** Überprüfen Sie die E-Mail-Umgebungsvariablen
 
-#### ❌ "فشل في إرسال بعض الإيميلات"
-**السبب:** عناوين بريد إلكتروني غير صحيحة أو مشاكل شبكة
-**الحل:** راجع تفاصيل الأخطاء وصحح عناوين البريد
+#### ❌ "Fehler beim Senden einiger E-Mails"
+**Ursache:** Ungültige E-Mail-Adressen oder Netzwerkprobleme
+**Lösung:** Überprüfen Sie die Fehlerdetails und korrigieren Sie die E-Mail-Adressen
 
-#### ❌ "العملية بطيئة جداً"
-**السبب:** إعدادات محافظة جداً
-**الحل:** زيادة حجم الدفعة وتقليل التأخير (بحذر)
+#### ❌ "Prozess ist sehr langsam"
+**Ursache:** Zu konservative Einstellungen
+**Lösung:** Erhöhen Sie die Batch-Größe und verringern Sie die Verzögerung (vorsichtig)
 
-### نصائح للأداء الأمثل:
+### Tipps für optimale Leistung:
 
-#### 🚀 لتحسين السرعة:
-- زيادة `maxConcurrent` إلى 15-20 للخوادم القوية
-- تقليل `delayBetweenBatches` إلى 1000-1500ms
-- زيادة `batchSize` إلى 100-150 للكميات الضخمة
+#### 🚀 Zur Geschwindigkeitsverbesserung:
+- Erhöhen Sie `maxConcurrent` auf 15-20 für starke Server
+- Verringern Sie `delayBetweenBatches` auf 1000-1500ms
+- Erhöhen Sie `batchSize` auf 100-150 für riesige Mengen
 
-#### 🛡️ لتحسين الموثوقية:
-- تقليل `maxConcurrent` إلى 5-10 للخوادم الضعيفة
-- زيادة `delayBetweenBatches` إلى 3000-5000ms
-- تقليل `batchSize` إلى 25-50 لتجنب حدود الخادم
+#### 🛡️ Zur Zuverlässigkeitsverbesserung:
+- Verringern Sie `maxConcurrent` auf 5-10 für schwache Server
+- Erhöhen Sie `delayBetweenBatches` auf 3000-5000ms
+- Verringern Sie `batchSize` auf 25-50 zur Vermeidung von Serverlimits
 
-## 📋 قائمة التحقق قبل الإرسال
+## 📋 Checkliste vor dem Versand
 
-### ✅ التحضيرات الأساسية:
-- [ ] تحديد الفواتير المطلوب إرسالها
-- [ ] التأكد من صحة عناوين البريد الإلكتروني
-- [ ] اختبار إعدادات SMTP مع إيميل واحد
-- [ ] تحديد الإعدادات المناسبة لحجم الإرسال
+### ✅ Grundlegende Vorbereitungen:
+- [ ] Zu sendende Rechnungen auswählen
+- [ ] Gültigkeit der E-Mail-Adressen sicherstellen
+- [ ] SMTP-Einstellungen mit einer einzelnen E-Mail testen
+- [ ] Passende Einstellungen für die Versandgröße wählen
 
-### ✅ أثناء الإرسال:
-- [ ] مراقبة شريط التقدم
-- [ ] متابعة عدد الأخطاء
-- [ ] التأكد من استقرار الاتصال بالإنترنت
-- [ ] عدم إغلاق المتصفح (يمكن إغلاق النافذة فقط)
+### ✅ Während des Versands:
+- [ ] Fortschrittsbalken überwachen
+- [ ] Anzahl der Fehler verfolgen
+- [ ] Stabile Internetverbindung sicherstellen
+- [ ] Browser nicht schließen (nur das Fenster kann geschlossen werden)
 
-### ✅ بعد الانتهاء:
-- [ ] مراجعة الإحصائيات النهائية
-- [ ] فحص تفاصيل الأخطاء إن وجدت
-- [ ] إعادة إرسال الفواتير الفاشلة إذا لزم الأمر
-- [ ] حفظ تقرير العملية للمراجعة
+### ✅ Nach Abschluss:
+- [ ] Abschlussstatistiken überprüfen
+- [ ] Fehlerdetails prüfen, falls vorhanden
+- [ ] Fehlgeschlagene Rechnungen bei Bedarf erneut senden
+- [ ] Prozessbericht zur Überprüfung speichern
 
-## 🎯 أمثلة عملية
+## 🎯 Praktische Beispiele
 
-### مثال 1: إرسال 100 فاتورة
+### Beispiel 1: 100 Rechnungen senden
 ```javascript
-// الإعدادات الموصى بها:
+// Empfohlene Einstellungen:
 {
   batchSize: 10,
   delayBetweenBatches: 1000,
   maxConcurrent: 5
 }
 
-// النتيجة المتوقعة:
-// - الوقت: ~2-3 دقائق
-// - معدل النجاح: 95-98%
-// - استهلاك الموارد: منخفض
+// Erwartetes Ergebnis:
+// - Zeit: ~2-3 Minuten
+// - Erfolgsrate: 95-98%
+// - Ressourcenverbrauch: Niedrig
 ```
 
-### مثال 2: إرسال 1,000 فاتورة
+### Beispiel 2: 1.000 Rechnungen senden
 ```javascript
-// الإعدادات الموصى بها:
+// Empfohlene Einstellungen:
 {
   batchSize: 25,
   delayBetweenBatches: 1500,
   maxConcurrent: 8
 }
 
-// النتيجة المتوقعة:
-// - الوقت: ~10-15 دقيقة
-// - معدل النجاح: 92-96%
-// - استهلاك الموارد: متوسط
+// Erwartetes Ergebnis:
+// - Zeit: ~10-15 Minuten
+// - Erfolgsrate: 92-96%
+// - Ressourcenverbrauch: Mittel
 ```
 
-### مثال 3: إرسال 10,000 فاتورة
+### Beispiel 3: 10.000 Rechnungen senden
 ```javascript
-// الإعدادات الموصى بها:
+// Empfohlene Einstellungen:
 {
   batchSize: 100,
   delayBetweenBatches: 3000,
   maxConcurrent: 15
 }
 
-// النتيجة المتوقعة:
-// - الوقت: ~45-60 دقيقة
-// - معدل النجاح: 88-94%
-// - استهلاك الموارد: عالي
+// Erwartetes Ergebnis:
+// - Zeit: ~45-60 Minuten
+// - Erfolgsrate: 88-94%
+// - Ressourcenverbrauch: Hoch
 ```
 
-## 🔮 التطويرات المستقبلية
+## 🔮 Zukünftige Entwicklungen
 
-### الميزات المخططة:
-- [ ] **جدولة الإرسال:** إرسال في أوقات محددة
-- [ ] **قوالب إيميل متقدمة:** تخصيص أكبر للرسائل
-- [ ] **تقارير مفصلة:** إحصائيات وتحليلات شاملة
-- [ ] **إعدادات متقدمة:** تحكم أدق في عملية الإرسال
-- [ ] **دعم مقدمي خدمة متعددين:** Gmail, Outlook, SendGrid
-- [ ] **نظام إعادة المحاولة:** إرسال تلقائي للفاشل
-- [ ] **ضغط الملفات:** تحسين حجم مرفقات PDF
+### Geplante Funktionen:
+- [ ] **Versandplanung:** Versand zu bestimmten Zeiten
+- [ ] **Erweiterte E-Mail-Vorlagen:** Größere Anpassung der Nachrichten
+- [ ] **Detaillierte Berichte:** Umfassende Statistiken und Analysen
+- [ ] **Erweiterte Einstellungen:** Genauere Kontrolle über den Versandprozess
+- [ ] **Unterstützung mehrerer Anbieter:** Gmail, Outlook, SendGrid
+- [ ] **Wiederholungssystem:** Automatischer Versand bei Fehlschlag
+- [ ] **Dateikomprimierung:** Optimierung der PDF-Anhangsgröße
 
-## 📞 الدعم والمساعدة
+## 📞 Support und Hilfe
 
-### في حالة المشاكل:
-1. **تحقق من console logs** في متصفح المطور
-2. **راجع متغيرات البيئة** للبريد الإلكتروني
-3. **اختبر مع عدد قليل** من الفواتير أولاً
-4. **تأكد من استقرار الاتصال** بالإنترنت
+### Bei Problemen:
+1. **Console Logs prüfen** im Entwickler-Browser
+2. **Umgebungsvariablen überprüfen** für E-Mail
+3. **Zuerst mit wenigen Rechnungen testen**
+4. **Stabile Verbindung sicherstellen**
 
-### معلومات تقنية للمطورين:
+### Technische Informationen für Entwickler:
 - **API Endpoint:** `/api/send-bulk-emails`
-- **Method:** POST للبدء، GET للتتبع
-- **Response Format:** JSON مع تفاصيل العملية
-- **Error Handling:** شامل مع تسجيل مفصل
+- **Method:** POST zum Starten, GET zum Verfolgen
+- **Response Format:** JSON mit Prozessdetails
+- **Error Handling:** Umfassend mit detaillierter Protokollierung
 
 ---
 
-## 🎉 الخلاصة
+## 🎉 Fazit
 
-تم تطوير نظام إرسال بريد إلكتروني جماعي متقدم وموثوق يمكنه التعامل مع **10,000 إيميل** في عملية واحدة. النظام يوفر:
+Es wurde ein fortschrittliches und zuverlässiges Massen-E-Mail-Versandsystem entwickelt, das **10.000 E-Mails** in einem einzigen Vorgang verarbeiten kann. Das System bietet:
 
-✅ **أداء عالي** مع معالجة متوازية ذكية
-✅ **واجهة سهلة** مع تتبع مباشر للتقدم  
-✅ **موثوقية عالية** مع معالجة شاملة للأخطاء
-✅ **مرونة كاملة** مع إعدادات قابلة للتخصيص
-✅ **تكامل سلس** مع النظام الحالي
+✅ **Hohe Leistung** mit intelligenter paralleler Verarbeitung
+✅ **Einfache Oberfläche** mit direkter Fortschrittsverfolgung
+✅ **Hohe Zuverlässigkeit** mit umfassender Fehlerbehandlung
+✅ **Volle Flexibilität** mit anpassbaren Einstellungen
+✅ **Nahtlose Integration** mit dem bestehenden System
 
-**النظام جاهز للاستخدام الإنتاجي ويمكن التعامل مع أي حجم من الإيميلات بكفاءة عالية!** 🚀
+**Das System ist bereit für den produktiven Einsatz und kann jede E-Mail-Menge hocheffizient verarbeiten!** 🚀

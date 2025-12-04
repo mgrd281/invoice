@@ -1,14 +1,14 @@
-# 🚀 إعداد Microsoft 365 SMTP مع karinex.de
+# 🚀 Microsoft 365 SMTP-Einrichtung mit karinex.de
 
-## ✅ الإعدادات المُطبقة
+## ✅ Angewendete Einstellungen
 
-### 📧 إعدادات SMTP
+### 📧 SMTP-Einstellungen
 ```bash
-# Microsoft 365 Configuration
+# Microsoft 365 Konfiguration
 EMAIL_HOST=smtp.office365.com
 EMAIL_PORT=587
 EMAIL_USER=impressum@karinex.de
-EMAIL_PASS=your-office365-password
+EMAIL_PASS=ihr-office365-passwort
 EMAIL_FROM=impressum@karinex.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_CC=karina@karinex.de
@@ -16,28 +16,28 @@ EMAIL_REPLY_TO=impressum@karinex.de
 EMAIL_DEV_MODE=false
 ```
 
-## 🔧 خطوات الإعداد المطلوبة
+## 🔧 Erforderliche Einrichtungsschritte
 
-### 1. إعداد Microsoft 365 Alias
+### 1. Microsoft 365 Alias einrichten
 
-#### أ. إنشاء Alias في Microsoft 365 Admin Center:
-1. اذهب إلى [Microsoft 365 Admin Center](https://admin.microsoft.com)
-2. انقر على "Users" → "Active users"
-3. اختر المستخدم (مثل karina@karinex.de)
-4. انقر على "Manage email aliases"
-5. أضف alias: `impressum@karinex.de`
+#### a. Alias im Microsoft 365 Admin Center erstellen:
+1. Gehen Sie zum [Microsoft 365 Admin Center](https://admin.microsoft.com)
+2. Klicken Sie auf "Users" → "Active users"
+3. Wählen Sie den Benutzer (z.B. karina@karinex.de)
+4. Klicken Sie auf "Manage email aliases"
+5. Fügen Sie den Alias hinzu: `impressum@karinex.de`
 
-#### ب. تفعيل "Send As" Permissions:
-1. في Exchange Admin Center: [https://admin.exchange.microsoft.com](https://admin.exchange.microsoft.com)
-2. اذهب إلى "Recipients" → "Mailboxes"
-3. اختر الصندوق الرئيسي
-4. انقر على "Manage mailbox permissions"
-5. أضف "Send As" permission لـ `impressum@karinex.de`
+#### b. "Senden als"-Berechtigungen aktivieren:
+1. Im Exchange Admin Center: [https://admin.exchange.microsoft.com](https://admin.exchange.microsoft.com)
+2. Gehen Sie zu "Recipients" → "Mailboxes"
+3. Wählen Sie das Hauptpostfach
+4. Klicken Sie auf "Manage mailbox permissions"
+5. Fügen Sie die "Send As"-Berechtigung für `impressum@karinex.de` hinzu
 
-### 2. إعدادات DNS المطلوبة
+### 2. Erforderliche DNS-Einstellungen
 
-#### أ. SPF Record
-أضف في DNS لـ karinex.de:
+#### a. SPF Record
+Fügen Sie im DNS für karinex.de hinzu:
 ```dns
 Type: TXT
 Name: @
@@ -45,13 +45,13 @@ Value: v=spf1 include:spf.protection.outlook.com -all
 TTL: 3600
 ```
 
-#### ب. DKIM Setup
-1. في Microsoft 365 Admin Center:
-   - اذهب إلى "Security" → "Email & collaboration" → "Policies & rules"
-   - انقر على "Threat policies" → "Anti-phishing"
-   - فعّل DKIM لـ karinex.de
+#### b. DKIM Setup
+1. Im Microsoft 365 Admin Center:
+   - Gehen Sie zu "Security" → "Email & collaboration" → "Policies & rules"
+   - Klicken Sie auf "Threat policies" → "Anti-phishing"
+   - Aktivieren Sie DKIM für karinex.de
 
-2. أضف CNAME Records في DNS:
+2. Fügen Sie CNAME Records im DNS hinzu:
 ```dns
 Type: CNAME
 Name: selector1._domainkey
@@ -64,8 +64,8 @@ Value: selector2-karinex-de._domainkey.karinex.onmicrosoft.com
 TTL: 3600
 ```
 
-#### ج. DMARC Policy
-أضف في DNS لـ karinex.de:
+#### c. DMARC Policy
+Fügen Sie im DNS für karinex.de hinzu:
 ```dns
 Type: TXT
 Name: _dmarc
@@ -73,21 +73,21 @@ Value: v=DMARC1; p=quarantine; rua=mailto:dmarc@karinex.de; ruf=mailto:dmarc@kar
 TTL: 3600
 ```
 
-### 3. تحديث كلمة المرور في .env.local
+### 3. Passwort in .env.local aktualisieren
 
 ```bash
-# استبدل بكلمة المرور الحقيقية لـ Microsoft 365
-EMAIL_PASS=your-actual-office365-password
+# Ersetzen Sie dies durch das echte Microsoft 365 Passwort
+EMAIL_PASS=ihr-echtes-office365-passwort
 ```
 
-## 🧪 اختبار النظام
+## 🧪 Systemtest
 
-### 1. تشخيص الإعدادات
+### 1. Diagnoseeinstellungen
 ```bash
 curl http://localhost:3000/api/test-email-config
 ```
 
-**النتيجة المتوقعة:**
+**Erwartetes Ergebnis:**
 ```json
 {
   "diagnostics": {
@@ -102,9 +102,9 @@ curl http://localhost:3000/api/test-email-config
 }
 ```
 
-### 2. اختبار إرسال لمزودين مختلفين
+### 2. Senden an verschiedene Anbieter testen
 
-#### أ. اختبار Web.de
+#### a. Test Web.de
 ```bash
 curl -X POST http://localhost:3000/api/send-invoice-email \
   -H "Content-Type: application/json" \
@@ -116,7 +116,7 @@ curl -X POST http://localhost:3000/api/send-invoice-email \
   }'
 ```
 
-#### ب. اختبار GMX.de
+#### b. Test GMX.de
 ```bash
 curl -X POST http://localhost:3000/api/send-invoice-email \
   -H "Content-Type: application/json" \
@@ -128,7 +128,7 @@ curl -X POST http://localhost:3000/api/send-invoice-email \
   }'
 ```
 
-#### ج. اختبار Gmail
+#### c. Test Gmail
 ```bash
 curl -X POST http://localhost:3000/api/send-invoice-email \
   -H "Content-Type: application/json" \
@@ -140,7 +140,7 @@ curl -X POST http://localhost:3000/api/send-invoice-email \
   }'
 ```
 
-#### د. اختبار Outlook
+#### d. Test Outlook
 ```bash
 curl -X POST http://localhost:3000/api/send-invoice-email \
   -H "Content-Type: application/json" \
@@ -152,9 +152,9 @@ curl -X POST http://localhost:3000/api/send-invoice-email \
   }'
 ```
 
-## 📊 التحقق من النجاح
+## 📊 Erfolgsüberprüfung
 
-### علامات النجاح في Console:
+### Erfolgszeichen in der Konsole:
 ```
 ✅ Email sent successfully!
 📝 Message ID: <real-message-id@outlook.com>
@@ -162,117 +162,117 @@ curl -X POST http://localhost:3000/api/send-invoice-email \
 📧 Envelope: { from: 'impressum@karinex.de', to: ['customer@web.de'] }
 ```
 
-### رسالة النجاح في الواجهة:
+### Erfolgsnachricht in der Oberfläche:
 ```
 "Rechnung RE-2024-001 wurde erfolgreich an customer@web.de gesendet. 
 Eine Kopie wurde an karina@karinex.de gesendet."
 ```
 
-### تحقق من التسليم:
-1. **Sent Items**: تحقق من مجلد المرسلة في Outlook
-2. **Message Tracking**: استخدم Exchange Message Trace
-3. **Customer Confirmation**: تأكيد وصول البريد للعميل
-4. **CC Copy**: تحقق من وصول النسخة لـ karina@karinex.de
+### Zustellung überprüfen:
+1. **Gesendete Elemente**: Überprüfen Sie den Ordner "Gesendet" in Outlook
+2. **Nachrichtenverfolgung**: Verwenden Sie Exchange Message Trace
+3. **Kundenbestätigung**: Bestätigung des E-Mail-Empfangs durch den Kunden
+4. **CC-Kopie**: Überprüfen Sie den Empfang der Kopie an karina@karinex.de
 
-## 🔍 مراقبة الأداء
+## 🔍 Leistungsüberwachung
 
-### سجلات البريد الإلكتروني:
+### E-Mail-Protokolle:
 ```bash
-# إحصائيات شاملة
+# Umfassende Statistiken
 curl "http://localhost:3000/api/email-logs?stats=true"
 
-# سجلات فاتورة محددة
+# Protokolle für eine bestimmte Rechnung
 curl "http://localhost:3000/api/email-logs?invoiceId=inv-test-001"
 ```
 
 ### Message-ID Tracking:
-كل بريد يُسجل مع:
-- Message-ID من Microsoft 365
-- SMTP Response Code (250)
-- Envelope Information
-- Delivery Status
-- Timestamp
+Jede E-Mail wird protokolliert mit:
+- Message-ID von Microsoft 365
+- SMTP-Antwortcode (250)
+- Umschlaginformationen
+- Zustellstatus
+- Zeitstempel
 
-## 🛡️ الأمان والموثوقية
+## 🛡️ Sicherheit und Zuverlässigkeit
 
-### 1. إعدادات SMTP محسنة
-- ✅ **STARTTLS**: تشفير آمن على port 587
-- ✅ **Authentication**: مصادقة Microsoft 365
-- ✅ **Custom Domain**: إرسال من karinex.de
-- ✅ **Reply-To**: عنوان رد صحيح
+### 1. Optimierte SMTP-Einstellungen
+- ✅ **STARTTLS**: Sichere Verschlüsselung auf Port 587
+- ✅ **Authentifizierung**: Microsoft 365 Authentifizierung
+- ✅ **Benutzerdefinierte Domain**: Senden von karinex.de
+- ✅ **Reply-To**: Korrekte Antwortadresse
 
-### 2. DNS Security
-- ✅ **SPF**: منع انتحال الهوية
-- ✅ **DKIM**: توقيع رقمي للرسائل
-- ✅ **DMARC**: سياسة حماية شاملة
+### 2. DNS-Sicherheit
+- ✅ **SPF**: Verhindert Identitätsdiebstahl
+- ✅ **DKIM**: Digitale Signatur für Nachrichten
+- ✅ **DMARC**: Umfassende Schutzrichtlinie
 
-### 3. Delivery Optimization
-- ✅ **Professional From**: impressum@karinex.de
-- ✅ **Proper Reply-To**: عنوان رد واضح
-- ✅ **CC Copy**: نسخة للمرسل
-- ✅ **250 Response Check**: تأكيد SMTP
+### 3. Zustellungsoptimierung
+- ✅ **Professioneller Absender**: impressum@karinex.de
+- ✅ **Korrekte Antwortadresse**: Klare Antwortadresse
+- ✅ **CC-Kopie**: Kopie an den Absender
+- ✅ **250 Antwortprüfung**: SMTP-Bestätigung
 
-## 🚨 استكشاف الأخطاء
+## 🚨 Fehlerbehebung
 
-### خطأ المصادقة
+### Authentifizierungsfehler
 ```
 Error: Invalid login: 535 5.7.3 Authentication unsuccessful
 ```
 
-**الحل:**
-1. تأكد من صحة كلمة مرور Microsoft 365
-2. تحقق من تفعيل SMTP AUTH في Microsoft 365
-3. تأكد من إعدادات "Send As" للـ alias
+**Lösung:**
+1. Überprüfen Sie das Microsoft 365 Passwort
+2. Überprüfen Sie, ob SMTP AUTH in Microsoft 365 aktiviert ist
+3. Überprüfen Sie die "Senden als"-Einstellungen für den Alias
 
-### خطأ الإرسال من Domain
+### Domain-Sendefehler
 ```
 Error: 550 5.7.60 SMTP; Client does not have permissions to send as this sender
 ```
 
-**الحل:**
-1. تأكد من إضافة impressum@karinex.de كـ alias
-2. فعّل "Send As" permissions
-3. انتظر حتى 24 ساعة لتفعيل الإعدادات
+**Lösung:**
+1. Stellen Sie sicher, dass impressum@karinex.de als Alias hinzugefügt wurde
+2. Aktivieren Sie die "Senden als"-Berechtigungen
+3. Warten Sie bis zu 24 Stunden auf die Aktivierung der Einstellungen
 
-### مشاكل DNS
+### DNS-Probleme
 ```
 Warning: SPF/DKIM/DMARC not configured
 ```
 
-**الحل:**
-1. تحقق من إعدادات DNS
-2. انتظر انتشار DNS (24-48 ساعة)
-3. استخدم أدوات DNS checker
+**Lösung:**
+1. Überprüfen Sie die DNS-Einstellungen
+2. Warten Sie auf die DNS-Verbreitung (24-48 Stunden)
+3. Verwenden Sie DNS-Checker-Tools
 
-## 📈 مؤشرات الجودة
+## 📈 Qualitätsindikatoren
 
-### Delivery Rate المتوقع:
-- **Web.de**: 95%+ مع DNS صحيح
-- **GMX.de**: 95%+ مع DNS صحيح  
-- **Gmail**: 98%+ مع DMARC
-- **Outlook**: 99%+ (نفس المزود)
+### Erwartete Zustellrate:
+- **Web.de**: 95%+ mit korrektem DNS
+- **GMX.de**: 95%+ mit korrektem DNS  
+- **Gmail**: 98%+ mit DMARC
+- **Outlook**: 99%+ (gleicher Anbieter)
 
-### Email Authentication:
+### E-Mail-Authentifizierung:
 - ✅ **SPF**: PASS
 - ✅ **DKIM**: PASS
 - ✅ **DMARC**: PASS
 
-## 🎉 الخلاصة
+## 🎉 Fazit
 
-✅ **النظام جاهز للإنتاج مع Microsoft 365!**
+✅ **System ist bereit für die Produktion mit Microsoft 365!**
 
-**الميزات المُطبقة:**
-- 📧 **Microsoft 365 SMTP** مع karinex.de
-- 🔐 **DNS Security** (SPF/DKIM/DMARC)
+**Angewendete Funktionen:**
+- 📧 **Microsoft 365 SMTP** mit karinex.de
+- 🔐 **DNS-Sicherheit** (SPF/DKIM/DMARC)
 - 📝 **Message-ID Tracking**
-- 📊 **250 Response Verification**
-- 📞 **CC Copy** للمرسل
-- 🎯 **Multi-Provider Testing**
+- 📊 **250 Antwortverifizierung**
+- 📞 **CC-Kopie** an den Absender
+- 🎯 **Multi-Provider-Tests**
 
-**للتفعيل الفوري:**
-1. أكمل إعدادات Microsoft 365 Alias
-2. أضف DNS Records (SPF/DKIM/DMARC)
-3. حدث كلمة المرور في `.env.local`
-4. اختبر الإرسال للمزودين المختلفين
+**Für sofortige Aktivierung:**
+1. Schließen Sie die Microsoft 365 Alias-Einrichtung ab
+2. Fügen Sie DNS-Einträge hinzu (SPF/DKIM/DMARC)
+3. Aktualisieren Sie das Passwort in `.env.local`
+4. Testen Sie den Versand an verschiedene Anbieter
 
-**الآن النظام يرسل فواتير احترافية من impressum@karinex.de!** 🚀
+**Jetzt sendet das System professionelle Rechnungen von impressum@karinex.de!** 🚀

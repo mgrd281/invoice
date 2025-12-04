@@ -10,10 +10,10 @@ interface ProtectedRouteProps {
   fallback?: React.ReactNode
 }
 
-export default function ProtectedRoute({ 
-  children, 
+export default function ProtectedRoute({
+  children,
   requiredRole,
-  fallback 
+  fallback
 }: ProtectedRouteProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
@@ -23,17 +23,17 @@ export default function ProtectedRoute({
   useEffect(() => {
     const checkAuth = () => {
       const authResult = getClientAuth()
-      
+
       setIsAuthenticated(authResult.isAuthenticated)
       setUser(authResult.user)
 
       if (!authResult.isAuthenticated) {
-        // إعادة توجيه إلى صفحة تسجيل الدخول
+        // Weiterleitung zur Login-Seite
         router.push('/landing')
         return
       }
 
-      // التحقق من الصلاحيات إذا كانت مطلوبة
+      // Berechtigungen prüfen, falls erforderlich
       if (requiredRole && authResult.user) {
         const roleHierarchy = {
           'admin': 3,
@@ -45,8 +45,8 @@ export default function ProtectedRoute({
         const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
 
         if (userLevel < requiredLevel) {
-          // المستخدم لا يملك الصلاحيات المطلوبة
-          router.push('/dashboard') // إعادة توجيه إلى الصفحة الرئيسية
+          // Benutzer hat nicht die erforderlichen Berechtigungen
+          router.push('/dashboard') // Weiterleitung zur Hauptseite
           return
         }
       }
@@ -57,30 +57,30 @@ export default function ProtectedRoute({
     checkAuth()
   }, [router, requiredRole])
 
-  // عرض شاشة التحميل
+  // Ladebildschirm anzeigen
   if (isLoading) {
     return (
       fallback || (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">جاري التحقق من الصلاحيات...</p>
+            <p className="mt-4 text-gray-600">Berechtigungen werden überprüft...</p>
           </div>
         </div>
       )
     )
   }
 
-  // عرض المحتوى المحمي
+  // Geschützten Inhalt anzeigen
   if (isAuthenticated && user) {
     return <>{children}</>
   }
 
-  // في حالة عدم وجود مصادقة (لن يحدث عادة بسبب إعادة التوجيه)
+  // Falls keine Authentifizierung vorhanden ist (passiert normalerweise nicht wegen Weiterleitung)
   return null
 }
 
-// مكون للتحقق من الصلاحيات فقط (بدون إعادة توجيه)
+// Komponente nur zur Berechtigungsprüfung (ohne Weiterleitung)
 interface RoleGuardProps {
   children: React.ReactNode
   requiredRole: string

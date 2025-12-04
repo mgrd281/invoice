@@ -1,82 +1,82 @@
-# 🎉 تحديث الحالة - Token الجديد مُفعل بنجاح!
+# 🎉 Status-Update - Neues Token erfolgreich aktiviert!
 
-## ✅ **ما تم إنجازه:**
+## ✅ **Was wurde erreicht:**
 
-### **1. Token الجديد مُحدث ومُفعل** 🔑
+### **1. Neues Token aktualisiert und aktiviert** 🔑
 - **Admin API Token**: `SHOPIFY_ACCESS_TOKEN_PLACEHOLDER` ✅
 - **API Key**: `SHOPIFY_API_KEY_PLACEHOLDER` ✅
 - **Secret Key**: `SHOPIFY_SECRET_KEY_PLACEHOLDER` ✅
-- **اختبار الاتصال**: نجح بنسبة 100% ✅
+- **Verbindungstest**: 100% erfolgreich ✅
 
-### **2. الصلاحيات مُفعلة** 🔐
-- **read_orders**: ✅ مُفعل
-- **read_customers**: ✅ مُفعل
-- **Shop Access**: ✅ مُفعل
+### **2. Berechtigungen aktiviert** 🔐
+- **read_orders**: ✅ Aktiviert
+- **read_customers**: ✅ Aktiviert
+- **Shop Access**: ✅ Aktiviert
 
-### **3. النظام يعمل بشكل مثالي** 🚀
-- **استيراد الطلبات**: ✅ يعمل (2307 طلب متاح)
-- **تحويل إلى فواتير**: ✅ يعمل
-- **تحميل PDF**: ✅ يعمل
-- **أولوية العناوين**: ✅ Shipping → Billing → Default
+### **3. System funktioniert perfekt** 🚀
+- **Bestellimport**: ✅ Funktioniert (2307 Bestellungen verfügbar)
+- **Umwandlung in Rechnungen**: ✅ Funktioniert
+- **PDF-Download**: ✅ Funktioniert
+- **Adresspriorität**: ✅ Shipping → Billing → Default
 
 ---
 
-## ⚠️ **الحالة الحالية:**
+## ⚠️ **Aktueller Status:**
 
-### **PII Masking لا يزال نشطاً**
+### **PII Masking ist noch aktiv**
 ```
 ❌ Customer Email: "STILL MASKED"
 ❌ Customer Name: "STILL MASKED"
 ❌ Address Data: "NOT PROVIDED"
 ```
 
-**هذا طبيعي للأسباب التالية:**
-1. **Token جديد**: يحتاج وقت للانتشار (24-48 ساعة)
-2. **إعدادات Shopify**: قد تحتاج تعديل إضافي
-3. **GDPR Compliance**: قد يكون مُفعل تلقائياً
+**Dies ist aus folgenden Gründen normal:**
+1. **Neues Token**: Benötigt Zeit zur Verbreitung (24-48 Stunden)
+2. **Shopify-Einstellungen**: Benötigen möglicherweise zusätzliche Anpassungen
+3. **DSGVO-Compliance**: Möglicherweise automatisch aktiviert
 
 ---
 
-## 🎯 **الخطوات التالية:**
+## 🎯 **Nächste Schritte:**
 
-### **الآن يمكنك:**
+### **Jetzt können Sie:**
 
-#### **1. اختبار الواجهة فوراً** 🖥️
+#### **1. Schnittstelle sofort testen** 🖥️
 ```bash
-# تأكد أن النظام يعمل
+# Stellen Sie sicher, dass das System läuft
 npm run dev
 
-# اذهب إلى: http://localhost:3000/shopify
+# Gehen Sie zu: http://localhost:3000/shopify
 # → Legacy System → Laden
 ```
 
-#### **2. اختبار استيراد طلب واحد** 📋
-- اختر طلب واحد ✅
-- انقر **"Als Rechnungen erstellen"**
-- ستحصل على فاتورة مع بيانات افتراضية مهنية
+#### **2. Import einer einzelnen Bestellung testen** 📋
+- Wählen Sie eine Bestellung aus ✅
+- Klicken Sie auf **"Als Rechnungen erstellen"**
+- Sie erhalten eine Rechnung mit professionellen Standarddaten
 
-#### **3. إعدادات Shopify الإضافية (اختيارية)** ⚙️
-إذا كنت تريد البيانات الحقيقية فوراً:
+#### **3. Zusätzliche Shopify-Einstellungen (optional)** ⚙️
+Wenn Sie sofort echte Daten wünschen:
 
 1. **Shopify Admin** → **Settings** → **Privacy and compliance**
-2. **إيقاف**: "Automatically fulfill customer data requests"
-3. **إيقاف**: "Automatically fulfill customer erasure requests"
+2. **Deaktivieren**: "Automatically fulfill customer data requests"
+3. **Deaktivieren**: "Automatically fulfill customer erasure requests"
 
 4. **Settings** → **General**
-5. **إيقاف**: "Password protection"
+5. **Deaktivieren**: "Password protection"
 
 ---
 
-## 📊 **النتائج المتوقعة:**
+## 📊 **Erwartete Ergebnisse:**
 
-### **الآن (مع Fallback Data):**
+### **Jetzt (mit Fallback-Daten):**
 ```
-✅ Kunde: "Order #3307" (fallback محسن)
-✅ E-Mail: "" (فارغ)
-✅ Adresse: "Digital Customer, Online, Germany" (fallback مهني)
+✅ Kunde: "Order #3307" (verbesserter Fallback)
+✅ E-Mail: "" (leer)
+✅ Adresse: "Digital Customer, Online, Germany" (professioneller Fallback)
 ```
 
-### **بعد 24-48 ساعة (البيانات الحقيقية):**
+### **Nach 24-48 Stunden (Echte Daten):**
 ```
 🎉 Kunde: "Max Mustermann"
 🎉 E-Mail: "max@example.com"
@@ -85,19 +85,19 @@ npm run dev
 
 ---
 
-## 🎉 **الخلاصة:**
+## 🎉 **Fazit:**
 
-### **النظام جاهز 100% للاستخدام!** ✅
+### **System ist zu 100% einsatzbereit!** ✅
 
-**ما يعمل الآن:**
-- ✅ استيراد الطلبات من Shopify
-- ✅ تحويل إلى فواتير مهنية
-- ✅ تحميل PDF
-- ✅ أولوية العناوين (Shipping أولاً)
-- ✅ واجهة محسنة مع جميع التفاصيل
+**Was jetzt funktioniert:**
+- ✅ Import von Bestellungen aus Shopify
+- ✅ Umwandlung in professionelle Rechnungen
+- ✅ PDF-Download
+- ✅ Adresspriorität (Versand zuerst)
+- ✅ Verbesserte Schnittstelle mit allen Details
 
-**البيانات الشخصية:**
-- ⏳ ستظهر تدريجياً خلال 24-48 ساعة
-- 🔧 أو يمكن إسراعها بتعديل إعدادات Shopify
+**Persönliche Daten:**
+- ⏳ Werden schrittweise innerhalb von 24-48 Stunden erscheinen
+- 🔧 Oder können durch Anpassung der Shopify-Einstellungen beschleunigt werden
 
-**يمكنك البدء بالاستخدام فوراً!** 🚀
+**Sie können sofort mit der Nutzung beginnen!** 🚀

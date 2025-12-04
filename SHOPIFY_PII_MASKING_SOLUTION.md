@@ -10,7 +10,7 @@ Ihre Shopify-Integration zeigt nur Platzhalter, weil **PII (Personally Identifia
 ❌ Adresse: "Keine Adresse"
 ```
 
-**Root Cause:** Shopify anonymisiert automatisch Kundendaten in bestimmten Situationen.
+**Ursache:** Shopify anonymisiert automatisch Kundendaten in bestimmten Situationen.
 
 ---
 
@@ -228,7 +228,7 @@ testPIIFix().catch(console.error)
 - Token in System aktualisieren
 - Cache leeren und neu starten
 
-### **Problem 2: "Insufficient permissions"**
+### **Problem 2: "Unzureichende Berechtigungen"**
 ```
 ❌ Error: 403 Forbidden
 ```

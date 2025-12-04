@@ -1,5 +1,5 @@
 // Accounting System Types and Interfaces
-// نظام المحاسبة - الأنواع والواجهات
+// Buchhaltungssystem - Typen und Schnittstellen
 
 export type AccountingPeriod = 'month' | 'quarter' | 'year' | 'custom'
 export type InvoiceStatus = 'offen' | 'bezahlt' | 'erstattet' | 'storniert' | 'überfällig'
@@ -23,7 +23,7 @@ export interface AccountingSummary {
   totalTax: number
   vatCollected: number
   vatPaid: number
-  
+
   // Breakdown by status
   openInvoices: {
     count: number
@@ -62,7 +62,7 @@ export interface AccountingInvoice {
   paidDate?: string
   category: string
   description: string
-  
+
   // DATEV specific fields
   accountingAccount?: string
   costCenter?: string
@@ -83,12 +83,12 @@ export interface Expense {
   totalAmount: number
   receiptUrl?: string
   receiptFileName?: string
-  
+
   // DATEV specific fields
   accountingAccount?: string
   costCenter?: string
   bookingText?: string
-  
+
   createdAt: string
   updatedAt: string
 }
@@ -156,7 +156,7 @@ export const DATEV_ACCOUNTS = {
   REVENUE_19_PERCENT: '8400', // Umsatzerlöse 19% USt
   REVENUE_7_PERCENT: '8300',  // Umsatzerlöse 7% USt
   REVENUE_0_PERCENT: '8100',  // Umsatzerlöse 0% USt
-  
+
   // Expense accounts (Aufwandskonten)
   OFFICE_SUPPLIES: '6815',    // Bürobedarf
   TRAVEL_EXPENSES: '6340',    // Reisekosten
@@ -164,15 +164,15 @@ export const DATEV_ACCOUNTS = {
   MARKETING: '6820',          // Werbekosten
   UTILITIES: '6400',          // Mieten für Einrichtungen
   PROFESSIONAL_SERVICES: '6420', // Rechts- und Beratungskosten
-  
+
   // Tax accounts (Steuerkonten)
   VAT_INPUT: '1576',          // Vorsteuer 19%
   VAT_OUTPUT: '3806',         // Umsatzsteuer 19%
-  
+
   // Customer/Supplier accounts
   CUSTOMERS: '10000',         // Forderungen aus Lieferungen und Leistungen
   SUPPLIERS: '70000',         // Verbindlichkeiten aus Lieferungen und Leistungen
-  
+
   // Bank accounts
   BANK_ACCOUNT: '1200',       // Bank
   CASH: '1000'                // Kasse
@@ -182,7 +182,7 @@ export const DATEV_ACCOUNTS = {
 export function getAccountingPeriodLabel(period: AccountingPeriod): string {
   const labels: Record<AccountingPeriod, string> = {
     'month': 'Monat',
-    'quarter': 'Quartal', 
+    'quarter': 'Quartal',
     'year': 'Jahr',
     'custom': 'Benutzerdefiniert'
   }

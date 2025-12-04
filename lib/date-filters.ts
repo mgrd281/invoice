@@ -21,26 +21,26 @@ export interface ShopifyFilters {
 
 export class DateFilterManager {
   private static readonly TIMEZONE = 'Europe/Berlin'
-  
+
   // Aktuelles Datum in Berlin Timezone abrufen
   static getCurrentDateInBerlin(): Date {
     return new Date(new Date().toLocaleString("en-US", { timeZone: this.TIMEZONE }))
   }
-  
+
   // Datum auf Tagesbeginn in Berlin Timezone konvertieren
   static getStartOfDay(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
     berlinDate.setHours(0, 0, 0, 0)
     return berlinDate
   }
-  
+
   // Datum auf Tagesende in Berlin Timezone konvertieren
   static getEndOfDay(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
     berlinDate.setHours(23, 59, 59, 999)
     return berlinDate
   }
-  
+
   // Wochenbeginn (Montag) abrufen
   static getStartOfWeek(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
@@ -49,7 +49,7 @@ export class DateFilterManager {
     const monday = new Date(berlinDate.setDate(diff))
     return this.getStartOfDay(monday)
   }
-  
+
   // Wochenende (Sonntag) abrufen
   static getEndOfWeek(date: Date): Date {
     const startOfWeek = this.getStartOfWeek(date)
@@ -57,35 +57,35 @@ export class DateFilterManager {
     endOfWeek.setDate(startOfWeek.getDate() + 6)
     return this.getEndOfDay(endOfWeek)
   }
-  
+
   // Monatsbeginn abrufen
   static getStartOfMonth(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
     return this.getStartOfDay(new Date(berlinDate.getFullYear(), berlinDate.getMonth(), 1))
   }
-  
+
   // Monatsende abrufen
   static getEndOfMonth(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
     return this.getEndOfDay(new Date(berlinDate.getFullYear(), berlinDate.getMonth() + 1, 0))
   }
-  
+
   // Jahresbeginn abrufen
   static getStartOfYear(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
     return this.getStartOfDay(new Date(berlinDate.getFullYear(), 0, 1))
   }
-  
+
   // Jahresende abrufen
   static getEndOfYear(date: Date): Date {
     const berlinDate = new Date(date.toLocaleString("en-US", { timeZone: this.TIMEZONE }))
     return this.getEndOfDay(new Date(berlinDate.getFullYear(), 11, 31))
   }
-  
+
   // Vordefinierte Bereiche abrufen
   static getPresetRanges(): DateRange[] {
     const now = this.getCurrentDateInBerlin()
-    
+
     return [
       {
         from: this.getStartOfDay(now).toISOString(),
@@ -137,7 +137,7 @@ export class DateFilterManager {
       }
     ]
   }
-  
+
   // Datumsbereich zu Shopify-Filtern konvertieren
   static toShopifyFilters(dateRange: DateRange, options: {
     useCreatedAt?: boolean
@@ -147,33 +147,33 @@ export class DateFilterManager {
     status?: ShopifyFilters['status']
   } = {}): ShopifyFilters {
     const filters: ShopifyFilters = {}
-    
+
     if (options.useCreatedAt !== false) {
       filters.created_at_min = dateRange.from
       filters.created_at_max = dateRange.to
     }
-    
+
     if (options.useUpdatedAt) {
       filters.updated_at_min = dateRange.from
       filters.updated_at_max = dateRange.to
     }
-    
+
     if (options.financialStatus) {
       filters.financial_status = options.financialStatus
     }
-    
+
     if (options.fulfillmentStatus) {
       filters.fulfillment_status = options.fulfillmentStatus
     }
-    
+
     if (options.status) {
       filters.status = options.status
     }
-    
+
     return filters
   }
-  
-  // التحقق من صحة نطاق التاريخ
+
+  // Datumsbereich validieren
   static validateDateRange(from: string, to: string): {
     valid: boolean
     error?: string
@@ -182,14 +182,14 @@ export class DateFilterManager {
     try {
       const fromDate = new Date(from)
       const toDate = new Date(to)
-      
+
       if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
         return {
           valid: false,
           error: 'Ungültige Daten'
         }
       }
-      
+
       if (fromDate > toDate) {
         return {
           valid: false,
@@ -201,7 +201,7 @@ export class DateFilterManager {
           }
         }
       }
-      
+
       const now = this.getCurrentDateInBerlin()
       if (fromDate > now) {
         return {
@@ -209,7 +209,7 @@ export class DateFilterManager {
           error: 'Startdatum kann nicht in der Zukunft liegen'
         }
       }
-      
+
       // Prüfen ob der Bereich zu groß ist (mehr als ein Jahr)
       const oneYear = 365 * 24 * 60 * 60 * 1000
       if (toDate.getTime() - fromDate.getTime() > oneYear) {
@@ -223,9 +223,9 @@ export class DateFilterManager {
           }
         }
       }
-      
+
       return { valid: true }
-      
+
     } catch (error) {
       return {
         valid: false,
@@ -233,11 +233,11 @@ export class DateFilterManager {
       }
     }
   }
-  
+
   // Datum für Anzeige formatieren
   static formatDateForDisplay(date: string | Date, locale: string = 'de-DE'): string {
     const dateObj = typeof date === 'string' ? new Date(date) : date
-    
+
     return new Intl.DateTimeFormat(locale, {
       timeZone: this.TIMEZONE,
       year: 'numeric',
@@ -247,7 +247,7 @@ export class DateFilterManager {
       minute: '2-digit'
     }).format(dateObj)
   }
-  
+
   // DST-Informationen abrufen
   static getDSTInfo(date: Date): {
     isDST: boolean
@@ -256,12 +256,12 @@ export class DateFilterManager {
   } {
     const jan = new Date(date.getFullYear(), 0, 1)
     const jul = new Date(date.getFullYear(), 6, 1)
-    
+
     const janOffset = jan.getTimezoneOffset()
     const julOffset = jul.getTimezoneOffset()
-    
+
     const isDST = date.getTimezoneOffset() < Math.max(janOffset, julOffset)
-    
+
     return {
       isDST,
       offset: date.getTimezoneOffset(),

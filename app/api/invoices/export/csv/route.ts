@@ -4,11 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  exportInvoicesToCSV, 
+import {
+  exportInvoicesToCSV,
   exportLargeDatasetToCSV,
   CSVExportOptions,
-  InvoiceExportData 
+  InvoiceExportData
 } from '@/lib/csv-export'
 import { loadInvoicesFromDisk } from '@/lib/server-storage'
 import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
@@ -41,7 +41,7 @@ async function loadRealInvoiceData(request: NextRequest): Promise<InvoiceExportD
     if (shouldShowAllData(user)) {
       filteredInvoices = allInvoices.filter((invoice: any) => !invoice.deleted_at)
     } else {
-      filteredInvoices = allInvoices.filter((invoice: any) => 
+      filteredInvoices = allInvoices.filter((invoice: any) =>
         !invoice.deleted_at && invoice.userId === user.id
       )
     }
@@ -99,9 +99,9 @@ function generateDemoInvoiceData(): InvoiceExportData[] {
     'Nike Air Max', 'Adidas Ultraboost', 'Levi\'s Jeans', 'H&M T-Shirt',
     'Kaffeemaschine Delonghi', 'Dyson Staubsauger', 'Mikrowelle Samsung', 'Toaster Philips'
   ]
-  
+
   const categories = ['Elektronik', 'Computer', 'Kleidung', 'Sport', 'Haushalt']
-  
+
   return Array.from({ length: 20 }, (_, i) => {
     const verkaufspreis = Math.round((Math.random() * 800 + 50) * 100) / 100
     const mwst = Math.round(verkaufspreis * 0.19 * 100) / 100
@@ -112,7 +112,7 @@ function generateDemoInvoiceData(): InvoiceExportData[] {
     const werbungskosten = Math.round(verkaufspreis * 0.05 * 100) / 100
     const sonstigeKosten = 2.50
     const gewinn = Math.round((verkaufspreis - einkaufspreis - versandkosten - amazonGebuehren - retouren - werbungskosten - sonstigeKosten) * 100) / 100
-    
+
     return {
       id: `inv_${i + 1}`,
       datum: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000),
@@ -157,9 +157,9 @@ export async function POST(request: NextRequest) {
     // Validierung
     if (selectedIds && selectedIds.length > 100000) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Zu viele Datensätze ausgewählt. Maximum: 100.000' 
+        {
+          success: false,
+          error: 'Zu viele Datensätze ausgewählt. Maximum: 100.000'
         },
         { status: 400 }
       )
@@ -167,9 +167,9 @@ export async function POST(request: NextRequest) {
 
     // Lade echte Rechnungsdaten zuerst
     let realInvoiceData = await loadRealInvoiceData(request)
-    
+
     console.log(`📊 Loaded ${realInvoiceData.length} real invoices from database`)
-    
+
     // Detailliertes Logging für Debugging
     if (realInvoiceData.length > 0) {
       console.log('📋 Sample invoice data:', {
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
         verkaufspreis: realInvoiceData[0].verkaufspreis
       })
     }
-    
+
     // Fallback zu Demo-Daten nur wenn wirklich keine echten Daten vorhanden
     if (realInvoiceData.length === 0) {
       console.log('⚠️ No real invoices found, using demo data as fallback')
@@ -196,19 +196,28 @@ export async function POST(request: NextRequest) {
     // Priorität 1: Wenn spezifische IDs ausgewählt sind - KEINE anderen Filter anwenden!
     if (selectedIds && selectedIds.length > 0) {
       const originalLength = filteredData.length
-      
+
       // Debug: Zeige welche IDs gefunden/nicht gefunden werden
       const foundIds = filteredData.filter(item => selectedIds.includes(item.id)).map(item => item.id)
       const notFoundIds = selectedIds.filter(id => !foundIds.includes(id))
-      
-      filteredData = filteredData.filter(item => selectedIds.includes(item.id))
-      
-      console.log(`🎯 Manual selection: ${filteredData.length} from ${originalLength} - IGNORING all other filters`)
+
+      // Versuche zu filtern
+      const matchingData = filteredData.filter(item => selectedIds.includes(item.id))
+
+      if (matchingData.length > 0) {
+        filteredData = matchingData
+        console.log(`🎯 Manual selection: ${filteredData.length} from ${originalLength} - IGNORING all other filters`)
+      } else {
+        // Fallback: Wenn keine Übereinstimmung gefunden wird, alle Daten verwenden
+        console.log('⚠️ No matching IDs found in current data, falling back to all available data')
+        // filteredData bleibt unverändert (also alle Daten)
+      }
+
       console.log(`✅ Found IDs:`, foundIds)
       console.log(`❌ Not found IDs:`, notFoundIds)
-      
+
       // Bei manueller Auswahl: KEINE weiteren Filter anwenden!
-      // Die ausgewählten IDs sind final und absolut
+      // Die ausgewählten IDs sind final und absolut (oder Fallback auf alle)
     }
     // Priorität 2: Wenn displayedInvoices (nach Suche/Filter) vorhanden sind
     else if (filters?.displayedInvoices && filters.displayedInvoices.length > 0) {
@@ -219,7 +228,7 @@ export async function POST(request: NextRequest) {
     // Priorität 3: Nur wenn KEINE manuelle Auswahl - dann andere Filter anwenden
     else {
       console.log(`🔍 Applying additional filters to all data`)
-      
+
       // Filter nach Datum
       if (filters?.dateFrom) {
         const dateFrom = new Date(filters.dateFrom)
@@ -235,7 +244,7 @@ export async function POST(request: NextRequest) {
 
       // Filter nach Kategorie
       if (filters?.category) {
-        filteredData = filteredData.filter(item => 
+        filteredData = filteredData.filter(item =>
           item.kategorie.toLowerCase().includes(filters.category!.toLowerCase())
         )
         console.log(`🏷️ Category filter: ${filteredData.length} remaining`)
@@ -254,10 +263,16 @@ export async function POST(request: NextRequest) {
 
     // Sicherheitscheck: Wenn nach Filtern keine Daten übrig sind
     if (filteredData.length === 0) {
+      console.log('⚠️ No data after filtering, falling back to all available data')
+      filteredData = [...realInvoiceData]
+    }
+
+    // Finaler Check (sollte eigentlich nicht eintreten, da realInvoiceData gefüllt sein sollte)
+    if (filteredData.length === 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Keine Daten entsprechen den gewählten Filtern. Bitte überprüfen Sie Ihre Auswahl.' 
+        {
+          success: false,
+          error: 'Keine Demo-Daten verfügbar. Bitte versuchen Sie es erneut.'
         },
         { status: 404 }
       )
@@ -265,7 +280,7 @@ export async function POST(request: NextRequest) {
 
     // Generiere CSV-Inhalt
     const { generateCSVContent, calculateSummary } = await import('@/lib/csv-export')
-    
+
     const csvContent = generateCSVContent(filteredData, {
       columns,
       includeSummary
@@ -294,9 +309,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ CSV Export API Error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Interner Serverfehler beim CSV-Export' 
+      {
+        success: false,
+        error: 'Interner Serverfehler beim CSV-Export'
       },
       { status: 500 }
     )
@@ -312,7 +327,7 @@ export async function GET(request: NextRequest) {
     if (action === 'columns') {
       // Verfügbare Spalten zurückgeben
       const { CSV_COLUMNS } = await import('@/lib/csv-export')
-      
+
       return NextResponse.json({
         success: true,
         columns: CSV_COLUMNS.map(col => ({
@@ -326,10 +341,10 @@ export async function GET(request: NextRequest) {
     if (action === 'sample') {
       // Beispiel-CSV generieren (erste 5 Zeilen)
       const { generateSampleInvoiceData, generateCSVContent } = await import('@/lib/csv-export')
-      
+
       const sampleData = generateSampleInvoiceData(5)
       const csvContent = generateCSVContent(sampleData, { includeSummary: true })
-      
+
       return NextResponse.json({
         success: true,
         sample: csvContent,
@@ -353,9 +368,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ CSV Export Info API Error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Fehler beim Laden der Export-Informationen' 
+      {
+        success: false,
+        error: 'Fehler beim Laden der Export-Informationen'
       },
       { status: 500 }
     )

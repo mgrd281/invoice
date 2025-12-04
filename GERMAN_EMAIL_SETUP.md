@@ -1,48 +1,48 @@
-# 🇩🇪 إعداد البريد الإلكتروني للمزودين الألمان
+# 🇩🇪 E-Mail-Einrichtung für deutsche Anbieter
 
-## المزودون المدعومون
+## Unterstützte Anbieter
 
 ### ✅ Web.de
 ```bash
 EMAIL_HOST=smtp.web.de
 EMAIL_PORT=587
-EMAIL_USER=your-email@web.de
-EMAIL_PASS=your-password
-EMAIL_FROM=your-email@web.de
+EMAIL_USER=ihre-email@web.de
+EMAIL_PASS=ihr-passwort
+EMAIL_FROM=ihre-email@web.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
 
-**خطوات الإعداد:**
-1. اذهب إلى [Web.de Einstellungen](https://web.de)
-2. انقر على "Einstellungen" → "POP3/IMAP"
-3. فعّل "POP3 und IMAP Zugriff aktivieren"
-4. استخدم بيانات اعتماد Web.de العادية
+**Einrichtungsschritte:**
+1. Gehen Sie zu [Web.de Einstellungen](https://web.de)
+2. Klicken Sie auf "Einstellungen" → "POP3/IMAP"
+3. Aktivieren Sie "POP3 und IMAP Zugriff aktivieren"
+4. Verwenden Sie Ihre normalen Web.de-Zugangsdaten
 
 ### ✅ GMX.de
 ```bash
 EMAIL_HOST=mail.gmx.net
 EMAIL_PORT=587
-EMAIL_USER=your-email@gmx.de
-EMAIL_PASS=your-password
-EMAIL_FROM=your-email@gmx.de
+EMAIL_USER=ihre-email@gmx.de
+EMAIL_PASS=ihr-passwort
+EMAIL_FROM=ihre-email@gmx.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
 
-**خطوات الإعداد:**
-1. اذهب إلى [GMX Einstellungen](https://gmx.de)
-2. انقر على "E-Mail" → "Einstellungen" → "POP3/IMAP"
-3. فعّل "Externe E-Mail-Programme"
-4. استخدم بيانات اعتماد GMX العادية
+**Einrichtungsschritte:**
+1. Gehen Sie zu [GMX Einstellungen](https://gmx.de)
+2. Klicken Sie auf "E-Mail" → "Einstellungen" → "POP3/IMAP"
+3. Aktivieren Sie "Externe E-Mail-Programme"
+4. Verwenden Sie Ihre normalen GMX-Zugangsdaten
 
 ### ✅ T-Online
 ```bash
 EMAIL_HOST=securesmtp.t-online.de
 EMAIL_PORT=587
-EMAIL_USER=your-email@t-online.de
-EMAIL_PASS=your-password
-EMAIL_FROM=your-email@t-online.de
+EMAIL_USER=ihre-email@t-online.de
+EMAIL_PASS=ihr-passwort
+EMAIL_FROM=ihre-email@t-online.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
@@ -51,37 +51,37 @@ EMAIL_DEV_MODE=false
 ```bash
 EMAIL_HOST=smtp.1und1.de
 EMAIL_PORT=587
-EMAIL_USER=your-email@1und1.de
-EMAIL_PASS=your-password
-EMAIL_FROM=your-email@1und1.de
+EMAIL_USER=ihre-email@1und1.de
+EMAIL_PASS=ihr-passwort
+EMAIL_FROM=ihre-email@1und1.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
 
-## الإعداد السريع
+## Schnelleinrichtung
 
-### 1. اختر مزود البريد الخاص بك
-حدد المزود المناسب من القائمة أعلاه
+### 1. Wählen Sie Ihren E-Mail-Anbieter
+Wählen Sie den passenden Anbieter aus der Liste oben
 
-### 2. حدث ملف .env.local
-انسخ الإعدادات المناسبة لمزودك في ملف `.env.local`
+### 2. Aktualisieren Sie .env.local
+Kopieren Sie die passenden Einstellungen für Ihren Anbieter in die `.env.local` Datei
 
-### 3. استبدل البيانات الوهمية
+### 3. Ersetzen Sie Platzhalterdaten
 ```bash
-# استبدل هذه القيم بمعلوماتك الحقيقية
-EMAIL_USER=your-actual-email@web.de
-EMAIL_PASS=your-actual-password
-EMAIL_FROM=your-actual-email@web.de
+# Ersetzen Sie diese Werte mit Ihren echten Informationen
+EMAIL_USER=ihre-echte-email@web.de
+EMAIL_PASS=ihr-echtes-passwort
+EMAIL_FROM=ihre-echte-email@web.de
 ```
 
-### 4. أعد تشغيل الخادم
+### 4. Starten Sie den Server neu
 ```bash
 npm run dev
 ```
 
-## الاكتشاف التلقائي
+## Automatische Erkennung
 
-النظام يكتشف تلقائياً إعدادات SMTP بناءً على عنوان البريد الإلكتروني:
+Das System erkennt SMTP-Einstellungen automatisch anhand der E-Mail-Adresse:
 
 - `@web.de` → `smtp.web.de:587`
 - `@gmx.de` → `mail.gmx.net:587`
@@ -89,11 +89,11 @@ npm run dev
 - `@t-online.de` → `securesmtp.t-online.de:587`
 - `@1und1.de` → `smtp.1und1.de:587`
 
-## اختبار الإعداد
+## Einrichtung testen
 
-### 1. تحقق من console logs
+### 1. Überprüfen Sie die Konsolenprotokolle
 ```bash
-# يجب أن تشاهد:
+# Sie sollten sehen:
 ✅ Email configuration verified successfully for Web.de
 Creating email transporter for Web.de: {
   host: 'smtp.web.de',
@@ -103,62 +103,62 @@ Creating email transporter for Web.de: {
 }
 ```
 
-### 2. اختبر إرسال فاتورة
-1. اذهب إلى أي فاتورة
-2. انقر على "Per E-Mail senden"
-3. تحقق من وصول البريد للعميل
+### 2. Testen Sie den Rechnungsversand
+1. Gehen Sie zu einer beliebigen Rechnung
+2. Klicken Sie auf "Per E-Mail senden"
+3. Prüfen Sie den Posteingang des Kunden
 
-## استكشاف الأخطاء الشائعة
+## Häufige Fehlerbehebung
 
-### خطأ المصادقة - Web.de
+### Authentifizierungsfehler - Web.de
 ```
 Error: Invalid login: 535 Authentication failed
 ```
 
-**الحل:**
-1. تأكد من تفعيل POP3/IMAP في إعدادات Web.de
-2. اذهب إلى Web.de → Einstellungen → POP3/IMAP → Aktivieren
-3. تأكد من صحة كلمة المرور
+**Lösung:**
+1. Stellen Sie sicher, dass POP3/IMAP in den Web.de-Einstellungen aktiviert ist
+2. Gehen Sie zu Web.de → Einstellungen → POP3/IMAP → Aktivieren
+3. Überprüfen Sie das Passwort
 
-### خطأ المصادقة - GMX.de
+### Authentifizierungsfehler - GMX.de
 ```
 Error: Invalid login: 535 Authentication failed
 ```
 
-**الحل:**
-1. فعّل "Externe E-Mail-Programme" في GMX
-2. اذهب إلى GMX → E-Mail → Einstellungen → POP3/IMAP
-3. فعّل "Zugriff über externe E-Mail-Programme"
+**Lösung:**
+1. Aktivieren Sie "Externe E-Mail-Programme" bei GMX
+2. Gehen Sie zu GMX → E-Mail → Einstellungen → POP3/IMAP
+3. Aktivieren Sie "Zugriff über externe E-Mail-Programme"
 
-### خطأ الاتصال
+### Verbindungsfehler
 ```
 Error: connect ECONNREFUSED
 ```
 
-**الحل:**
-1. تحقق من الاتصال بالإنترنت
-2. تأكد من صحة EMAIL_HOST
-3. تحقق من إعدادات Firewall
+**Lösung:**
+1. Überprüfen Sie die Internetverbindung
+2. Stellen Sie sicher, dass EMAIL_HOST korrekt ist
+3. Überprüfen Sie Firewall-Einstellungen
 
-### خطأ التشفير
+### Verschlüsselungsfehler
 ```
 Error: self signed certificate
 ```
 
-**الحل:**
-1. تأكد من استخدام PORT 587 (وليس 465)
-2. تأكد من `secure: false` في الإعدادات
+**Lösung:**
+1. Stellen Sie sicher, dass PORT 587 verwendet wird (nicht 465)
+2. Stellen Sie sicher, dass `secure: false` in den Einstellungen gesetzt ist
 
-## التحقق من التسليم
+## Zustellungsüberprüfung
 
-### للتأكد من وصول البريد:
+### Um die Zustellung sicherzustellen:
 
-1. **تحقق من Sent folder** في مزود البريد
-2. **اطلب تأكيد قراءة** من العميل
-3. **تحقق من Spam folder** لدى العميل
-4. **راقب console logs** للأخطاء
+1. **Überprüfen Sie den Ordner "Gesendet"** beim E-Mail-Anbieter
+2. **Fordern Sie eine Lesebestätigung** vom Kunden an
+3. **Überprüfen Sie den Spam-Ordner** beim Kunden
+4. **Überwachen Sie die Konsolenprotokolle** auf Fehler
 
-### مثال على logs ناجحة:
+### Beispiel für erfolgreiche Logs:
 ```
 Starting email send process for invoice: RE-2024-001
 Creating email transporter for Web.de
@@ -167,33 +167,33 @@ Sending email to: customer@web.de
 ✅ Email sent successfully: <message-id@smtp.web.de>
 ```
 
-## نصائح للتسليم الناجح
+## Tipps für erfolgreiche Zustellung
 
-### 1. تحسين معدل التسليم
-- استخدم عنوان FROM صالح ومتحقق منه
-- تجنب الكلمات المشبوهة في الموضوع
-- أرفق PDF صالح وغير تالف
+### 1. Verbesserung der Zustellrate
+- Verwenden Sie eine gültige und verifizierte FROM-Adresse
+- Vermeiden Sie verdächtige Wörter im Betreff
+- Hängen Sie ein gültiges und unbeschädigtes PDF an
 
-### 2. تجنب Spam filters
-- استخدم نص HTML و plain text
-- تجنب الروابط المشبوهة
-- استخدم عنوان reply-to صالح
+### 2. Vermeidung von Spam-Filtern
+- Verwenden Sie HTML- und Nur-Text-Versionen
+- Vermeiden Sie verdächtige Links
+- Verwenden Sie eine gültige Reply-To-Adresse
 
-### 3. مراقبة الأداء
-- راقب معدلات الارتداد (bounce rates)
-- تحقق من تقارير التسليم
-- اختبر مع عناوين مختلفة
+### 3. Leistungsüberwachung
+- Überwachen Sie Bounce-Raten
+- Überprüfen Sie Zustellberichte
+- Testen Sie mit verschiedenen Adressen
 
-## الدعم الفني
+## Technischer Support
 
-إذا واجهت مشاكل:
+Wenn Sie Probleme haben:
 
-1. **تحقق من console logs** للأخطاء التفصيلية
-2. **اختبر إعدادات SMTP** مع عميل بريد آخر
-3. **تواصل مع دعم المزود** للمساعدة
-4. **تحقق من حالة الخدمة** للمزود
+1. **Überprüfen Sie die Konsolenprotokolle** auf detaillierte Fehler
+2. **Testen Sie die SMTP-Einstellungen** mit einem anderen E-Mail-Client
+3. **Kontaktieren Sie den Anbieter-Support** für Hilfe
+4. **Überprüfen Sie den Dienststatus** des Anbieters
 
-## مثال كامل - Web.de
+## Vollständiges Beispiel - Web.de
 
 ```bash
 # .env.local
@@ -206,4 +206,4 @@ EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
 
-بعد هذا الإعداد، ستعمل وظيفة إرسال البريد الإلكتروني بشكل كامل مع المزودين الألمان! 🚀
+Nach dieser Einrichtung funktioniert der E-Mail-Versand vollständig mit deutschen Anbietern! 🚀

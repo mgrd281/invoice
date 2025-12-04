@@ -14,7 +14,7 @@ export interface AuthResult {
   error?: string
 }
 
-// دالة للتحقق من المصادقة من جانب الخادم
+// Funktion zur serverseitigen Authentifizierungsprüfung
 export async function getServerAuth(): Promise<AuthResult> {
   try {
     const cookieStore = cookies()
@@ -24,26 +24,26 @@ export async function getServerAuth(): Promise<AuthResult> {
       return {
         isAuthenticated: false,
         user: null,
-        error: 'لا يوجد token'
+        error: 'Kein Token vorhanden'
       }
     }
 
     const secret = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
     const decoded = jwt.verify(token, secret) as any
 
-    // التحقق من انتهاء صلاحية الـ token
+    // Überprüfung des Token-Ablaufs
     if (decoded.exp && decoded.exp <= Math.floor(Date.now() / 1000)) {
       return {
         isAuthenticated: false,
         user: null,
-        error: 'انتهت صلاحية الجلسة'
+        error: 'Sitzung abgelaufen'
       }
     }
 
     const user: User = {
       id: decoded.userId,
       email: decoded.email,
-      name: decoded.name || 'مستخدم',
+      name: decoded.name || 'Benutzer',
       role: decoded.role
     }
 
@@ -53,27 +53,27 @@ export async function getServerAuth(): Promise<AuthResult> {
     }
 
   } catch (error) {
-    console.error('خطأ في التحقق من المصادقة:', error)
+    console.error('Fehler bei der Authentifizierungsprüfung:', error)
     return {
       isAuthenticated: false,
       user: null,
-      error: 'خطأ في التحقق من المصادقة'
+      error: 'Fehler bei der Authentifizierungsprüfung'
     }
   }
 }
 
-// دالة للتحقق من المصادقة من جانب العميل
+// Funktion zur clientseitigen Authentifizierungsprüfung
 export function getClientAuth(): AuthResult {
   try {
     if (typeof window === 'undefined') {
       return {
         isAuthenticated: false,
         user: null,
-        error: 'لا يمكن الوصول للمتصفح'
+        error: 'Browser nicht erreichbar'
       }
     }
 
-    // قراءة معلومات المستخدم من cookie
+    // Benutzerinformationen aus Cookie lesen
     const userInfoCookie = document.cookie
       .split('; ')
       .find(row => row.startsWith('user-info='))
@@ -83,7 +83,7 @@ export function getClientAuth(): AuthResult {
       return {
         isAuthenticated: false,
         user: null,
-        error: 'لا توجد معلومات مستخدم'
+        error: 'Keine Benutzerinformationen vorhanden'
       }
     }
 
@@ -95,16 +95,16 @@ export function getClientAuth(): AuthResult {
     }
 
   } catch (error) {
-    console.error('خطأ في قراءة معلومات المستخدم:', error)
+    console.error('Fehler beim Lesen der Benutzerinformationen:', error)
     return {
       isAuthenticated: false,
       user: null,
-      error: 'خطأ في قراءة معلومات المستخدم'
+      error: 'Fehler beim Lesen der Benutzerinformationen'
     }
   }
 }
 
-// دالة لتسجيل الخروج من جانب العميل
+// Funktion zur clientseitigen Abmeldung
 export async function logout(): Promise<boolean> {
   try {
     const response = await fetch('/api/auth/logout', {
@@ -115,21 +115,21 @@ export async function logout(): Promise<boolean> {
     })
 
     if (response.ok) {
-      // إعادة تحميل الصفحة للتأكد من تطبيق التغييرات
+      // Seite neu laden, um Änderungen anzuwenden
       window.location.href = '/landing'
       return true
     } else {
-      console.error('فشل في تسجيل الخروج')
+      console.error('Abmeldung fehlgeschlagen')
       return false
     }
 
   } catch (error) {
-    console.error('خطأ في تسجيل الخروج:', error)
+    console.error('Fehler bei der Abmeldung:', error)
     return false
   }
 }
 
-// دالة للتحقق من الصلاحيات
+// Funktion zur Berechtigungsprüfung
 export function hasPermission(userRole: string, requiredRole: string): boolean {
   const roleHierarchy = {
     'admin': 3,
@@ -143,13 +143,13 @@ export function hasPermission(userRole: string, requiredRole: string): boolean {
   return userLevel >= requiredLevel
 }
 
-// دالة للتحقق من ملكية المورد
+// Funktion zur Überprüfung der Ressourceneigentümerschaft
 export function canAccessResource(userId: number, resourceOwnerId: number, userRole: string): boolean {
-  // المدير يمكنه الوصول لجميع الموارد
+  // Admin kann auf alle Ressourcen zugreifen
   if (userRole === 'admin') {
     return true
   }
 
-  // المستخدم يمكنه الوصول لموارده فقط
+  // Benutzer kann nur auf eigene Ressourcen zugreifen
   return userId === resourceOwnerId
 }

@@ -2,22 +2,22 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { 
-  Download, 
-  FileSpreadsheet, 
-  Settings, 
-  CheckCircle, 
+import {
+  Download,
+  FileSpreadsheet,
+  Settings,
+  CheckCircle,
   AlertCircle,
   Loader2,
   Eye
@@ -45,8 +45,8 @@ interface ExportColumn {
   type: string
 }
 
-export default function CSVExportButton({ 
-  selectedIds = [], 
+export default function CSVExportButton({
+  selectedIds = [],
   filters = {},
   totalCount = 0,
   selectedCount = 0,
@@ -66,7 +66,7 @@ export default function CSVExportButton({
     try {
       const response = await fetch('/api/invoices/export/csv?action=columns')
       const data = await response.json()
-      
+
       if (data.success) {
         setAvailableColumns(data.columns)
         setSelectedColumns(data.columns.map((col: ExportColumn) => col.key))
@@ -146,7 +146,7 @@ export default function CSVExportButton({
 
   // Spalten-Auswahl umschalten
   const toggleColumn = (columnKey: string) => {
-    setSelectedColumns(prev => 
+    setSelectedColumns(prev =>
       prev.includes(columnKey)
         ? prev.filter(key => key !== columnKey)
         : [...prev, columnKey]
@@ -156,8 +156,8 @@ export default function CSVExportButton({
   // Alle Spalten auswählen/abwählen
   const toggleAllColumns = () => {
     setSelectedColumns(
-      selectedColumns.length === availableColumns.length 
-        ? [] 
+      selectedColumns.length === availableColumns.length
+        ? []
         : availableColumns.map(col => col.key)
     )
   }
@@ -179,6 +179,16 @@ export default function CSVExportButton({
         buttonText: `alle gefilterten ${filters.displayedInvoices.length} Datensätze werden exportiert`
       }
     } else {
+      // Fallback für 0 Ergebnisse: Demo-Daten anbieten
+      if (totalCount === 0) {
+        return {
+          count: 20,
+          text: `⚠️ Keine Daten gefunden - Es werden 20 Demo-Datensätze exportiert`,
+          type: 'all' as const,
+          buttonText: `20 Demo-Datensätze exportieren`
+        }
+      }
+
       return {
         count: totalCount,
         text: `alle ${totalCount} Datensätze werden exportiert`,
@@ -196,7 +206,7 @@ export default function CSVExportButton({
     const now = new Date()
     const dateStr = now.toISOString().slice(0, 10) // YYYY-MM-DD
     const timeStr = now.toTimeString().slice(0, 5).replace(':', '-') // HH-mm
-    
+
     let prefix = 'rechnungen_export'
     if (exportInfo.type === 'selected') {
       prefix = `rechnungen_ausgewählt_${exportInfo.count}`
@@ -205,7 +215,7 @@ export default function CSVExportButton({
     } else {
       prefix = `rechnungen_alle_${exportInfo.count}`
     }
-    
+
     return `${prefix}_${dateStr}_${timeStr}.csv`
   }
 
@@ -215,8 +225,8 @@ export default function CSVExportButton({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className={`${className}`}
           onClick={() => {
             setIsOpen(true)
@@ -242,14 +252,12 @@ export default function CSVExportButton({
 
         <div className="space-y-6">
           {/* Export-Info */}
-          <div className={`p-4 rounded-lg border-2 ${
-            canExport 
-              ? 'bg-green-50 border-green-200' 
+          <div className={`p-4 rounded-lg border-2 ${canExport
+              ? 'bg-green-50 border-green-200'
               : 'bg-red-50 border-red-200'
-          }`}>
-            <div className={`flex items-center ${
-              canExport ? 'text-green-700' : 'text-red-700'
             }`}>
+            <div className={`flex items-center ${canExport ? 'text-green-700' : 'text-red-700'
+              }`}>
               {exportInfo.type === 'selected' ? (
                 <CheckCircle className="h-5 w-5 mr-2" />
               ) : (
@@ -278,7 +286,7 @@ export default function CSVExportButton({
                 </span>
               </div>
               <div className="text-sm text-blue-700 mt-1">
-                Es werden exakt die {selectedCount} ausgewählten Rechnungen exportiert, 
+                Es werden exakt die {selectedCount} ausgewählten Rechnungen exportiert,
                 unabhängig von anderen Filtern oder der Seitenansicht.
               </div>
             </div>
@@ -295,7 +303,7 @@ export default function CSVExportButton({
               disabled={!canExport}
             />
             <div className="text-xs text-gray-500">
-              {canExport 
+              {canExport
                 ? `Automatischer Name: ${effectiveFilename}`
                 : 'Dateiname nicht verfügbar - keine Daten zum Exportieren'
               }
@@ -336,7 +344,7 @@ export default function CSVExportButton({
                   {selectedColumns.length === availableColumns.length ? 'Keine' : 'Alle'} auswählen
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                 {availableColumns.map((column) => (
                   <div key={column.key} className="flex items-center space-x-2">
@@ -345,7 +353,7 @@ export default function CSVExportButton({
                       checked={selectedColumns.includes(column.key)}
                       onCheckedChange={() => toggleColumn(column.key)}
                     />
-                    <Label 
+                    <Label
                       htmlFor={column.key}
                       className="text-sm cursor-pointer"
                     >
@@ -354,7 +362,7 @@ export default function CSVExportButton({
                   </div>
                 ))}
               </div>
-              
+
               <div className="text-xs text-gray-500">
                 {selectedColumns.length} von {availableColumns.length} Spalten ausgewählt
               </div>
@@ -363,14 +371,12 @@ export default function CSVExportButton({
 
           {/* Export-Ergebnis */}
           {exportResult && (
-            <div className={`p-4 rounded-lg ${
-              exportResult.success 
-                ? 'bg-green-50 border border-green-200' 
+            <div className={`p-4 rounded-lg ${exportResult.success
+                ? 'bg-green-50 border border-green-200'
                 : 'bg-red-50 border border-red-200'
-            }`}>
-              <div className={`flex items-center ${
-                exportResult.success ? 'text-green-700' : 'text-red-700'
               }`}>
+              <div className={`flex items-center ${exportResult.success ? 'text-green-700' : 'text-red-700'
+                }`}>
                 {exportResult.success ? (
                   <CheckCircle className="h-5 w-5 mr-2" />
                 ) : (
@@ -380,13 +386,12 @@ export default function CSVExportButton({
                   {exportResult.success ? 'Export erfolgreich!' : 'Export fehlgeschlagen'}
                 </span>
               </div>
-              
-              <div className={`text-sm mt-1 ${
-                exportResult.success ? 'text-green-600' : 'text-red-600'
-              }`}>
+
+              <div className={`text-sm mt-1 ${exportResult.success ? 'text-green-600' : 'text-red-600'
+                }`}>
                 {exportResult.message}
               </div>
-              
+
               {exportResult.success && (
                 <div className="text-xs text-green-600 mt-2 space-y-1">
                   <div>Datei: {exportResult.filename}</div>
@@ -431,7 +436,7 @@ export default function CSVExportButton({
               >
                 Abbrechen
               </Button>
-              
+
               <Button
                 onClick={handleExport}
                 disabled={loading || !canExport || (showColumnSelector && selectedColumns.length === 0)}

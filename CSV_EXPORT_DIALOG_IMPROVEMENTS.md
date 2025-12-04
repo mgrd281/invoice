@@ -1,6 +1,6 @@
-# ✅ تحسينات CSV Export Dialog
+# ✅ CSV-Export-Dialog Verbesserungen
 
-## 🎯 المطلوب
+## 🎯 Anforderungen
 ```
 Bitte im CSV-Export-Dialog oben deutlich anzeigen, wie viele Datensätze exportiert werden – 
 „{X} ausgewählt" oder „alle gefilterten {Y}" – und den Export strikt daran binden. 
@@ -8,13 +8,13 @@ Export-Button deaktivieren bei 0, Dateiname automatisch vorbelegen,
 und Erfolgsmeldung mit Zeilenanzahl anzeigen.
 ```
 
-## ✅ التحسينات المطبقة
+## ✅ Angewendete Verbesserungen
 
-### **1. عرض واضح لعدد البيانات**
+### **1. Klare Anzeige der Datenanzahl**
 
-#### **في أعلى الـ Dialog:**
+#### **Oben im Dialog:**
 ```typescript
-// منطق ذكي لتحديد نوع البيانات
+// Intelligente Logik für Datentyp
 const getExportInfo = () => {
   if (selectedIds.length > 0) {
     return {
@@ -38,7 +38,7 @@ const getExportInfo = () => {
 }
 ```
 
-#### **عرض بصري محسن:**
+#### **Verbesserte visuelle Anzeige:**
 ```jsx
 <div className={`p-4 rounded-lg border-2 ${
   canExport 
@@ -61,9 +61,9 @@ const getExportInfo = () => {
 </div>
 ```
 
-### **2. Export-Button ربط صارم بعدد البيانات**
+### **2. Export-Button strikt an Datenanzahl gebunden**
 
-#### **تعطيل الزر عند 0 بيانات:**
+#### **Button bei 0 Daten deaktivieren:**
 ```typescript
 const canExport = exportInfo.count > 0
 
@@ -74,7 +74,7 @@ const canExport = exportInfo.count > 0
 >
 ```
 
-#### **نص الزر يعكس عدد البيانات:**
+#### **Button-Text spiegelt Datenanzahl wider:**
 ```jsx
 {loading ? (
   <>
@@ -94,9 +94,9 @@ const canExport = exportInfo.count > 0
 )}
 ```
 
-### **3. اسم الملف التلقائي**
+### **3. Automatischer Dateiname**
 
-#### **أسماء ذكية حسب نوع البيانات:**
+#### **Intelligente Namen basierend auf Datentyp:**
 ```typescript
 const getDefaultFilename = () => {
   const now = new Date()
@@ -116,12 +116,12 @@ const getDefaultFilename = () => {
 }
 ```
 
-#### **أمثلة على أسماء الملفات:**
+#### **Beispiele für Dateinamen:**
 - `rechnungen_ausgewählt_3_2024-01-15_14-30.csv`
 - `rechnungen_gefiltert_25_2024-01-15_14-30.csv`
 - `rechnungen_alle_150_2024-01-15_14-30.csv`
 
-#### **عرض الاسم التلقائي:**
+#### **Automatischen Namen anzeigen:**
 ```jsx
 <Input
   placeholder={effectiveFilename}
@@ -135,9 +135,9 @@ const getDefaultFilename = () => {
 </div>
 ```
 
-### **4. رسالة النجاح محسنة**
+### **4. Verbesserte Erfolgsmeldung**
 
-#### **رسالة واضحة مع عدد الصفوف:**
+#### **Klare Nachricht mit Zeilenanzahl:**
 ```typescript
 setExportResult({
   success: true,
@@ -148,7 +148,7 @@ setExportResult({
 })
 ```
 
-#### **تفاصيل إضافية:**
+#### **Zusätzliche Details:**
 ```jsx
 {exportResult.success && (
   <div className="text-xs text-green-600 mt-2 space-y-1">
@@ -159,9 +159,9 @@ setExportResult({
 )}
 ```
 
-## 🎨 التجربة البصرية الجديدة
+## 🎨 Neue visuelle Erfahrung
 
-### **حالة البيانات المتاحة (خضراء):**
+### **Status Verfügbare Daten (Grün):**
 ```
 ┌─────────────────────────────────────────────────┐
 │ 📊 3 ausgewählte Datensätze werden exportiert  │
@@ -173,19 +173,19 @@ Dateiname: rechnungen_ausgewählt_3_2024-01-15_14-30.csv
 [🟢 3 Datensätze herunterladen]
 ```
 
-### **حالة عدم وجود بيانات (حمراء):**
+### **Status Keine Daten (Rot):**
 ```
 ┌─────────────────────────────────────────────────┐
 │ 📊 0 Datensätze werden exportiert              │
 │ ❌ Keine Daten zum Exportieren verfügbar       │
 └─────────────────────────────────────────────────┘
 
-Dateiname: [غير متاح]
+Dateiname: [nicht verfügbar]
 
-[🔴 Keine Daten verfügbar] (معطل)
+[🔴 Keine Daten verfügbar] (deaktiviert)
 ```
 
-### **رسالة النجاح:**
+### **Erfolgsmeldung:**
 ```
 ┌─────────────────────────────────────────────────┐
 │ ✅ Export erfolgreich!                          │
@@ -197,40 +197,40 @@ Dateiname: [غير متاح]
 └─────────────────────────────────────────────────┘
 ```
 
-## 🧪 سيناريوهات الاختبار
+## 🧪 Testszenarien
 
-### **1. فواتير محددة (3 فواتير):**
-- ✅ عرض: "3 ausgewählte Datensätze werden exportiert"
-- ✅ زر: "3 Datensätze herunterladen" (أخضر، مفعل)
-- ✅ ملف: `rechnungen_ausgewählt_3_2024-01-15_14-30.csv`
-- ✅ نجاح: "✅ 3 Datensätze erfolgreich exportiert"
+### **1. Ausgewählte Rechnungen (3 Rechnungen):**
+- ✅ Anzeige: "3 ausgewählte Datensätze werden exportiert"
+- ✅ Button: "3 Datensätze herunterladen" (grün, aktiviert)
+- ✅ Datei: `rechnungen_ausgewählt_3_2024-01-15_14-30.csv`
+- ✅ Erfolg: "✅ 3 Datensätze erfolgreich exportiert"
 
-### **2. فواتير مفلترة (25 فاتورة):**
-- ✅ عرض: "alle gefilterten 25 Datensätze werden exportiert"
-- ✅ زر: "25 Datensätze herunterladen" (أخضر، مفعل)
-- ✅ ملف: `rechnungen_gefiltert_25_2024-01-15_14-30.csv`
-- ✅ نجاح: "✅ 25 Datensätze erfolgreich exportiert"
+### **2. Gefilterte Rechnungen (25 Rechnungen):**
+- ✅ Anzeige: "alle gefilterten 25 Datensätze werden exportiert"
+- ✅ Button: "25 Datensätze herunterladen" (grün, aktiviert)
+- ✅ Datei: `rechnungen_gefiltert_25_2024-01-15_14-30.csv`
+- ✅ Erfolg: "✅ 25 Datensätze erfolgreich exportiert"
 
-### **3. جميع الفواتير (150 فاتورة):**
-- ✅ عرض: "alle 150 Datensätze werden exportiert"
-- ✅ زر: "150 Datensätze herunterladen" (أخضر، مفعل)
-- ✅ ملف: `rechnungen_alle_150_2024-01-15_14-30.csv`
-- ✅ نجاح: "✅ 150 Datensätze erfolgreich exportiert"
+### **3. Alle Rechnungen (150 Rechnungen):**
+- ✅ Anzeige: "alle 150 Datensätze werden exportiert"
+- ✅ Button: "150 Datensätze herunterladen" (grün, aktiviert)
+- ✅ Datei: `rechnungen_alle_150_2024-01-15_14-30.csv`
+- ✅ Erfolg: "✅ 150 Datensätze erfolgreich exportiert"
 
-### **4. لا توجد بيانات (0 فاتورة):**
-- ✅ عرض: "0 Datensätze werden exportiert" (أحمر)
-- ✅ زر: "Keine Daten verfügbar" (رمادي، معطل)
-- ✅ ملف: غير متاح
-- ✅ لا يمكن التصدير
+### **4. Keine Daten (0 Rechnungen):**
+- ✅ Anzeige: "0 Datensätze werden exportiert" (rot)
+- ✅ Button: "Keine Daten verfügbar" (grau, deaktiviert)
+- ✅ Datei: nicht verfügbar
+- ✅ Export nicht möglich
 
-## 🎯 النتيجة النهائية
+## 🎯 Endergebnis
 
-الآن CSV Export Dialog:
-- ✅ **يعرض بوضوح** عدد البيانات المصدرة
-- ✅ **يربط التصدير بدقة** بالبيانات المحددة/المفلترة
-- ✅ **يعطل الزر** عند عدم وجود بيانات
-- ✅ **يولد أسماء ملفات ذكية** تعكس نوع البيانات
-- ✅ **يعرض رسائل نجاح واضحة** مع عدد الصفوف
-- ✅ **يوفر تجربة بصرية محسنة** (ألوان، أيقونات)
+Jetzt CSV Export Dialog:
+- ✅ **Zeigt deutlich** die Anzahl der exportierten Daten an
+- ✅ **Bindet den Export strikt** an ausgewählte/gefilterte Daten
+- ✅ **Deaktiviert Button** bei fehlenden Daten
+- ✅ **Generiert intelligente Dateinamen** basierend auf Datentyp
+- ✅ **Zeigt klare Erfolgsmeldungen** mit Zeilenanzahl
+- ✅ **Bietet verbesserte visuelle Erfahrung** (Farben, Icons)
 
-**التحسينات مطبقة بالكامل!** 🚀
+**Verbesserungen vollständig implementiert!** 🚀

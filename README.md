@@ -1,173 +1,174 @@
-# 📄 نظام إدارة الفواتير الألماني
 
-نظام شامل لإدارة وإنشاء الفواتير باللغة الألمانية مع دعم CSV وإرسال البريد الإلكتروني.
+# 📄 Deutsches Rechnungsverwaltungssystem
 
-## ✨ المميزات
+Ein umfassendes System zur Verwaltung und Erstellung von Rechnungen auf Deutsch mit CSV-Unterstützung und E-Mail-Versand.
 
-- 🧾 **إنشاء فواتير احترافية** بتصميم ألماني معتمد
-- 📊 **استيراد CSV** من Shopify وأنظمة أخرى
-- 📧 **إرسال إيميل تلقائي** مع PDF مرفق
-- 🏢 **إدارة الشركات** والعملاء
-- 🎨 **واجهة عصرية** مع Tailwind CSS
-- 🔐 **نظام مصادقة آمن**
-- 📱 **تصميم متجاوب** لجميع الأجهزة
+## ✨ Funktionen
 
-## 🚀 التقنيات المستخدمة
+- 🧾 **Professionelle Rechnungserstellung** mit deutschem Standarddesign
+- 📊 **CSV-Import** von Shopify und anderen Systemen
+- 📧 **Automatischer E-Mail-Versand** mit PDF-Anhang
+- 🏢 **Verwaltung von Unternehmen** und Kunden
+- 🎨 **Moderne Benutzeroberfläche** mit Tailwind CSS
+- 🔐 **Sicheres Authentifizierungssystem**
+- 📱 **Responsives Design** für alle Geräte
+
+## 🚀 Verwendete Technologien
 
 - **Frontend:** Next.js 14, React, Tailwind CSS
 - **Backend:** Next.js API Routes, Prisma ORM
-- **Database:** PostgreSQL
-- **Authentication:** NextAuth.js
-- **PDF Generation:** jsPDF
-- **Email:** Resend API
-- **UI Components:** Radix UI
+- **Datenbank:** PostgreSQL
+- **Authentifizierung:** NextAuth.js
+- **PDF-Generierung:** jsPDF
+- **E-Mail:** Resend API
+- **UI-Komponenten:** Radix UI
 
-## 📦 التثبيت
+## 📦 Installation
 
-1. **استنساخ المشروع:**
+1. **Projekt klonen:**
    ```bash
    git clone <repository-url>
    cd rechnung
    ```
 
-2. **تثبيت التبعيات:**
+2. **Abhängigkeiten installieren:**
    ```bash
    npm install
    ```
 
-3. **إعداد قاعدة البيانات:**
+3. **Datenbank einrichten:**
    ```bash
    cp .env.example .env.local
-   # أضف DATABASE_URL في .env.local
+   # Fügen Sie DATABASE_URL in .env.local hinzu
    npx prisma db push
    ```
 
-4. **تشغيل التطبيق:**
+4. **Anwendung starten:**
    ```bash
    npm run dev
    ```
 
-## 🔧 متغيرات البيئة
+## 🔧 Umgebungsvariablen
 
 ```env
-# Database
+# Datenbank
 DATABASE_URL="postgresql://username:password@host:port/database"
 
-# Authentication
+# Authentifizierung
 NEXTAUTH_SECRET="your-secret-key-32-characters-minimum"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Email (Resend)
+# E-Mail (Resend)
 RESEND_API_KEY="re_your_api_key_here"
 RESEND_FROM_EMAIL="rechnung@yourdomain.com"
 EMAIL_DEV_MODE="true"
 ```
 
-## 📧 إعداد البريد الإلكتروني
+## 📧 E-Mail-Einrichtung
 
-1. **إنشاء حساب Resend:**
-   - اذهب إلى [resend.com](https://resend.com)
-   - أنشئ حساب مجاني
+1. **Resend-Konto erstellen:**
+   - Gehen Sie zu [resend.com](https://resend.com)
+   - Erstellen Sie ein kostenloses Konto
 
-2. **الحصول على API Key:**
-   - في لوحة التحكم ← API Keys
-   - أنشئ مفتاح جديد
+2. **API-Schlüssel erhalten:**
+   - Im Dashboard ← API Keys
+   - Erstellen Sie einen neuen Schlüssel
 
-3. **إضافة المفتاح:**
+3. **Schlüssel hinzufügen:**
    ```env
    RESEND_API_KEY="re_your_api_key"
-   EMAIL_DEV_MODE="false"  # للإرسال الفعلي
+   EMAIL_DEV_MODE="false"  # Für den tatsächlichen Versand
    ```
 
-## 📊 استيراد CSV
+## 📊 CSV-Import
 
-يدعم النظام استيراد ملفات CSV من:
+Das System unterstützt den Import von CSV-Dateien aus:
 - Shopify
 - WooCommerce
-- أنظمة أخرى
+- Anderen Systemen
 
-**تنسيق CSV المطلوب:**
+**Erforderliches CSV-Format:**
 ```csv
 Name,Email,Lineitem name,Lineitem price,Lineitem quantity,Lineitem sku
-John Doe,john@example.com,Product Name,19.99,2,SKU123
+John Doe,john@example.com,Produktname,19.99,2,SKU123
 ```
 
-## 🏗️ البناء والنشر
+## 🏗️ Build und Deployment
 
 ```bash
-# بناء للإنتاج
+# Build für Produktion
 npm run build
 
-# تشغيل الإنتاج
+# Produktion starten
 npm start
 
-# فحص الكود
+# Code-Überprüfung
 npm run lint
 ```
 
-## 🌐 النشر
+## 🌐 Deployment
 
-### Vercel (موصى به):
-1. رفع الكود إلى GitHub
-2. ربط المشروع بـ Vercel
-3. إضافة متغيرات البيئة
-4. النشر التلقائي!
+### Vercel (Empfohlen):
+1. Code auf GitHub hochladen
+2. Projekt mit Vercel verbinden
+3. Umgebungsvariablen hinzufügen
+4. Automatisches Deployment!
 
 ### Railway:
-1. إنشاء مشروع جديد
-2. ربط GitHub repository
-3. إضافة قاعدة بيانات PostgreSQL
-4. تكوين متغيرات البيئة
+1. Neues Projekt erstellen
+2. GitHub-Repository verbinden
+3. PostgreSQL-Datenbank hinzufügen
+4. Umgebungsvariablen konfigurieren
 
-## 📁 هيكل المشروع
+## 📁 Projektstruktur
 
 ```
 ├── app/                 # Next.js App Router
 ├── components/          # React Components
 ├── lib/                # Utilities & Services
 ├── prisma/             # Database Schema
-├── public/             # Static Assets
-└── user-storage/       # User Uploads
+├── public/             # Statische Assets
+└── user-storage/       # Benutzer-Uploads
 ```
 
-## 🔐 الأمان
+## 🔐 Sicherheit
 
-- مصادقة آمنة مع NextAuth.js
-- تشفير كلمات المرور
-- حماية API routes
-- تحقق من صحة البيانات
+- Sichere Authentifizierung mit NextAuth.js
+- Passwortverschlüsselung
+- Schutz von API-Routen
+- Datenvalidierung
 
-## 🐛 حل المشاكل
+## 🐛 Fehlerbehebung
 
-### مشاكل شائعة:
+### Häufige Probleme:
 
-1. **خطأ قاعدة البيانات:**
+1. **Datenbankfehler:**
    ```bash
    npx prisma db push
    npx prisma generate
    ```
 
-2. **مشاكل البناء:**
+2. **Build-Probleme:**
    ```bash
    rm -rf .next
    npm install
    npm run build
    ```
 
-3. **مشاكل الإيميل:**
-   - تحقق من RESEND_API_KEY
-   - تأكد من EMAIL_DEV_MODE
+3. **E-Mail-Probleme:**
+   - Überprüfen Sie RESEND_API_KEY
+   - Stellen Sie sicher, dass EMAIL_DEV_MODE korrekt eingestellt ist
 
-## 📞 الدعم
+## 📞 Support
 
-- 📧 البريد الإلكتروني: support@example.com
-- 📖 الوثائق: راجع ملفات المساعدة في المجلد
-- 🐛 الأخطاء: أنشئ issue في GitHub
+- 📧 E-Mail: support@example.com
+- 📖 Dokumentation: Siehe Hilfedateien im Ordner
+- 🐛 Fehler: Erstellen Sie ein Issue auf GitHub
 
-## 📄 الترخيص
+## 📄 Lizenz
 
-هذا المشروع مرخص تحت رخصة MIT.
+Dieses Projekt ist unter der MIT-Lizenz lizenziert.
 
 ---
 
-**تم تطويره بـ ❤️ لإدارة الفواتير الألمانية**
+**Entwickelt mit ❤️ für deutsches Rechnungsmanagement**

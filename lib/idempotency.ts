@@ -30,7 +30,7 @@ export class IdempotencyManager {
     return `shopify_${operation}_${shopifyOrderId}`
   }
 
-  // إنشاء بصمة الطلب
+  // Anfrage-Fingerabdruck erstellen
   static createRequestFingerprint(orderData: any): string {
     const relevantFields = {
       id: orderData.id,
@@ -41,11 +41,11 @@ export class IdempotencyManager {
       created_at: orderData.created_at,
       updated_at: orderData.updated_at
     }
-    
+
     return Buffer.from(JSON.stringify(relevantFields)).toString('base64')
   }
 
-  // فحص ما إذا كان الطلب معالج مسبقاً
+  // Prüfen, ob die Anfrage bereits verarbeitet wurde
   static checkIdempotency(shopifyOrderId: string, requestFingerprint: string): {
     exists: boolean
     record?: IdempotencyRecord
@@ -53,9 +53,9 @@ export class IdempotencyManager {
   } {
     const key = this.generateKey(shopifyOrderId)
     const record = global.idempotencyRecords!.get(key)
-    
+
     if (record) {
-      // فحص ما إذا كانت البصمة متطابقة
+      // Prüfen, ob der Fingerabdruck übereinstimmt
       if (record.requestFingerprint === requestFingerprint) {
         return {
           exists: true,
@@ -67,7 +67,7 @@ export class IdempotencyManager {
       }
     }
 
-    // فحص في order-to-invoice mapping
+    // In Order-to-Invoice-Mapping prüfen
     const existingInvoiceId = global.orderToInvoiceMap!.get(shopifyOrderId)
     if (existingInvoiceId) {
       return {
@@ -79,10 +79,10 @@ export class IdempotencyManager {
     return { exists: false }
   }
 
-  // بدء معالجة جديدة
+  // Neue Verarbeitung starten
   static startProcessing(shopifyOrderId: string, requestFingerprint: string): string {
     const key = this.generateKey(shopifyOrderId)
-    
+
     const record: IdempotencyRecord = {
       key,
       shopifyOrderId,
@@ -95,37 +95,37 @@ export class IdempotencyManager {
     return key
   }
 
-  // إكمال المعالجة بنجاح
+  // Verarbeitung erfolgreich abschließen
   static completeProcessing(key: string, invoiceId: string): void {
     const record = global.idempotencyRecords!.get(key)
     if (record) {
       record.status = 'completed'
       record.invoiceId = invoiceId
       record.completedAt = new Date().toISOString()
-      
-      // إضافة إلى order-to-invoice mapping
+
+      // Zum Order-to-Invoice-Mapping hinzufügen
       global.orderToInvoiceMap!.set(record.shopifyOrderId, invoiceId)
-      
+
       global.idempotencyRecords!.set(key, record)
     }
   }
 
-  // فشل المعالجة
+  // Verarbeitung fehlgeschlagen
   static failProcessing(key: string, error: string): void {
     const record = global.idempotencyRecords!.get(key)
     if (record) {
       record.status = 'failed'
       record.error = error
       record.completedAt = new Date().toISOString()
-      
+
       global.idempotencyRecords!.set(key, record)
     }
   }
 
-  // تنظيف السجلات القديمة
+  // Alte Datensätze bereinigen
   static cleanup(maxAge: number = 24 * 60 * 60 * 1000): void {
     const cutoff = Date.now() - maxAge
-    
+
     for (const [key, record] of global.idempotencyRecords!) {
       const recordTime = new Date(record.createdAt).getTime()
       if (recordTime < cutoff && record.status !== 'processing') {
@@ -134,15 +134,15 @@ export class IdempotencyManager {
     }
   }
 
-  // الحصول على جميع السجلات
+  // Alle Datensätze abrufen
   static getAllRecords(): IdempotencyRecord[] {
     return Array.from(global.idempotencyRecords!.values())
   }
 
-  // فحص تضارب المفاتيح
+  // Schlüsselkollisionen erkennen
   static detectCollisions(): { collisions: string[], total: number } {
     const fingerprints = new Map<string, string[]>()
-    
+
     for (const record of global.idempotencyRecords!.values()) {
       const fp = record.requestFingerprint
       if (!fingerprints.has(fp)) {
@@ -164,7 +164,7 @@ export class IdempotencyManager {
     }
   }
 
-  // إحصائيات الـ idempotency
+  // Idempotency-Statistiken
   static getStats(): {
     total: number
     processing: number
@@ -173,7 +173,7 @@ export class IdempotencyManager {
     orderMappings: number
   } {
     const records = Array.from(global.idempotencyRecords!.values())
-    
+
     return {
       total: records.length,
       processing: records.filter(r => r.status === 'processing').length,
@@ -184,14 +184,14 @@ export class IdempotencyManager {
   }
 }
 
-// Middleware للـ APIs
+// Middleware für APIs
 export function withIdempotency<T>(
   handler: (shopifyOrderId: string, orderData: any) => Promise<T>
 ) {
   return async (shopifyOrderId: string, orderData: any): Promise<T> => {
     const fingerprint = IdempotencyManager.createRequestFingerprint(orderData)
     const check = IdempotencyManager.checkIdempotency(shopifyOrderId, fingerprint)
-    
+
     if (check.exists) {
       if (check.record?.status === 'completed' && check.invoiceId) {
         console.log(`✅ Order ${shopifyOrderId} already processed, returning existing invoice ${check.invoiceId}`)
@@ -200,19 +200,19 @@ export function withIdempotency<T>(
         throw new Error(`Order ${shopifyOrderId} is currently being processed`)
       } else if (check.record?.status === 'failed') {
         console.log(`🔄 Retrying failed order ${shopifyOrderId}`)
-        // السماح بإعادة المحاولة للطلبات الفاشلة
+        // Wiederholung fehlgeschlagener Anfragen zulassen
       }
     }
 
     const key = IdempotencyManager.startProcessing(shopifyOrderId, fingerprint)
-    
+
     try {
       const result = await handler(shopifyOrderId, orderData)
-      
+
       if (result && typeof result === 'object' && 'invoiceId' in result) {
         IdempotencyManager.completeProcessing(key, (result as any).invoiceId)
       }
-      
+
       return result
     } catch (error) {
       IdempotencyManager.failProcessing(key, error instanceof Error ? error.message : String(error))
@@ -221,9 +221,9 @@ export function withIdempotency<T>(
   }
 }
 
-// تنظيف دوري للسجلات القديمة
+// Regelmäßige Bereinigung alter Datensätze
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     IdempotencyManager.cleanup()
-  }, 60 * 60 * 1000) // كل ساعة
+  }, 60 * 60 * 1000) // Jede Stunde
 }

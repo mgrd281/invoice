@@ -1,105 +1,100 @@
 
+# CSV-Import und Analyse (Shopify-Bestellungen)
 
+## Einführung
 
+Die Fähigkeit, von Shopify exportierte CSV-Dateien zu importieren und zu analysieren, ist für unsere Anwendung von entscheidender Bedeutung, da diese Dateien den Ausgangspunkt für die Rechnungserstellung bilden. Dieser Prozess erfordert eine robuste und flexible Pipeline, die unterschiedliche Datenmengen verarbeiten, jede Zeile validieren, Fehler effizient behandeln und Datenduplizierung verhindern kann. In diesem Abschnitt werden wir detailliert beschreiben, wie Shopify-Bestell-CSV-Dateien verarbeitet werden, angefangen bei der Definition der erwarteten Spalten bis hin zur Bereitstellung eines praktischen Beispiels für eine Analyse-Pipeline mit Unit-Tests.
 
+## Erwartete Shopify CSV-Spalten
 
+Shopify-Bestell-CSV-Dateien enthalten normalerweise eine Vielzahl von Spalten, die umfassende Details zu Bestellungen, Kunden und Produkten bieten. Wir werden uns auf die für die Rechnungserstellung relevantesten Spalten konzentrieren und diese unserem internen Datenbankschema zuordnen. Es ist wichtig zu beachten, dass Spaltennamen je nach Shopify-Version oder Anpassungen leicht variieren können, wir gehen jedoch von einem Standardsatz von Feldern aus.
 
-# استيعاب وتحليل ملفات CSV (طلبات Shopify)
+Hier ist eine Liste der typischen Spalten, die wir von einer Shopify-Bestell-CSV-Datei erwarten, und wie sie unseren internen Entitäten zugeordnet werden:
 
-## مقدمة
-
-تعد القدرة على استيعاب وتحليل ملفات CSV المصدرة من Shopify أمرًا بالغ الأهمية لتطبيقنا، حيث تشكل هذه الملفات نقطة البداية لإنشاء الفواتير. تتطلب هذه العملية خط أنابيب قويًا ومرنًا يمكنه التعامل مع أحجام مختلفة من البيانات، والتحقق من صحة كل صف، والتعامل مع الأخطاء بكفاءة، وضمان عدم تكرار البيانات. في هذا القسم، سنفصل كيفية معالجة ملفات CSV لطلبات Shopify، بدءًا من تحديد الأعمدة المتوقعة وصولاً إلى توفير مثال عملي لخط أنابيب التحليل مع اختبارات الوحدة.
-
-## أعمدة Shopify CSV المتوقعة
-
-تتضمن ملفات CSV لطلبات Shopify عادةً مجموعة واسعة من الأعمدة التي توفر تفاصيل شاملة حول الطلبات والعملاء والمنتجات. سنركز على الأعمدة الأكثر صلة بإنشاء الفواتير وتعيينها إلى مخطط قاعدة البيانات الداخلي الخاص بنا. من المهم ملاحظة أن أسماء الأعمدة قد تختلف قليلاً بناءً على إصدار Shopify أو التخصيصات، ولكننا سنفترض مجموعة قياسية من الحقول.
-
-فيما يلي قائمة بالأعمدة النموذجية التي نتوقعها من ملف CSV لطلبات Shopify وكيفية تعيينها إلى كياناتنا الداخلية:
-
-| اسم عمود Shopify CSV | الكيان الداخلي المستهدف | الحقل الداخلي المستهدف | الوصف                                          |
+| Shopify CSV Spaltenname | Ziel-Entität (Intern) | Ziel-Feld (Intern) | Beschreibung |
 | :------------------- | :--------------------- | :--------------------- | :--------------------------------------------- |
-| `Name`               | `Order`                | `orderNumber`          | رقم الطلب الفريد في Shopify.                   |
-| `Email`              | `Customer`             | `email`                | البريد الإلكتروني للعميل.                      |
-| `Financial Status`   | `Order`                | `status`               | حالة الدفع للطلب (مثل Paid, Pending).          |
-| `Fulfillment Status` | `Order`                | `status`               | حالة تنفيذ الطلب (مثل Fulfilled, Unfulfilled). |
-| `Subtotal`           | `Order`                | `totalNet`             | إجمالي قيمة المنتجات قبل الضرائب والشحن.      |
-| `Shipping`           | `Order`                | `shippingCost`         | تكلفة الشحن (قد تحتاج إلى معالجة منفصلة).     |
-| `Taxes`              | `Order`                | `totalTax`             | إجمالي الضرائب المطبقة على الطلب.             |
-| `Total`              | `Order`                | `totalAmount`          | إجمالي قيمة الطلب بما في ذلك الضرائب والشحن.  |
-| `Currency`           | `Order`                | `currency`             | عملة الطلب (مثل EUR).                         |
-| `Lineitem quantity`  | `InvoiceItem`          | `quantity`             | كمية المنتج في بند الفاتورة.                  |
-| `Lineitem name`      | `InvoiceItem`          | `description`          | اسم المنتج/وصفه.                              |
-| `Lineitem price`     | `InvoiceItem`          | `unitPrice`            | سعر الوحدة للمنتج.                            |
-| `Billing Name`       | `Customer`             | `name`                 | اسم العميل للفواتير.                          |
-| `Billing Address1`   | `Customer`             | `address`              | سطر العنوان الأول للعميل.                     |
-| `Billing Address2`   | `Customer`             | `address`              | سطر العنوان الثاني للعميل (يُدمج مع الأول).   |
-| `Billing Company`    | `Customer`             | `companyName`          | اسم شركة العميل (إن وجد).                     |
-| `Billing Zip`        | `Customer`             | `zipCode`              | الرمز البريدي للعميل.                         |
-| `Billing City`       | `Customer`             | `city`                 | مدينة العميل.                                 |
-| `Billing Province`   | `Customer`             | `province`             | مقاطعة العميل.                                |
-| `Billing Country`    | `Customer`             | `country`              | بلد العميل.                                   |
-| `Shipping Name`      | `Customer`             | `shippingName`         | اسم المستلم للشحن.                            |
-| `Shipping Address1`  | `Customer`             | `shippingAddress`      | سطر العنوان الأول للشحن.                      |
-| `Shipping Address2`  | `Customer`             | `shippingAddress`      | سطر العنوان الثاني للشحن (يُدمج مع الأول).    |
-| `Shipping Company`   | `Customer`             | `shippingCompanyName`  | اسم شركة الشحن (إن وجد).                      |
-| `Shipping Zip`       | `Customer`             | `shippingZipCode`      | الرمز البريدي للشحن.                          |
-| `Shipping City`      | `Customer`             | `shippingCity`         | مدينة الشحن.                                  |
-| `Shipping Province`  | `Customer`             | `shippingProvince`     | مقاطعة الشحن.                                 |
-| `Shipping Country`   | `Customer`             | `shippingCountry`      | بلد الشحن.                                    |
-| `Shopify ID`         | `Order`                | `shopifyOrderId`       | المعرف الفريد للطلب في Shopify.               |
-| `Customer ID`        | `Customer`             | `shopifyCustomerId`    | المعرف الفريد للعميل في Shopify.              |
+| `Name`               | `Order`                | `orderNumber`          | Eindeutige Bestellnummer in Shopify. |
+| `Email`              | `Customer`             | `email`                | E-Mail-Adresse des Kunden. |
+| `Financial Status`   | `Order`                | `status`               | Zahlungsstatus der Bestellung (z. B. Paid, Pending). |
+| `Fulfillment Status` | `Order`                | `status`               | Erfüllungsstatus der Bestellung (z. B. Fulfilled, Unfulfilled). |
+| `Subtotal`           | `Order`                | `totalNet`             | Gesamtwert der Produkte vor Steuern und Versand. |
+| `Shipping`           | `Order`                | `shippingCost`         | Versandkosten (müssen möglicherweise separat behandelt werden). |
+| `Taxes`              | `Order`                | `totalTax`             | Gesamtsteuern für die Bestellung. |
+| `Total`              | `Order`                | `totalAmount`          | Gesamtwert der Bestellung inklusive Steuern und Versand. |
+| `Currency`           | `Order`                | `currency`             | Währung der Bestellung (z. B. EUR). |
+| `Lineitem quantity`  | `InvoiceItem`          | `quantity`             | Menge des Produkts in der Rechnungsposition. |
+| `Lineitem name`      | `InvoiceItem`          | `description`          | Produktname/-beschreibung. |
+| `Lineitem price`     | `InvoiceItem`          | `unitPrice`            | Einzelpreis des Produkts. |
+| `Billing Name`       | `Customer`             | `name`                 | Name des Kunden für die Rechnungsstellung. |
+| `Billing Address1`   | `Customer`             | `address`              | Erste Adresszeile des Kunden. |
+| `Billing Address2`   | `Customer`             | `address`              | Zweite Adresszeile des Kunden (wird mit der ersten zusammengeführt). |
+| `Billing Company`    | `Customer`             | `companyName`          | Firmenname des Kunden (falls vorhanden). |
+| `Billing Zip`        | `Customer`             | `zipCode`              | Postleitzahl des Kunden. |
+| `Billing City`       | `Customer`             | `city`                 | Stadt des Kunden. |
+| `Billing Province`   | `Customer`             | `province`             | Bundesland/Kanton des Kunden. |
+| `Billing Country`    | `Customer`             | `country`              | Land des Kunden. |
+| `Shipping Name`      | `Customer`             | `shippingName`         | Name des Empfängers für den Versand. |
+| `Shipping Address1`  | `Customer`             | `shippingAddress`      | Erste Adresszeile für den Versand. |
+| `Shipping Address2`  | `Customer`             | `shippingAddress`      | Zweite Adresszeile für den Versand (wird mit der ersten zusammengeführt). |
+| `Shipping Company`   | `Customer`             | `shippingCompanyName`  | Firmenname für den Versand (falls vorhanden). |
+| `Shipping Zip`       | `Customer`             | `shippingZipCode`      | Postleitzahl für den Versand. |
+| `Shipping City`      | `Customer`             | `shippingCity`         | Stadt für den Versand. |
+| `Shipping Province`  | `Customer`             | `shippingProvince`     | Bundesland/Kanton für den Versand. |
+| `Shipping Country`   | `Customer`             | `shippingCountry`      | Land für den Versand. |
+| `Shopify ID`         | `Order`                | `shopifyOrderId`       | Eindeutige Kennung der Bestellung in Shopify. |
+| `Customer ID`        | `Customer`             | `shopifyCustomerId`    | Eindeutige Kennung des Kunden in Shopify. |
 
-**ملاحظات هامة:**
+**Wichtige Hinweise:**
 
-*   **تعدد البنود (Line Items):** غالبًا ما يحتوي ملف CSV على صفوف متعددة لنفس الطلب إذا كان الطلب يحتوي على عدة بنود (منتجات). يجب معالجة هذه الصفوف لتجميعها تحت طلب واحد.
-*   **البيانات المالية:** يجب تحويل الحقول المالية (مثل `Subtotal`, `Shipping`, `Taxes`, `Total`, `Lineitem price`) إلى أرقام عشرية دقيقة.
-*   **العناوين:** قد تحتاج حقول العنوان إلى دمج (مثل `Address1` و `Address2`) أو تحليلها بشكل أكبر لتناسب نموذجنا الداخلي.
-*   **الحالة:** يمكن استخدام `Financial Status` و `Fulfillment Status` لتحديد حالة الطلب النهائية.
+*   **Mehrere Positionen (Line Items):** Die CSV-Datei enthält oft mehrere Zeilen für dieselbe Bestellung, wenn die Bestellung mehrere Positionen (Produkte) enthält. Diese Zeilen müssen verarbeitet werden, um sie unter einer einzigen Bestellung zu gruppieren.
+*   **Finanzdaten:** Finanzfelder (wie `Subtotal`, `Shipping`, `Taxes`, `Total`, `Lineitem price`) müssen in präzise Dezimalzahlen umgewandelt werden.
+*   **Adressen:** Adressfelder müssen möglicherweise zusammengeführt (z. B. `Address1` und `Address2`) oder weiter analysiert werden, um unserem internen Modell zu entsprechen.
+*   **Status:** `Financial Status` und `Fulfillment Status` können verwendet werden, um den endgültigen Bestellstatus zu bestimmen.
 
-## خط أنابيب التحليل القوي (Robust Parser Pipeline)
+## Robuste Analyse-Pipeline (Robust Parser Pipeline)
 
-لضمان معالجة فعالة وموثوقة لملفات CSV، سنقوم بتصميم خط أنابيب للتحليل يتميز بالتدفق (streaming)، كفاءة الذاكرة (memory-safe)، معالجة الأخطاء، والتحقق من صحة الصفوف، وإلغاء التكرار.
+Um eine effiziente und zuverlässige Verarbeitung von CSV-Dateien zu gewährleisten, werden wir eine Analyse-Pipeline entwerfen, die sich durch Streaming, Speichereffizienz (memory-safe), Fehlerbehandlung, Zeilenvalidierung und Deduplizierung auszeichnet.
 
-### المكونات الرئيسية لخط الأنابيب:
+### Hauptkomponenten der Pipeline:
 
-1.  **التحميل المسبق والتحقق الأولي (Pre-upload & Initial Validation):**
-    *   **التحقق من نوع الملف:** التأكد من أن الملف الذي تم تحميله هو بالفعل ملف CSV.
-    *   **حدود الحجم:** فرض قيود على حجم الملف لمنع هجمات رفض الخدمة (DoS) أو استهلاك الموارد بشكل مفرط.
-    *   **مسح الفيروسات (اختياري):** في بيئات الإنتاج الحساسة، قد يكون من الضروري إجراء مسح للفيروسات.
+1.  **Vorab-Upload und Erstvalidierung (Pre-upload & Initial Validation):**
+    *   **Dateitypprüfung:** Sicherstellen, dass die hochgeladene Datei tatsächlich eine CSV-Datei ist.
+    *   **Größenbeschränkungen:** Einschränkungen für die Dateigröße durchsetzen, um Denial-of-Service (DoS)-Angriffe oder übermäßigen Ressourcenverbrauch zu verhindern.
+    *   **Virenscan (optional):** In sensiblen Produktionsumgebungen kann ein Virenscan erforderlich sein.
 
-2.  **التخزين المؤقت (Temporary Storage):**
-    *   يتم تخزين ملف CSV الذي تم تحميله مؤقتًا في تخزين متوافق مع S3. هذا يسمح بالمعالجة غير المتزامنة ويقلل من استهلاك الذاكرة على الخادم الرئيسي.
+2.  **Temporäre Speicherung (Temporary Storage):**
+    *   Die hochgeladene CSV-Datei wird vorübergehend in einem S3-kompatiblen Speicher abgelegt. Dies ermöglicht eine asynchrone Verarbeitung und reduziert den Speicherverbrauch auf dem Hauptserver.
 
-3.  **معالجة الخلفية (Background Processing):**
-    *   يتم إرسال مهمة تحليل CSV إلى قائمة انتظار (Queue) للمعالجة في الخلفية. هذا يمنع حظر طلب المستخدم ويحسن استجابة الواجهة الأمامية. يتم تحديث حالة مهمة التحميل (`UploadJob`) في قاعدة البيانات.
+3.  **Hintergrundverarbeitung (Background Processing):**
+    *   Die CSV-Analyseaufgabe wird an eine Warteschlange (Queue) zur Hintergrundverarbeitung gesendet. Dies verhindert das Blockieren der Benutzeranfrage und verbessert die Reaktionsfähigkeit des Frontends. Der Status der Upload-Aufgabe (`UploadJob`) wird in der Datenbank aktualisiert.
 
-4.  **قراءة التدفق (Streaming Read):**
-    *   بدلاً من تحميل الملف بأكمله في الذاكرة، سيتم قراءة ملف CSV كتدفق (stream). هذا ضروري للملفات الكبيرة ويضمن كفاءة الذاكرة.
-    *   يمكن استخدام مكتبات مثل `csv-parser` في Node.js لمعالجة التدفق.
+4.  **Streaming-Lesen (Streaming Read):**
+    *   Anstatt die gesamte Datei in den Speicher zu laden, wird die CSV-Datei als Stream gelesen. Dies ist für große Dateien unerlässlich und gewährleistet Speichereffizienz.
+    *   Bibliotheken wie `csv-parser` in Node.js können für die Streaming-Verarbeitung verwendet werden.
 
-5.  **تحليل الصفوف (Row Parsing):**
-    *   يتم تحليل كل سطر في ملف CSV إلى كائن JavaScript. يجب أن يتعامل المحلل مع الفواصل، علامات الاقتباس، والأحرف الخاصة بشكل صحيح.
+5.  **Zeilenanalyse (Row Parsing):**
+    *   Jede Zeile in der CSV-Datei wird in ein JavaScript-Objekt analysiert. Der Parser muss Trennzeichen, Anführungszeichen und Sonderzeichen korrekt behandeln.
 
-6.  **التحقق من صحة الصفوف (Row-level Validation):**
-    *   يتم تطبيق مخطط `shopifyOrderCsvRowSchema` (المعرف في قسم نمذجة البيانات) على كل صف. أي صف لا يفي بالمخطط يتم تسجيله كخطأ ويتم تخطيه.
-    *   يتم تجميع الأخطاء وربطها بمهمة التحميل (`UploadJob`) لإبلاغ المستخدم.
+6.  **Zeilenvalidierung (Row-level Validation):**
+    *   Das Schema `shopifyOrderCsvRowSchema` (definiert im Abschnitt Datenmodellierung) wird auf jede Zeile angewendet. Jede Zeile, die das Schema nicht erfüllt, wird als Fehler protokolliert und übersprungen.
+    *   Fehler werden gesammelt und mit der Upload-Aufgabe (`UploadJob`) verknüpft, um den Benutzer zu informieren.
 
-7.  **التعيين والتحويل (Mapping & Transformation):**
-    *   يتم تعيين البيانات الصالحة من صف CSV إلى نموذج البيانات الداخلي (`Customer`, `Order`, `InvoiceItem`).
-    *   تتضمن التحويلات تحويل السلاسل النصية إلى أرقام (للمبالغ والكميات)، ودمج حقول العنوان، وتحديد حالة الطلب بناءً على حقول Shopify.
+7.  **Zuordnung und Transformation (Mapping & Transformation):**
+    *   Gültige Daten aus einer CSV-Zeile werden dem internen Datenmodell (`Customer`, `Order`, `InvoiceItem`) zugeordnet.
+    *   Transformationen umfassen die Umwandlung von Zeichenfolgen in Zahlen (für Beträge und Mengen), das Zusammenführen von Adressfeldern und das Bestimmen des Bestellstatus basierend auf Shopify-Feldern.
 
-8.  **إلغاء التكرار (Deduplication):**
-    *   **على مستوى الطلب:** يجب تحديد الطلبات الفريدة باستخدام `shopifyOrderId` أو `orderNumber`. إذا تم العثور على طلب موجود، يتم تحديثه بدلاً من إنشاء طلب جديد.
-    *   **على مستوى العميل:** يجب تحديد العملاء الفريدين باستخدام `shopifyCustomerId` أو `email` (إذا كان فريدًا). يتم إنشاء عميل جديد فقط إذا لم يتم العثور على عميل موجود.
-    *   **على مستوى بنود الفاتورة:** يتم تجميع بنود الفاتورة لنفس الطلب.
+8.  **Deduplizierung (Deduplication):**
+    *   **Auf Bestellebene:** Eindeutige Bestellungen müssen anhand der `shopifyOrderId` oder `orderNumber` identifiziert werden. Wenn eine vorhandene Bestellung gefunden wird, wird sie aktualisiert, anstatt eine neue zu erstellen.
+    *   **Auf Kundenebene:** Eindeutige Kunden müssen anhand der `shopifyCustomerId` oder `email` (falls eindeutig) identifiziert werden. Ein neuer Kunde wird nur erstellt, wenn kein vorhandener Kunde gefunden wird.
+    *   **Auf Rechnungspositionsebene:** Rechnungspositionen für dieselbe Bestellung werden gruppiert.
 
-9.  **المعالجة المعاملاتية (Transactional Processing):**
-    *   يجب أن تتم عملية حفظ البيانات في قاعدة البيانات كمعاملة واحدة لكل طلب (أو مجموعة من الطلبات) لضمان الاتساق. إذا فشل جزء من الحفظ، يتم التراجع عن العملية بأكملها.
+9.  **Transaktionale Verarbeitung (Transactional Processing):**
+    *   Das Speichern von Daten in der Datenbank muss als eine einzige Transaktion pro Bestellung (oder Gruppe von Bestellungen) erfolgen, um Konsistenz zu gewährleisten. Wenn ein Teil des Speicherns fehlschlägt, wird der gesamte Vorgang rückgängig gemacht.
 
-10. **تسجيل الأخطاء والإبلاغ (Error Logging & Reporting):**
-    *   يتم تسجيل جميع الأخطاء (مثل صفوف CSV غير الصالحة، أخطاء قاعدة البيانات) في `AuditLog` وربطها بـ `UploadJob`. يتم إبلاغ المستخدم بملخص الأخطاء بعد اكتمال المعالجة.
+10. **Fehlerprotokollierung und Berichterstattung (Error Logging & Reporting):**
+    *   Alle Fehler (z. B. ungültige CSV-Zeilen, Datenbankfehler) werden im `AuditLog` protokolliert und mit dem `UploadJob` verknüpft. Der Benutzer wird nach Abschluss der Verarbeitung über eine Fehlerzusammenfassung informiert.
 
-### مثال على خط أنابيب التحليل (Node.js)
+### Beispiel für eine Analyse-Pipeline (Node.js)
 
 ```typescript
 // src/services/shopify-csv-parser.service.ts
@@ -356,55 +351,54 @@ export interface CreateInvoiceItemDto {
 }
 ```
 
-**كيفية تشغيل هذا الكود:**
+**So führen Sie diesen Code aus:**
 
-1.  **تثبيت التبعيات:** تأكد من تثبيت `csv-parser`, `zod`, و `prisma`.
+1.  **Abhängigkeiten installieren:** Stellen Sie sicher, dass `csv-parser`, `zod` und `prisma` installiert sind.
     ```bash
     npm install csv-parser zod @prisma/client
     npm install -D prisma ts-node typescript
     npx prisma init
     ```
-2.  **إعداد Prisma:** قم بتكوين `schema.prisma` (كما هو موضح في القسم السابق) وقم بتشغيل ترحيلات قاعدة البيانات.
+2.  **Prisma einrichten:** Konfigurieren Sie `schema.prisma` (wie im vorherigen Abschnitt gezeigt) und führen Sie Datenbankmigrationen durch.
     ```bash
     npx prisma migrate dev --name init
     npx prisma generate
     ```
-3.  **إنشاء ملفات DTOs:** قم بإنشاء الملف `src/dtos/shopify-data.dto.ts` وانسخ المحتوى أعلاه.
-4.  **إنشاء مخطط Zod:** قم بإنشاء الملف `src/schemas/shopify-order-csv.schema.ts` وانسخ المحتوى من قسم 
+3.  **DTOs erstellen:** Erstellen Sie die Datei `src/dtos/shopify-data.dto.ts` und kopieren Sie den obigen Inhalt.
+4.  **Zod-Schema erstellen:** Erstellen Sie die Datei `src/schemas/shopify-order-csv.schema.ts` und kopieren Sie den Inhalt aus dem Abschnitt
 
-
-نمذجة البيانات والتحقق من صحتها.
-5.  **إنشاء خدمة التحليل:** قم بإنشاء الملف `src/services/shopify-csv-parser.service.ts` وانسخ المحتوى أعلاه.
-6.  **مثال على الاستخدام:** يمكنك استخدام الخدمة كما يلي:
+Datenmodellierung und Validierung.
+5.  **Analysedienst erstellen:** Erstellen Sie die Datei `src/services/shopify-csv-parser.service.ts` und kopieren Sie den obigen Inhalt.
+6.  **Verwendungsbeispiel:** Sie können den Dienst wie folgt verwenden:
     ```typescript
-    // src/app.ts (مثال على نقطة الدخول)
+    // src/app.ts (Beispiel für einen Einstiegspunkt)
     import { createReadStream } from 'fs';
     import { ShopifyCsvParserService } from './services/shopify-csv-parser.service';
 
     async function runParser() {
-      const filePath = './sample-shopify-orders.csv'; // مسار ملف CSV الخاص بك
-      const organizationId = 'your-organization-id'; // معرف المنظمة الخاص بك
-      const userId = 'your-user-id'; // معرف المستخدم الخاص بك
-      const uploadJobId = 'your-upload-job-id'; // معرف مهمة التحميل
+      const filePath = './sample-shopify-orders.csv'; // Pfad zu Ihrer CSV-Datei
+      const organizationId = 'your-organization-id'; // Ihre Organisations-ID
+      const userId = 'your-user-id'; // Ihre Benutzer-ID
+      const uploadJobId = 'your-upload-job-id'; // Upload-Job-ID
 
       const fileStream = createReadStream(filePath);
       const parserService = new ShopifyCsvParserService();
 
       try {
-        console.log('بدء تحليل ملف CSV...');
+        console.log('Starte CSV-Analyse...');
         await parserService.parseAndProcessCsv(fileStream, organizationId, userId, uploadJobId);
-        console.log('اكتمل تحليل ملف CSV بنجاح.');
+        console.log('CSV-Analyse erfolgreich abgeschlossen.');
       } catch (error) {
-        console.error('فشل تحليل ملف CSV:', error);
+        console.error('CSV-Analyse fehlgeschlagen:', error);
       }
     }
 
     runParser();
     ```
 
-## مثال على مقتطف CSV
+## Beispiel für einen CSV-Ausschnitt
 
-لنفترض أن لدينا ملف CSV بالاسم `sample-shopify-orders.csv` بالمحتوى التالي:
+Angenommen, wir haben eine CSV-Datei mit dem Namen `sample-shopify-orders.csv` und folgendem Inhalt:
 
 ```csv
 Name,Email,Financial Status,Fulfillment Status,Subtotal,Shipping,Taxes,Total,Currency,Lineitem quantity,Lineitem name,Lineitem price,Billing Name,Billing Address1,Billing Zip,Billing City,Billing Country,Shipping Name,Shipping Address1,Shipping Zip,Shipping City,Shipping Country,Shopify ID,Customer ID
@@ -413,15 +407,15 @@ Name,Email,Financial Status,Fulfillment Status,Subtotal,Shipping,Taxes,Total,Cur
 #1001,kunde1@example.com,paid,fulfilled,99.99,5.00,19.00,123.99,EUR,2,Produkt C,10.00,Max Mustermann,Musterstr. 1,12345,Musterstadt,Germany,Max Mustermann,Musterstr. 1,12345,Musterstadt,Germany,123456789,CUST1
 ```
 
-**ملاحظات على المثال:**
+**Anmerkungen zum Beispiel:**
 
-*   يحتوي الطلب `#1001` على بندين (`Produkt A` و `Produkt C`)، مما يوضح كيفية تجميع بنود الفاتورة لنفس الطلب.
-*   الطلب `#1002` هو طلب منفصل.
-*   يتم تضمين جميع الحقول الضرورية للتحقق من الصحة والتعيين.
+*   Bestellung `#1001` enthält zwei Positionen (`Produkt A` und `Produkt C`), was zeigt, wie Rechnungspositionen für dieselbe Bestellung gruppiert werden.
+*   Bestellung `#1002` ist eine separate Bestellung.
+*   Alle für die Validierung und Zuordnung erforderlichen Felder sind enthalten.
 
-## مثال كامل على التحليل مع اختبارات الوحدة
+## Vollständiges Analysebeispiel mit Unit-Tests
 
-لضمان موثوقية خط أنابيب التحليل، من الضروري كتابة اختبارات وحدة شاملة. سنستخدم `jest` (أو `vitest` كبديل) لاختبار خدمة التحليل لدينا.
+Um die Zuverlässigkeit der Analyse-Pipeline zu gewährleisten, ist es wichtig, umfassende Unit-Tests zu schreiben. Wir werden `jest` (oder alternativ `vitest`) verwenden, um unseren Analysedienst zu testen.
 
 ```typescript
 // __tests__/shopify-csv-parser.service.test.ts
@@ -590,13 +584,13 @@ describe('ShopifyCsvParserService', () => {
 });
 ```
 
-**كيفية تشغيل اختبارات الوحدة:**
+**So führen Sie Unit-Tests aus:**
 
-1.  **تثبيت Jest:**
+1.  **Jest installieren:**
     ```bash
     npm install --save-dev jest ts-jest @types/jest
     ```
-2.  **تكوين `jest.config.js`:**
+2.  **`jest.config.js` konfigurieren:**
     ```javascript
     // jest.config.js
     module.exports = {
@@ -607,7 +601,7 @@ describe('ShopifyCsvParserService', () => {
       testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
     };
     ```
-3.  **تحديث `package.json`:** أضف سكريبت الاختبار:
+3.  **`package.json` aktualisieren:** Fügen Sie das Testskript hinzu:
     ```json
     {
       "scripts": {
@@ -615,24 +609,23 @@ describe('ShopifyCsvParserService', () => {
       }
     }
     ```
-4.  **تشغيل الاختبارات:**
+4.  **Tests ausführen:**
     ```bash
     npm test
     ```
 
-## قائمة التحقق ومعايير القبول
+## Checkliste und Akzeptanzkriterien
 
-*   [ ] **التحقق من نوع الملف:** يتم قبول ملفات CSV فقط.
-*   [ ] **حدود حجم الملف:** يتم فرض قيود على حجم الملف (على سبيل المثال، 10 ميجابايت).
-*   [ ] **معالجة غير متزامنة:** يتم معالجة ملفات CSV في الخلفية باستخدام قائمة انتظار.
-*   [ ] **قراءة التدفق:** يتم قراءة ملفات CSV باستخدام التدفق لتجنب استهلاك الذاكرة المفرط.
-*   [ ] **التحقق من صحة الصفوف:** يتم التحقق من صحة كل صف باستخدام مخطط Zod، ويتم تسجيل الأخطاء.
-*   [ ] **التعيين والتحويل:** يتم تعيين بيانات CSV الصالحة إلى كيانات `Customer` و `Order` و `InvoiceItem` الداخلية بشكل صحيح.
-*   [ ] **إلغاء التكرار:** يتم تحديد الطلبات والعملاء الموجودين وتحديثهم بدلاً من إنشاء سجلات مكررة.
-*   [ ] **المعالجة المعاملاتية:** يتم حفظ البيانات في قاعدة البيانات ضمن معاملات لضمان الاتساق.
-*   [ ] **تسجيل الأخطاء:** يتم تسجيل جميع الأخطاء في `AuditLog` وتحديث حالة `UploadJob`.
-*   [ ] **اختبارات الوحدة:** توجد اختبارات وحدة شاملة تغطي سيناريوهات النجاح والفشل.
-*   [ ] **رسائل خطأ باللغة الألمانية:** يتم توفير رسائل خطأ واضحة ومفيدة باللغة الألمانية.
+*   [ ] **Dateitypprüfung:** Nur CSV-Dateien werden akzeptiert.
+*   [ ] **Dateigrößenbeschränkung:** Einschränkungen für die Dateigröße werden durchgesetzt (z. B. 10 MB).
+*   [ ] **Asynchrone Verarbeitung:** CSV-Dateien werden im Hintergrund über eine Warteschlange verarbeitet.
+*   [ ] **Streaming-Lesen:** CSV-Dateien werden per Streaming gelesen, um übermäßigen Speicherverbrauch zu vermeiden.
+*   [ ] **Zeilenvalidierung:** Jede Zeile wird mit einem Zod-Schema validiert, und Fehler werden protokolliert.
+*   [ ] **Zuordnung und Transformation:** Gültige CSV-Daten werden korrekt den internen Entitäten `Customer`, `Order` und `InvoiceItem` zugeordnet.
+*   [ ] **Deduplizierung:** Vorhandene Bestellungen und Kunden werden identifiziert und aktualisiert, anstatt doppelte Datensätze zu erstellen.
+*   [ ] **Transaktionale Verarbeitung:** Daten werden innerhalb von Transaktionen in der Datenbank gespeichert, um Konsistenz zu gewährleisten.
+*   [ ] **Fehlerprotokollierung:** Alle Fehler werden im `AuditLog` protokolliert und der Status des `UploadJob` wird aktualisiert.
+*   [ ] **Unit-Tests:** Es gibt umfassende Unit-Tests, die Erfolgs- und Fehlerszenarien abdecken.
+*   [ ] **Fehlermeldungen auf Deutsch:** Klare und hilfreiche Fehlermeldungen werden auf Deutsch bereitgestellt.
 
-بهذا نكون قد غطينا الجوانب الأساسية لاستيعاب وتحليل ملفات CSV من Shopify، مع التركيز على المتانة، كفاءة الذاكرة، والتعامل مع الأخطاء، بالإضافة إلى توفير أمثلة عملية للكود والاختبارات.
-
+Damit haben wir die wesentlichen Aspekte des Imports und der Analyse von Shopify-CSV-Dateien abgedeckt, wobei der Schwerpunkt auf Robustheit, Speichereffizienz und Fehlerbehandlung liegt, ergänzt durch praktische Codebeispiele und Tests.

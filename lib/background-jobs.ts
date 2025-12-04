@@ -1,4 +1,4 @@
-// نظام Background Jobs للاستيراد اللامحدود من Shopify
+// Background-Job-System für unbegrenzten Shopify-Import
 export interface JobStatus {
   id: string
   type: 'shopify_import' | 'bulk_operation'
@@ -32,7 +32,7 @@ export interface JobStatus {
   completedAt?: string
 }
 
-// Global storage للمهام
+// Globaler Speicher für Aufgaben
 declare global {
   var backgroundJobs: Map<string, JobStatus> | undefined
   var activeJobControllers: Map<string, AbortController> | undefined
@@ -49,7 +49,7 @@ if (!global.activeJobControllers) {
 export class BackgroundJobManager {
   static createJob(type: JobStatus['type'], data: JobStatus['data']): string {
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
+
     const job: JobStatus = {
       id: jobId,
       type,
@@ -86,11 +86,11 @@ export class BackgroundJobManager {
         ...updates,
         updatedAt: new Date().toISOString()
       }
-      
+
       if (updates.status === 'completed' || updates.status === 'failed' || updates.status === 'cancelled') {
         updatedJob.completedAt = new Date().toISOString()
       }
-      
+
       global.backgroundJobs!.set(jobId, updatedJob)
     }
   }
@@ -123,7 +123,7 @@ export class BackgroundJobManager {
 
   static cleanupOldJobs(maxAge: number = 24 * 60 * 60 * 1000): void {
     const cutoff = Date.now() - maxAge
-    
+
     for (const [jobId, job] of global.backgroundJobs!) {
       const jobTime = new Date(job.createdAt).getTime()
       if (jobTime < cutoff && (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled')) {
@@ -134,57 +134,57 @@ export class BackgroundJobManager {
   }
 }
 
-// Rate Limiting مع Exponential Backoff
+// Rate Limiting mit Exponential Backoff
 export class RateLimiter {
   private static retryDelays = [1000, 2000, 4000, 8000, 16000] // milliseconds
-  
+
   static async withRetry<T>(
     operation: () => Promise<T>,
     maxRetries: number = 5,
     onRetry?: (attempt: number, error: any) => void
   ): Promise<T> {
     let lastError: any
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await operation()
       } catch (error: any) {
         lastError = error
-        
-        // إذا كان 429 (Rate Limited) أو خطأ شبكة
+
+        // Wenn 429 (Rate Limited) oder Netzwerkfehler
         if (error.status === 429 || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
           if (attempt < maxRetries) {
             const delay = this.retryDelays[Math.min(attempt, this.retryDelays.length - 1)]
-            
-            // إضافة jitter عشوائي لتجنب thundering herd
+
+            // Zufälligen Jitter hinzufügen, um Thundering Herd zu vermeiden
             const jitter = Math.random() * 1000
             const totalDelay = delay + jitter
-            
+
             console.log(`⏳ Rate limited, retrying in ${totalDelay}ms (attempt ${attempt + 1}/${maxRetries + 1})`)
-            
+
             if (onRetry) {
               onRetry(attempt + 1, error)
             }
-            
+
             await new Promise(resolve => setTimeout(resolve, totalDelay))
             continue
           }
         }
-        
-        // إذا لم يكن خطأ rate limiting، ارمي الخطأ فوراً
+
+        // Wenn kein Rate-Limiting-Fehler, Fehler sofort werfen
         throw error
       }
     }
-    
+
     throw lastError
   }
-  
+
   static async sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
-// Checkpoint System للاستئناف
+// Checkpoint-System zur Wiederaufnahme
 export interface ImportCheckpoint {
   jobId: string
   cursor?: string
@@ -196,11 +196,11 @@ export interface ImportCheckpoint {
 
 export class CheckpointManager {
   private static checkpoints = new Map<string, ImportCheckpoint>()
-  
+
   static saveCheckpoint(checkpoint: ImportCheckpoint): void {
     this.checkpoints.set(checkpoint.jobId, checkpoint)
-    
-    // حفظ في localStorage للاستمرارية
+
+    // In localStorage speichern für Persistenz
     if (typeof window !== 'undefined') {
       try {
         const checkpoints = Array.from(this.checkpoints.entries())
@@ -210,11 +210,11 @@ export class CheckpointManager {
       }
     }
   }
-  
+
   static getCheckpoint(jobId: string): ImportCheckpoint | null {
     return this.checkpoints.get(jobId) || null
   }
-  
+
   static loadCheckpoints(): void {
     if (typeof window !== 'undefined') {
       try {
@@ -228,10 +228,10 @@ export class CheckpointManager {
       }
     }
   }
-  
+
   static clearCheckpoint(jobId: string): void {
     this.checkpoints.delete(jobId)
-    
+
     if (typeof window !== 'undefined') {
       try {
         const checkpoints = Array.from(this.checkpoints.entries())
@@ -243,7 +243,7 @@ export class CheckpointManager {
   }
 }
 
-// تحميل الـ checkpoints عند بدء التشغيل
+// Checkpoints beim Start laden
 if (typeof window !== 'undefined') {
   CheckpointManager.loadCheckpoints()
 }

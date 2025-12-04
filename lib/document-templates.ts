@@ -9,7 +9,7 @@ export interface DocumentTemplate {
   type: DocumentType
   category: 'financial' | 'commercial' | 'administrative'
   isDefault: boolean
-  
+
   // Document-specific content
   content: {
     title: string                    // Document title
@@ -21,7 +21,7 @@ export interface DocumentTemplate {
     legalNote?: string              // Legal disclaimer
     instructionsText?: string       // Instructions for recipient
   }
-  
+
   // Document behavior settings
   settings: {
     showBankDetails: boolean        // Show bank information
@@ -33,7 +33,7 @@ export interface DocumentTemplate {
     requireSignature: boolean       // Require recipient signature
     allowPartialPayment: boolean    // Allow partial payments
   }
-  
+
   // Visual styling (consistent across all documents)
   styling: {
     primaryColor: string
@@ -41,7 +41,7 @@ export interface DocumentTemplate {
     textColor: string
     backgroundColor: string
   }
-  
+
   createdAt: string
   updatedAt: string
 }
@@ -50,19 +50,19 @@ export interface DocumentTemplate {
 export const RECEIPT_TEMPLATES: DocumentTemplate[] = [
   {
     id: 'receipt-full-payment',
-    name: 'إشعار استلام دفعة كاملة / Vollständige Zahlung erhalten',
+    name: 'Vollständige Zahlung erhalten',
     type: 'receipt',
     category: 'financial',
     isDefault: true,
     content: {
-      title: 'إشعار استلام الدفعة',
-      subtitle: 'تم استلام المبلغ بالكامل بنجاح',
-      headerNote: 'شكراً لكم على الدفع في الوقت المحدد',
-      bodyText: 'نؤكد لكم استلام المبلغ المذكور أدناه بالكامل مقابل الخدمات/المنتجات المقدمة.',
-      footerNote: 'نقدر ثقتكم بنا ونتطلع للتعامل معكم مستقبلاً',
-      thankYouNote: 'شكراً لاختياركم خدماتنا',
-      legalNote: 'هذا الإشعار صادر إلكترونياً وصالح بدون توقيع.',
-      instructionsText: 'يرجى الاحتفاظ بهذا الإشعار كإثبات للدفع.'
+      title: 'Zahlungseingangsbestätigung',
+      subtitle: 'Vollständiger Betrag erfolgreich erhalten',
+      headerNote: 'Vielen Dank für Ihre pünktliche Zahlung',
+      bodyText: 'Wir bestätigen den vollständigen Erhalt des unten aufgeführten Betrags für die erbrachten Leistungen/Produkte.',
+      footerNote: 'Wir schätzen Ihr Vertrauen und freuen uns auf die weitere Zusammenarbeit.',
+      thankYouNote: 'Vielen Dank, dass Sie sich für unsere Dienste entschieden haben.',
+      legalNote: 'Dieses Dokument wurde elektronisch erstellt und ist ohne Unterschrift gültig.',
+      instructionsText: 'Bitte bewahren Sie diesen Beleg als Zahlungsnachweis auf.'
     },
     settings: {
       showBankDetails: false,         // No need for bank details in receipt
@@ -83,22 +83,22 @@ export const RECEIPT_TEMPLATES: DocumentTemplate[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
-  
+
   {
     id: 'receipt-partial-payment',
-    name: 'إشعار استلام دفعة جزئية / Teilzahlung erhalten',
+    name: 'Teilzahlung erhalten',
     type: 'receipt',
     category: 'financial',
     isDefault: false,
     content: {
-      title: 'إشعار استلام دفعة جزئية',
-      subtitle: 'تم استلام جزء من المبلغ المستحق',
-      headerNote: 'شكراً لكم على الدفعة المستلمة',
-      bodyText: 'نؤكد لكم استلام الدفعة الجزئية المذكورة أدناه. المبلغ المتبقي مستحق الدفع حسب الاتفاق.',
-      footerNote: 'يرجى سداد المبلغ المتبقي في الموعد المحدد',
-      thankYouNote: 'نشكركم على التزامكم بالدفع',
-      legalNote: 'هذا الإشعار صادر إلكترونياً وصالح بدون توقيع.',
-      instructionsText: 'المبلغ المتبقي مستحق الدفع. ستتلقون فاتورة منفصلة للمبلغ المتبقي.'
+      title: 'Teilzahlungsbestätigung',
+      subtitle: 'Teilbetrag erhalten',
+      headerNote: 'Vielen Dank für Ihre Teilzahlung',
+      bodyText: 'Wir bestätigen den Erhalt der unten aufgeführten Teilzahlung. Der Restbetrag ist gemäß Vereinbarung fällig.',
+      footerNote: 'Bitte begleichen Sie den Restbetrag fristgerecht.',
+      thankYouNote: 'Vielen Dank für Ihre Zahlung.',
+      legalNote: 'Dieses Dokument wurde elektronisch erstellt und ist ohne Unterschrift gültig.',
+      instructionsText: 'Der Restbetrag ist fällig. Sie erhalten eine separate Rechnung über den verbleibenden Betrag.'
     },
     settings: {
       showBankDetails: true,          // Show for remaining payment
@@ -119,22 +119,22 @@ export const RECEIPT_TEMPLATES: DocumentTemplate[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
-  
+
   {
     id: 'receipt-advance-payment',
-    name: 'إشعار استلام دفعة مقدمة / Anzahlung erhalten',
+    name: 'Anzahlung erhalten',
     type: 'receipt',
     category: 'financial',
     isDefault: false,
     content: {
-      title: 'إشعار استلام دفعة مقدمة',
-      subtitle: 'تم استلام الدفعة المقدمة بنجاح',
-      headerNote: 'شكراً لكم على الدفعة المقدمة',
-      bodyText: 'نؤكد لكم استلام الدفعة المقدمة المذكورة أدناه. سيتم خصم هذا المبلغ من الفاتورة النهائية.',
-      footerNote: 'سيتم إرسال الفاتورة النهائية عند اكتمال الخدمة/المنتج',
-      thankYouNote: 'نقدر ثقتكم بنا مقدماً',
-      legalNote: 'هذا الإشعار صادر إلكترونياً وصالح بدون توقيع.',
-      instructionsText: 'هذه دفعة مقدمة. الفاتورة النهائية ستتضمن خصم هذا المبلغ.'
+      title: 'Anzahlungsbestätigung',
+      subtitle: 'Anzahlung erfolgreich erhalten',
+      headerNote: 'Vielen Dank für Ihre Anzahlung',
+      bodyText: 'Wir bestätigen den Erhalt der unten aufgeführten Anzahlung. Dieser Betrag wird von der Endrechnung abgezogen.',
+      footerNote: 'Die Endrechnung wird nach Abschluss der Leistung/Lieferung erstellt.',
+      thankYouNote: 'Vielen Dank für Ihr Vertrauen.',
+      legalNote: 'Dieses Dokument wurde elektronisch erstellt und ist ohne Unterschrift gültig.',
+      instructionsText: 'Dies ist eine Anzahlung. Die Endrechnung wird diesen Betrag berücksichtigen.'
     },
     settings: {
       showBankDetails: false,         // Payment already received
@@ -181,21 +181,21 @@ export function getDefaultTemplate(type: DocumentType): DocumentTemplate | null 
 // Helper functions for document generation
 export function getDocumentTypeLabel(type: DocumentType): string {
   const labels: Record<DocumentType, string> = {
-    'invoice': 'فاتورة / Rechnung',
-    'receipt': 'إشعار استلام / Empfangsbestätigung',
-    'payment_notice': 'إشعار دفع / Zahlungshinweis',
-    'reminder': 'تذكير / Mahnung',
-    'quote': 'عرض سعر / Angebot',
-    'delivery_note': 'إشعار تسليم / Lieferschein'
+    'invoice': 'Rechnung',
+    'receipt': 'Empfangsbestätigung',
+    'payment_notice': 'Zahlungshinweis',
+    'reminder': 'Mahnung',
+    'quote': 'Angebot',
+    'delivery_note': 'Lieferschein'
   }
   return labels[type] || type
 }
 
 export function getDocumentCategoryLabel(category: DocumentTemplate['category']): string {
   const labels: Record<DocumentTemplate['category'], string> = {
-    'financial': 'مالية / Finanziell',
-    'commercial': 'تجارية / Kommerziell', 
-    'administrative': 'إدارية / Administrativ'
+    'financial': 'Finanziell',
+    'commercial': 'Kommerziell',
+    'administrative': 'Administrativ'
   }
   return labels[category] || category
 }

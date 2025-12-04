@@ -12,7 +12,7 @@ Diese Anleitung führt Sie durch die komplette Einrichtung der Shopify-Integrati
 
 ### 1.2 Private App erstellen
 1. **Einstellungen** → **Apps und Verkaufskanäle** → **Apps entwickeln**
-2. Klicken Sie auf **"Private App erstellen"**
+2. Klicken Sie auf **"App erstellen"**
 3. Geben Sie folgende Informationen ein:
    - **App-Name:** "KARNEX Rechnungssystem"
    - **Entwickler-E-Mail:** Ihre E-Mail-Adresse
@@ -43,7 +43,7 @@ Aktivieren Sie folgende Berechtigungen:
 
 ### 2.2 Verbindungseinstellungen
 Geben Sie folgende Daten ein:
-### **معلومات الاتصال الفعلية:**
+### **Tatsächliche Verbindungsinformationen:**
 ```
 Shop Domain: 45dv93-bk.myshopify.com
 Admin URL: https://admin.shopify.com/store/45dv93-bk

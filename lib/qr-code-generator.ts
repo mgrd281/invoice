@@ -1,5 +1,4 @@
-// QR-Code Generator for Payment Information
-// مولد رمز الاستجابة السريعة لمعلومات الدفع
+// QR-Code-Generator für Zahlungsinformationen
 
 export interface QRCodePaymentData {
   paymentMethod: 'sepa' | 'paypal' | 'custom'
@@ -15,8 +14,7 @@ export interface QRCodePaymentData {
 }
 
 /**
- * Generate SEPA QR-Code data according to EPC QR-Code standard
- * توليد بيانات رمز الاستجابة السريعة لـ SEPA وفقاً لمعيار EPC
+ * Generiere SEPA QR-Code-Daten gemäß EPC QR-Code-Standard
  */
 export function generateSEPAQRData(data: QRCodePaymentData): string {
   if (data.paymentMethod !== 'sepa' || !data.iban || !data.recipientName) {
@@ -42,8 +40,7 @@ export function generateSEPAQRData(data: QRCodePaymentData): string {
 }
 
 /**
- * Generate PayPal payment URL for QR-Code
- * توليد رابط دفع PayPal لرمز الاستجابة السريعة
+ * Generiere PayPal-Zahlungs-URL für QR-Code
  */
 export function generatePayPalQRData(data: QRCodePaymentData): string {
   if (data.paymentMethod !== 'paypal' || !data.paypalEmail) {
@@ -66,8 +63,7 @@ export function generatePayPalQRData(data: QRCodePaymentData): string {
 }
 
 /**
- * Generate custom QR-Code data
- * توليد بيانات مخصصة لرمز الاستجابة السريعة
+ * Generiere benutzerdefinierte QR-Code-Daten
  */
 export function generateCustomQRData(data: QRCodePaymentData): string {
   if (data.paymentMethod !== 'custom' || !data.customText) {
@@ -83,8 +79,7 @@ export function generateCustomQRData(data: QRCodePaymentData): string {
 }
 
 /**
- * Generate QR-Code data based on payment method
- * توليد بيانات رمز الاستجابة السريعة حسب طريقة الدفع
+ * Generiere QR-Code-Daten basierend auf der Zahlungsmethode
  */
 export function generateQRCodeData(data: QRCodePaymentData): string {
   switch (data.paymentMethod) {
@@ -100,14 +95,13 @@ export function generateQRCodeData(data: QRCodePaymentData): string {
 }
 
 /**
- * Generate QR-Code data URL using qrcode library
- * توليد رابط بيانات رمز الاستجابة السريعة باستخدام مكتبة qrcode
+ * Generiere QR-Code-Daten-URL mit der qrcode-Bibliothek
  */
 export async function generateQRCodeDataURL(data: string, size: number = 200): Promise<string> {
   try {
     // Dynamic import for client-side compatibility
     const QRCode = (await import('qrcode')).default
-    
+
     return await QRCode.toDataURL(data, {
       width: size,
       margin: 2,
@@ -125,14 +119,13 @@ export async function generateQRCodeDataURL(data: string, size: number = 200): P
 }
 
 /**
- * Generate QR-Code SVG using qrcode library
- * توليد SVG لرمز الاستجابة السريعة باستخدام مكتبة qrcode
+ * Generiere QR-Code-SVG mit der qrcode-Bibliothek
  */
 export async function generateQRCodeSVG(data: string, size: number = 200): Promise<string> {
   try {
     // Dynamic import for client-side compatibility
     const QRCode = (await import('qrcode')).default
-    
+
     return await QRCode.toString(data, {
       type: 'svg',
       width: size,
@@ -151,17 +144,16 @@ export async function generateQRCodeSVG(data: string, size: number = 200): Promi
 }
 
 /**
- * Fallback simple QR-Code SVG generator
- * مولد SVG بسيط احتياطي لرمز الاستجابة السريعة
+ * Fallback einfacher QR-Code-SVG-Generator
  */
 function generateSimpleQRCodeSVG(data: string, size: number = 200): string {
   const modules = 21 // Standard QR-Code size for version 1
   const moduleSize = size / modules
-  
+
   // Create a simple pattern based on data hash
   const hash = simpleHash(data)
   const pattern: boolean[][] = []
-  
+
   for (let i = 0; i < modules; i++) {
     pattern[i] = []
     for (let j = 0; j < modules; j++) {
@@ -170,16 +162,16 @@ function generateSimpleQRCodeSVG(data: string, size: number = 200): string {
       pattern[i][j] = value === 0
     }
   }
-  
+
   // Add finder patterns (corners)
   addFinderPattern(pattern, 0, 0)
   addFinderPattern(pattern, 0, modules - 7)
   addFinderPattern(pattern, modules - 7, 0)
-  
+
   // Generate SVG
   let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`
   svg += `<rect width="${size}" height="${size}" fill="white"/>`
-  
+
   for (let i = 0; i < modules; i++) {
     for (let j = 0; j < modules; j++) {
       if (pattern[i][j]) {
@@ -189,7 +181,7 @@ function generateSimpleQRCodeSVG(data: string, size: number = 200): string {
       }
     }
   }
-  
+
   svg += '</svg>'
   return svg
 }
@@ -220,7 +212,7 @@ function addFinderPattern(pattern: boolean[][], startRow: number, startCol: numb
     [true, false, false, false, false, false, true],
     [true, true, true, true, true, true, true]
   ]
-  
+
   for (let i = 0; i < 7; i++) {
     for (let j = 0; j < 7; j++) {
       if (startRow + i < pattern.length && startCol + j < pattern[0].length) {
@@ -231,31 +223,29 @@ function addFinderPattern(pattern: boolean[][], startRow: number, startCol: numb
 }
 
 /**
- * Validate IBAN format
- * التحقق من صحة تنسيق IBAN
+ * IBAN-Format validieren
  */
 export function validateIBAN(iban: string): boolean {
   // Remove spaces and convert to uppercase
   const cleanIBAN = iban.replace(/\s/g, '').toUpperCase()
-  
+
   // Check length (German IBAN should be 22 characters)
   if (cleanIBAN.length !== 22) {
     return false
   }
-  
+
   // Check if it starts with DE (Germany)
   if (!cleanIBAN.startsWith('DE')) {
     return false
   }
-  
+
   // Basic format check (2 letters + 20 digits)
   const pattern = /^DE\d{20}$/
   return pattern.test(cleanIBAN)
 }
 
 /**
- * Format IBAN with spaces for display
- * تنسيق IBAN بمسافات للعرض
+ * IBAN mit Leerzeichen für die Anzeige formatieren
  */
 export function formatIBAN(iban: string): string {
   const cleanIBAN = iban.replace(/\s/g, '').toUpperCase()

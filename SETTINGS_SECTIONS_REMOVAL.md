@@ -1,13 +1,13 @@
-# ✅ تم إزالة أقسام Benutzereinstellungen و Anwendungseinstellungen من الإعدادات
+# ✅ Benutzereinstellungen und Anwendungseinstellungen aus den Einstellungen entfernt
 
-## 🎯 **المطلوب:**
-إزالة قسمي "Benutzereinstellungen" و "Anwendungseinstellungen" من صفحة الإعدادات.
+## 🎯 **Ziel:**
+Entfernen der Abschnitte "Benutzereinstellungen" und "Anwendungseinstellungen" von der Einstellungsseite.
 
-## ✅ **التغييرات المُطبقة:**
+## ✅ **Angewendete Änderungen:**
 
-### 1. **تحديث واجهة AppSettings** (`/app/settings/page.tsx`)
+### 1. **Aktualisierung der AppSettings-Schnittstelle** (`/app/settings/page.tsx`)
 
-#### قبل التعديل:
+#### Vorher:
 ```typescript
 interface AppSettings {
   // User Preferences
@@ -36,7 +36,7 @@ interface AppSettings {
 }
 ```
 
-#### بعد التعديل:
+#### Nachher:
 ```typescript
 interface AppSettings {
   // Notifications
@@ -54,9 +54,9 @@ interface AppSettings {
 }
 ```
 
-### 2. **تحديث الـ State الافتراضي**
+### 2. **Aktualisierung des Standardzustands**
 
-#### قبل التعديل:
+#### Vorher:
 ```typescript
 const [settings, setSettings] = useState<AppSettings>({
   // User Preferences
@@ -85,7 +85,7 @@ const [settings, setSettings] = useState<AppSettings>({
 })
 ```
 
-#### بعد التعديل:
+#### Nachher:
 ```typescript
 const [settings, setSettings] = useState<AppSettings>({
   // Notifications
@@ -103,11 +103,11 @@ const [settings, setSettings] = useState<AppSettings>({
 })
 ```
 
-### 3. **إزالة أقسام UI**
+### 3. **Entfernen von UI-Abschnitten**
 
-#### أ. إزالة قسم Benutzereinstellungen:
+#### a. Entfernen von Benutzereinstellungen:
 ```typescript
-// تم إزالة هذا القسم بالكامل
+// Dieser Abschnitt wurde vollständig entfernt
 {/* User Preferences */}
 <Card>
   <CardHeader>
@@ -125,9 +125,9 @@ const [settings, setSettings] = useState<AppSettings>({
 </Card>
 ```
 
-#### ب. إزالة قسم Anwendungseinstellungen:
+#### b. Entfernen von Anwendungseinstellungen:
 ```typescript
-// تم إزالة هذا القسم بالكامل
+// Dieser Abschnitt wurde vollständig entfernt
 {/* Application Settings */}
 <Card>
   <CardHeader>
@@ -145,11 +145,11 @@ const [settings, setSettings] = useState<AppSettings>({
 </Card>
 ```
 
-### 4. **تحديث API Endpoint** (`/app/api/settings/route.ts`)
+### 4. **Aktualisierung des API-Endpunkts** (`/app/api/settings/route.ts`)
 
-#### أ. تحديث Default Settings:
+#### a. Aktualisierung der Standardeinstellungen:
 ```typescript
-// قبل التعديل
+// Vorher
 const defaultSettings = {
   // User Preferences
   language: 'de',
@@ -176,7 +176,7 @@ const defaultSettings = {
   compactMode: false
 }
 
-// بعد التعديل
+// Nachher
 const defaultSettings = {
   // Notifications
   emailNotifications: true,
@@ -193,9 +193,9 @@ const defaultSettings = {
 }
 ```
 
-#### ب. تحديث Validation:
+#### b. Aktualisierung der Validierung:
 ```typescript
-// قبل التعديل
+// Vorher
 const requiredFields = ['language', 'timezone', 'dateFormat', 'currency']
 
 // Validate numeric fields
@@ -217,10 +217,10 @@ if (!validCurrencies.includes(body.currency)) {
 // Boolean fields
 const booleanFields = ['emailNotifications', 'invoiceReminders', 'paymentAlerts', 'twoFactorAuth', 'autoBackup', 'compactMode']
 
-// بعد التعديل
+// Nachher
 const requiredFields = ['theme']
 
-// Boolean fields (إزالة autoBackup)
+// Boolean fields (autoBackup entfernt)
 const booleanFields = ['emailNotifications', 'invoiceReminders', 'paymentAlerts', 'twoFactorAuth', 'compactMode']
 
 // Theme validation only
@@ -230,7 +230,7 @@ if (body.theme && !validThemes.includes(body.theme)) {
 }
 ```
 
-## 📋 **الأقسام المتبقية في الإعدادات:**
+## 📋 **Verbleibende Abschnitte in den Einstellungen:**
 
 ### 1. **Firmeneinstellungen** (Company Settings):
 - Firmenname
@@ -256,65 +256,65 @@ if (body.theme && !validThemes.includes(body.theme)) {
 - Zwei-Faktor-Authentifizierung
 - Sitzungs-Timeout
 
-## 🎯 **الحقول المُزالة:**
+## 🎯 **Entfernte Felder:**
 
-### من Benutzereinstellungen:
+### Aus Benutzereinstellungen:
 - ❌ Sprache (Language)
 - ❌ Zeitzone (Timezone)
 - ❌ Datumsformat (Date Format)
 - ❌ Standardwährung (Currency)
 
-### من Anwendungseinstellungen:
+### Aus Anwendungseinstellungen:
 - ❌ Standard-Steuersatz (Default Tax Rate)
 - ❌ Standard-Rechnungspräfix (Invoice Prefix)
 - ❌ Automatische Datensicherung (Auto Backup)
 
-## 🧪 **للاختبار:**
+## 🧪 **Testanleitung:**
 
-### 1. **اختبار واجهة الإعدادات:**
+### 1. **Testen der Einstellungsoberfläche:**
 ```bash
-# افتح صفحة الإعدادات
-# تحقق من عدم وجود:
-# - قسم "Benutzereinstellungen"
-# - قسم "Anwendungseinstellungen"
-# تحقق من وجود الأقسام المتبقية فقط
+# Öffnen Sie die Einstellungsseite
+# Überprüfen Sie das Fehlen von:
+# - Abschnitt "Benutzereinstellungen"
+# - Abschnitt "Anwendungseinstellungen"
+# Überprüfen Sie das Vorhandensein der verbleibenden Abschnitte
 ```
 
-### 2. **اختبار API:**
+### 2. **Testen der API:**
 ```bash
-# جرب حفظ الإعدادات
-# تحقق من عدم وجود validation errors للحقول المحذوفة
-# تحقق من عمل الحقول المتبقية بشكل صحيح
+# Versuchen Sie, Einstellungen zu speichern
+# Überprüfen Sie, ob keine Validierungsfehler für gelöschte Felder auftreten
+# Überprüfen Sie, ob die verbleibenden Felder korrekt funktionieren
 ```
 
-### 3. **اختبار Theme System:**
+### 3. **Testen des Theme-Systems:**
 ```bash
-# تأكد من أن نظام الثيم ما زال يعمل
-# جرب تغيير الثيم من Hell إلى Dunkel
-# تحقق من تطبيق التغيير فوراً
+# Stellen Sie sicher, dass das Theme-System weiterhin funktioniert
+# Versuchen Sie, das Theme von Hell auf Dunkel zu ändern
+# Überprüfen Sie die sofortige Anwendung der Änderung
 ```
 
-## ✅ **النتائج:**
+## ✅ **Ergebnisse:**
 
-### قبل التعديل:
-- ✅ 6 أقسام في الإعدادات
-- ✅ حقول كثيرة قد لا تكون ضرورية
+### Vorher:
+- ✅ 6 Abschnitte in den Einstellungen
+- ✅ Viele Felder, die möglicherweise nicht notwendig sind
 
-### بعد التعديل:
-- ✅ 4 أقسام فقط (الأساسية)
-- ✅ واجهة أبسط وأكثر تركيزاً
-- ✅ API أخف وأسرع
-- ✅ Validation أقل تعقيداً
-- ✅ نظام الثيم ما زال يعمل بالكامل
+### Nachher:
+- ✅ Nur 4 Abschnitte (die wesentlichen)
+- ✅ Einfachere und fokussiertere Oberfläche
+- ✅ Leichtere und schnellere API
+- ✅ Weniger komplexe Validierung
+- ✅ Theme-System funktioniert weiterhin vollständig
 
-## 🎉 **الخلاصة:**
+## 🎉 **Fazit:**
 
-**تم إزالة القسمين المطلوبين بنجاح!**
+**Die beiden angeforderten Abschnitte wurden erfolgreich entfernt!**
 
-الآن صفحة الإعدادات تحتوي على:
-1. **Firmeneinstellungen** - إعدادات الشركة الأساسية ✅
-2. **Anzeige-Einstellungen** - إعدادات العرض والثيم ✅
-3. **Benachrichtigungen** - إعدادات الإشعارات ✅
-4. **Sicherheitseinstellungen** - إعدادات الأمان ✅
+Jetzt enthält die Einstellungsseite:
+1. **Firmeneinstellungen** - Grundlegende Firmeneinstellungen ✅
+2. **Anzeige-Einstellungen** - Anzeige- und Theme-Einstellungen ✅
+3. **Benachrichtigungen** - Benachrichtigungseinstellungen ✅
+4. **Sicherheitseinstellungen** - Sicherheitseinstellungen ✅
 
-**واجهة أبسط ومركزة على الأساسيات!** 🎯
+**Einfachere Oberfläche, die sich auf das Wesentliche konzentriert!** 🎯

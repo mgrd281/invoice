@@ -1,74 +1,75 @@
-# لوحات تحكم المسؤول والمستخدم
 
-## مقدمة
+# Admin- und Benutzer-Dashboards
 
-تعتبر لوحات التحكم المصممة بعناية جوهر تجربة المستخدم في أي تطبيق ويب حديث. في هذا القسم، سنقوم بتصميم وتطوير لوحتي تحكم منفصلتين ومتخصصتين: واحدة للمستخدمين النهائيين الذين يديرون فواتيرهم وعملائهم، وأخرى للمسؤولين الذين يشرفون على النظام بأكمله. ستكون جميع واجهات المستخدم باللغة الألمانية، مع التركيز على سهولة الاستخدام، الوضوح، والكفاءة.
+## Einführung
 
-## لوحة تحكم المستخدم (User Dashboard)
+Sorgfältig gestaltete Dashboards sind das Herzstück der Benutzererfahrung in jeder modernen Webanwendung. In diesem Abschnitt werden wir zwei separate und spezialisierte Dashboards entwerfen und entwickeln: eines für Endbenutzer, die ihre Rechnungen und Kunden verwalten, und eines für Administratoren, die das gesamte System überwachen. Alle Benutzeroberflächen werden auf Deutsch sein, mit Fokus auf Benutzerfreundlichkeit, Klarheit und Effizienz.
 
-تهدف لوحة تحكم المستخدم إلى توفير واجهة بديهية وشاملة للمستخدمين النهائيين لإدارة جميع جوانب عملية إنشاء الفواتير. ستتضمن هذه اللوحة عدة أقسام رئيسية، كل منها مصمم لتلبية احتياجات محددة في سير العمل.
+## Benutzer-Dashboard (User Dashboard)
 
-### الشاشات الرئيسية للمستخدم
+Das Benutzer-Dashboard zielt darauf ab, Endbenutzern eine intuitive und umfassende Oberfläche zur Verwaltung aller Aspekte des Rechnungserstellungsprozesses zu bieten. Dieses Dashboard wird mehrere Hauptbereiche umfassen, die jeweils auf spezifische Anforderungen im Arbeitsablauf zugeschnitten sind.
 
-#### 1. شاشة التحميلات (Uploads)
+### Hauptbildschirme für Benutzer
 
-تسمح هذه الشاشة للمستخدمين بتحميل ملفات CSV من Shopify ومراقبة حالة معالجتها. تتضمن الميزات التالية:
+#### 1. Upload-Bildschirm (Uploads)
 
-*   **منطقة السحب والإفلات (Drag & Drop Zone):** منطقة بصرية واضحة لسحب وإفلات ملفات CSV، مع رسائل توجيهية باللغة الألمانية مثل "CSV-Datei hier ablegen oder klicken zum Auswählen".
-*   **شريط التقدم (Progress Bar):** يعرض تقدم تحميل الملف ومعالجته في الوقت الفعلي.
-*   **سجل التحميلات (Upload History):** جدول يعرض جميع التحميلات السابقة مع تفاصيل مثل اسم الملف، تاريخ التحميل، الحالة (Ausstehend, Verarbeitung, Abgeschlossen, Fehlgeschlagen)، وعدد الصفوف المعالجة.
-*   **تفاصيل الأخطاء (Error Details):** عند فشل المعالجة، يتم عرض تفاصيل الأخطاء بطريقة واضحة ومفيدة للمستخدم.
+Dieser Bildschirm ermöglicht es Benutzern, Shopify-CSV-Dateien hochzuladen und deren Verarbeitungsstatus zu überwachen. Er umfasst folgende Funktionen:
 
-#### 2. شاشة العملاء (Kunden)
+*   **Drag & Drop-Zone:** Ein klarer visueller Bereich zum Ziehen und Ablegen von CSV-Dateien, mit Anweisungen auf Deutsch wie "CSV-Datei hier ablegen oder klicken zum Auswählen".
+*   **Fortschrittsbalken (Progress Bar):** Zeigt den Fortschritt des Datei-Uploads und der Verarbeitung in Echtzeit an.
+*   **Upload-Verlauf (Upload History):** Eine Tabelle, die alle früheren Uploads mit Details wie Dateiname, Upload-Datum, Status (Ausstehend, Verarbeitung, Abgeschlossen, Fehlgeschlagen) und Anzahl der verarbeiteten Zeilen anzeigt.
+*   **Fehlerdetails (Error Details):** Wenn die Verarbeitung fehlschlägt, werden Fehlerdetails klar und hilfreich für den Benutzer angezeigt.
 
-تمكن المستخدمين من إدارة قاعدة بيانات العملاء الخاصة بهم:
+#### 2. Kunden-Bildschirm (Kunden)
 
-*   **قائمة العملاء (Kundenliste):** جدول قابل للبحث والتصفية يعرض جميع العملاء مع معلومات أساسية مثل الاسم، البريد الإلكتروني، المدينة، وتاريخ آخر طلب.
-*   **إضافة عميل جديد (Neuen Kunden hinzufügen):** نموذج لإضافة عملاء جدد يدويًا، مع جميع الحقول المطلوبة للفواتير الألمانية.
-*   **تحرير بيانات العميل (Kundendaten bearbeiten):** إمكانية تحديث معلومات العملاء الموجودين.
-*   **عرض تاريخ العميل (Kundenhistorie):** عرض جميع الطلبات والفواتير المرتبطة بعميل معين.
+Ermöglicht Benutzern die Verwaltung ihrer Kundendatenbank:
 
-#### 3. شاشة الطلبات (Aufträge)
+*   **Kundenliste:** Eine durchsuchbare und filterbare Tabelle, die alle Kunden mit grundlegenden Informationen wie Name, E-Mail, Stadt und Datum der letzten Bestellung anzeigt.
+*   **Neuen Kunden hinzufügen:** Ein Formular zum manuellen Hinzufügen neuer Kunden mit allen für deutsche Rechnungen erforderlichen Feldern.
+*   **Kundendaten bearbeiten:** Möglichkeit, Informationen bestehender Kunden zu aktualisieren.
+*   **Kundenhistorie:** Anzeige aller Bestellungen und Rechnungen, die mit einem bestimmten Kunden verknüpft sind.
 
-تعرض جميع الطلبات المستوردة من Shopify أو المنشأة يدويًا:
+#### 3. Auftrags-Bildschirm (Aufträge)
 
-*   **قائمة الطلبات (Auftragsliste):** جدول شامل يعرض رقم الطلب، العميل، التاريخ، المبلغ الإجمالي، والحالة.
-*   **تصفية وبحث متقدم (Erweiterte Filter):** إمكانية التصفية حسب التاريخ، العميل، الحالة، أو المبلغ.
-*   **تفاصيل الطلب (Auftragsdetails):** عرض تفصيلي لكل طلب يتضمن بنود الطلب، معلومات الشحن، والدفع.
-*   **إنشاء فاتورة من الطلب (Rechnung aus Auftrag erstellen):** زر سريع لتحويل طلب إلى فاتورة.
+Zeigt alle aus Shopify importierten oder manuell erstellten Bestellungen an:
 
-#### 4. شاشة الفواتير (Rechnungen)
+*   **Auftragsliste:** Eine umfassende Tabelle mit Bestellnummer, Kunde, Datum, Gesamtbetrag und Status.
+*   **Erweiterte Filter:** Möglichkeit zum Filtern nach Datum, Kunde, Status oder Betrag.
+*   **Auftragsdetails:** Detaillierte Ansicht jeder Bestellung, einschließlich Auftragspositionen, Versandinformationen und Zahlung.
+*   **Rechnung aus Auftrag erstellen:** Ein Schnellzugriffsknopf, um eine Bestellung in eine Rechnung umzuwandeln.
 
-المحور الرئيسي للتطبيق، حيث يدير المستخدمون فواتيرهم:
+#### 4. Rechnungs-Bildschirm (Rechnungen)
 
-*   **قائمة الفواتير (Rechnungsliste):** عرض جميع الفواتير مع معلومات مثل رقم الفاتورة، العميل، تاريخ الإصدار، المبلغ، والحالة (Entwurf, Gesendet, Bezahlt, Überfällig).
-*   **إنشاء فاتورة جديدة (Neue Rechnung erstellen):** معالج خطوة بخطوة لإنشاء فاتورة جديدة من الصفر.
-*   **معاينة الفاتورة (Rechnungsvorschau):** عرض مسبق للفاتورة قبل الانتهاء منها، مع إمكانية التحرير.
-*   **تحميل PDF:** إمكانية تحميل ملف PDF للفواتير المكتملة.
-*   **إرسال الفاتورة (Rechnung versenden):** إرسال الفاتورة عبر البريد الإلكتروني مباشرة من التطبيق.
+Der zentrale Hub der Anwendung, in dem Benutzer ihre Rechnungen verwalten:
 
-#### 5. شاشة القوالب (Vorlagen)
+*   **Rechnungsliste:** Anzeige aller Rechnungen mit Informationen wie Rechnungsnummer, Kunde, Ausstellungsdatum, Betrag und Status (Entwurf, Gesendet, Bezahlt, Überfällig).
+*   **Neue Rechnung erstellen:** Ein Schritt-für-Schritt-Assistent zum Erstellen einer neuen Rechnung von Grund auf.
+*   **Rechnungsvorschau:** Vorschau der Rechnung vor der Fertigstellung mit Bearbeitungsmöglichkeit.
+*   **PDF herunterladen:** Möglichkeit, die PDF-Datei abgeschlossener Rechnungen herunterzuladen.
+*   **Rechnung versenden:** Versenden der Rechnung per E-Mail direkt aus der Anwendung.
 
-تسمح للمستخدمين بإدارة قوالب الفواتير:
+#### 5. Vorlagen-Bildschirm (Vorlagen)
 
-*   **قائمة القوالب (Vorlagenliste):** عرض جميع القوالب المتاحة (الافتراضية والمخصصة).
-*   **معاينة القالب (Vorlagenvorschau):** عرض مسبق لكيفية ظهور الفاتورة بقالب معين.
-*   **تخصيص القالب (Vorlage anpassen):** محرر بصري لتخصيص الألوان، الشعار، والتخطيط.
-*   **إنشاء قالب جديد (Neue Vorlage erstellen):** إمكانية إنشاء قوالب مخصصة جديدة.
+Ermöglicht Benutzern die Verwaltung von Rechnungsvorlagen:
 
-#### 6. شاشة الإعدادات (Einstellungen)
+*   **Vorlagenliste:** Anzeige aller verfügbaren Vorlagen (Standard und Benutzerdefiniert).
+*   **Vorlagenvorschau:** Vorschau, wie eine Rechnung mit einer bestimmten Vorlage aussehen wird.
+*   **Vorlage anpassen:** Ein visueller Editor zum Anpassen von Farben, Logo und Layout.
+*   **Neue Vorlage erstellen:** Möglichkeit, neue benutzerdefinierte Vorlagen zu erstellen.
 
-تتيح للمستخدمين تكوين حساباتهم ومنظماتهم:
+#### 6. Einstellungs-Bildschirm (Einstellungen)
 
-*   **معلومات الشركة (Firmeninformationen):** تحديث تفاصيل المنظمة مثل الاسم، العنوان، رقم ضريبة القيمة المضافة، ومعلومات البنك.
-*   **إعدادات الفواتير (Rechnungseinstellungen):** تكوين تنسيق أرقام الفواتير، شروط الدفع الافتراضية، ومعدلات الضرائب.
-*   **تكامل Shopify:** إعداد أو تحديث اتصال Shopify.
-*   **إعدادات الحساب (Kontoeinstellungen):** تغيير كلمة المرور، تحديث البريد الإلكتروني، وإدارة تفضيلات الإشعارات.
+Ermöglicht Benutzern die Konfiguration ihrer Konten und Organisationen:
 
-### هيكل صفحات React/Next.js للمستخدم
+*   **Firmeninformationen:** Aktualisieren von Organisationsdetails wie Name, Adresse, USt-IdNr. und Bankdaten.
+*   **Rechnungseinstellungen:** Konfigurieren des Rechnungsnummernformats, der Standardzahlungsbedingungen und der Steuersätze.
+*   **Shopify-Integration:** Einrichten oder Aktualisieren der Shopify-Verbindung.
+*   **Kontoeinstellungen:** Passwort ändern, E-Mail aktualisieren und Benachrichtigungspräferenzen verwalten.
+
+### React/Next.js Seitenstruktur für Benutzer
 
 ```typescript
-// src/pages/dashboard/index.tsx - الصفحة الرئيسية للوحة التحكم
+// src/pages/dashboard/index.tsx - Hauptseite des Dashboards
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { DashboardOverview } from '../../components/dashboard/DashboardOverview';
@@ -83,7 +84,7 @@ const UserDashboard: NextPage = () => {
 
 export default UserDashboard;
 
-// src/pages/dashboard/uploads.tsx - شاشة التحميلات
+// src/pages/dashboard/uploads.tsx - Upload-Bildschirm
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { UploadManager } from '../../components/uploads/UploadManager';
@@ -98,7 +99,7 @@ const UploadsPage: NextPage = () => {
 
 export default UploadsPage;
 
-// src/pages/dashboard/customers.tsx - شاشة العملاء
+// src/pages/dashboard/customers.tsx - Kunden-Bildschirm
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { CustomerManager } from '../../components/customers/CustomerManager';
@@ -113,7 +114,7 @@ const CustomersPage: NextPage = () => {
 
 export default CustomersPage;
 
-// src/pages/dashboard/orders.tsx - شاشة الطلبات
+// src/pages/dashboard/orders.tsx - Auftrags-Bildschirm
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { OrderManager } from '../../components/orders/OrderManager';
@@ -128,7 +129,7 @@ const OrdersPage: NextPage = () => {
 
 export default OrdersPage;
 
-// src/pages/dashboard/invoices.tsx - شاشة الفواتير
+// src/pages/dashboard/invoices.tsx - Rechnungs-Bildschirm
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { InvoiceManager } from '../../components/invoices/InvoiceManager';
@@ -143,7 +144,7 @@ const InvoicesPage: NextPage = () => {
 
 export default InvoicesPage;
 
-// src/pages/dashboard/templates.tsx - شاشة القوالب
+// src/pages/dashboard/templates.tsx - Vorlagen-Bildschirm
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { TemplateManager } from '../../components/templates/TemplateManager';
@@ -158,7 +159,7 @@ const TemplatesPage: NextPage = () => {
 
 export default TemplatesPage;
 
-// src/pages/dashboard/settings.tsx - شاشة الإعدادات
+// src/pages/dashboard/settings.tsx - Einstellungs-Bildschirm
 import { NextPage } from 'next';
 import { DashboardLayout } from '../../components/layouts/DashboardLayout';
 import { SettingsManager } from '../../components/settings/SettingsManager';
@@ -174,7 +175,7 @@ const SettingsPage: NextPage = () => {
 export default SettingsPage;
 ```
 
-### مكونات التخطيط والتنقل
+### Layout- und Navigationskomponenten
 
 ```typescript
 // src/components/layouts/DashboardLayout.tsx
@@ -296,69 +297,69 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
 };
 ```
 
-## لوحة تحكم المسؤول (Admin Dashboard)
+## Admin-Dashboard (Admin Dashboard)
 
-تهدف لوحة تحكم المسؤول إلى توفير رؤية شاملة ومراقبة دقيقة لجميع جوانب النظام. تركز هذه اللوحة على الإدارة، المراقبة، والتحكم في النظام على مستوى أعلى من لوحة تحكم المستخدم العادي.
+Das Admin-Dashboard zielt darauf ab, einen umfassenden Überblick und eine genaue Überwachung aller Systemaspekte zu bieten. Dieses Dashboard konzentriert sich auf die Verwaltung, Überwachung und Steuerung des Systems auf einer höheren Ebene als das normale Benutzer-Dashboard.
 
-### الشاشات الرئيسية للمسؤول
+### Hauptbildschirme für Administratoren
 
-#### 1. شاشة إدارة المستخدمين (Benutzerverwaltung)
+#### 1. Benutzerverwaltungs-Bildschirm (Benutzerverwaltung)
 
-تمكن المسؤولين من إدارة جميع المستخدمين في النظام:
+Ermöglicht Administratoren die Verwaltung aller Benutzer im System:
 
-*   **قائمة المستخدمين (Benutzerliste):** جدول شامل يعرض جميع المستخدمين مع معلومات مثل الاسم، البريد الإلكتروني، الدور، المنظمة، تاريخ آخر تسجيل دخول، والحالة (نشط/غير نشط).
-*   **إضافة مستخدم جديد (Neuen Benutzer hinzufügen):** نموذج لإنشاء حسابات مستخدمين جديدة مع تعيين الأدوار والأذونات.
-*   **تحرير بيانات المستخدم (Benutzerdaten bearbeiten):** تحديث معلومات المستخدمين، تغيير الأدوار، أو تعطيل الحسابات.
-*   **سجل نشاط المستخدم (Benutzeraktivität):** عرض سجل تفصيلي لأنشطة كل مستخدم داخل النظام.
+*   **Benutzerliste:** Eine umfassende Tabelle, die alle Benutzer mit Informationen wie Name, E-Mail, Rolle, Organisation, Datum der letzten Anmeldung und Status (Aktiv/Inaktiv) anzeigt.
+*   **Neuen Benutzer hinzufügen:** Ein Formular zum Erstellen neuer Benutzerkonten mit Zuweisung von Rollen und Berechtigungen.
+*   **Benutzerdaten bearbeiten:** Aktualisieren von Benutzerinformationen, Ändern von Rollen oder Deaktivieren von Konten.
+*   **Benutzeraktivität:** Anzeige eines detaillierten Protokolls der Aktivitäten jedes Benutzers im System.
 
-#### 2. شاشة الأدوار والأذونات (Rollen & Rechte)
+#### 2. Rollen- und Berechtigungs-Bildschirm (Rollen & Rechte)
 
-نظام إدارة الأدوار والأذونات المبني على RBAC (Role-Based Access Control):
+Ein auf RBAC (Role-Based Access Control) basierendes System zur Verwaltung von Rollen und Berechtigungen:
 
-*   **قائمة الأدوار (Rollenliste):** عرض جميع الأدوار المحددة في النظام (مثل Admin, User, Manager).
-*   **إنشاء دور جديد (Neue Rolle erstellen):** إمكانية إنشاء أدوار مخصصة مع أذونات محددة.
-*   **تحرير الأذونات (Berechtigungen bearbeiten):** تحديد الأذونات لكل دور (مثل قراءة الفواتير، إنشاء الفواتير، حذف العملاء، إلخ).
-*   **تعيين الأدوار للمستخدمين (Rollen zuweisen):** ربط المستخدمين بالأدوار المناسبة.
+*   **Rollenliste:** Anzeige aller im System definierten Rollen (z. B. Admin, User, Manager).
+*   **Neue Rolle erstellen:** Möglichkeit, benutzerdefinierte Rollen mit spezifischen Berechtigungen zu erstellen.
+*   **Berechtigungen bearbeiten:** Definieren von Berechtigungen für jede Rolle (z. B. Rechnungen lesen, Rechnungen erstellen, Kunden löschen usw.).
+*   **Rollen zuweisen:** Verknüpfen von Benutzern mit den entsprechenden Rollen.
 
-#### 3. شاشة نظرة عامة على المنظمات (Organisationsübersicht)
+#### 3. Organisationsübersichts-Bildschirm (Organisationsübersicht)
 
-في حالة دعم النظام لعدة مستأجرين (multi-tenancy):
+Falls das System Mandantenfähigkeit (Multi-Tenancy) unterstützt:
 
-*   **قائمة المنظمات (Organisationsliste):** عرض جميع المنظمات المسجلة مع معلومات مثل الاسم، عدد المستخدمين، عدد الفواتير، والحالة.
-*   **إضافة منظمة جديدة (Neue Organisation hinzufügen):** إنشاء منظمات جديدة مع تكوين الإعدادات الأساسية.
-*   **إحصائيات المنظمة (Organisationsstatistiken):** عرض مقاييس مفصلة لكل منظمة مثل عدد الفواتير الشهرية، الإيرادات، ومعدل النمو.
+*   **Organisationsliste:** Anzeige aller registrierten Organisationen mit Informationen wie Name, Anzahl der Benutzer, Anzahl der Rechnungen und Status.
+*   **Neue Organisation hinzufügen:** Erstellen neuer Organisationen mit Konfiguration der Grundeinstellungen.
+*   **Organisationsstatistiken:** Anzeige detaillierter Metriken für jede Organisation wie monatliche Rechnungsanzahl, Umsatz und Wachstumsrate.
 
-#### 4. شاشة مقاييس النظام (Systemmetriken)
+#### 4. Systemmetriken-Bildschirm (Systemmetriken)
 
-لوحة مراقبة شاملة لأداء النظام:
+Ein umfassendes Überwachungs-Dashboard für die Systemleistung:
 
-*   **مقاييس الأداء (Leistungsmetriken):** عرض مقاييس مثل وقت الاستجابة، استخدام الذاكرة، استخدام وحدة المعالجة المركزية، وحالة قاعدة البيانات.
-*   **إحصائيات الاستخدام (Nutzungsstatistiken):** عدد المستخدمين النشطين، عدد الفواتير المنشأة يوميًا/شهريًا، وحجم البيانات المعالجة.
-*   **مراقبة الأخطاء (Fehlerüberwachung):** عرض الأخطاء الحديثة، معدل الأخطاء، والمشاكل الحرجة التي تتطلب انتباهًا فوريًا.
-*   **حالة الخدمات (Service-Status):** مراقبة حالة الخدمات المختلفة مثل قاعدة البيانات، تخزين الملفات، قائمة الانتظار، وتكامل Shopify.
+*   **Leistungsmetriken:** Anzeige von Metriken wie Antwortzeit, Speichernutzung, CPU-Auslastung und Datenbankstatus.
+*   **Nutzungsstatistiken:** Anzahl der aktiven Benutzer, Anzahl der täglich/monatlich erstellten Rechnungen und verarbeitetes Datenvolumen.
+*   **Fehlerüberwachung:** Anzeige aktueller Fehler, Fehlerrate und kritischer Probleme, die sofortige Aufmerksamkeit erfordern.
+*   **Service-Status:** Überwachung des Status verschiedener Dienste wie Datenbank, Dateispeicherung, Warteschlange und Shopify-Integration.
 
-#### 5. شاشة سجل التدقيق (Audit-Log)
+#### 5. Audit-Log-Bildschirm (Audit-Log)
 
-سجل شامل لجميع الأنشطة الهامة في النظام:
+Ein umfassendes Protokoll aller wichtigen Aktivitäten im System:
 
-*   **سجل الأنشطة (Aktivitätsprotokoll):** عرض زمني لجميع الإجراءات المهمة مثل إنشاء الفواتير، تحديث بيانات العملاء، تسجيل الدخول، وتغييرات الإعدادات.
-*   **تصفية وبحث متقدم (Erweiterte Filterung):** إمكانية التصفية حسب المستخدم، نوع النشاط، التاريخ، أو المنظمة.
-*   **تصدير السجلات (Protokolle exportieren):** إمكانية تصدير سجلات التدقيق لأغراض الامتثال أو التحليل.
-*   **تنبيهات الأمان (Sicherheitswarnungen):** تنبيهات تلقائية للأنشطة المشبوهة أو غير المعتادة.
+*   **Aktivitätsprotokoll:** Chronologische Anzeige aller wichtigen Aktionen wie Rechnungserstellung, Aktualisierung von Kundendaten, Anmeldung und Einstellungsänderungen.
+*   **Erweiterte Filterung:** Möglichkeit zum Filtern nach Benutzer, Aktivitätstyp, Datum oder Organisation.
+*   **Protokolle exportieren:** Möglichkeit, Audit-Protokolle für Compliance- oder Analysezwecke zu exportieren.
+*   **Sicherheitswarnungen:** Automatische Warnungen bei verdächtigen oder ungewöhnlichen Aktivitäten.
 
-#### 6. شاشة إعدادات الميزات (Feature-Flags)
+#### 6. Feature-Flags-Bildschirm (Feature-Flags)
 
-إدارة الميزات والتحكم في إتاحتها:
+Verwaltung von Funktionen und Steuerung ihrer Verfügbarkeit:
 
-*   **قائمة الميزات (Feature-Liste):** عرض جميع الميزات القابلة للتحكم مع حالتها الحالية (مفعلة/معطلة).
-*   **تفعيل/تعطيل الميزات (Features aktivieren/deaktivieren):** إمكانية تشغيل أو إيقاف ميزات معينة للنظام بأكمله أو لمنظمات محددة.
-*   **اختبار A/B (A/B-Tests):** إعداد اختبارات A/B لميزات جديدة مع مجموعات مستخدمين محددة.
-*   **جدولة الميزات (Feature-Scheduling):** جدولة تفعيل أو تعطيل ميزات في أوقات محددة.
+*   **Feature-Liste:** Anzeige aller steuerbaren Funktionen mit ihrem aktuellen Status (Aktiviert/Deaktiviert).
+*   **Features aktivieren/deaktivieren:** Möglichkeit, bestimmte Funktionen für das gesamte System oder für bestimmte Organisationen ein- oder auszuschalten.
+*   **A/B-Tests:** Einrichten von A/B-Tests für neue Funktionen mit bestimmten Benutzergruppen.
+*   **Feature-Scheduling:** Planen der Aktivierung oder Deaktivierung von Funktionen zu bestimmten Zeiten.
 
-### هيكل صفحات React/Next.js للمسؤول
+### React/Next.js Seitenstruktur für Admins
 
 ```typescript
-// src/pages/admin/index.tsx - الصفحة الرئيسية للوحة تحكم المسؤول
+// src/pages/admin/index.tsx - Hauptseite des Admin-Dashboards
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { AdminOverview } from '../../components/admin/AdminOverview';
@@ -373,7 +374,7 @@ const AdminDashboard: NextPage = () => {
 
 export default AdminDashboard;
 
-// src/pages/admin/users.tsx - شاشة إدارة المستخدمين
+// src/pages/admin/users.tsx - Benutzerverwaltung
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { UserManagement } from '../../components/admin/UserManagement';
@@ -388,7 +389,7 @@ const UsersPage: NextPage = () => {
 
 export default UsersPage;
 
-// src/pages/admin/roles.tsx - شاشة الأدوار والأذونات
+// src/pages/admin/roles.tsx - Rollen & Rechte
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { RoleManagement } from '../../components/admin/RoleManagement';
@@ -403,7 +404,7 @@ const RolesPage: NextPage = () => {
 
 export default RolesPage;
 
-// src/pages/admin/organizations.tsx - شاشة نظرة عامة على المنظمات
+// src/pages/admin/organizations.tsx - Organisationsübersicht
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { OrganizationOverview } from '../../components/admin/OrganizationOverview';
@@ -418,7 +419,7 @@ const OrganizationsPage: NextPage = () => {
 
 export default OrganizationsPage;
 
-// src/pages/admin/metrics.tsx - شاشة مقاييس النظام
+// src/pages/admin/metrics.tsx - Systemmetriken
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { SystemMetrics } from '../../components/admin/SystemMetrics';
@@ -433,7 +434,7 @@ const MetricsPage: NextPage = () => {
 
 export default MetricsPage;
 
-// src/pages/admin/audit.tsx - شاشة سجل التدقيق
+// src/pages/admin/audit.tsx - Audit-Log
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { AuditLog } from '../../components/admin/AuditLog';
@@ -448,7 +449,7 @@ const AuditPage: NextPage = () => {
 
 export default AuditPage;
 
-// src/pages/admin/features.tsx - شاشة إعدادات الميزات
+// src/pages/admin/features.tsx - Feature-Flags
 import { NextPage } from 'next';
 import { AdminLayout } from '../../components/layouts/AdminLayout';
 import { FeatureFlags } from '../../components/admin/FeatureFlags';
@@ -464,11 +465,11 @@ const FeaturesPage: NextPage = () => {
 export default FeaturesPage;
 ```
 
-## حراس المسارات (Route Guards) ووسطاء RBAC
+## Route Guards und RBAC-Middleware
 
-لضمان الأمان والتحكم في الوصول، سنحتاج إلى تطبيق حراس المسارات ووسطاء RBAC للتحقق من أذونات المستخدمين قبل السماح لهم بالوصول إلى صفحات أو ميزات معينة.
+Um Sicherheit und Zugriffskontrolle zu gewährleisten, müssen wir Route Guards und RBAC-Middleware implementieren, um Benutzerberechtigungen zu überprüfen, bevor der Zugriff auf bestimmte Seiten oder Funktionen gewährt wird.
 
-### حراس المسارات (Route Guards)
+### Route Guards
 
 ```typescript
 // src/components/guards/AuthGuard.tsx
@@ -551,7 +552,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ permission, ch
 };
 ```
 
-### وسطاء RBAC (RBAC Middleware)
+### RBAC Middleware
 
 ```typescript
 // src/middleware/rbac.ts
@@ -608,8 +609,8 @@ export function withRole(allowedRoles: UserRole[]) {
 export function withPermission(permission: string) {
   return function (handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void>) {
     return withAuth(async (req: AuthenticatedRequest, res: NextApiResponse) => {
-      // هنا يمكنك تطبيق منطق التحقق من الأذونات المفصلة
-      // بناءً على نظام الأذونات الذي تختاره
+      // Hier können Sie detaillierte Berechtigungsprüfungslogik implementieren
+      // basierend auf dem von Ihnen gewählten Berechtigungssystem
       const hasPermission = await checkUserPermission(req.user.id, permission);
 
       if (!hasPermission) {
@@ -622,9 +623,9 @@ export function withPermission(permission: string) {
 }
 
 async function checkUserPermission(userId: string, permission: string): Promise<boolean> {
-  // تطبيق منطق التحقق من الأذونات
-  // يمكن أن يكون هذا بناءً على جدول أذونات منفصل أو منطق مخصص
-  // لأغراض هذا المثال، سنفترض أن المسؤولين لديهم جميع الأذونات
+  // Berechtigungsprüfungslogik implementieren
+  // Dies könnte auf einer separaten Berechtigungstabelle oder benutzerdefinierter Logik basieren
+  // Für dieses Beispiel gehen wir davon aus, dass Admins alle Berechtigungen haben
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { role: true },
@@ -634,12 +635,12 @@ async function checkUserPermission(userId: string, permission: string): Promise<
     return true;
   }
 
-  // يمكنك إضافة منطق أكثر تعقيدًا هنا للتحقق من أذونات محددة
+  // Hier können Sie komplexere Logik hinzufügen, um spezifische Berechtigungen zu prüfen
   return false;
 }
 ```
 
-### أمثلة على فحوصات السياسة (Policy Checks)
+### Beispiele für Richtlinienprüfungen (Policy Checks)
 
 ```typescript
 // src/utils/policies.ts
@@ -680,7 +681,7 @@ export class PolicyChecker {
   }
 }
 
-// استخدام فحوصات السياسة في المكونات
+// Verwendung von Richtlinienprüfungen in Komponenten
 // src/components/invoices/InvoiceActions.tsx
 import React from 'react';
 import { useSession } from 'next-auth/react';
@@ -715,7 +716,7 @@ export const InvoiceActions: React.FC<InvoiceActionsProps> = ({ invoiceId }) => 
 };
 ```
 
-## مكونات التخطيط المشتركة
+## Gemeinsame Layout-Komponenten
 
 ```typescript
 // src/components/layouts/AdminLayout.tsx
@@ -800,7 +801,9 @@ export const AdminSidebar: React.FC = () => {
                         }`}
                       >
                         <item.icon
-                          className="h-6 w-6 shrink-0"
+                          className={`h-6 w-6 shrink-0 ${
+                            isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                          }`}
                           aria-hidden="true"
                         />
                         {item.name}
@@ -817,19 +820,3 @@ export const AdminSidebar: React.FC = () => {
   );
 };
 ```
-
-## قائمة التحقق ومعايير القبول
-
-*   [ ] **لوحة تحكم المستخدم:** تم تصميم وتطوير جميع الشاشات الست الرئيسية (التحميلات، العملاء، الطلبات، الفواتير، القوالب، الإعدادات).
-*   [ ] **لوحة تحكم المسؤول:** تم تصميم وتطوير جميع الشاشات الست الرئيسية (إدارة المستخدمين، الأدوار والأذونات، نظرة عامة على المنظمات، مقاييس النظام، سجل التدقيق، إعدادات الميزات).
-*   [ ] **واجهة المستخدم باللغة الألمانية:** جميع النصوص، التسميات، والرسائل باللغة الألمانية.
-*   [ ] **هيكل صفحات Next.js:** تم إنشاء هيكل صفحات منظم ومنطقي لكل من لوحات تحكم المستخدم والمسؤول.
-*   [ ] **مكونات التخطيط والتنقل:** تم تطوير مكونات قابلة لإعادة الاستخدام للتخطيط، الشريط الجانبي، والرأس.
-*   [ ] **حراس المسارات:** تم تطبيق حراس المسارات للتحقق من المصادقة والأذونات.
-*   [ ] **وسطاء RBAC:** تم تطوير وسطاء للتحكم في الوصول بناءً على الأدوار والأذونات.
-*   [ ] **فحوصات السياسة:** تم تطبيق فحوصات السياسة لتحديد ما يمكن للمستخدمين فعله بناءً على أدوارهم.
-*   [ ] **تصميم متجاوب:** جميع الشاشات متجاوبة وتعمل بشكل جيد على الأجهزة المختلفة.
-*   [ ] **إمكانية الوصول:** تم تطبيق معايير إمكانية الوصول الأساسية (WCAG 2.1 AA).
-
-بهذا نكون قد أكملنا تصميم وتطوير لوحات تحكم شاملة ومتقدمة لكل من المستخدمين والمسؤولين، مع التركيز على الأمان، سهولة الاستخدام، والامتثال للمتطلبات.
-

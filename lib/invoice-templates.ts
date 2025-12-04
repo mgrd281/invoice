@@ -6,17 +6,17 @@ export interface InvoiceTemplate {
   name: string
   type: 'offen' | 'bezahlt' | 'storniert' | 'promo' | 'erstattet' | 'custom'
   isDefault: boolean
-  
+
   // Static texts that change per template (same design, different content)
   texts: {
-    title: string                    // Invoice title: "فاتورة مفتوحة", "فاتورة مدفوعة", etc.
+    title: string                    // Invoice title: "Offene Rechnung", "Bezahlte Rechnung", etc.
     subtitle?: string               // Explanatory text under title
     paymentNote?: string            // Payment instructions
     footerNote?: string             // Footer signature/text
     thankYouNote?: string           // Thank you message
     legalNote?: string              // Legal disclaimer
   }
-  
+
   // Bank details (can be different per template)
   bankDetails?: {
     bankName: string
@@ -24,7 +24,7 @@ export interface InvoiceTemplate {
     bic: string
     accountHolder: string
   }
-  
+
   // Default invoice settings when using this template
   defaults: {
     status: 'Offen' | 'Bezahlt' | 'Storniert' | 'Erstattet' | 'Mahnung'  // Default status
@@ -33,7 +33,7 @@ export interface InvoiceTemplate {
     showBankDetails: boolean        // Show bank info
     showPaymentInstructions: boolean // Show payment notes
   }
-  
+
   createdAt: string
   updatedAt: string
 }
@@ -46,12 +46,12 @@ export const DEFAULT_TEMPLATES: InvoiceTemplate[] = [
     type: 'offen',
     isDefault: false,
     texts: {
-      title: 'فاتورة مفتوحة',
-      subtitle: 'يرجى سداد المبلغ قبل تاريخ الاستحقاق.',
-      paymentNote: 'يرجى تحويل المبلغ إلى الحساب المصرفي المذكور أدناه قبل تاريخ الاستحقاق.',
-      footerNote: 'شكراً لثقتكم بنا',
-      thankYouNote: 'نشكركم على التعامل معنا',
-      legalNote: 'هذه الفاتورة صادرة إلكترونياً وصالحة بدون توقيع.'
+      title: 'Offene Rechnung',
+      subtitle: 'Bitte begleichen Sie den Betrag vor dem Fälligkeitsdatum.',
+      paymentNote: 'Bitte überweisen Sie den Betrag vor dem Fälligkeitsdatum auf das unten angegebene Bankkonto.',
+      footerNote: 'Vielen Dank für Ihr Vertrauen.',
+      thankYouNote: 'Vielen Dank für die Zusammenarbeit.',
+      legalNote: 'Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.'
     },
     defaults: {
       status: 'Offen',
@@ -63,19 +63,19 @@ export const DEFAULT_TEMPLATES: InvoiceTemplate[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
-  
+
   {
     id: 'template-bezahlt',
     name: 'Bezahlte Rechnung - Zahlungseingang bestätigt',
     type: 'bezahlt',
     isDefault: true,
     texts: {
-      title: 'فاتورة مدفوعة',
-      subtitle: 'هذه الفاتورة مدفوعة بالكامل. شكراً لك!',
-      paymentNote: 'تم استلام المبلغ بالكامل.',
-      footerNote: 'شكراً لكم على الدفع في الوقت المحدد',
-      thankYouNote: 'نقدر التزامكم بالدفع في المواعيد المحددة',
-      legalNote: 'هذه الفاتورة صادرة إلكترونياً وصالحة بدون توقيع.'
+      title: 'Bezahlte Rechnung',
+      subtitle: 'Diese Rechnung ist vollständig bezahlt. Vielen Dank!',
+      paymentNote: 'Der Betrag wurde vollständig erhalten.',
+      footerNote: 'Vielen Dank für Ihre pünktliche Zahlung.',
+      thankYouNote: 'Wir schätzen Ihre pünktliche Zahlung.',
+      legalNote: 'Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.'
     },
     defaults: {
       status: 'Bezahlt',
@@ -87,19 +87,19 @@ export const DEFAULT_TEMPLATES: InvoiceTemplate[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
-  
+
   {
     id: 'template-storniert',
     name: 'Stornierte Rechnung - Rechnung ungültig',
     type: 'storniert',
     isDefault: false,
     texts: {
-      title: 'فاتورة ملغاة',
-      subtitle: 'هذه الفاتورة ملغاة ولا يُعتد بها.',
-      paymentNote: 'تنبيه: هذه الفاتورة ملغاة وغير صالحة للدفع.',
-      footerNote: 'للاستفسارات يرجى التواصل مع خدمة العملاء',
-      thankYouNote: 'نعتذر عن أي إزعاج',
-      legalNote: 'هذه فاتورة إلغاء صادرة إلكترونياً.'
+      title: 'Stornierte Rechnung',
+      subtitle: 'Diese Rechnung wurde storniert und ist ungültig.',
+      paymentNote: 'Achtung: Diese Rechnung ist storniert und nicht zur Zahlung gültig.',
+      footerNote: 'Bei Fragen wenden Sie sich bitte an den Kundenservice.',
+      thankYouNote: 'Wir entschuldigen uns für etwaige Unannehmlichkeiten.',
+      legalNote: 'Dies ist eine elektronisch erstellte Stornorechnung.'
     },
     defaults: {
       status: 'Storniert',
@@ -111,19 +111,19 @@ export const DEFAULT_TEMPLATES: InvoiceTemplate[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
-  
+
   {
     id: 'template-promo',
     name: 'Promo Rechnung - Sonderangebot mit Rabatt',
     type: 'promo',
     isDefault: false,
     texts: {
-      title: 'فاتورة ترويجية',
-      subtitle: 'خصم/عرض خاص – الأسعار مخفضة حسب الحملة.',
-      paymentNote: 'هذه فاتورة بأسعار ترويجية خاصة. يرجى الدفع قبل انتهاء العرض.',
-      footerNote: 'شكراً لاستفادتكم من عروضنا الخاصة',
-      thankYouNote: 'نشكركم لاختياركم عروضنا الترويجية',
-      legalNote: 'هذه الفاتورة صادرة إلكترونياً وصالحة بدون توقيع.'
+      title: 'Aktionsrechnung',
+      subtitle: 'Sonderangebot/Rabatt – Preise gemäß Kampagne reduziert.',
+      paymentNote: 'Dies ist eine Rechnung mit Sonderpreisen. Bitte zahlen Sie vor Ablauf des Angebots.',
+      footerNote: 'Vielen Dank, dass Sie unsere Sonderangebote nutzen.',
+      thankYouNote: 'Vielen Dank, dass Sie unsere Aktionsangebote gewählt haben.',
+      legalNote: 'Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.'
     },
     defaults: {
       status: 'Offen',
@@ -135,25 +135,25 @@ export const DEFAULT_TEMPLATES: InvoiceTemplate[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
-  
+
   {
     id: 'template-erstattet',
     name: 'Erstattungs-Rechnung - Rückerstattung',
     type: 'erstattet',
     isDefault: false,
     texts: {
-      title: 'فاتورة مستردة',
-      subtitle: 'تم رد المبلغ – المستند للاطلاع فقط.',
-      paymentNote: 'تم رد المبلغ إلى حسابكم المصرفي.',
-      footerNote: 'شكراً لتفهمكم',
-      thankYouNote: 'نعتذر عن أي إزعاج ونقدر تفهمكم',
-      legalNote: 'هذه فاتورة استرداد صادرة إلكترونياً وصالحة بدون توقيع.'
+      title: 'Erstattungsrechnung',
+      subtitle: 'Betrag erstattet – Dokument nur zur Information.',
+      paymentNote: 'Der Betrag wurde auf Ihr Bankkonto zurückerstattet.',
+      footerNote: 'Vielen Dank für Ihr Verständnis.',
+      thankYouNote: 'Wir entschuldigen uns für etwaige Unannehmlichkeiten und danken für Ihr Verständnis.',
+      legalNote: 'Dies ist eine elektronisch erstellte Erstattungsrechnung und ohne Unterschrift gültig.'
     },
     bankDetails: {
-      bankName: 'البنك الخاص بكم',
+      bankName: 'Ihre Bank',
       iban: 'DE89 3704 0044 0532 0130 00',
       bic: 'COBADEFFXXX',
-      accountHolder: 'شركتكم'
+      accountHolder: 'Ihr Unternehmen'
     },
     defaults: {
       status: 'Erstattet',
@@ -183,14 +183,14 @@ function upgradeTemplate(template: any): InvoiceTemplate {
   if (template.defaults) {
     return template as InvoiceTemplate
   }
-  
+
   // Upgrade old template structure
   return {
     ...template,
     defaults: {
-      status: template.type === 'bezahlt' ? 'Bezahlt' : 
-              template.type === 'storniert' ? 'Storniert' :
-              template.type === 'erstattet' ? 'Erstattet' : 'Offen',
+      status: template.type === 'bezahlt' ? 'Bezahlt' :
+        template.type === 'storniert' ? 'Storniert' :
+          template.type === 'erstattet' ? 'Erstattet' : 'Offen',
       dueDays: template.type === 'bezahlt' || template.type === 'storniert' || template.type === 'erstattet' ? 0 : 14,
       taxRate: 19,
       showBankDetails: template.settings?.showBankDetails ?? true,
@@ -225,9 +225,9 @@ export function saveTemplate(template: InvoiceTemplate): void {
   if (!global.invoiceTemplates) {
     global.invoiceTemplates = [...DEFAULT_TEMPLATES]
   }
-  
+
   const existingIndex = global.invoiceTemplates.findIndex(t => t.id === template.id)
-  
+
   if (existingIndex >= 0) {
     // Update existing template
     global.invoiceTemplates[existingIndex] = {
@@ -248,17 +248,17 @@ export function deleteTemplate(id: string): boolean {
   if (!global.invoiceTemplates) {
     return false
   }
-  
+
   const template = getTemplateById(id)
   if (!template) {
     return false
   }
-  
+
   // Don't allow deleting default template
   if (template.isDefault) {
     throw new Error('Default template cannot be deleted')
   }
-  
+
   global.invoiceTemplates = global.invoiceTemplates.filter(t => t.id !== id)
   return true
 }
@@ -267,10 +267,10 @@ export function setDefaultTemplate(id: string): void {
   if (!global.invoiceTemplates) {
     global.invoiceTemplates = [...DEFAULT_TEMPLATES]
   }
-  
+
   // Remove default flag from all templates
   global.invoiceTemplates.forEach(t => t.isDefault = false)
-  
+
   // Set new default
   const template = global.invoiceTemplates.find(t => t.id === id)
   if (template) {

@@ -1,82 +1,83 @@
-# رسالة دعم جاهزة لمشكلة تنزيل PDF
+
+# Support-Nachrichtenvorlage für PDF-Download-Problem
 
 ---
 
-**الموضوع:** مشكلة في تنزيل PDF الفاتورة - خطأ "Fehler beim Herunterladen der PDF-Datei"
+**Betreff:** Problem beim Herunterladen der Rechnungs-PDF - Fehler "Fehler beim Herunterladen der PDF-Datei"
 
-**تفاصيل المشكلة:**
-- **رقم الفاتورة:** [INVOICE_NUMBER]
-- **معرف الفاتورة:** [INVOICE_ID] 
-- **الوقت والتاريخ:** [TIMESTAMP]
-- **رسالة الخطأ:** "Fehler beim Herunterladen der PDF-Datei"
-- **المتصفح المستخدم:** [BROWSER_NAME] [VERSION]
-- **نظام التشغيل:** [OS_NAME]
+**Details zum Problem:**
+- **Rechnungsnummer:** [INVOICE_NUMBER]
+- **Rechnungs-ID:** [INVOICE_ID] 
+- **Zeit und Datum:** [TIMESTAMP]
+- **Fehlermeldung:** "Fehler beim Herunterladen der PDF-Datei"
+- **Verwendeter Browser:** [BROWSER_NAME] [VERSION]
+- **Betriebssystem:** [OS_NAME]
 
-**الأعراض:**
-- عند الضغط على زر تنزيل PDF للفاتورة، تظهر رسالة خطأ
-- لا يتم تنزيل أي ملف PDF
-- قد تظهر رسالة خطأ في وحدة تحكم المتصفح
+**Symptome:**
+- Beim Klicken auf die Schaltfläche zum Herunterladen der Rechnungs-PDF erscheint eine Fehlermeldung
+- Es wird keine PDF-Datei heruntergeladen
+- Möglicherweise erscheint eine Fehlermeldung in der Browserkonsole
 
-**خطوات إعادة الإنتاج:**
-1. الانتقال إلى صفحة الفواتير
-2. اختيار فاتورة معينة
-3. الضغط على زر "تنزيل PDF"
-4. ظهور رسالة الخطأ
+**Schritte zur Reproduktion:**
+1. Zur Rechnungsseite gehen
+2. Eine bestimmte Rechnung auswählen
+3. Auf die Schaltfläche "PDF herunterladen" klicken
+4. Die Fehlermeldung erscheint
 
-**معلومات تقنية إضافية:**
-- **حالة API:** [API_STATUS]
-- **حجم بيانات الفاتورة:** [DATA_SIZE]
-- **وجود أخطاء JavaScript:** [JS_ERRORS]
-- **إعدادات المتصفح:** [BROWSER_SETTINGS]
+**Zusätzliche technische Informationen:**
+- **API-Status:** [API_STATUS]
+- **Größe der Rechnungsdaten:** [DATA_SIZE]
+- **JavaScript-Fehler vorhanden:** [JS_ERRORS]
+- **Browser-Einstellungen:** [BROWSER_SETTINGS]
 
-**التأثير على العمل:**
-- [ ] منخفض - يمكن الوصول للفاتورة بطرق أخرى
-- [ ] متوسط - يؤثر على سير العمل اليومي  
-- [ ] عالي - يمنع إكمال المهام الأساسية
-- [ ] حرج - يوقف العمل تماماً
+**Auswirkung auf die Arbeit:**
+- [ ] Niedrig - Rechnung kann auf andere Weise abgerufen werden
+- [ ] Mittel - Beeinträchtigt den täglichen Arbeitsablauf
+- [ ] Hoch - Verhindert den Abschluss wesentlicher Aufgaben
+- [ ] Kritisch - Stoppt die Arbeit vollständig
 
-**الحلول المجربة:**
-- [ ] إعادة تحميل الصفحة
-- [ ] تجربة متصفح آخر
-- [ ] مسح ذاكرة التخزين المؤقت
-- [ ] تعطيل إضافات المتصفح
-- [ ] التحقق من إعدادات التنزيل
+**Versuchte Lösungen:**
+- [ ] Seite neu laden
+- [ ] Anderen Browser ausprobieren
+- [ ] Cache leeren
+- [ ] Browser-Erweiterungen deaktivieren
+- [ ] Download-Einstellungen überprüfen
 
-**طلب المساعدة:**
-يرجى المساعدة في حل هذه المشكلة وتوفير حل بديل لتنزيل PDF الفواتير.
+**Bitte um Hilfe:**
+Bitte helfen Sie bei der Lösung dieses Problems und stellen Sie eine alternative Lösung zum Herunterladen der Rechnungs-PDF bereit.
 
-**معلومات الاتصال:**
-- **الاسم:** [YOUR_NAME]
-- **البريد الإلكتروني:** [YOUR_EMAIL]
-- **رقم الهاتف:** [PHONE_NUMBER]
-- **الشركة:** [COMPANY_NAME]
+**Kontaktinformationen:**
+- **Name:** [YOUR_NAME]
+- **E-Mail:** [YOUR_EMAIL]
+- **Telefonnummer:** [PHONE_NUMBER]
+- **Firma:** [COMPANY_NAME]
 
 ---
 
-**للفريق التقني:**
+**Für das technische Team:**
 
-**أولوية الإصلاح:** عالية
-**الفئة:** PDF Generation / File Download
-**المكونات المتأثرة:** 
-- Frontend: Invoice PDF download functionality
-- Backend: PDF generation service
-- Browser: File download mechanism
+**Priorität der Behebung:** Hoch
+**Kategorie:** PDF-Generierung / Datei-Download
+**Betroffene Komponenten:** 
+- Frontend: Funktionalität zum Herunterladen von Rechnungs-PDFs
+- Backend: PDF-Generierungsdienst
+- Browser: Datei-Download-Mechanismus
 
-**سجلات الأخطاء:**
+**Fehlerprotokolle:**
 ```
 [TIMESTAMP] Error downloading PDF: [ERROR_MESSAGE]
 [TIMESTAMP] PDF generation failed for invoice: [INVOICE_ID]
 [TIMESTAMP] Browser console errors: [CONSOLE_ERRORS]
 ```
 
-**خطوات التشخيص المقترحة:**
-1. فحص سجلات الخادم للأخطاء
-2. اختبار توليد PDF للفاتورة المحددة
-3. التحقق من مكتبة jsPDF وتوافقها
-4. فحص إعدادات المتصفح والأذونات
-5. اختبار على متصفحات مختلفة
+**Vorgeschlagene Diagnoseschritte:**
+1. Serverprotokolle auf Fehler überprüfen
+2. PDF-Generierung für die spezifische Rechnung testen
+3. jsPDF-Bibliothek und deren Kompatibilität überprüfen
+4. Browser-Einstellungen und Berechtigungen überprüfen
+5. Auf verschiedenen Browsern testen
 
-**الحل المؤقت:**
-استخدام endpoint البديل: `/api/invoices/[id]/download-pdf`
+**Temporäre Lösung:**
+Verwendung des alternativen Endpunkts: `/api/invoices/[id]/download-pdf`
 
 ---

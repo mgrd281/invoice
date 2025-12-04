@@ -1,56 +1,56 @@
-# 🔧 إصلاح خطأ صفحة إلغاء الفاتورة
+# 🔧 Korrektur des Fehlers auf der Rechnungsstornierungsseite
 
-## 🚨 الخطأ المحدد
+## 🚨 Identifizierter Fehler
 ```
 Unhandled Runtime Error
 TypeError: undefined is not an object (evaluating 'data.invoice.totalAmount')
 ```
 
-## 🔍 تشخيص المشكلة
+## 🔍 Problemdiagnose
 
-### **المكان:**
-`/app/invoices/[id]/cancel/page.tsx` - صفحة إلغاء الفاتورة
+### **Ort:**
+`/app/invoices/[id]/cancel/page.tsx` - Rechnungsstornierungsseite
 
-### **السبب الجذري:**
-عدم تطابق في هيكل البيانات بين ما يرجعه الـ API وما يتوقعه الكود.
+### **Ursache:**
+Datenstruktur-Nichtübereinstimmung zwischen API-Antwort und Code-Erwartung.
 
-### **الكود الخاطئ:**
+### **Fehlerhafter Code:**
 ```typescript
-// ❌ خطأ: يتوقع data.invoice.totalAmount
+// ❌ Fehler: Erwartet data.invoice.totalAmount
 const data = await response.json()
-setOriginalInvoice(data.invoice)  // data.invoice غير موجود!
+setOriginalInvoice(data.invoice)  // data.invoice existiert nicht!
 setCancellationData(prev => ({
   ...prev,
   refundAmount: data.invoice.totalAmount  // undefined!
 }))
 ```
 
-### **هيكل البيانات الفعلي من API:**
+### **Tatsächliche API-Datenstruktur:**
 ```typescript
-// ✅ الـ API يرجع البيانات مباشرة
+// ✅ API gibt Daten direkt zurück
 return NextResponse.json({
   id: invoice.id,
   number: invoice.number,
-  total: invoice.total,        // ← هنا المبلغ
-  // ... باقي البيانات
+  total: invoice.total,        // ← Hier ist der Betrag
+  // ... restliche Daten
 })
 
-// وليس:
+// Und nicht:
 return NextResponse.json({
-  invoice: {  // ← هذا غير موجود!
+  invoice: {  // ← Das existiert nicht!
     totalAmount: ...
   }
 })
 ```
 
-## ✅ الحل المطبق
+## ✅ Angewendete Lösung
 
-### **1. تصحيح هيكل البيانات:**
+### **1. Korrektur der Datenstruktur:**
 ```typescript
-// ✅ صحيح: البيانات ترجع مباشرة
+// ✅ Richtig: Daten kommen direkt zurück
 if (data && !data.error) {
   // API returns invoice data directly, not wrapped in { invoice: ... }
-  setOriginalInvoice(data)  // data مباشرة، وليس data.invoice
+  setOriginalInvoice(data)  // data direkt, nicht data.invoice
   
   // Set refund amount with multiple fallbacks
   const totalAmount = data.totalAmount || data.total || data.amount || 0
@@ -61,71 +61,71 @@ if (data && !data.error) {
 }
 ```
 
-### **2. إضافة Fallbacks متعددة:**
+### **2. Hinzufügen mehrerer Fallbacks:**
 ```typescript
-// البحث عن المبلغ في حقول مختلفة
-const totalAmount = data.totalAmount ||  // إذا كان موجود
-                   data.total ||         // الحقل الأساسي
-                   data.amount ||        // حقل بديل
-                   0                     // قيمة افتراضية
+// Suche nach dem Betrag in verschiedenen Feldern
+const totalAmount = data.totalAmount ||  // Falls vorhanden
+                   data.total ||         // Hauptfeld
+                   data.amount ||        // Alternativfeld
+                   0                     // Standardwert
 ```
 
-### **3. تحسين التشخيص:**
+### **3. Verbesserung der Diagnose:**
 ```typescript
 console.log('📋 Loaded invoice data:', data) // Debug logging
 console.log('💰 Setting refund amount:', totalAmount)
 
 if (data && !data.error) {
-  // معالجة البيانات
+  // Datenverarbeitung
 } else {
   console.error('Invalid invoice data structure or error:', data)
   alert('Fehler: Ungültige Rechnungsdaten / Error: Invalid invoice data')
 }
 ```
 
-### **4. التحقق من الأخطاء:**
+### **4. Fehlerprüfung:**
 ```typescript
 if (data && !data.error) {
-  // البيانات صحيحة
+  // Daten sind korrekt
 } else {
-  // خطأ في البيانات أو API error
+  // Datenfehler oder API-Fehler
   console.error('Invalid invoice data structure or error:', data)
 }
 ```
 
-## 🧪 اختبار الإصلاح
+## 🧪 Testen der Korrektur
 
-### **خطوات الاختبار:**
+### **Testschritte:**
 
-1. **اذهب إلى** `/invoices`
-2. **اختر فاتورة** واضغط على "إلغاء"
-3. **راجع Console** - يجب أن تجد:
+1. **Gehen Sie zu** `/invoices`
+2. **Wählen Sie eine Rechnung** und klicken Sie auf "Stornieren"
+3. **Prüfen Sie die Konsole** - Sie sollten finden:
    ```
    📋 Loaded invoice data: { id: "...", total: 119.00, ... }
    💰 Setting refund amount: 119.00
    ```
-4. **النتيجة المتوقعة:**
-   - ✅ لا توجد رسالة خطأ
-   - ✅ صفحة الإلغاء تحمل بنجاح
-   - ✅ مبلغ الاسترداد يظهر بشكل صحيح
+4. **Erwartetes Ergebnis:**
+   - ✅ Keine Fehlermeldung
+   - ✅ Stornierungsseite lädt erfolgreich
+   - ✅ Erstattungsbetrag wird korrekt angezeigt
 
-### **إذا ظهر خطأ:**
+### **Wenn ein Fehler auftritt:**
 
 #### **"Invalid invoice data structure":**
 ```
-المشكلة: الـ API يرجع خطأ أو بيانات غير صحيحة
-الحل: تحقق من وجود الفاتورة في النظام
+Problem: API gibt Fehler oder falsche Daten zurück
+Lösung: Prüfen Sie, ob die Rechnung im System existiert
 ```
 
 #### **"Setting refund amount: 0":**
 ```
-المشكلة: لا يوجد حقل مبلغ في البيانات
-الحل: تحقق من أن الفاتورة تحتوي على total أو amount
+Problem: Kein Betragsfeld in den Daten
+Lösung: Prüfen Sie, ob die Rechnung total oder amount enthält
 ```
 
-## 🔧 التحسينات الإضافية
+## 🔧 Zusätzliche Verbesserungen
 
-### **1. معالجة أفضل للأخطاء:**
+### **1. Bessere Fehlerbehandlung:**
 ```typescript
 try {
   const response = await authenticatedFetch(`/api/invoices/${invoiceId}`)
@@ -140,14 +140,14 @@ try {
     throw new Error(data.error)
   }
   
-  // معالجة البيانات...
+  // Datenverarbeitung...
 } catch (error) {
   console.error('Error loading invoice:', error)
   alert(`Fehler beim Laden der Rechnung: ${error.message}`)
 }
 ```
 
-### **2. تحقق من صحة البيانات:**
+### **2. Datenvalidierung:**
 ```typescript
 const validateInvoiceData = (data: any) => {
   if (!data) return false
@@ -158,9 +158,9 @@ const validateInvoiceData = (data: any) => {
 }
 
 if (validateInvoiceData(data)) {
-  // البيانات صحيحة
+  // Daten sind korrekt
 } else {
-  // بيانات غير صحيحة
+  // Daten sind inkorrekt
 }
 ```
 
@@ -172,25 +172,25 @@ interface InvoiceData {
   total?: number
   totalAmount?: number
   amount?: number
-  // ... باقي الحقول
+  // ... restliche Felder
 }
 
 const data: InvoiceData = await response.json()
 ```
 
-## 🎯 النتيجة النهائية
+## 🎯 Endergebnis
 
-الآن صفحة إلغاء الفاتورة:
-- ✅ **تتعامل مع هيكل البيانات الصحيح** من الـ API
-- ✅ **تحتوي على fallbacks متعددة** للمبلغ
-- ✅ **تعرض رسائل خطأ واضحة** عند المشاكل
-- ✅ **توفر تشخيص مفصل** في Console
+Jetzt die Rechnungsstornierungsseite:
+- ✅ **Verarbeitet korrekte Datenstruktur** von der API
+- ✅ **Hat mehrere Fallbacks** für den Betrag
+- ✅ **Zeigt klare Fehlermeldungen** bei Problemen
+- ✅ **Bietet detaillierte Diagnose** in der Konsole
 
-**الخطأ محلول - صفحة الإلغاء تعمل الآن!** 🚀
+**Fehler behoben - Stornierungsseite funktioniert jetzt!** 🚀
 
-## 🧪 اختبر الآن:
+## 🧪 Jetzt testen:
 
-1. اذهب إلى فاتورة موجودة
-2. اضغط "إلغاء" أو "Stornieren"
-3. يجب أن تحمل الصفحة بدون خطأ
-4. مبلغ الاسترداد يجب أن يظهر بشكل صحيح
+1. Gehen Sie zu einer vorhandenen Rechnung
+2. Klicken Sie auf "Stornieren"
+3. Seite sollte ohne Fehler laden
+4. Erstattungsbetrag sollte korrekt angezeigt werden

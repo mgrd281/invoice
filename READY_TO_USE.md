@@ -1,112 +1,112 @@
-# ✅ جاهز للاستخدام - إرسال الفواتير عبر البريد الإلكتروني
+# ✅ Einsatzbereit - Rechnungsversand per E-Mail
 
-## الحالة الحالية
-✅ **النظام جاهز لإرسال البريد الإلكتروني الفعلي للمزودين الألمان**
+## Aktueller Status
+✅ **System ist bereit für den tatsächlichen E-Mail-Versand über deutsche Anbieter**
 
-## المزودون المدعومون تلقائياً
+## Automatisch unterstützte Anbieter
 
-### 🇩🇪 المزودون الألمان
+### 🇩🇪 Deutsche Anbieter
 - ✅ **Web.de** - `smtp.web.de:587`
 - ✅ **GMX.de** - `mail.gmx.net:587`
 - ✅ **T-Online** - `securesmtp.t-online.de:587`
 - ✅ **1&1 (IONOS)** - `smtp.1und1.de:587`
 
-### 🌍 المزودون الدوليون
+### 🌍 Internationale Anbieter
 - ✅ **Gmail** - `smtp.gmail.com:587`
 - ✅ **Outlook/Hotmail** - `smtp-mail.outlook.com:587`
 - ✅ **Yahoo** - `smtp.mail.yahoo.com:587`
 
-## الإعداد السريع (5 دقائق)
+## Schnelleinrichtung (5 Minuten)
 
-### الخطوة 1: اختر مزود البريد
-حدد المزود الذي تستخدمه (Web.de، GMX.de، إلخ)
+### Schritt 1: E-Mail-Anbieter wählen
+Wählen Sie Ihren Anbieter (Web.de, GMX.de, etc.)
 
-### الخطوة 2: حدث ملف .env.local
+### Schritt 2: .env.local aktualisieren
 
-**لـ Web.de:**
+**Für Web.de:**
 ```bash
 EMAIL_HOST=smtp.web.de
 EMAIL_PORT=587
-EMAIL_USER=your-email@web.de
-EMAIL_PASS=your-password
-EMAIL_FROM=your-email@web.de
+EMAIL_USER=ihre-email@web.de
+EMAIL_PASS=ihr-passwort
+EMAIL_FROM=ihre-email@web.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
 
-**لـ GMX.de:**
+**Für GMX.de:**
 ```bash
 EMAIL_HOST=mail.gmx.net
 EMAIL_PORT=587
-EMAIL_USER=your-email@gmx.de
-EMAIL_PASS=your-password
-EMAIL_FROM=your-email@gmx.de
+EMAIL_USER=ihre-email@gmx.de
+EMAIL_PASS=ihr-passwort
+EMAIL_FROM=ihre-email@gmx.de
 EMAIL_FROM_NAME=Karina Khrystych
 EMAIL_DEV_MODE=false
 ```
 
-### الخطوة 3: فعّل IMAP/POP3
+### Schritt 3: IMAP/POP3 aktivieren
 
 **Web.de:**
-1. اذهب إلى [web.de](https://web.de) → تسجيل الدخول
-2. انقر على "Einstellungen" (الإعدادات)
-3. انقر على "POP3/IMAP"
-4. فعّل "POP3 und IMAP Zugriff aktivieren"
+1. Gehen Sie zu [web.de](https://web.de) → Login
+2. Klicken Sie auf "Einstellungen"
+3. Klicken Sie auf "POP3/IMAP"
+4. Aktivieren Sie "POP3 und IMAP Zugriff aktivieren"
 
 **GMX.de:**
-1. اذهب إلى [gmx.de](https://gmx.de) → تسجيل الدخول
-2. انقر على "E-Mail" → "Einstellungen"
-3. انقر على "POP3/IMAP"
-4. فعّل "Externe E-Mail-Programme"
+1. Gehen Sie zu [gmx.de](https://gmx.de) → Login
+2. Klicken Sie auf "E-Mail" → "Einstellungen"
+3. Klicken Sie auf "POP3/IMAP"
+4. Aktivieren Sie "Externe E-Mail-Programme"
 
-### الخطوة 4: أعد تشغيل الخادم
+### Schritt 4: Server neu starten
 ```bash
 npm run dev
 ```
 
-## اختبار الإعداد
+## Einrichtung testen
 
-### 1. تشخيص تلقائي
+### 1. Automatische Diagnose
 ```bash
 curl http://localhost:3000/api/test-email-config
 ```
 
-### 2. اختبار مزود محدد
+### 2. Spezifischen Anbieter testen
 ```bash
 curl -X POST http://localhost:3000/api/test-email-config \
   -H "Content-Type: application/json" \
   -d '{"testEmail": "test@web.de"}'
 ```
 
-### 3. اختبار إرسال فاتورة
-1. اذهب إلى أي فاتورة في النظام
-2. انقر على "Per E-Mail senden"
-3. تحقق من وصول البريد للعميل
+### 3. Rechnungsversand testen
+1. Gehen Sie zu einer beliebigen Rechnung im System
+2. Klicken Sie auf "Per E-Mail senden"
+3. Prüfen Sie den Posteingang des Kunden
 
-## الميزات الجديدة
+## Neue Funktionen
 
-### ✅ اكتشاف تلقائي للمزود
-- النظام يكتشف إعدادات SMTP تلقائياً بناءً على عنوان البريد
-- لا حاجة لإدخال HOST و PORT يدوياً
+### ✅ Automatische Anbietererkennung
+- System erkennt SMTP-Einstellungen automatisch anhand der E-Mail-Adresse
+- Keine manuelle Eingabe von HOST und PORT erforderlich
 
-### ✅ تشخيص شامل
-- فحص إعدادات البريد الإلكتروني
-- اكتشاف المشاكل الشائعة
-- توصيات محددة لكل مزود
+### ✅ Umfassende Diagnose
+- Überprüfung der E-Mail-Einstellungen
+- Erkennung häufiger Probleme
+- Spezifische Empfehlungen für jeden Anbieter
 
-### ✅ دعم كامل للألمانية
-- رسائل خطأ باللغة الألمانية
-- تعليمات محددة للمزودين الألمان
-- قوالب بريد إلكتروني ألمانية احترافية
+### ✅ Volle deutsche Unterstützung
+- Fehlermeldungen auf Deutsch
+- Spezifische Anweisungen für deutsche Anbieter
+- Professionelle deutsche E-Mail-Vorlagen
 
-### ✅ معالجة أخطاء محسنة
-- رسائل خطأ واضحة ومحددة
-- اقتراحات لحل المشاكل
-- تسجيل مفصل للأخطاء
+### ✅ Verbesserte Fehlerbehandlung
+- Klare und spezifische Fehlermeldungen
+- Lösungsvorschläge
+- Detaillierte Fehlerprotokollierung
 
-## التحقق من النجاح
+## Erfolgsüberprüfung
 
-### علامات النجاح:
+### Erfolgszeichen:
 ```
 ✅ Email configuration verified successfully for Web.de
 Creating email transporter for Web.de
@@ -114,51 +114,51 @@ Creating email transporter for Web.de
 ✅ Email sent successfully: <message-id>
 ```
 
-### علامات المشاكل:
+### Problemzeichen:
 ```
 ❌ Email configuration validation failed
 ❌ Missing required email environment variables
 ❌ Invalid login: 535 Authentication failed
 ```
 
-## استكشاف الأخطاء السريع
+## Schnelle Fehlerbehebung
 
-### مشكلة: "Authentication failed"
-**الحل:**
-- تأكد من تفعيل POP3/IMAP في إعدادات المزود
-- تحقق من صحة كلمة المرور
-- تأكد من عدم تفعيل 2FA بدون App Password
+### Problem: "Authentication failed"
+**Lösung:**
+- Stellen Sie sicher, dass POP3/IMAP in den Anbietereinstellungen aktiviert ist
+- Überprüfen Sie das Passwort
+- Stellen Sie sicher, dass 2FA nicht ohne App-Passwort aktiviert ist
 
-### مشكلة: "Connection refused"
-**الحل:**
-- تحقق من الاتصال بالإنترنت
-- تأكد من صحة HOST و PORT
-- تحقق من إعدادات Firewall
+### Problem: "Connection refused"
+**Lösung:**
+- Überprüfen Sie die Internetverbindung
+- Überprüfen Sie HOST und PORT
+- Überprüfen Sie Firewall-Einstellungen
 
-### مشكلة: "Invalid email format"
-**الحل:**
-- تأكد من صيغة البريد الإلكتروني الصحيحة
-- تحقق من وجود @ و domain صحيح
+### Problem: "Invalid email format"
+**Lösung:**
+- Überprüfen Sie das E-Mail-Format
+- Überprüfen Sie @ und Domain
 
-## الدعم الفني
+## Technischer Support
 
-### أدوات التشخيص:
-1. **تشخيص عام**: `GET /api/test-email-config`
-2. **اختبار مزود**: `POST /api/test-email-config`
-3. **Console logs**: تحقق من terminal للأخطاء التفصيلية
+### Diagnosewerkzeuge:
+1. **Allgemeine Diagnose**: `GET /api/test-email-config`
+2. **Anbietertest**: `POST /api/test-email-config`
+3. **Console Logs**: Terminal auf detaillierte Fehler prüfen
 
-### ملفات المساعدة:
-- `GERMAN_EMAIL_SETUP.md` - دليل شامل للمزودين الألمان
-- `EMAIL_SETUP.md` - دليل عام لجميع المزودين
+### Hilfedateien:
+- `GERMAN_EMAIL_SETUP.md` - Umfassender Leitfaden für deutsche Anbieter
+- `EMAIL_SETUP.md` - Allgemeiner Leitfaden für alle Anbieter
 
-## الخلاصة
+## Fazit
 
-🎉 **النظام الآن جاهز لإرسال فواتير حقيقية عبر البريد الإلكتروني!**
+🎉 **Das System ist jetzt bereit, echte Rechnungen per E-Mail zu versenden!**
 
-- ✅ دعم كامل للمزودين الألمان (@web.de, @gmx.de)
-- ✅ اكتشاف تلقائي لإعدادات SMTP
-- ✅ تشخيص وإصلاح المشاكل تلقائياً
-- ✅ رسائل ألمانية احترافية مع PDF مرفق
-- ✅ معالجة أخطاء شاملة
+- ✅ Volle Unterstützung für deutsche Anbieter (@web.de, @gmx.de)
+- ✅ Automatische Erkennung der SMTP-Einstellungen
+- ✅ Automatische Diagnose und Fehlerbehebung
+- ✅ Professionelle deutsche Nachrichten mit PDF-Anhang
+- ✅ Umfassende Fehlerbehandlung
 
-**فقط أدخل بيانات اعتماد البريد الإلكتروني الصحيحة وابدأ الإرسال!** 🚀
+**Geben Sie einfach die korrekten E-Mail-Zugangsdaten ein und starten Sie den Versand!** 🚀

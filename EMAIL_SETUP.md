@@ -1,210 +1,169 @@
-# إعداد البريد الإلكتروني - Email Setup Guide
+# 📧 E-Mail-Einrichtungsanleitung
 
-## المتطلبات الأساسية
+## Voraussetzungen
 
-لتفعيل إرسال البريد الإلكتروني الفعلي، تحتاج إلى إعداد مزود خدمة البريد الإلكتروني.
+Um den tatsächlichen E-Mail-Versand zu aktivieren, müssen Sie einen E-Mail-Dienstanbieter einrichten.
 
-## الخيار 1: Gmail SMTP (الأسهل للاختبار)
+## 🚀 Option 1: Resend (Am einfachsten und besten)
 
-### 1. إعداد Gmail App Password
+Resend ist die einfachste und zuverlässigste Option für den E-Mail-Versand.
 
-1. اذهب إلى [Google Account Settings](https://myaccount.google.com/)
-2. انقر على "Security" في الشريط الجانبي
-3. فعّل "2-Step Verification" إذا لم يكن مفعلاً
-4. ابحث عن "App passwords" وانقر عليه
-5. اختر "Mail" و "Other (custom name)"
-6. أدخل اسماً مثل "Invoice Generator"
-7. انسخ كلمة المرور المُولدة (16 رقم)
+### Schritte:
 
-### 2. تحديث ملف .env.local
+#### 1. Resend-Konto erstellen
+- Gehen Sie zu [resend.com](https://resend.com)
+- Erstellen Sie ein kostenloses Konto (3000 E-Mails pro Monat kostenlos)
 
+#### 2. API-Schlüssel erhalten
+- Gehen Sie zu **API Keys** im Dashboard
+- Klicken Sie auf **Create API Key**
+- Wählen Sie einen Namen (z.B. "Rechnungssystem")
+- Kopieren Sie den Schlüssel (beginnt mit `re_`)
+
+#### 3. Umgebung einrichten
 ```bash
-# Gmail SMTP Configuration
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-16-digit-app-password
-```
-
-## الخيار 2: SendGrid (للإنتاج)
-
-### 1. إنشاء# 📧 دليل إعداد الإيميل - Email Setup Guide
-
-هذا الدليل يوضح كيفية إعداد وظيفة الإيميل لإرسال الفواتير.
-
-## 🚀 الخيار الأول: Resend (الأسهل والأفضل)
-
-Resend هو أسهل وأكثر الخيارات موثوقية لإرسال الإيميلات.
-
-### الخطوات:
-
-#### 1. إنشاء حساب Resend
-- اذهب إلى [resend.com](https://resend.com)
-- أنشئ حساب مجاني (3000 إيميل شهرياً مجاناً)
-
-#### 2. الحصول على API Key
-- اذهب إلى **API Keys** في لوحة التحكم
-- اضغط **Create API Key**
-- اختر اسم (مثل: "Invoice System")
-- انسخ المفتاح (يبدأ بـ `re_`)
-
-#### 3. إعداد البيئة
-```bash
-# أضف إلى ملف .env.local
-RESEND_API_KEY="re_your_api_key_here"
+# In .env.local hinzufügen
+RESEND_API_KEY="re_ihr_api_key_hier"
 RESEND_FROM_EMAIL="rechnung@karinex.de"
-EMAIL_DEV_MODE="true"  # للاختبار، غيرها لـ false للإنتاج
+EMAIL_DEV_MODE="true"  # Zum Testen, für Produktion auf false setzen
 ```
 
-#### 4. إعداد النطاق (اختياري)
-- أضف نطاقك في لوحة تحكم Resend
-- أو استخدم sandbox domain للاختبار
+#### 4. Domain einrichten (Optional)
+- Fügen Sie Ihre Domain im Resend-Dashboard hinzu
+- Oder verwenden Sie die Sandbox-Domain zum Testen
 
-## 📮 الخيار الثاني: SMTP (Gmail, Outlook, إلخ)
+## 📮 Option 2: SMTP (Gmail, Outlook, etc.)
 
-### إعداد Gmail:
+### Gmail-Einrichtung:
 
-#### 1. تفعيل المصادقة الثنائية
-#### 2. إنشاء كلمة مرور التطبيق
-- اذهب إلى إعدادات حساب Google
-- الأمان ← التحقق بخطوتين ← كلمات مرور التطبيق
-- أنشئ كلمة مرور لـ "البريد"
+#### 1. 2-Faktor-Authentifizierung aktivieren
+#### 2. App-Passwort erstellen
+- Gehen Sie zu den Google-Kontoeinstellungen
+- Sicherheit → Bestätigung in zwei Schritten → App-Passwörter
+- Erstellen Sie ein Passwort für "E-Mail"
 
-#### 3. إعداد البيئة
+#### 3. Umgebung einrichten
 ```bash
-# أضف إلى ملف .env.local
+# In .env.local hinzufügen
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASS="your-16-character-app-password"
+SMTP_USER="ihre-email@gmail.com"
+SMTP_PASS="ihr-16-stelliges-app-passwort"
 ```
 
-### إعداد Outlook/Hotmail:
+### Outlook/Hotmail-Einrichtung:
 ```bash
 SMTP_HOST="smtp-mail.outlook.com"
 SMTP_PORT="587"
-SMTP_USER="your-email@outlook.com"
-SMTP_PASS="your-password"
+SMTP_USER="ihre-email@outlook.com"
+SMTP_PASS="ihr-passwort"
 ```
 
-## 🧪 الاختبار
+## 🧪 Testen
 
-### 1. وضع التطوير
+### 1. Entwicklungsmodus
 ```bash
 EMAIL_DEV_MODE="true"
 ```
-يحاكي إرسال الإيميل بدون إرسال فعلي.
+Simuliert den E-Mail-Versand ohne tatsächlichen Versand.
 
-### 2. وضع الإنتاج
+### 2. Produktionsmodus
 ```bash
 EMAIL_DEV_MODE="false"
 ```
-يرسل إيميلات حقيقية.
+Versendet echte E-Mails.
 
-## 🎯 الاستخدام
+## 🎯 Verwendung
 
-بعد الإعداد، يمكنك:
-- الضغط على زر الإيميل بجانب أي فاتورة
-- تخصيص العنوان والرسالة
-- يتم إرفاق PDF تلقائياً
-- يتم تتبع حالة الإيميل
+Nach der Einrichtung können Sie:
+- Auf den E-Mail-Button neben jeder Rechnung klicken
+- Betreff und Nachricht anpassen
+- PDF wird automatisch angehängt
+- E-Mail-Status wird verfolgt
 
-## 🔧 حل المشاكل
+## 🔧 Fehlerbehebung
 
-### المشاكل الشائعة:
+### Häufige Probleme:
 
 #### 1. "Authentication failed"
-- تحقق من اسم المستخدم/كلمة المرور
-- لـ Gmail: استخدم كلمة مرور التطبيق، ليس كلمة المرور العادية
+- Überprüfen Sie Benutzername/Passwort
+- Für Gmail: Verwenden Sie das App-Passwort, nicht das normale Passwort
 
 #### 2. "Connection refused"
-- تحقق من SMTP host و port
-- تأكد أن الجدار الناري يسمح بالاتصالات الخارجة
+- Überprüfen Sie SMTP-Host und Port
+- Stellen Sie sicher, dass die Firewall ausgehende Verbindungen erlaubt
 
 #### 3. "API key invalid"
-- تحقق أن Resend API key صحيح
-- تأكد أنه يبدأ بـ `re_`
+- Überprüfen Sie, ob der Resend API-Schlüssel korrekt ist
+- Stellen Sie sicher, dass er mit `re_` beginnt
 
-### الدعم:
+### Support:
 - Resend: [resend.com/docs](https://resend.com/docs)
 - Gmail: [support.google.com](https://support.google.com/accounts/answer/185833)
 - Outlook: [support.microsoft.com](https://support.microsoft.com/en-us/office/pop-imap-and-smtp-settings-for-outlook-com-d088b986-291d-42b8-9564-9c414e2aa040)
 
-## ✅ الخلاصة
+## ✅ Fazit
 
-**للبدء السريع:**
-1. سجل في Resend.com
-2. احصل على API Key
-3. أضف `RESEND_API_KEY` و `EMAIL_DEV_MODE="true"` لملف `.env.local`
-4. جرب إرسال فاتورة!
+**Für den Schnellstart:**
+1. Bei Resend.com registrieren
+2. API-Schlüssel erhalten
+3. `RESEND_API_KEY` und `EMAIL_DEV_MODE="true"` zu `.env.local` hinzufügen
+4. Rechnungsversand testen!
 
-**الميزات:**
-- ✅ إرسال سريع وموثوق
-- ✅ قوالب إيميل احترافية
-- ✅ إرفاق PDF تلقائي
-- ✅ تتبع حالة الإرسال
-- ✅ وضع اختبار آمن تحقق من EMAIL_HOST و EMAIL_PORT
-- تأكد من الاتصال بالإنترنت
-- تحقق من إعدادات الـ firewall
+**Funktionen:**
+- ✅ Schneller und zuverlässiger Versand
+- ✅ Professionelle E-Mail-Vorlagen
+- ✅ Automatischer PDF-Anhang
+- ✅ Versandstatus-Verfolgung
+- ✅ Sicherer Testmodus
 
-### خطأ التحقق من البريد (Email Verification Error)
-
-{{ ... }}
-Error: Mail command failed: 550 5.1.1 User unknown
-```
-
-**الحل:**
-- تأكد من صحة عنوان EMAIL_FROM
-- للـ SendGrid/SES: تحقق من العنوان في لوحة التحكم
-- تأكد من تحقق العنوان (verified)
-
-## إعدادات الأمان المتقدمة
+## Erweiterte Sicherheitseinstellungen
 
 ### SPF Record
-أضف إلى DNS records:
+Zu DNS-Einträgen hinzufügen:
 
 ```
-v=spf1 include:_spf.google.com ~all  # للـ Gmail
-v=spf1 include:sendgrid.net ~all     # للـ SendGrid
+v=spf1 include:_spf.google.com ~all  # Für Gmail
+v=spf1 include:sendgrid.net ~all     # Für SendGrid
 ```
 
 ### DKIM
-- Gmail: يُعد تلقائياً
-- SendGrid: يُعد في Domain Authentication
-- SES: يُعد في Domain Verification
+- Gmail: Automatisch eingerichtet
+- SendGrid: In Domain-Authentifizierung eingerichtet
+- SES: In Domain-Verifizierung eingerichtet
 
 ### DMARC Record
 ```
-v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com
+v=DMARC1; p=none; rua=mailto:dmarc@ihredomain.com
 ```
 
-## مراقبة الإرسال
+## Versandüberwachung
 
 ### Logs
-تحقق من console logs للأخطاء:
+Überprüfen Sie die Konsolenprotokolle auf Fehler:
 
 ```bash
-# في terminal حيث يعمل الخادم
+# Im Terminal, wo der Server läuft
 npm run dev
 ```
 
-### معدل الإرسال
-- Gmail: 500 بريد/يوم
-- SendGrid Free: 100 بريد/يوم
-- SES: يبدأ من 200 بريد/يوم
+### Senderate
+- Gmail: 500 E-Mails/Tag
+- SendGrid Free: 100 E-Mails/Tag
+- SES: Beginnt bei 200 E-Mails/Tag
 
-## الدعم
+## Support
 
-إذا واجهت مشاكل:
+Wenn Sie Probleme haben:
 
-1. تحقق من الـ console logs
-2. تأكد من صحة متغيرات البيئة
-3. اختبر الاتصال بـ SMTP server
-4. تحقق من حالة الخدمة (Gmail/SendGrid/SES status)
+1. Überprüfen Sie die Konsolenprotokolle
+2. Stellen Sie sicher, dass die Umgebungsvariablen korrekt sind
+3. Testen Sie die Verbindung zum SMTP-Server
+4. Überprüfen Sie den Dienststatus (Gmail/SendGrid/SES Status)
 
-## أمثلة كاملة
+## Vollständige Beispiele
 
-### Gmail Setup الكامل
+### Vollständiges Gmail-Setup
 
 ```bash
 # .env.local
@@ -216,7 +175,7 @@ EMAIL_FROM=karina@gmail.com
 EMAIL_FROM_NAME=Karina Khrystych
 ```
 
-### SendGrid Setup الكامل
+### Vollständiges SendGrid-Setup
 
 ```bash
 # .env.local
@@ -224,8 +183,8 @@ EMAIL_HOST=smtp.sendgrid.net
 EMAIL_PORT=587
 EMAIL_USER=apikey
 EMAIL_PASS=SG.abc123def456ghi789jkl
-EMAIL_FROM=karina@yourdomain.com
+EMAIL_FROM=karina@ihredomain.com
 EMAIL_FROM_NAME=Karina Khrystych
 ```
 
-بعد الإعداد الصحيح، ستعمل وظيفة إرسال البريد الإلكتروني بشكل كامل مع إرفاق PDF الفاتورة!
+Nach korrekter Einrichtung funktioniert der E-Mail-Versand vollständig inklusive PDF-Rechnungsanhang!

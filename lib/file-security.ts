@@ -2,18 +2,18 @@ import { NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { validateFileAccess, getUserStoragePath } from './file-manager'
 
-// استخراج معلومات المستخدم من JWT Token
+// Benutzerinformationen aus JWT-Token extrahieren
 export function extractUserFromRequest(request: NextRequest): { userId: number; email: string; role: string } | null {
   try {
     const token = request.cookies.get('auth-token')?.value
-    
+
     if (!token) {
       return null
     }
-    
+
     const secret = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
     const decoded = jwt.verify(token, secret) as any
-    
+
     if (decoded.exp && decoded.exp > Math.floor(Date.now() / 1000)) {
       return {
         userId: decoded.userId,
@@ -21,7 +21,7 @@ export function extractUserFromRequest(request: NextRequest): { userId: number; 
         role: decoded.role
       }
     }
-    
+
     return null
   } catch (error) {
     console.error('Error extracting user from request:', error)
@@ -29,29 +29,29 @@ export function extractUserFromRequest(request: NextRequest): { userId: number; 
   }
 }
 
-// التحقق من صلاحيات الوصول للملف
+// Dateizugriffsberechtigungen prüfen
 export function checkFilePermission(
-  userId: number, 
-  filePath: string, 
+  userId: number,
+  filePath: string,
   operation: 'read' | 'write' | 'delete'
 ): { allowed: boolean; reason?: string } {
-  
-  // التحقق الأساسي من أن الملف داخل مجلد المستخدم
+
+  // Grundlegende Prüfung, ob Datei im Benutzerverzeichnis liegt
   if (!validateFileAccess(userId, filePath)) {
     return {
       allowed: false,
       reason: 'File access denied: Outside user directory'
     }
   }
-  
-  // قواعد إضافية حسب نوع العملية
+
+  // Zusätzliche Regeln je nach Operationstyp
   switch (operation) {
     case 'read':
-      // السماح بقراءة جميع الملفات في مجلد المستخدم
+      // Lesen aller Dateien im Benutzerverzeichnis erlauben
       return { allowed: true }
-      
+
     case 'write':
-      // منع الكتابة في ملفات النظام
+      // Schreiben in Systemdateien verhindern
       if (filePath.includes('system') || filePath.includes('config')) {
         return {
           allowed: false,
@@ -59,9 +59,9 @@ export function checkFilePermission(
         }
       }
       return { allowed: true }
-      
+
     case 'delete':
-      // منع حذف ملفات مهمة
+      // Löschen wichtiger Dateien verhindern
       if (filePath.includes('backup') || filePath.includes('system')) {
         return {
           allowed: false,
@@ -69,7 +69,7 @@ export function checkFilePermission(
         }
       }
       return { allowed: true }
-      
+
     default:
       return {
         allowed: false,
@@ -78,55 +78,55 @@ export function checkFilePermission(
   }
 }
 
-// التحقق من حدود التخزين
+// Speicherplatzbeschränkungen prüfen
 export function checkStorageQuota(userId: number, fileSize: number): { allowed: boolean; reason?: string } {
-  // حد أقصى 100 ميجابايت لكل مستخدم (يمكن تخصيصه)
+  // Maximal 100 MB pro Benutzer (anpassbar)
   const MAX_STORAGE_MB = 100
   const MAX_STORAGE_BYTES = MAX_STORAGE_MB * 1024 * 1024
-  
-  // حد أقصى 10 ميجابايت لكل ملف
+
+  // Maximal 10 MB pro Datei
   const MAX_FILE_MB = 10
   const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024
-  
+
   if (fileSize > MAX_FILE_BYTES) {
     return {
       allowed: false,
       reason: `File too large. Maximum file size is ${MAX_FILE_MB}MB`
     }
   }
-  
-  // هنا يمكن إضافة فحص الحجم الإجمالي للمستخدم
-  // للبساطة، سنسمح بالرفع الآن
+
+  // Hier kann die Prüfung des Gesamtspeichers hinzugefügt werden
+  // Der Einfachheit halber erlauben wir den Upload jetzt
   return { allowed: true }
 }
 
-// التحقق من نوع الملف المسموح
+// Zulässigen Dateityp prüfen
 export function checkFileType(fileName: string, allowedTypes?: string[]): { allowed: boolean; reason?: string } {
   const defaultAllowedTypes = [
     '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv',
     '.jpg', '.jpeg', '.png', '.gif', '.svg',
     '.txt', '.json', '.xml', '.zip', '.rar'
   ]
-  
+
   const allowed = allowedTypes || defaultAllowedTypes
   const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'))
-  
+
   if (!allowed.includes(fileExtension)) {
     return {
       allowed: false,
       reason: `File type not allowed. Allowed types: ${allowed.join(', ')}`
     }
   }
-  
+
   return { allowed: true }
 }
 
-// تسجيل العمليات الأمنية
+// Sicherheitsereignisse protokollieren
 export function logSecurityEvent(
-  userId: number, 
-  operation: string, 
-  filePath: string, 
-  success: boolean, 
+  userId: number,
+  operation: string,
+  filePath: string,
+  success: boolean,
   reason?: string
 ) {
   const timestamp = new Date().toISOString()
@@ -134,17 +134,17 @@ export function logSecurityEvent(
     timestamp,
     userId,
     operation,
-    filePath: filePath.replace(getUserStoragePath(userId), '[USER_DIR]'), // إخفاء المسار الكامل
+    filePath: filePath.replace(getUserStoragePath(userId), '[USER_DIR]'), // Vollständigen Pfad verbergen
     success,
     reason
   }
-  
+
   console.log('Security Event:', JSON.stringify(logEntry))
-  
-  // هنا يمكن إضافة تسجيل في قاعدة بيانات أو ملف log
+
+  // Hier kann Logging in Datenbank oder Logdatei hinzugefügt werden
 }
 
-// فحص شامل للأمان قبل العمليات
+// Umfassende Sicherheitsprüfung vor Operationen
 export function performSecurityCheck(
   userId: number,
   fileName: string,
@@ -152,23 +152,23 @@ export function performSecurityCheck(
   operation: 'read' | 'write' | 'delete',
   fileSize?: number
 ): { allowed: boolean; reason?: string } {
-  
-  // فحص صلاحيات الملف
+
+  // Dateiberechtigungen prüfen
   const filePermission = checkFilePermission(userId, filePath, operation)
   if (!filePermission.allowed) {
     logSecurityEvent(userId, operation, filePath, false, filePermission.reason)
     return filePermission
   }
-  
-  // فحص نوع الملف (للكتابة فقط)
+
+  // Dateityp prüfen (nur beim Schreiben)
   if (operation === 'write') {
     const fileType = checkFileType(fileName)
     if (!fileType.allowed) {
       logSecurityEvent(userId, operation, filePath, false, fileType.reason)
       return fileType
     }
-    
-    // فحص حدود التخزين
+
+    // Speicherplatzbeschränkungen prüfen
     if (fileSize) {
       const quota = checkStorageQuota(userId, fileSize)
       if (!quota.allowed) {
@@ -177,7 +177,7 @@ export function performSecurityCheck(
       }
     }
   }
-  
+
   logSecurityEvent(userId, operation, filePath, true)
   return { allowed: true }
 }
