@@ -89,7 +89,7 @@ export default function LandingPage() {
           <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
           <div className="absolute top-0 right-1/4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-2s"></div>
           <div className="absolute -bottom-8 left-1/3 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-4s"></div>
-          
+
           {/* Beautiful Small Interactive Orbs */}
           <div className="absolute top-20 left-16 interactive-orb orb-1" title="Elegante Kugel"></div>
           <div className="absolute top-32 right-24 interactive-orb orb-2" title="Schöne Animation"></div>
@@ -100,25 +100,25 @@ export default function LandingPage() {
           <div className="absolute top-44 left-60 interactive-orb orb-mini" title="Mini Kugel"></div>
           <div className="absolute bottom-80 right-60 interactive-orb orb-tiny" title="Winzige Kugel"></div>
           <div className="absolute top-72 right-80 interactive-orb orb-mini" title="Kleine Perle"></div>
-          
+
           {/* Supporting Particles */}
           <div className="absolute top-24 left-40 particle particle-1 animation-delay-1s"></div>
           <div className="absolute top-48 right-32 particle particle-2 animation-delay-3s"></div>
           <div className="absolute bottom-32 left-48 particle particle-3 animation-delay-5s"></div>
           <div className="absolute bottom-48 right-24 particle particle-4 animation-delay-2s"></div>
-          
+
           {/* Moving Gradient Lines */}
           <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent animate-pulse opacity-50"></div>
           <div className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent animate-pulse opacity-50 animation-delay-3s"></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-green-100 to-blue-100 text-green-800 text-sm font-medium mb-8">
               <Shield className="w-4 h-4 mr-2" />
               Neu: Sichere Authentifizierung aktiviert
             </div>
-            
+
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-orange-600 bg-clip-text text-transparent">
                 Professionelle
@@ -126,15 +126,15 @@ export default function LandingPage() {
               <br />
               <span className="text-gray-800">Rechnungsverwaltung</span>
             </h1>
-            
+
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Erstellen Sie professionelle Rechnungen, verwalten Sie Kunden und behalten Sie den Überblick über Ihre Finanzen. 
+              Erstellen Sie professionelle Rechnungen, verwalten Sie Kunden und behalten Sie den Überblick über Ihre Finanzen.
               <span className="font-semibold text-blue-600">DSGVO-konform</span> und nach deutschem Steuerrecht.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 onClick={() => {
                   console.log('🖱️ Main Register button clicked!')
                   handleRegister()
@@ -145,9 +145,9 @@ export default function LandingPage() {
                 Jetzt kostenlos registrieren
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
+              <Button
+                variant="outline"
+                size="lg"
                 onClick={() => {
                   console.log('🖱️ Main Login button clicked!')
                   handleLogin()
@@ -158,7 +158,7 @@ export default function LandingPage() {
                 Bereits registriert? Anmelden
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
               <div className="flex items-center">
                 <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
@@ -185,7 +185,7 @@ export default function LandingPage() {
           <div className="absolute bottom-20 right-10 w-24 h-24 bg-purple-100 rounded-full opacity-20 animate-pulse animation-delay-2s"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-orange-100 rounded-full opacity-10 animate-pulse animation-delay-4s"></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 text-sm font-medium mb-6">
@@ -200,7 +200,7 @@ export default function LandingPage() {
               <span className="text-gray-900">brauchen</span>
             </h2>
             <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Professionelle Rechnungserstellung mit <span className="font-bold text-blue-600">modernster Technologie</span> 
+              Professionelle Rechnungserstellung mit <span className="font-bold text-blue-600">modernster Technologie</span>
               und <span className="font-bold text-purple-600">deutscher Rechtssicherheit</span>
             </p>
           </div>
@@ -218,8 +218,8 @@ export default function LandingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="relative">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full hover:bg-blue-50 border-blue-200 transform hover:scale-105 transition-all duration-300 group"
                   onClick={handleLogin}
                 >
@@ -239,8 +239,8 @@ export default function LandingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full hover:bg-green-50 border-green-200"
                   onClick={handleLogin}
                 >
@@ -260,8 +260,8 @@ export default function LandingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full hover:bg-purple-50 border-purple-200"
                   onClick={handleLogin}
                 >
@@ -281,8 +281,8 @@ export default function LandingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full hover:bg-orange-50 border-orange-200"
                   onClick={handleLogin}
                 >
@@ -302,8 +302,8 @@ export default function LandingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full hover:bg-emerald-50 border-emerald-200"
                   onClick={handleLogin}
                 >
@@ -323,8 +323,8 @@ export default function LandingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full hover:bg-gray-50 border-gray-200"
                   onClick={handleLogin}
                 >
@@ -339,7 +339,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
@@ -350,11 +350,11 @@ export default function LandingPage() {
                 <span className="text-xl font-bold">RechnungsProfi</span>
               </div>
               <p className="text-gray-400 mb-4">
-                Professionelle Rechnungsverwaltung für deutsche Unternehmen. 
+                Professionelle Rechnungsverwaltung für deutsche Unternehmen.
                 DSGVO-konform und rechtssicher.
               </p>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">Schnellzugriff</h3>
               <ul className="space-y-2 text-gray-400">
@@ -364,7 +364,7 @@ export default function LandingPage() {
                 <li><button onClick={handleLogin} className="hover:text-white hover:underline transition-all duration-200 text-left cursor-pointer bg-transparent border-none p-0 font-inherit text-gray-400 block w-full">CSV Import</button></li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
@@ -375,9 +375,9 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 RechnungsProfi. Alle Rechte vorbehalten.</p>
+            <p>&copy; 2026 RechnungsProfi. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>
