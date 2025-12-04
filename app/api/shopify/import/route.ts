@@ -15,19 +15,26 @@ interface ShopifySettings {
 
 // Get Shopify settings (fallback implementation)
 function getShopifySettings(): ShopifySettings {
-  // Try to read from reliable storage first (same as in shopify-settings.ts)
+  // Try to read from reliable storage first
   try {
     const fs = require('fs')
     const path = require('path')
-    const isVercel = process.env.VERCEL === '1'
-    const settingsPath = isVercel
-      ? path.join('/tmp', 'shopify-settings.json')
-      : path.join(process.cwd(), 'user-storage', 'shopify-settings.json')
 
-    if (fs.existsSync(settingsPath)) {
-      const data = fs.readFileSync(settingsPath, 'utf8')
+    // Check /tmp first (Vercel)
+    const tmpPath = path.join('/tmp', 'shopify-settings.json')
+    if (fs.existsSync(tmpPath)) {
+      const data = fs.readFileSync(tmpPath, 'utf8')
       const settings = JSON.parse(data)
-      // Sanitize loaded settings
+      if (settings.shopDomain) settings.shopDomain = settings.shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '').trim()
+      if (settings.accessToken) settings.accessToken = settings.accessToken.trim()
+      return settings
+    }
+
+    // Check local user-storage (Local Development)
+    const localPath = path.join(process.cwd(), 'user-storage', 'shopify-settings.json')
+    if (fs.existsSync(localPath)) {
+      const data = fs.readFileSync(localPath, 'utf8')
+      const settings = JSON.parse(data)
       if (settings.shopDomain) settings.shopDomain = settings.shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '').trim()
       if (settings.accessToken) settings.accessToken = settings.accessToken.trim()
       return settings
@@ -60,43 +67,17 @@ function getShopifySettings(): ShopifySettings {
 
 // Simple Shopify API implementation
 async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
-  // COMPLETE fields to bypass PII masking
-  const completeFields = [
-    // Basic order fields
+  // Valid top-level fields only - Nested syntax like customer[id] is NOT valid for 'fields' param
+  const validFields = [
     'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
     'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
-
-    // Complete customer fields (to bypass PII masking)
-    'customer[id]', 'customer[email]', 'customer[first_name]', 'customer[last_name]',
-    'customer[phone]', 'customer[created_at]', 'customer[updated_at]', 'customer[state]',
-    'customer[verified_email]', 'customer[tax_exempt]',
-
-    // Complete default address fields
-    'customer[default_address][id]', 'customer[default_address][first_name]', 'customer[default_address][last_name]',
-    'customer[default_address][company]', 'customer[default_address][address1]', 'customer[default_address][address2]',
-    'customer[default_address][city]', 'customer[default_address][zip]', 'customer[default_address][province]',
-    'customer[default_address][country]', 'customer[default_address][country_code]', 'customer[default_address][phone]',
-
-    // Complete billing address fields  
-    'billing_address[first_name]', 'billing_address[last_name]', 'billing_address[company]',
-    'billing_address[address1]', 'billing_address[address2]', 'billing_address[city]',
-    'billing_address[zip]', 'billing_address[province]', 'billing_address[country]',
-    'billing_address[country_code]', 'billing_address[phone]',
-
-    // Complete shipping address fields
-    'shipping_address[first_name]', 'shipping_address[last_name]', 'shipping_address[company]',
-    'shipping_address[address1]', 'shipping_address[address2]', 'shipping_address[city]',
-    'shipping_address[zip]', 'shipping_address[province]', 'shipping_address[country]',
-    'shipping_address[country_code]', 'shipping_address[phone]',
-
-    // Line items and taxes
-    'line_items', 'tax_lines'
+    'customer', 'billing_address', 'shipping_address', 'line_items', 'tax_lines'
   ].join(',')
 
   const urlParams = new URLSearchParams({
     limit: Math.min(params.limit || 250, 250).toString(), // Shopify maximum is 250
     status: 'any',  // CRITICAL: Required to get all orders!
-    fields: completeFields // Request COMPLETE customer data to bypass PII masking
+    fields: validFields
   })
 
   // FIXED: Always add financial_status, use 'paid' as default
@@ -124,7 +105,8 @@ async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
   })
 
   if (!response.ok) {
-    throw new Error(`Shopify API error: ${response.status} ${response.statusText}`)
+    const errorText = await response.text()
+    throw new Error(`Shopify API error: ${response.status} ${response.statusText} - ${errorText}`)
   }
 
   const data = await response.json()
@@ -151,44 +133,17 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
       limit: '250' // Shopify Maximum per page
     })
 
-    // Request COMPLETE customer data including ALL address fields to bypass PII masking
+    // Request COMPLETE customer data
     if (!cursor) {
-      // Only add fields on first request (not when paginating)
-      // EXPANDED fields to request ALL customer data explicitly
-      const completeFields = [
-        // Basic order fields
+      // Valid top-level fields only
+      const validFields = [
         'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
         'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
-
-        // Complete customer fields (to bypass PII masking)
-        'customer[id]', 'customer[email]', 'customer[first_name]', 'customer[last_name]',
-        'customer[phone]', 'customer[created_at]', 'customer[updated_at]', 'customer[state]',
-        'customer[verified_email]', 'customer[tax_exempt]',
-
-        // Complete default address fields
-        'customer[default_address][id]', 'customer[default_address][first_name]', 'customer[default_address][last_name]',
-        'customer[default_address][company]', 'customer[default_address][address1]', 'customer[default_address][address2]',
-        'customer[default_address][city]', 'customer[default_address][zip]', 'customer[default_address][province]',
-        'customer[default_address][country]', 'customer[default_address][country_code]', 'customer[default_address][phone]',
-
-        // Complete billing address fields  
-        'billing_address[first_name]', 'billing_address[last_name]', 'billing_address[company]',
-        'billing_address[address1]', 'billing_address[address2]', 'billing_address[city]',
-        'billing_address[zip]', 'billing_address[province]', 'billing_address[country]',
-        'billing_address[country_code]', 'billing_address[phone]',
-
-        // Complete shipping address fields
-        'shipping_address[first_name]', 'shipping_address[last_name]', 'shipping_address[company]',
-        'shipping_address[address1]', 'shipping_address[address2]', 'shipping_address[city]',
-        'shipping_address[zip]', 'shipping_address[province]', 'shipping_address[country]',
-        'shipping_address[country_code]', 'shipping_address[phone]',
-
-        // Line items and taxes
-        'line_items', 'tax_lines'
+        'customer', 'billing_address', 'shipping_address', 'line_items', 'tax_lines'
       ].join(',')
 
-      urlParams.append('fields', completeFields)
-      console.log('📋 Requesting COMPLETE customer data to bypass PII masking')
+      urlParams.append('fields', validFields)
+      console.log('📋 Requesting valid fields')
     }
 
     // CRITICAL: Shopify API doesn't allow other parameters when page_info is present

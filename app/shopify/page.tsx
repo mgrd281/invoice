@@ -264,13 +264,19 @@ export default function ShopifyPage() {
       })
 
       console.log('🔧 FIXED: Using financial_status=paid for maximum results')
-
       console.log('📡 Fetching orders with Shopify API:', params.toString())
 
       const response = await fetch(`/api/shopify/import?${params}`)
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        // Try to parse error message from JSON response
+        try {
+          const errorData = await response.json()
+          throw new Error(errorData.error || errorData.details || `HTTP ${response.status}: ${response.statusText}`)
+        } catch (e) {
+          // If parsing fails, throw generic error
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
       }
 
       const data = await response.json()
