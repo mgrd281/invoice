@@ -932,6 +932,61 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     status = 'Storniert'
   }
 
+  // Fix for composite address strings (e.g. "Name • Street • Zip City")
+  // This handles cases where Shopify returns a formatted address string in address1
+  // We check for specific separators: "•", "·", "|"
+  if (finalAddress1) {
+    const separators = ['•', '·', '|'];
+
+    for (const sep of separators) {
+      if (finalAddress1.includes(sep)) {
+        console.log(`🔍 Found separator '${sep}' in address:`, finalAddress1);
+        const parts = finalAddress1.split(sep).map((p: string) => p.trim());
+
+        if (parts.length >= 3) {
+          // Format: Name • Street • Zip City
+          console.log('✅ Parsed 3-part address:', parts);
+
+          // Update Customer Name if it's generic
+          if (!customerName || customerName.includes('Shopify') || customerName === 'Unbekannt') {
+            customerName = parts[0];
+          }
+
+          // Update Address (Street)
+          finalAddress1 = parts[1];
+
+          // Update Zip and City
+          const zipCity = parts[2];
+          const zipMatch = zipCity.match(/^(\d+)\s+(.+)$/);
+          if (zipMatch) {
+            finalZipCode = zipMatch[1];
+            finalCity = zipMatch[2];
+          } else {
+            finalCity = zipCity;
+          }
+
+        } else if (parts.length === 2) {
+          // Format: Street • Zip City
+          console.log('✅ Parsed 2-part address:', parts);
+
+          // Check if the second part looks like "Zip City" (starts with number)
+          if (parts[1].match(/^\d+/)) {
+            finalAddress1 = parts[0];
+            const zipCity = parts[1];
+            const zipMatch = zipCity.match(/^(\d+)\s+(.+)$/);
+            if (zipMatch) {
+              finalZipCode = zipMatch[1];
+              finalCity = zipMatch[2];
+            } else {
+              finalCity = zipCity;
+            }
+          }
+        }
+        break; // Stop after finding the valid separator
+      }
+    }
+  }
+
   return {
     id: `shopify-${order.id}`,
     number: invoiceNumber,
