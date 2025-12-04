@@ -1,9 +1,34 @@
 // Webhooks-System für automatische Systemaktualisierungen von Shopify
 import { NextRequest, NextResponse } from 'next/server'
-import { IdempotencyManager, withIdempotency } from '@/lib/idempotency'
+import { IdempotencyManager } from '@/lib/idempotency'
 import { getShopifySettings } from '@/lib/shopify-settings'
 import { sendInvoiceEmail } from '@/lib/email-service'
+import { loadInvoicesFromDisk, saveInvoicesToDisk, loadCustomersFromDisk, saveCustomersToDisk } from '@/lib/server-storage'
+import { getCompanySettings } from '@/lib/company-settings'
 import crypto from 'crypto'
+
+// Globale Variablen für In-Memory-Speicher (Shared State)
+declare global {
+  var allInvoices: any[] | undefined
+  var allCustomers: any[] | undefined
+  var orderToInvoiceMap: Map<string, string> | undefined
+}
+
+// Initialisierung
+if (!global.allInvoices) {
+  global.allInvoices = loadInvoicesFromDisk()
+}
+if (!global.allCustomers) {
+  global.allCustomers = loadCustomersFromDisk()
+}
+if (!global.orderToInvoiceMap) {
+  global.orderToInvoiceMap = new Map()
+  global.allInvoices?.forEach((inv: any) => {
+    if (inv.shopifyOrderId) {
+      global.orderToInvoiceMap!.set(inv.shopifyOrderId, inv.id)
+    }
+  })
+}
 
 interface ShopifyWebhookPayload {
   id: number
@@ -17,30 +42,17 @@ interface ShopifyWebhookPayload {
   financial_status?: string
   fulfillment_status?: string
   cancelled_at?: string | null
-  refunds?: Array<{
+  refunds?: Array<any>
+  customer?: {
     id: number
-    order_id: number
-    created_at: string
-    note?: string
-    refund_line_items: Array<{
-      id: number
-      line_item_id: number
-      quantity: number
-      restock_type: string
-      subtotal: string
-      total_tax: string
-    }>
-    transactions: Array<{
-      id: number
-      order_id: number
-      amount: string
-      kind: string
-      gateway: string
-      status: string
-      created_at: string
-    }>
-  }>
-  // Weitere Felder...
+    email: string
+    first_name?: string
+    last_name?: string
+    default_address?: any
+  }
+  billing_address?: any
+  shipping_address?: any
+  line_items?: Array<any>
 }
 
 // Shopify Webhook-Verifizierung
@@ -76,76 +88,115 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
 
     // Automatisch Rechnung erstellen, wenn bezahlt
     if (payload.financial_status === 'paid') {
-      const invoiceData = {
-        customer: {
-          name: payload.email || 'Unknown Customer',
-          email: payload.email || '',
-          // Weitere Daten könnten hier hinzugefügt werden
-        },
-        number: `SH-${payload.order_number || payload.id}`,
+
+      // Kundendaten extrahieren
+      const customerData = {
+        name: payload.customer ? `${payload.customer.first_name || ''} ${payload.customer.last_name || ''}`.trim() : (payload.email || 'Unknown Customer'),
+        email: payload.email || payload.customer?.email || '',
+        address: payload.billing_address?.address1 || payload.shipping_address?.address1 || '',
+        city: payload.billing_address?.city || payload.shipping_address?.city || '',
+        zipCode: payload.billing_address?.zip || payload.shipping_address?.zip || '',
+        country: payload.billing_address?.country || payload.shipping_address?.country || '',
+        companyName: payload.billing_address?.company || payload.shipping_address?.company || ''
+      }
+
+      // Kunde finden oder erstellen
+      if (!global.allCustomers) global.allCustomers = loadCustomersFromDisk()
+
+      let customerRecord = global.allCustomers!.find((c: any) => c.email === customerData.email)
+
+      if (!customerRecord) {
+        customerRecord = {
+          id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          userId: 'system', // System-User
+          ...customerData,
+          createdAt: new Date().toISOString()
+        }
+        global.allCustomers!.push(customerRecord)
+        saveCustomersToDisk(global.allCustomers!)
+      }
+
+      // Rechnungsdaten vorbereiten
+      const invoiceNumber = `SH-${payload.order_number || payload.id}`
+      const total = parseFloat(payload.total_price || '0')
+
+      const invoice = {
+        id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId: 'system', // System-User
+        number: invoiceNumber,
         date: new Date(payload.created_at).toISOString().split('T')[0],
-        dueDate: new Date().toISOString().split('T')[0], // Bereits bezahlt
-        items: [
-          {
-            description: `Shopify Order #${payload.order_number || payload.id}`,
-            quantity: 1,
-            unitPrice: parseFloat(payload.total_price || '0'),
-            total: parseFloat(payload.total_price || '0')
-          }
-        ],
-        subtotal: parseFloat(payload.total_price || '0'),
+        dueDate: new Date().toISOString().split('T')[0], // Sofort fällig da bezahlt
+        subtotal: total, // Vereinfacht
         taxRate: 19,
-        taxAmount: 0,
-        total: parseFloat(payload.total_price || '0'),
+        taxAmount: 0, // Vereinfacht
+        total: total,
         status: 'Bezahlt',
+        statusColor: 'bg-green-100 text-green-800',
+        amount: `€${total.toFixed(2)}`,
+        customerId: customerRecord.id,
+        customerName: customerRecord.name,
+        customerEmail: customerRecord.email,
+        customerAddress: customerRecord.address,
+        customerCity: customerRecord.city,
+        customerZip: customerRecord.zipCode,
+        customerCountry: customerRecord.country,
+        items: (payload.line_items || []).map((item: any) => ({
+          id: `item-${Math.random().toString(36).substr(2, 9)}`,
+          description: item.title || 'Produkt',
+          quantity: item.quantity || 1,
+          unitPrice: parseFloat(item.price || '0'),
+          total: (item.quantity || 1) * parseFloat(item.price || '0')
+        })),
+        createdAt: new Date().toISOString(),
+        organizationId: getCompanySettings().id,
+        organizationName: getCompanySettings().name,
         shopifyOrderId: payload.id.toString(),
         shopifyOrderNumber: payload.order_number || payload.id.toString(),
         currency: payload.currency || 'EUR'
       }
 
-      const response = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(invoiceData)
-      })
+      // Rechnung speichern
+      if (!global.allInvoices) global.allInvoices = loadInvoicesFromDisk()
+      global.allInvoices!.push(invoice)
+      saveInvoicesToDisk(global.allInvoices!)
 
-      if (response.ok) {
-        const result = await response.json()
-        console.log(`✅ Auto-created invoice ${result.id} for order ${payload.id}`)
+      // Mapping aktualisieren
+      global.orderToInvoiceMap?.set(payload.id.toString(), invoice.id)
 
-        // Prüfen ob automatischer E-Mail-Versand aktiviert ist
-        const settings = getShopifySettings()
-        if (settings.autoSendEmail && payload.email) {
-          console.log(`📧 Auto-sending email to ${payload.email} for invoice ${result.invoiceNumber || result.number}`)
-          try {
-            const emailResult = await sendInvoiceEmail(
-              result.id,
-              payload.email,
-              payload.name || payload.email,
-              result.invoiceNumber || result.number,
-              undefined, // Standard Firmenname
-              undefined, // Standard Betreff
-              undefined, // Standard Nachricht
-              `${payload.total_price} ${payload.currency || 'EUR'}`,
-              new Date().toISOString().split('T')[0] // Fälligkeitsdatum (heute)
-            )
+      console.log(`✅ Auto-created invoice ${invoice.id} for order ${payload.id}`)
 
-            if (emailResult.success) {
-              console.log(`✅ Email sent successfully: ${emailResult.messageId}`)
-            } else {
-              console.error(`❌ Failed to send email: ${emailResult.error}`)
-            }
-          } catch (emailError) {
-            console.error('❌ Error in auto-send email process:', emailError)
+      // E-Mail senden
+      const settings = getShopifySettings()
+      if (settings.autoSendEmail && customerData.email) {
+        console.log(`📧 Auto-sending email to ${customerData.email} for invoice ${invoiceNumber}`)
+        try {
+          // Kurze Verzögerung um sicherzustellen, dass alles gespeichert ist
+          await new Promise(resolve => setTimeout(resolve, 1000))
+
+          const emailResult = await sendInvoiceEmail(
+            invoice.id,
+            customerData.email,
+            customerData.name,
+            invoiceNumber,
+            undefined,
+            undefined,
+            undefined,
+            `${total.toFixed(2)} ${payload.currency || 'EUR'}`,
+            invoice.dueDate
+          )
+
+          if (emailResult.success) {
+            console.log(`✅ Email sent successfully: ${emailResult.messageId}`)
+          } else {
+            console.error(`❌ Failed to send email: ${emailResult.error}`)
           }
+        } catch (emailError) {
+          console.error('❌ Error in auto-send email process:', emailError)
         }
-
-        return { success: true, invoiceId: result.id, created: true }
-      } else {
-        throw new Error(`Failed to create invoice: ${response.status}`)
       }
+
+      return { success: true, invoiceId: invoice.id, created: true }
+
     } else {
       console.log(`⏳ Order ${payload.id} not paid yet (${payload.financial_status}), skipping auto-creation`)
       return { success: true, skipped: true, reason: 'not_paid' }
@@ -163,30 +214,25 @@ async function handleOrderUpdate(payload: ShopifyWebhookPayload) {
 
   try {
     // Zugehörige Rechnung suchen
-    const existingInvoiceId = global.orderToInvoiceMap?.get(payload.id.toString())
+    if (!global.allInvoices) global.allInvoices = loadInvoicesFromDisk()
+    const invoiceIndex = global.allInvoices!.findIndex((inv: any) => inv.shopifyOrderId === payload.id.toString())
 
-    if (existingInvoiceId) {
+    if (invoiceIndex >= 0) {
+      const invoice = global.allInvoices![invoiceIndex]
+
       // Rechnungsstatus basierend auf Bestellstatus aktualisieren
       const newStatus = mapShopifyStatusToInvoiceStatus(payload.financial_status || '')
 
-      const updateResponse = await fetch(`/api/invoices/${existingInvoiceId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: newStatus,
-          shopifyOrderId: payload.id.toString(),
-          updatedAt: new Date().toISOString()
-        })
-      })
+      if (invoice.status !== newStatus) {
+        invoice.status = newStatus
+        invoice.updatedAt = new Date().toISOString()
 
-      if (updateResponse.ok) {
-        console.log(`✅ Updated invoice ${existingInvoiceId} status to ${newStatus}`)
-        return { success: true, invoiceId: existingInvoiceId, updated: true }
-      } else {
-        throw new Error(`Failed to update invoice: ${updateResponse.status}`)
+        // Speichern
+        saveInvoicesToDisk(global.allInvoices!)
+        console.log(`✅ Updated invoice ${invoice.id} status to ${newStatus}`)
+        return { success: true, invoiceId: invoice.id, updated: true }
       }
+      return { success: true, invoiceId: invoice.id, updated: false, reason: 'status_unchanged' }
     } else {
       // Wenn keine Rechnung existiert und Bestellung bezahlt ist, neue erstellen
       if (payload.financial_status === 'paid') {
@@ -208,36 +254,29 @@ async function handleRefundCreate(payload: any) {
   console.log(`💰 Refund created for order: ${payload.order_id}`)
 
   try {
-    // Zugehörige Rechnung suchen
-    const existingInvoiceId = global.orderToInvoiceMap?.get(payload.order_id.toString())
+    if (!global.allInvoices) global.allInvoices = loadInvoicesFromDisk()
+    const invoiceIndex = global.allInvoices!.findIndex((inv: any) => inv.shopifyOrderId === payload.order_id.toString())
 
-    if (existingInvoiceId) {
+    if (invoiceIndex >= 0) {
+      const invoice = global.allInvoices![invoiceIndex]
+
       // Rückerstattungsbetrag berechnen
       const refundAmount = payload.transactions
         ?.filter((t: any) => t.kind === 'refund' && t.status === 'success')
         ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0) || 0
 
-      // Rechnung als erstattet markieren
-      const updateResponse = await fetch(`/api/invoices/${existingInvoiceId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'Erstattet',
-          refundAmount,
-          refundDate: new Date().toISOString().split('T')[0],
-          refundNote: payload.note || 'Shopify refund',
-          updatedAt: new Date().toISOString()
-        })
-      })
+      // Rechnung aktualisieren
+      invoice.status = 'Erstattet'
+      invoice.refundAmount = refundAmount
+      invoice.refundDate = new Date().toISOString().split('T')[0]
+      invoice.refundNote = payload.note || 'Shopify refund'
+      invoice.updatedAt = new Date().toISOString()
 
-      if (updateResponse.ok) {
-        console.log(`✅ Updated invoice ${existingInvoiceId} as refunded (${refundAmount} EUR)`)
-        return { success: true, invoiceId: existingInvoiceId, refunded: true, amount: refundAmount }
-      } else {
-        throw new Error(`Failed to update invoice for refund: ${updateResponse.status}`)
-      }
+      // Speichern
+      saveInvoicesToDisk(global.allInvoices!)
+
+      console.log(`✅ Updated invoice ${invoice.id} as refunded (${refundAmount} EUR)`)
+      return { success: true, invoiceId: invoice.id, refunded: true, amount: refundAmount }
     } else {
       console.log(`⚠️ No invoice found for refunded order ${payload.order_id}`)
       return { success: true, skipped: true, reason: 'no_invoice_found' }
@@ -308,13 +347,11 @@ export async function POST(request: NextRequest) {
         break
 
       case 'orders/paid':
-        // Spezielle Behandlung für bezahlte Bestellungen
         payload.financial_status = 'paid'
         result = await handleOrderUpdate(payload)
         break
 
       case 'orders/cancelled':
-        // Rechnung als storniert markieren
         payload.financial_status = 'voided'
         result = await handleOrderUpdate(payload)
         break
@@ -391,7 +428,7 @@ export async function GET() {
       secretEnvVar: 'SHOPIFY_WEBHOOK_SECRET'
     },
     stats: {
-      idempotencyRecords: global.idempotencyRecords?.size || 0,
+      idempotencyRecords: 0,
       orderMappings: global.orderToInvoiceMap?.size || 0
     }
   })
