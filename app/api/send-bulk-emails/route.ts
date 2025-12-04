@@ -34,13 +34,13 @@ const activeOperations = new Map<string, BulkEmailProgress>()
 const cleanupOldOperations = () => {
   const oneHourAgo = Date.now() - (60 * 60 * 1000)
   const entriesToDelete: string[] = []
-  
+
   activeOperations.forEach((progress, operationId) => {
     if (new Date(progress.startTime).getTime() < oneHourAgo) {
       entriesToDelete.push(operationId)
     }
   })
-  
+
   entriesToDelete.forEach(operationId => {
     activeOperations.delete(operationId)
   })
@@ -50,8 +50,8 @@ const cleanupOldOperations = () => {
 export async function POST(request: NextRequest) {
   try {
     const body: BulkEmailRequest = await request.json()
-    const { 
-      invoiceIds, 
+    const {
+      invoiceIds,
       batchSize = 50,  // Standard-Batch-Größe
       delayBetweenBatches = 2000,  // Verzögerung zwischen Batches (2 Sekunden)
       maxConcurrent = 10,  // Maximale gleichzeitige Sendungen
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     // Eindeutige ID für den Vorgang erstellen
     const operationId = `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
+
     // Alte Vorgänge bereinigen
     cleanupOldOperations()
 
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     }
 
     const progress = activeOperations.get(operationId)
-    
+
     if (!progress) {
       return NextResponse.json(
         { success: false, message: 'Vorgang nicht gefunden oder abgelaufen' },
@@ -183,7 +183,7 @@ async function processBulkEmails(
   // Jeden Batch verarbeiten
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex]
-    
+
     console.log(`📤 Verarbeitung Batch ${batchIndex + 1}/${batches.length} (${batch.length} Rechnungen)`)
 
     // Batch mit Parallelitätskontrolle verarbeiten
@@ -208,7 +208,7 @@ async function processBulkEmails(
   if (finalProgress) {
     finalProgress.inProgress = false
     activeOperations.set(operationId, finalProgress)
-    
+
     console.log(`✅ Vorgang abgeschlossen: ${finalProgress.sent} erfolgreich, ${finalProgress.failed} fehlgeschlagen`)
   }
 }
@@ -222,7 +222,7 @@ async function processBatch(operationId: string, invoiceIds: string[], maxConcur
     while (index < invoiceIds.length) {
       const currentIndex = index++
       const invoiceId = invoiceIds[currentIndex]
-      
+
       try {
         await sendSingleInvoiceEmail(invoiceId, customSubject, customMessage)
         updateProgress(operationId, 'success', invoiceId)
@@ -260,16 +260,16 @@ function updateProgress(operationId: string, status: 'success' | 'error', invoic
 async function sendSingleInvoiceEmail(invoiceId: string, customSubject?: string, customMessage?: string) {
   // Rechnungsdaten abrufen
   const invoiceResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/invoices/${invoiceId}`)
-  
+
   if (!invoiceResponse.ok) {
     throw new Error(`Fehler beim Abrufen der Rechnung ${invoiceId}`)
   }
 
   const invoiceData = await invoiceResponse.json()
-  
+
   // Handle different response structures
   const invoice = invoiceData?.data || invoiceData
-  
+
   if (!invoice) {
     throw new Error(`Keine Rechnungsdaten für ID ${invoiceId} gefunden`)
   }
@@ -280,40 +280,40 @@ async function sendSingleInvoiceEmail(invoiceId: string, customSubject?: string,
   }
 
   // Check for different email field names - including nested customer object
-  const customerEmail = invoice?.customerEmail || 
-                       invoice?.email || 
-                       invoice?.customer_email || 
-                       invoice?.Email ||
-                       invoice?.customer?.email ||
-                       invoice?.customer?.customerEmail ||
-                       invoice?.organization?.email
-  
+  const customerEmail = invoice?.customerEmail ||
+    invoice?.email ||
+    invoice?.customer_email ||
+    invoice?.Email ||
+    invoice?.customer?.email ||
+    invoice?.customer?.customerEmail ||
+    invoice?.organization?.email
+
   if (!customerEmail) {
     console.error('Available invoice fields:', Object.keys(invoice || {}))
     console.error('Customer object:', invoice?.customer)
     console.error('Organization object:', invoice?.organization)
-    
+
     // Try to find any email field in the invoice object
     const allFields = JSON.stringify(invoice, null, 2)
     const emailMatches = allFields.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)
-    
+
     if (emailMatches && emailMatches.length > 0) {
       console.log('Found email addresses in invoice data:', emailMatches)
       throw new Error(`E-Mail-Adressen gefunden aber nicht im erwarteten Feld: ${emailMatches.join(', ')}. Bitte überprüfen Sie die Datenstruktur.`)
     }
-    
+
     throw new Error(`Keine E-Mail-Adresse für Kunden in Rechnung ${invoiceId}. Verfügbare Felder: ${Object.keys(invoice || {}).join(', ')}. Customer: ${JSON.stringify(invoice?.customer || {})}, Organization: ${JSON.stringify(invoice?.organization || {})}`)
   }
 
   // Kundendaten und Rechnungsnummer mit Fallbacks extrahieren - einschließlich verschachtelter Objekte
-  const customerName = invoice?.customerName || 
-                       invoice?.customer_name || 
-                       invoice?.name || 
-                       invoice?.customer?.name ||
-                       invoice?.customer?.customerName ||
-                       invoice?.organization?.name ||
-                       'Kunde'
-                       
+  const customerName = invoice?.customerName ||
+    invoice?.customer_name ||
+    invoice?.name ||
+    invoice?.customer?.name ||
+    invoice?.customer?.customerName ||
+    invoice?.organization?.name ||
+    'Kunde'
+
   const invoiceNumber = invoice?.invoiceNumber || invoice?.number || invoice?.invoice_number || invoiceId
   const total = invoice?.total || invoice?.amount || 0
   const dueDate = invoice?.dueDate || invoice?.due_date || new Date()
@@ -322,17 +322,17 @@ async function sendSingleInvoiceEmail(invoiceId: string, customSubject?: string,
   // Dies garantiert identische Templates, Formatierung und Funktionalität
   const { sendInvoiceEmail } = await import('@/lib/email-service')
   const { getCompanySettings } = await import('@/lib/company-settings')
-  
+
   const companySettings = getCompanySettings()
-  
+
   const result = await sendInvoiceEmail(
     invoiceId,
     customerEmail,
     customerName,
     invoiceNumber,
     companySettings.name,
-    customSubject, // ✅ استخدام التخصيص المرسل من الواجهة
-    customMessage, // ✅ استخدام الرسالة المخصصة
+    customSubject, // ✅ Benutzerdefinierten Betreff verwenden
+    customMessage, // ✅ Benutzerdefinierte Nachricht verwenden
     typeof total === 'number' ? `${total.toFixed(2)}€` : `${total}€`,
     dueDate.toString()
   )
@@ -342,6 +342,6 @@ async function sendSingleInvoiceEmail(invoiceId: string, customSubject?: string,
   }
 
   console.log(`✅ [BULK] Rechnung ${invoiceId} an ${customerEmail} versendet (Message ID: ${result.messageId})`)
-  
+
   return result
 }

@@ -13,8 +13,8 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Edit, Copy, Trash2, FileText, Receipt, AlertCircle, Quote, Truck } from 'lucide-react'
-import { 
-  DocumentTemplate, 
+import {
+  DocumentTemplate,
   DocumentType,
   getAllDocumentTemplates,
   getTemplatesByType,
@@ -50,12 +50,12 @@ export default function DocumentTemplatesPage() {
   const handleCreateNew = () => {
     const newTemplate: DocumentTemplate = {
       id: '',
-      name: 'قالب جديد / Neue Vorlage',
+      name: 'Neue Vorlage',
       type: selectedType,
       category: 'financial',
       isDefault: false,
       content: {
-        title: 'عنوان المستند',
+        title: 'Dokumenttitel',
         subtitle: '',
         headerNote: '',
         bodyText: '',
@@ -83,7 +83,7 @@ export default function DocumentTemplatesPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
-    
+
     setEditingTemplate(newTemplate)
     setIsCreating(true)
   }
@@ -95,11 +95,11 @@ export default function DocumentTemplatesPage() {
 
   const handleSave = async () => {
     if (!editingTemplate) return
-    
+
     try {
       // TODO: Implement API call to save template
       console.log('Saving template:', editingTemplate)
-      
+
       if (isCreating) {
         // Add new template
         const newId = `template-${Date.now()}`
@@ -109,7 +109,7 @@ export default function DocumentTemplatesPage() {
         // Update existing template
         setTemplates(prev => prev.map(t => t.id === editingTemplate.id ? editingTemplate : t))
       }
-      
+
       setEditingTemplate(null)
       setIsCreating(false)
     } catch (error) {
@@ -118,7 +118,7 @@ export default function DocumentTemplatesPage() {
   }
 
   const handleDelete = async (templateId: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا القالب؟ / Sind Sie sicher, dass Sie diese Vorlage löschen möchten?')) {
+    if (confirm('Sind Sie sicher, dass Sie diese Vorlage löschen möchten?')) {
       try {
         // TODO: Implement API call to delete template
         setTemplates(prev => prev.filter(t => t.id !== templateId))
@@ -132,10 +132,10 @@ export default function DocumentTemplatesPage() {
     const duplicated: DocumentTemplate = {
       ...template,
       id: '',
-      name: `${template.name} (نسخة / Kopie)`,
+      name: `${template.name} (Kopie)`,
       isDefault: false
     }
-    
+
     setEditingTemplate(duplicated)
     setIsCreating(true)
   }
@@ -182,7 +182,7 @@ export default function DocumentTemplatesPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">جاري التحميل... / Laden...</p>
+            <p className="mt-2 text-gray-600">Laden...</p>
           </div>
         </div>
       </div>
@@ -193,10 +193,9 @@ export default function DocumentTemplatesPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          قوالب المستندات / Document Templates
+          Dokumentvorlagen
         </h1>
         <p className="text-gray-600">
-          إدارة قوالب المستندات المختلفة (إشعارات الاستلام، الفواتير، إلخ) / 
           Verwalten Sie verschiedene Dokumentvorlagen (Empfangsbestätigungen, Rechnungen, etc.)
         </p>
       </div>
@@ -206,21 +205,21 @@ export default function DocumentTemplatesPage() {
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="receipt" className="flex items-center space-x-2">
               <Receipt className="w-4 h-4" />
-              <span>إشعارات الاستلام</span>
+              <span>Quittungen</span>
             </TabsTrigger>
             <TabsTrigger value="invoice" className="flex items-center space-x-2">
               <FileText className="w-4 h-4" />
-              <span>الفواتير</span>
+              <span>Rechnungen</span>
             </TabsTrigger>
             <TabsTrigger value="quote" className="flex items-center space-x-2">
               <Quote className="w-4 h-4" />
-              <span>عروض الأسعار</span>
+              <span>Angebote</span>
             </TabsTrigger>
           </TabsList>
 
           <Button onClick={handleCreateNew} className="flex items-center space-x-2">
             <Plus className="w-4 h-4" />
-            <span>إنشاء قالب جديد / Neue Vorlage</span>
+            <span>Neue Vorlage</span>
           </Button>
         </div>
 
@@ -243,7 +242,7 @@ export default function DocumentTemplatesPage() {
                           {getDocumentCategoryLabel(template.category)}
                         </Badge>
                         {template.isDefault && (
-                          <Badge variant="default">افتراضي / Standard</Badge>
+                          <Badge variant="default">Standard</Badge>
                         )}
                       </CardDescription>
                     </div>
@@ -261,22 +260,22 @@ export default function DocumentTemplatesPage() {
                     )}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500">الإعدادات:</span>
+                        <span className="text-xs text-gray-500">Einstellungen:</span>
                         <div className="flex space-x-1">
                           {template.settings.showBankDetails && (
-                            <Badge variant="outline" className="text-xs">بنك</Badge>
+                            <Badge variant="outline" className="text-xs">Bank</Badge>
                           )}
                           {template.settings.showTotals && (
-                            <Badge variant="outline" className="text-xs">مجموع</Badge>
+                            <Badge variant="outline" className="text-xs">Summe</Badge>
                           )}
                           {template.settings.requireSignature && (
-                            <Badge variant="outline" className="text-xs">توقيع</Badge>
+                            <Badge variant="outline" className="text-xs">Unterschrift</Badge>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <div className="flex space-x-2">
                       <Button
@@ -316,14 +315,14 @@ export default function DocumentTemplatesPage() {
                 {getTypeIcon(selectedType)}
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                لا توجد قوالب من هذا النوع / Keine Vorlagen dieses Typs
+                Keine Vorlagen dieses Typs
               </h3>
               <p className="text-gray-600 mb-4">
-                ابدأ بإنشاء قالب جديد لهذا النوع من المستندات
+                Erstellen Sie eine neue Vorlage für diesen Dokumenttyp
               </p>
               <Button onClick={handleCreateNew}>
                 <Plus className="w-4 h-4 mr-2" />
-                إنشاء قالب جديد
+                Neue Vorlage erstellen
               </Button>
             </div>
           )}
@@ -335,10 +334,10 @@ export default function DocumentTemplatesPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {isCreating ? 'إنشاء قالب جديد / Neue Vorlage erstellen' : 'تعديل القالب / Vorlage bearbeiten'}
+              {isCreating ? 'Neue Vorlage erstellen' : 'Vorlage bearbeiten'}
             </DialogTitle>
             <DialogDescription>
-              قم بتخصيص محتوى وإعدادات القالب / Passen Sie Inhalt und Einstellungen der Vorlage an
+              Passen Sie Inhalt und Einstellungen der Vorlage an
             </DialogDescription>
           </DialogHeader>
 
@@ -346,10 +345,10 @@ export default function DocumentTemplatesPage() {
             <div className="space-y-6">
               {/* Basic Info */}
               <div>
-                <h3 className="text-lg font-medium mb-4">معلومات أساسية / Grundinformationen</h3>
+                <h3 className="text-lg font-medium mb-4">Grundinformationen</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">اسم القالب / Vorlagenname</Label>
+                    <Label htmlFor="name">Vorlagenname</Label>
                     <Input
                       id="name"
                       value={editingTemplate.name}
@@ -357,11 +356,11 @@ export default function DocumentTemplatesPage() {
                         ...editingTemplate,
                         name: e.target.value
                       })}
-                      placeholder="مثل: إشعار استلام دفعة كاملة"
+                      placeholder="z.B.: Zahlungsbestätigung"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="category">الفئة / Kategorie</Label>
+                    <Label htmlFor="category">Kategorie</Label>
                     <Select
                       value={editingTemplate.category}
                       onValueChange={(value: any) => setEditingTemplate({
@@ -373,9 +372,9 @@ export default function DocumentTemplatesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="financial">مالية / Finanziell</SelectItem>
-                        <SelectItem value="commercial">تجارية / Kommerziell</SelectItem>
-                        <SelectItem value="administrative">إدارية / Administrativ</SelectItem>
+                        <SelectItem value="financial">Finanziell</SelectItem>
+                        <SelectItem value="commercial">Kommerziell</SelectItem>
+                        <SelectItem value="administrative">Administrativ</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -386,10 +385,10 @@ export default function DocumentTemplatesPage() {
 
               {/* Content */}
               <div>
-                <h3 className="text-lg font-medium mb-4">محتوى المستند / Dokumentinhalt</h3>
+                <h3 className="text-lg font-medium mb-4">Dokumentinhalt</h3>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="title">عنوان المستند / Dokumenttitel</Label>
+                    <Label htmlFor="title">Dokumenttitel</Label>
                     <Input
                       id="title"
                       value={editingTemplate.content.title}
@@ -397,11 +396,11 @@ export default function DocumentTemplatesPage() {
                         ...editingTemplate,
                         content: { ...editingTemplate.content, title: e.target.value }
                       })}
-                      placeholder="مثل: إشعار استلام الدفعة"
+                      placeholder="z.B.: Zahlungsbestätigung"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="subtitle">نص توضيحي / Untertitel</Label>
+                    <Label htmlFor="subtitle">Untertitel</Label>
                     <Input
                       id="subtitle"
                       value={editingTemplate.content.subtitle || ''}
@@ -409,11 +408,11 @@ export default function DocumentTemplatesPage() {
                         ...editingTemplate,
                         content: { ...editingTemplate.content, subtitle: e.target.value }
                       })}
-                      placeholder="نص توضيحي تحت العنوان"
+                      placeholder="Untertitel für das Dokument"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="bodyText">النص الرئيسي / Haupttext</Label>
+                    <Label htmlFor="bodyText">Haupttext</Label>
                     <Textarea
                       id="bodyText"
                       value={editingTemplate.content.bodyText || ''}
@@ -421,12 +420,12 @@ export default function DocumentTemplatesPage() {
                         ...editingTemplate,
                         content: { ...editingTemplate.content, bodyText: e.target.value }
                       })}
-                      placeholder="النص الرئيسي للمستند"
+                      placeholder="Haupttext des Dokuments"
                       rows={3}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="footerNote">ملاحظة التذييل / Fußnote</Label>
+                    <Label htmlFor="footerNote">Fußnote</Label>
                     <Textarea
                       id="footerNote"
                       value={editingTemplate.content.footerNote || ''}
@@ -434,7 +433,7 @@ export default function DocumentTemplatesPage() {
                         ...editingTemplate,
                         content: { ...editingTemplate.content, footerNote: e.target.value }
                       })}
-                      placeholder="نص في نهاية المستند"
+                      placeholder="Text am Ende des Dokuments"
                       rows={2}
                     />
                   </div>
@@ -445,10 +444,10 @@ export default function DocumentTemplatesPage() {
 
               {/* Settings */}
               <div>
-                <h3 className="text-lg font-medium mb-4">إعدادات المستند / Dokumenteinstellungen</h3>
+                <h3 className="text-lg font-medium mb-4">Dokumenteinstellungen</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="showBankDetails">إظهار بيانات البنك / Bankdaten anzeigen</Label>
+                    <Label htmlFor="showBankDetails">Bankdaten anzeigen</Label>
                     <Switch
                       id="showBankDetails"
                       checked={editingTemplate.settings.showBankDetails}
@@ -459,7 +458,7 @@ export default function DocumentTemplatesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="showTotals">إظهار المجاميع / Summen anzeigen</Label>
+                    <Label htmlFor="showTotals">Summen anzeigen</Label>
                     <Switch
                       id="showTotals"
                       checked={editingTemplate.settings.showTotals}
@@ -470,7 +469,7 @@ export default function DocumentTemplatesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="requireSignature">يتطلب توقيع / Unterschrift erforderlich</Label>
+                    <Label htmlFor="requireSignature">Unterschrift erforderlich</Label>
                     <Switch
                       id="requireSignature"
                       checked={editingTemplate.settings.requireSignature}
@@ -481,7 +480,7 @@ export default function DocumentTemplatesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="allowPartialPayment">السماح بالدفع الجزئي / Teilzahlung erlauben</Label>
+                    <Label htmlFor="allowPartialPayment">Teilzahlung erlauben</Label>
                     <Switch
                       id="allowPartialPayment"
                       checked={editingTemplate.settings.allowPartialPayment}
@@ -500,10 +499,10 @@ export default function DocumentTemplatesPage() {
                   variant="outline"
                   onClick={() => setEditingTemplate(null)}
                 >
-                  إلغاء / Abbrechen
+                  Abbrechen
                 </Button>
                 <Button onClick={handleSave}>
-                  {isCreating ? 'إنشاء / Erstellen' : 'حفظ / Speichern'}
+                  {isCreating ? 'Erstellen' : 'Speichern'}
                 </Button>
               </div>
             </div>

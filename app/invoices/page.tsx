@@ -19,7 +19,7 @@ import { useAuthenticatedFetch } from '@/lib/api-client'
 export default function InvoicesPage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
-  
+
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set())
@@ -39,7 +39,7 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     fetchInvoices()
-    
+
     // Load hidden invoices from localStorage
     const savedHidden = localStorage.getItem('hiddenInvoices')
     if (savedHidden) {
@@ -50,7 +50,7 @@ export default function InvoicesPage() {
         console.error('Error loading hidden invoices:', error)
       }
     }
-    
+
     // Listen for invoice updates (e.g., after CSV upload)
     const handleInvoiceUpdate = () => {
       console.log('Invoice update detected, refreshing list...')
@@ -59,7 +59,7 @@ export default function InvoicesPage() {
 
     // Custom event listener for invoice updates
     window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
-    
+
     return () => {
       window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
     }
@@ -77,7 +77,7 @@ export default function InvoicesPage() {
       // Fetch invoices for this user only using authenticated fetch
       const response = await authenticatedFetch('/api/invoices')
       const allInvoices = await response.json()
-      
+
       console.log('Fetched invoices for user:', user.email, 'Count:', allInvoices.length)
 
       // Fetch email statuses for all invoices
@@ -99,21 +99,21 @@ export default function InvoicesPage() {
       }, {} as Record<string, any>)
 
       setEmailStatuses(emailStatusMap)
-      
+
       // Only use API data - no local mock data to avoid ID conflicts
       // The API already includes mock/test invoices
       const combinedInvoices = allInvoices
-      
+
       // Sort invoices by creation date/upload date in descending order (newest first)
       const sortedInvoices = combinedInvoices.sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt || a.date || a.uploadedAt || '1970-01-01')
         const dateB = new Date(b.createdAt || b.date || b.uploadedAt || '1970-01-01')
         return dateB.getTime() - dateA.getTime() // Descending order (newest first)
       })
-      
+
       console.log('Invoices sorted by date (newest first):', sortedInvoices.length)
       setInvoices(sortedInvoices)
-      
+
     } catch (error) {
       console.error('Error fetching invoices:', error)
       // Fallback to empty array - API should handle mock data
@@ -131,54 +131,54 @@ export default function InvoicesPage() {
     }
 
     setIsSearching(true)
-    
+
     const queryLower = query.toLowerCase().trim()
     console.log(`Searching invoices for: "${queryLower}"`)
-    
+
     // Split query by common separators (comma, semicolon, space, newline)
     const searchTerms = queryLower
       .split(/[,;|\n\r\t]+/)
       .map(term => term.trim())
       .filter(term => term.length > 0)
-    
+
     console.log(`Search terms:`, searchTerms)
-    
+
     const filteredInvoices = invoices.filter(invoice => {
       // Get all possible customer email fields
       const customerEmail = (
-        invoice.customerEmail || 
-        invoice.customer?.email || 
-        invoice.email || 
+        invoice.customerEmail ||
+        invoice.customer?.email ||
+        invoice.email ||
         ''
       ).toLowerCase()
-      
+
       // Get all possible customer name fields  
       const customerName = (
-        invoice.customerName || 
-        invoice.customer?.name || 
-        invoice.name || 
+        invoice.customerName ||
+        invoice.customer?.name ||
+        invoice.name ||
         ''
       ).toLowerCase()
-      
+
       // Get invoice number
       const invoiceNumber = (invoice.number || invoice.invoiceNumber || '').toLowerCase()
-      
+
       // Check if any search term matches any field
       const hasMatch = searchTerms.some(term => {
         const emailMatch = customerEmail.includes(term)
         const nameMatch = customerName.includes(term)
         const numberMatch = invoiceNumber.includes(term)
-        
+
         return emailMatch || nameMatch || numberMatch
       })
-      
+
       if (hasMatch) {
         console.log(`Found match: ${invoice.number} - ${customerName} (${customerEmail})`)
       }
-      
+
       return hasMatch
     })
-    
+
     console.log(`Found ${filteredInvoices.length} matching invoices from ${searchTerms.length} search terms`)
     setSearchResults(filteredInvoices)
     setShowSearchResults(true)
@@ -210,10 +210,10 @@ export default function InvoicesPage() {
     const newHidden = new Set(hiddenInvoices)
     newHidden.add(invoiceId)
     setHiddenInvoices(newHidden)
-    
+
     // Save to localStorage
     localStorage.setItem('hiddenInvoices', JSON.stringify(Array.from(newHidden)))
-    
+
     showToast(`Beispiel-Rechnung "${invoiceNumber}" wurde ausgeblendet`, 'success')
   }
 
@@ -234,11 +234,11 @@ export default function InvoicesPage() {
   // Function to handle PDF download - FIXED VERSION
   const handleDownloadPdf = async (invoiceId: string, invoiceNumber: string) => {
     console.log('🔄 Starting PDF download for:', invoiceId, invoiceNumber)
-    
+
     // Skip old method entirely, use new method directly
     try {
       showToast('PDF wird generiert...', 'success')
-      
+
       // Use new download endpoint with authentication
       const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
         method: 'GET',
@@ -253,13 +253,13 @@ export default function InvoicesPage() {
           'Cache-Control': 'no-cache'
         }
       })
-      
+
       console.log('📥 PDF API Response:', response.status, response.statusText)
-      
+
       if (response.ok) {
         const blob = await response.blob()
         console.log('📄 PDF Blob size:', blob.size)
-        
+
         if (blob.size > 100) {
           // Create download
           const url = window.URL.createObjectURL(blob)
@@ -271,7 +271,7 @@ export default function InvoicesPage() {
           a.click()
           document.body.removeChild(a)
           window.URL.revokeObjectURL(url)
-          
+
           showToast(`✅ PDF für Rechnung ${invoiceNumber} erfolgreich heruntergeladen!`, 'success')
         } else {
           throw new Error('PDF ist zu klein oder leer')
@@ -284,7 +284,7 @@ export default function InvoicesPage() {
       console.error('❌ PDF Download Error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
       showToast(`Fehler beim PDF Download: ${errorMessage}`, 'error')
-      
+
       // Fallback: Open direct link in new tab
       try {
         const directUrl = `/api/invoices/${invoiceId}/download-pdf`
@@ -331,10 +331,10 @@ export default function InvoicesPage() {
   const confirmDelete = async () => {
     setDeleting(true)
     try {
-      const endpoint = deleteTarget.type === 'single' 
+      const endpoint = deleteTarget.type === 'single'
         ? `/api/invoices/${deleteTarget.ids[0]}`
         : '/api/invoices/bulk-delete'
-      
+
       const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
@@ -347,17 +347,17 @@ export default function InvoicesPage() {
         // Remove deleted invoices from state
         setInvoices(prev => prev.filter(invoice => !deleteTarget.ids.includes(invoice.id)))
         setSelectedInvoices(new Set())
-        
+
         // Show success message
-        const message = deleteTarget.type === 'single' 
+        const message = deleteTarget.type === 'single'
           ? 'Rechnung gelöscht'
           : `${deleteTarget.ids.length} Rechnungen gelöscht`
-        
+
         showToast(message, 'success')
-        
+
       } else {
         const error = await response.json()
-        
+
         // Handle different error types with specific messages
         if (response.status === 409) {
           if (error.code === 'MOCK_INVOICE') {
@@ -391,12 +391,12 @@ export default function InvoicesPage() {
   }
 
   const handleDownloadZip = async () => {
-    const invoiceIds = selectedInvoices.size > 0 
+    const invoiceIds = selectedInvoices.size > 0
       ? Array.from(selectedInvoices)
       : invoices.map(invoice => invoice.id)
-    
+
     console.log('Starting ZIP download with IDs:', invoiceIds)
-    
+
     if (invoiceIds.length === 0) {
       showToast('Keine Rechnungen zum Herunterladen verfügbar', 'error')
       return
@@ -420,29 +420,29 @@ export default function InvoicesPage() {
 
       // Get the ZIP file as blob
       const blob = await response.blob()
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      
+
       // Get filename from response headers or use default
       const contentDisposition = response.headers.get('Content-Disposition')
-      const filename = contentDisposition 
+      const filename = contentDisposition
         ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
         : `Rechnungen_${new Date().toISOString().split('T')[0]}.zip`
-      
+
       a.download = filename
       document.body.appendChild(a)
       a.click()
-      
+
       // Cleanup
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      
+
       const count = selectedInvoices.size > 0 ? selectedInvoices.size : invoices.length
       showToast(`${count} Rechnungen als ZIP heruntergeladen`, 'success')
-      
+
     } catch (error) {
       console.error('ZIP download error:', error)
       showToast('Fehler beim Herunterladen der ZIP-Datei', 'error')
@@ -453,27 +453,27 @@ export default function InvoicesPage() {
     const confirmed = window.confirm(
       'Duplikate bereinigen?\n\nDies wird alle doppelten Rechnungen entfernen und nur die erste Version jeder Rechnung behalten.\n\nDiese Aktion kann nicht rückgängig gemacht werden.'
     )
-    
+
     if (!confirmed) {
       return
     }
 
     setCleaningUp(true)
-    
+
     try {
       console.log('Starting cleanup of duplicate invoices...')
-      
+
       const response = await fetch('/api/cleanup-duplicates', {
         method: 'POST'
       })
-      
+
       console.log('Cleanup response status:', response.status)
       const data = await response.json()
       console.log('Cleanup response data:', data)
-      
+
       if (response.ok) {
         showToast(`Bereinigung erfolgreich! ${data.duplicatesRemoved} Duplikate entfernt.`, 'success')
-        
+
         // Refresh the invoice list
         fetchInvoices()
       } else {
@@ -492,16 +492,16 @@ export default function InvoicesPage() {
     const confirmed = window.confirm(
       `Alle Rechnungen mit Nummer "${invoiceNumber}" löschen?\n\nDies wird alle Duplikate dieser Rechnung entfernen.\n\nDiese Aktion kann nicht rückgängig gemacht werden.`
     )
-    
+
     if (!confirmed) {
       return
     }
 
     setDeletingByNumber(invoiceNumber)
-    
+
     try {
       console.log('Deleting invoices with number:', invoiceNumber)
-      
+
       const response = await fetch('/api/delete-invoice-by-number', {
         method: 'POST',
         headers: {
@@ -509,14 +509,14 @@ export default function InvoicesPage() {
         },
         body: JSON.stringify({ invoiceNumber })
       })
-      
+
       console.log('Delete by number response status:', response.status)
       const data = await response.json()
       console.log('Delete by number response data:', data)
-      
+
       if (response.ok) {
         showToast(`${data.deletedCount} Rechnung(en) erfolgreich gelöscht!`, 'success')
-        
+
         // Refresh the invoice list
         fetchInvoices()
       } else {
@@ -630,7 +630,7 @@ export default function InvoicesPage() {
                 <Download className="h-4 w-4 mr-2" />
                 {selectedInvoices.size > 0 ? `${selectedInvoices.size} als ZIP` : 'Alle als ZIP'}
               </Button>
-              
+
               {/* CSV Export Button */}
               <CSVExportButton
                 selectedIds={Array.from(selectedInvoices)}
@@ -691,11 +691,11 @@ export default function InvoicesPage() {
                 </button>
               )}
             </div>
-            
+
             {isSearching && (
               <div className="text-sm text-gray-500">Suche läuft...</div>
             )}
-            
+
             {showSearchResults && (
               <div className="text-sm text-gray-600">
                 {searchResults.length} Rechnung(en) gefunden
@@ -730,7 +730,7 @@ export default function InvoicesPage() {
               <p className="text-xs text-gray-500">Alle Rechnungen</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -742,7 +742,7 @@ export default function InvoicesPage() {
               <p className="text-xs text-gray-500">Unbezahlt</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -754,7 +754,7 @@ export default function InvoicesPage() {
               <p className="text-xs text-gray-500">Verspätet</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -790,7 +790,7 @@ export default function InvoicesPage() {
               <p className="text-xs text-gray-500">Rückerstattungen</p>
             </CardContent>
           </Card>
-          
+
           <Card className={duplicateCount > 0 ? 'border-orange-300 bg-orange-50' : ''}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -867,7 +867,7 @@ export default function InvoicesPage() {
                 {displayedInvoices.map((invoice) => {
                   const typeDisplay = getInvoiceTypeDisplay(invoice)
                   return (
-                    <TableRow 
+                    <TableRow
                       key={invoice.id}
                       className={duplicateNumbers.includes(invoice.number) ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}
                     >
@@ -905,8 +905,8 @@ export default function InvoicesPage() {
                           </span>
                           {/* E-Mail-Status-Anzeige */}
                           {emailStatuses[invoice.id]?.sent && (
-                            <div 
-                              className="flex items-center text-green-600" 
+                            <div
+                              className="flex items-center text-green-600"
                               title={`E-Mail gesendet am ${new Date(emailStatuses[invoice.id].sentAt).toLocaleDateString('de-DE')} an ${emailStatuses[invoice.id].sentTo}`}
                             >
                               <MailCheck className="h-4 w-4" />
@@ -922,8 +922,8 @@ export default function InvoicesPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             title="PDF herunterladen"
                             onClick={() => handleDownloadPdf(invoice.id, invoice.number)}
@@ -932,16 +932,16 @@ export default function InvoicesPage() {
                           </Button>
 
                           {/* E-Mail-Versand für alle Rechnungstypen */}
-                          <EmailInvoice 
-                            invoice={invoice} 
+                          <EmailInvoice
+                            invoice={invoice}
                             onEmailSent={fetchInvoices}
                           />
-                          
+
                           {/* Storno Button für normale Rechnungen */}
                           {(invoice.type === InvoiceType.REGULAR || !invoice.type) && invoice.status !== 'Storniert' && (
                             <Link href={`/invoices/${invoice.id}/cancel`} className="ml-4">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 title="Storno-Rechnung erstellen"
@@ -950,18 +950,18 @@ export default function InvoicesPage() {
                               </Button>
                             </Link>
                           )}
-                          
+
                           {/* Weitere Aktionen */}
                           {(invoice.type === InvoiceType.REGULAR || !invoice.type) && invoice.status !== 'Storniert' && (
-                            <InvoiceActions 
-                              invoice={invoice} 
+                            <InvoiceActions
+                              invoice={invoice}
                               onInvoiceUpdated={fetchInvoices}
                             />
                           )}
-                          
+
                           {duplicateNumbers.includes(invoice.number) && (
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleDeleteByNumber(invoice.number)}
                               className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
@@ -976,9 +976,9 @@ export default function InvoicesPage() {
                               Duplikate
                             </Button>
                           )}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleDeleteSingle(invoice.id, invoice.number)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             title="Rechnung löschen"
@@ -1005,7 +1005,7 @@ export default function InvoicesPage() {
                 {showSearchResults ? 'Keine Rechnungen gefunden' : 'Noch keine Rechnungen erstellt'}
               </h3>
               <p className="text-gray-600 mb-6">
-                {showSearchResults 
+                {showSearchResults
                   ? `Keine Rechnungen entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
                   : 'Erstellen Sie Ihre erste Rechnung oder laden Sie CSV-Daten hoch.'
                 }
@@ -1038,7 +1038,7 @@ export default function InvoicesPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {deleteTarget.type === 'single' 
+                {deleteTarget.type === 'single'
                   ? 'Rechnung wirklich löschen?'
                   : `${deleteTarget.ids.length} Rechnungen wirklich löschen?`
                 }
@@ -1083,15 +1083,15 @@ export default function InvoicesPage() {
           </div>
         )}
       </main>
-      
-      {/* مكون الإرسال الجماعي */}
+
+      {/* Komponente für den Massenversand */}
       {showBulkEmailSender && (
         <BulkEmailSender
           selectedInvoices={Array.from(selectedInvoices)}
           onClose={() => setShowBulkEmailSender(false)}
         />
       )}
-      
+
       <ToastContainer />
     </div>
   )

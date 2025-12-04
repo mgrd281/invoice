@@ -1,4 +1,4 @@
-// API لاختبار جميع endpoints الخاصة بـ Shopify
+// API zum Testen aller Shopify-Endpunkte
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {

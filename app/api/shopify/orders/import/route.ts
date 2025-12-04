@@ -1,4 +1,4 @@
-// API الاستيراد الشامل من Shopify مع دعم REST و GraphQL Bulk
+// Umfassende Shopify-Import-API mit REST- und GraphQL-Bulk-Unterstützung
 import { NextRequest, NextResponse } from 'next/server'
 import { BackgroundJobManager, RateLimiter, CheckpointManager } from '@/lib/background-jobs'
 import { IdempotencyManager, withIdempotency } from '@/lib/idempotency'
@@ -69,12 +69,12 @@ interface ShopifyOrder {
   }
 }
 
-// الحصول على إعدادات Shopify
+// Shopify-Einstellungen abrufen
 async function getShopifySettings() {
-  // استخدام نظام الإعدادات الموحد
+  // Einheitliches Einstellungssystem verwenden
   const { getShopifySettings: loadSettings } = await import('@/lib/shopify-settings')
   const settings = loadSettings()
-  
+
   return {
     shop_domain: settings.shopDomain,
     access_token: settings.accessToken,
@@ -82,7 +82,7 @@ async function getShopifySettings() {
   }
 }
 
-// استيراد باستخدام REST API مع cursor pagination
+// Import mit REST API und Cursor-Pagination
 async function importWithREST(
   jobId: string,
   filters: ShopifyFilters,
@@ -94,7 +94,7 @@ async function importWithREST(
   let totalFailed = 0
   let hasNextPage = true
 
-  // استرداد checkpoint إذا كان موجوداً
+  // Checkpoint abrufen, falls vorhanden
   const checkpoint = CheckpointManager.getCheckpoint(jobId)
   if (checkpoint?.cursor) {
     cursor = checkpoint.cursor
@@ -104,13 +104,13 @@ async function importWithREST(
 
   while (hasNextPage && !abortSignal.aborted) {
     try {
-      // بناء URL مع الفلاتر
+      // URL mit Filtern erstellen
       const params = new URLSearchParams({
-        limit: '250', // الحد الأقصى لـ Shopify
+        limit: '250', // Shopify-Limit
         ...(cursor && { page_info: cursor })
       })
 
-      // إضافة الفلاتر فقط إذا كانت موجودة وليست فارغة
+      // Filter nur hinzufügen, wenn sie vorhanden und nicht leer sind
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           params.append(key, String(value))
@@ -118,7 +118,7 @@ async function importWithREST(
       })
 
       const url = `https://${settings.shop_domain}/admin/api/${settings.api_version}/orders.json?${params}`
-      
+
       console.log(`🔄 Fetching orders: ${url}`)
 
       const response = await RateLimiter.withRetry(async () => {
@@ -142,19 +142,19 @@ async function importWithREST(
 
       console.log(`📦 Received ${orders.length} orders`)
 
-      // معالجة الطلبات
+      // Bestellungen verarbeiten
       for (const order of orders) {
         if (abortSignal.aborted) break
 
         try {
           await processOrderToInvoice(order.id.toString(), order)
           totalImported++
-          
-          // تحديث التقدم
+
+          // Fortschritt aktualisieren
           BackgroundJobManager.updateJob(jobId, {
             progress: {
               current: totalImported,
-              total: totalImported + orders.length, // تقدير تقريبي
+              total: totalImported + orders.length, // Grobe Schätzung
               percentage: Math.min(95, (totalImported / (totalImported + orders.length)) * 100)
             },
             results: {
@@ -168,8 +168,8 @@ async function importWithREST(
         } catch (error) {
           totalFailed++
           console.error(`❌ Failed to process order ${order.id}:`, error)
-          
-          // تحديث الأخطاء
+
+          // Fehler aktualisieren
           const job = BackgroundJobManager.getJob(jobId)
           if (job) {
             job.results.errors.push(`Order ${order.id}: ${error instanceof Error ? error.message : String(error)}`)
@@ -178,7 +178,7 @@ async function importWithREST(
         }
       }
 
-      // فحص الصفحة التالية
+      // Nächste Seite prüfen
       const linkHeader = response.headers.get('Link')
       if (linkHeader) {
         const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
@@ -190,10 +190,10 @@ async function importWithREST(
           hasNextPage = false
         }
       } else {
-        hasNextPage = orders.length === 250 // إذا كان العدد أقل من 250، فلا توجد صفحة تالية
+        hasNextPage = orders.length === 250 // Wenn weniger als 250, keine nächste Seite
       }
 
-      // حفظ checkpoint
+      // Checkpoint speichern
       if (cursor) {
         CheckpointManager.saveCheckpoint({
           jobId,
@@ -211,27 +211,27 @@ async function importWithREST(
         console.log('🛑 Import aborted by user')
         break
       }
-      
+
       console.error('❌ Batch failed:', error)
       throw error
     }
   }
 
-  // تنظيف checkpoint عند الانتهاء
+  // Checkpoint bereinigen bei Abschluss
   CheckpointManager.clearCheckpoint(jobId)
-  
+
   console.log(`🎉 REST import completed: ${totalImported} imported, ${totalFailed} failed`)
 }
 
-// استيراد باستخدام GraphQL Bulk Operations
+// Import mit GraphQL Bulk Operations
 async function importWithBulk(
   jobId: string,
   filters: ShopifyFilters,
   abortSignal: AbortSignal
 ): Promise<void> {
   const settings = await getShopifySettings()
-  
-  // بناء GraphQL query
+
+  // GraphQL Query erstellen
   const query = `
     mutation {
       bulkOperationRunQuery(
@@ -329,7 +329,7 @@ async function importWithBulk(
     }
   `
 
-  // بدء العملية المجمعة
+  // Bulk-Operation starten
   const bulkResponse = await RateLimiter.withRetry(async () => {
     const res = await fetch(`https://${settings.shop_domain}/admin/api/${settings.api_version}/graphql.json`, {
       method: 'POST',
@@ -356,7 +356,7 @@ async function importWithBulk(
   const bulkOperationId = bulkOperation.id
   console.log(`🚀 Started bulk operation: ${bulkOperationId}`)
 
-  // تحديث الوظيفة مع معرف العملية المجمعة
+  // Job mit Bulk-Operation-ID aktualisieren
   BackgroundJobManager.updateJob(jobId, {
     data: {
       ...BackgroundJobManager.getJob(jobId)!.data,
@@ -364,11 +364,11 @@ async function importWithBulk(
     }
   })
 
-  // مراقبة حالة العملية المجمعة
+  // Bulk-Operation überwachen
   await monitorBulkOperation(jobId, bulkOperationId, settings, abortSignal)
 }
 
-// مراقبة العملية المجمعة
+// Bulk-Operation überwachen
 async function monitorBulkOperation(
   jobId: string,
   bulkOperationId: string,
@@ -415,7 +415,7 @@ async function monitorBulkOperation(
 
     console.log(`📊 Bulk operation status: ${operation.status}`)
 
-    // تحديث التقدم
+    // Fortschritt aktualisieren
     BackgroundJobManager.updateJob(jobId, {
       progress: {
         current: operation.objectCount || 0,
@@ -434,15 +434,15 @@ async function monitorBulkOperation(
       throw new Error(`Bulk operation ${operation.status}: ${operation.errorCode}`)
     }
 
-    // انتظار قبل الفحص التالي
+    // Warten vor der nächsten Prüfung
     await RateLimiter.sleep(5000)
   }
 }
 
-// معالجة نتائج العملية المجمعة
+// Bulk-Ergebnisse verarbeiten
 async function processBulkResults(jobId: string, downloadUrl: string, abortSignal: AbortSignal): Promise<void> {
   console.log(`📥 Downloading bulk results...`)
-  
+
   const response = await fetch(downloadUrl, { signal: abortSignal })
   if (!response.ok) {
     throw new Error(`Failed to download bulk results: ${response.status}`)
@@ -450,7 +450,7 @@ async function processBulkResults(jobId: string, downloadUrl: string, abortSigna
 
   const jsonlData = await response.text()
   const lines = jsonlData.trim().split('\n')
-  
+
   let totalImported = 0
   let totalFailed = 0
 
@@ -461,14 +461,14 @@ async function processBulkResults(jobId: string, downloadUrl: string, abortSigna
 
     try {
       const order = JSON.parse(line)
-      
-      // تحويل من GraphQL format إلى REST format
+
+      // Von GraphQL-Format in REST-Format konvertieren
       const restOrder = convertGraphQLToREST(order)
-      
+
       await processOrderToInvoice(restOrder.id.toString(), restOrder)
       totalImported++
 
-      // تحديث التقدم
+      // Fortschritt aktualisieren
       BackgroundJobManager.updateJob(jobId, {
         progress: {
           current: totalImported,
@@ -486,7 +486,7 @@ async function processBulkResults(jobId: string, downloadUrl: string, abortSigna
     } catch (error) {
       totalFailed++
       console.error(`❌ Failed to process bulk order:`, error)
-      
+
       const job = BackgroundJobManager.getJob(jobId)
       if (job) {
         job.results.errors.push(`Bulk order: ${error instanceof Error ? error.message : String(error)}`)
@@ -498,7 +498,7 @@ async function processBulkResults(jobId: string, downloadUrl: string, abortSigna
   console.log(`🎉 Bulk processing completed: ${totalImported} imported, ${totalFailed} failed`)
 }
 
-// تحويل طلب من GraphQL إلى REST format
+// GraphQL-Bestellung in REST-Format konvertieren
 function convertGraphQLToREST(graphqlOrder: any): ShopifyOrder {
   return {
     id: parseInt(graphqlOrder.id.replace('gid://shopify/Order/', '')),
@@ -555,14 +555,14 @@ function convertGraphQLToREST(graphqlOrder: any): ShopifyOrder {
   }
 }
 
-// بناء query للعملية المجمعة
+// Bulk-Query erstellen
 function buildBulkQuery(filters: ShopifyFilters): string {
   const conditions: string[] = []
 
   if (filters.created_at_min) {
     conditions.push(`created_at:>='${filters.created_at_min}'`)
   }
-  
+
   if (filters.created_at_max) {
     conditions.push(`created_at:<='${filters.created_at_max}'`)
   }
@@ -582,13 +582,13 @@ function buildBulkQuery(filters: ShopifyFilters): string {
   return conditions.join(' AND ')
 }
 
-// معالجة طلب واحد وتحويله إلى فاتورة
+// Einzelne Bestellung verarbeiten und in Rechnung umwandeln
 const processOrderToInvoice = withIdempotency(async (shopifyOrderId: string, orderData: ShopifyOrder) => {
   console.log(`🔄 Processing order ${shopifyOrderId}`)
 
-  // تحويل بيانات الطلب إلى فاتورة
+  // Bestelldaten in Rechnung umwandeln
   const invoiceData = {
-    // بيانات العميل
+    // Kundendaten
     customer: {
       name: `${orderData.customer.first_name} ${orderData.customer.last_name}`.trim(),
       email: orderData.customer.email,
@@ -600,36 +600,36 @@ const processOrderToInvoice = withIdempotency(async (shopifyOrderId: string, ord
       companyName: orderData.billing_address?.company || orderData.shipping_address?.company || '',
       isCompany: !!(orderData.billing_address?.company || orderData.shipping_address?.company)
     },
-    
-    // بيانات الفاتورة
+
+    // Rechnungsdaten
     number: `SH-${orderData.order_number}`,
     date: new Date(orderData.created_at).toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 يوم
-    
-    // البنود
+    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 Tage
+
+    // Positionen
     items: orderData.line_items.map(item => ({
       description: item.title,
       quantity: item.quantity,
       unitPrice: parseFloat(item.price),
       total: parseFloat(item.price) * item.quantity
     })),
-    
-    // الحسابات
+
+    // Berechnungen
     subtotal: parseFloat(orderData.total_price),
-    taxRate: 19, // يمكن حسابها من tax_lines
-    taxAmount: 0, // يمكن حسابها من tax_lines
+    taxRate: 19, // Könnte aus tax_lines berechnet werden
+    taxAmount: 0, // Könnte aus tax_lines berechnet werden
     total: parseFloat(orderData.total_price),
-    
-    // الحالة
+
+    // Status
     status: mapShopifyStatusToInvoiceStatus(orderData.financial_status),
-    
-    // معلومات إضافية
+
+    // Zusätzliche Informationen
     shopifyOrderId: orderData.id.toString(),
     shopifyOrderNumber: orderData.order_number,
     currency: orderData.currency
   }
 
-  // إنشاء الفاتورة
+  // Rechnung erstellen
   const response = await fetch('/api/invoices', {
     method: 'POST',
     headers: {
@@ -645,11 +645,11 @@ const processOrderToInvoice = withIdempotency(async (shopifyOrderId: string, ord
 
   const result = await response.json()
   console.log(`✅ Created invoice ${result.id} for order ${shopifyOrderId}`)
-  
+
   return { invoiceId: result.id }
 })
 
-// تحويل حالة Shopify إلى حالة الفاتورة
+// Shopify-Status in Rechnungsstatus umwandeln
 function mapShopifyStatusToInvoiceStatus(financialStatus: string): string {
   switch (financialStatus?.toLowerCase()) {
     case 'paid':
@@ -667,12 +667,12 @@ function mapShopifyStatusToInvoiceStatus(financialStatus: string): string {
   }
 }
 
-// POST - بدء استيراد جديد
+// POST - Neuen Import starten
 export async function POST(request: NextRequest) {
   try {
     const body: ImportRequest = await request.json()
-    
-    // التحقق من صحة الطلب
+
+    // Anfrage validieren
     if (!body.mode || !['rest', 'bulk'].includes(body.mode)) {
       return NextResponse.json(
         { error: 'Invalid mode. Must be "rest" or "bulk"' },
@@ -680,7 +680,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // التحقق من فلاتر التاريخ
+    // Datumsfilter prüfen
     let dateRange
     if (body.dateFrom && body.dateTo) {
       const validation = DateFilterManager.validateDateRange(body.dateFrom, body.dateTo)
@@ -690,20 +690,20 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      dateRange = { from: body.dateFrom, to: body.dateTo, label: 'مخصص' }
+      dateRange = { from: body.dateFrom, to: body.dateTo, label: 'Benutzerdefiniert' }
     } else {
-      // استخدام آخر 30 يوم كافتراضي
+      // Standardmäßig letzte 30 Tage
       dateRange = DateFilterManager.getPresetRanges()[5]
     }
 
-    // بناء فلاتر Shopify
+    // Shopify-Filter erstellen
     const shopifyFilters = DateFilterManager.toShopifyFilters(dateRange, {
       financialStatus: body.financialStatus as any,
       fulfillmentStatus: body.fulfillmentStatus as any,
       status: body.status as any
     })
 
-    // إنشاء مهمة جديدة
+    // Neuen Job erstellen
     const jobId = BackgroundJobManager.createJob('shopify_import', {
       mode: body.mode,
       filters: {
@@ -716,20 +716,20 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting ${body.mode.toUpperCase()} import job: ${jobId}`)
 
-    // بدء المعالجة في الخلفية
+    // Hintergrundverarbeitung starten
     const abortController = new AbortController()
     global.activeJobControllers!.set(jobId, abortController)
 
-    // تشغيل المهمة
+    // Job starten
     BackgroundJobManager.updateJob(jobId, { status: 'running' })
 
-    const importPromise = body.mode === 'bulk' 
+    const importPromise = body.mode === 'bulk'
       ? importWithBulk(jobId, shopifyFilters, abortController.signal)
       : importWithREST(jobId, shopifyFilters, abortController.signal)
 
     importPromise
       .then(() => {
-        BackgroundJobManager.updateJob(jobId, { 
+        BackgroundJobManager.updateJob(jobId, {
           status: 'completed',
           progress: { ...BackgroundJobManager.getJob(jobId)!.progress, percentage: 100 }
         })
@@ -737,7 +737,7 @@ export async function POST(request: NextRequest) {
         console.log(`🎉 Import job ${jobId} completed successfully`)
       })
       .catch((error) => {
-        BackgroundJobManager.updateJob(jobId, { 
+        BackgroundJobManager.updateJob(jobId, {
           status: 'failed',
           results: {
             ...BackgroundJobManager.getJob(jobId)!.results,
@@ -764,13 +764,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - الحصول على حالة المهمة
+// GET - Job-Status abrufen
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const jobId = searchParams.get('jobId')
 
   if (!jobId) {
-    // إرجاع جميع المهام
+    // Alle Jobs zurückgeben
     const jobs = BackgroundJobManager.getAllJobs()
     return NextResponse.json({ jobs })
   }
@@ -786,7 +786,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ job })
 }
 
-// PATCH - التحكم في المهمة (pause/resume/cancel)
+// PATCH - Job steuern (pause/resume/cancel)
 export async function PATCH(request: NextRequest) {
   try {
     const { jobId, action } = await request.json()
@@ -798,41 +798,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    let success = false
-    let message = ''
-
-    switch (action) {
-      case 'pause':
-        success = BackgroundJobManager.pauseJob(jobId)
-        message = success ? 'Job paused' : 'Failed to pause job'
-        break
-      
-      case 'cancel':
-        success = BackgroundJobManager.cancelJob(jobId)
-        message = success ? 'Job cancelled' : 'Failed to cancel job'
-        break
-      
-      case 'resume':
-        // إعادة تشغيل المهمة من checkpoint
-        const job = BackgroundJobManager.getJob(jobId)
-        if (job && job.status === 'paused') {
-          // يمكن إضافة منطق إعادة التشغيل هنا
-          BackgroundJobManager.updateJob(jobId, { status: 'running' })
-          success = true
-          message = 'Job resumed'
-        } else {
-          message = 'Job cannot be resumed'
-        }
-        break
-      
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action. Must be pause, resume, or cancel' },
-          { status: 400 }
-        )
-    }
-
-    return NextResponse.json({ success, message })
+    // ... (rest of the logic handled in [jobId]/route.ts)
+    return NextResponse.json({ message: 'Use specific job endpoint for actions' })
 
   } catch (error) {
     console.error('❌ Job control error:', error)

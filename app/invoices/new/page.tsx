@@ -46,7 +46,7 @@ interface ItemTemplate {
 export default function NewInvoicePage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
-  
+
   const [customer, setCustomer] = useState<Customer>({
     name: '',
     companyName: '',
@@ -78,7 +78,7 @@ export default function NewInvoicePage() {
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
   const [showApplyTemplateDialog, setShowApplyTemplateDialog] = useState(false)
   const [templateName, setTemplateName] = useState('')
-  
+
   // Invoice Template management (for invoice layout/texts)
   const [invoiceTemplates, setInvoiceTemplates] = useState<RechnungsTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<RechnungsTemplate | null>(null)
@@ -101,16 +101,16 @@ export default function NewInvoicePage() {
     if (savedTemplates) {
       setItemTemplates(JSON.parse(savedTemplates))
     }
-    
+
     // Load invoice templates from API
     loadInvoiceTemplates()
   }, [])
-  
+
   const loadInvoiceTemplates = async () => {
     try {
       const response = await authenticatedFetch('/api/invoice-templates')
       const result = await response.json()
-      
+
       if (result.success) {
         setInvoiceTemplates(result.data)
         // Set default template
@@ -211,7 +211,7 @@ export default function NewInvoicePage() {
     const updatedTemplates = [...itemTemplates, newTemplate]
     setItemTemplates(updatedTemplates)
     localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates))
-    
+
     setTemplateName('')
     setShowSaveTemplateDialog(false)
     alert('Vorlage erfolgreich gespeichert!')
@@ -219,34 +219,34 @@ export default function NewInvoicePage() {
 
   const applyItemTemplate = (template: ItemTemplate) => {
     // Apply template items
-    setItems(template.items.map(item => ({ 
-      ...item, 
-      id: `item-${Math.random().toString(36).substr(2, 9)}` 
+    setItems(template.items.map(item => ({
+      ...item,
+      id: `item-${Math.random().toString(36).substr(2, 9)}`
     })))
-    
+
     // Apply tax rate
     setInvoiceData(prev => ({ ...prev, taxRate: template.taxRate }))
-    
+
     setShowApplyTemplateDialog(false)
   }
 
   const deleteItemTemplate = (templateId: string) => {
     if (!confirm('Möchten Sie diese Vorlage wirklich löschen?')) return
-    
+
     const updatedTemplates = itemTemplates.filter((t: ItemTemplate) => t.id !== templateId)
     setItemTemplates(updatedTemplates)
     localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates))
     alert('Vorlage erfolgreich gelöscht!')
   }
 
-  // Brutto calculation - الأسعار شاملة للضريبة
-  const grossTotal = items.reduce((sum, item) => sum + item.total, 0) // المجموع الإجمالي (شامل الضريبة)
-  const netTotal = grossTotal / (1 + invoiceData.taxRate / 100) // المجموع الصافي = الإجمالي ÷ 1.19
-  const taxAmount = grossTotal - netTotal // الضريبة = الإجمالي - الصافي
-  
+  // Brutto-Berechnung - Preise inklusive Steuer
+  const grossTotal = items.reduce((sum, item) => sum + item.total, 0) // Gesamtsumme (inkl. Steuer)
+  const netTotal = grossTotal / (1 + invoiceData.taxRate / 100) // Nettosumme = Brutto / 1.19
+  const taxAmount = grossTotal - netTotal // Steuer = Brutto - Netto
+
   // For display purposes
-  const subtotal = netTotal // Zwischensumme (صافي)
-  const total = grossTotal // Gesamtsumme (إجمالي)
+  const subtotal = netTotal // Zwischensumme (Netto)
+  const total = grossTotal // Gesamtsumme (Brutto)
 
   const handleSave = async () => {
     // Prevent multiple submissions
@@ -256,7 +256,7 @@ export default function NewInvoicePage() {
     }
 
     setSaving(true)
-    
+
     try {
       // Validate required fields
       if (!invoiceData.invoiceNumber.trim()) {
@@ -317,24 +317,24 @@ export default function NewInvoicePage() {
       })
 
       console.log('API Response status:', response.status)
-      
+
       if (response.ok) {
         const result = await response.json()
         console.log('Invoice created successfully:', result.id)
-        
+
         // Trigger dashboard update
         DashboardUpdater.dispatchInvoiceCreated(result)
-        
+
         // Prevent further submissions by keeping saving state true
         alert('Rechnung erfolgreich erstellt!')
-        
+
         // Disable the form completely to prevent any further submissions
         const form = document.querySelector('form')
         if (form) {
           const inputs = form.querySelectorAll('input, button, select, textarea')
           inputs.forEach(input => (input as HTMLElement).setAttribute('disabled', 'true'))
         }
-        
+
         // Also disable the entire page to prevent any interaction
         const overlay = document.createElement('div')
         overlay.style.cssText = `
@@ -348,7 +348,7 @@ export default function NewInvoicePage() {
           cursor: not-allowed;
         `
         document.body.appendChild(overlay)
-        
+
         // Use a longer timeout to ensure no race conditions
         setTimeout(() => {
           window.location.href = '/invoices'
@@ -359,7 +359,7 @@ export default function NewInvoicePage() {
         alert('Fehler beim Erstellen der Rechnung: ' + (error.error || 'Unbekannter Fehler'))
         setSaving(false) // Re-enable button only on error
       }
-      
+
     } catch (error) {
       console.error('Network error:', error)
       alert('Netzwerkfehler beim Speichern der Rechnung')
@@ -423,7 +423,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Input
                     value={invoiceData.invoiceNumber}
-                    onChange={(e) => setInvoiceData({...invoiceData, invoiceNumber: e.target.value})}
+                    onChange={(e) => setInvoiceData({ ...invoiceData, invoiceNumber: e.target.value })}
                     placeholder="z.B. RE-2025-001"
                   />
                 </div>
@@ -435,95 +435,92 @@ export default function NewInvoicePage() {
                     <Select
                       value={selectedTemplate?.id || ''}
                       onValueChange={(value) => {
-                      const template = invoiceTemplates.find(t => t.id === value)
-                      if (template) {
-                        setSelectedTemplate(template)
-                        
-                        // Auto-fill invoice data based on template defaults (with fallbacks for old templates)
-                        const defaults = template.defaults || {
-                          status: 'Offen',
-                          dueDays: 14,
-                          taxRate: 19,
-                          showBankDetails: true,
-                          showPaymentInstructions: true
+                        const template = invoiceTemplates.find(t => t.id === value)
+                        if (template) {
+                          setSelectedTemplate(template)
+
+                          // Auto-fill invoice data based on template defaults (with fallbacks for old templates)
+                          const defaults = template.defaults || {
+                            status: 'Offen',
+                            dueDays: 14,
+                            taxRate: 19,
+                            showBankDetails: true,
+                            showPaymentInstructions: true
+                          }
+
+                          setInvoiceData(prev => ({
+                            ...prev,
+                            status: defaults.status,
+                            taxRate: defaults.taxRate,
+                            dueDate: new Date(Date.now() + defaults.dueDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                          }))
+
+                          console.log(`✅ Template applied: ${template.name}`)
+                          console.log(`📋 Auto-filled: Status=${defaults.status}, Tax=${defaults.taxRate}%, Due=${defaults.dueDays} days`)
                         }
-                        
-                        setInvoiceData(prev => ({
-                          ...prev,
-                          status: defaults.status,
-                          taxRate: defaults.taxRate,
-                          dueDate: new Date(Date.now() + defaults.dueDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                        }))
-                        
-                        console.log(`✅ Template applied: ${template.name}`)
-                        console.log(`📋 Auto-filled: Status=${defaults.status}, Tax=${defaults.taxRate}%, Due=${defaults.dueDays} days`)
-                      }
-                    }}
+                      }}
                     >
                       <SelectTrigger className="h-10 border border-gray-300 hover:border-gray-400 focus:border-blue-500 flex items-center">
                         <SelectValue placeholder="Vorlage auswählen" />
                       </SelectTrigger>
-                    <SelectContent>
-                      {invoiceTemplates.map((template) => {
-                        const defaults = template.defaults || { status: 'Offen' }
-                        const statusColor = 
-                          defaults.status === 'Bezahlt' ? 'text-green-600' :
-                          defaults.status === 'Storniert' ? 'text-red-600' :
-                          defaults.status === 'Erstattet' ? 'text-purple-600' :
-                          defaults.status === 'Mahnung' ? 'text-orange-600' :
-                          'text-blue-600'
-                        
-                        // Remove status icons - clean text only
-                        
-                        return (
-                          <SelectItem key={template.id} value={template.id} className="py-2">
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center flex-1">
-                                <div className={`w-2 h-2 rounded-full mr-3 ${
-                                  defaults.status === 'Bezahlt' ? 'bg-green-500' :
-                                  defaults.status === 'Storniert' ? 'bg-red-500' :
-                                  defaults.status === 'Erstattet' ? 'bg-purple-500' :
-                                  defaults.status === 'Mahnung' ? 'bg-orange-500' :
-                                  'bg-blue-500'
-                                }`}></div>
-                                <div className="flex items-center">
-                                  <span className="font-medium text-sm">{template.name}</span>
-                                  {template.isDefault && (
-                                    <span className="ml-2 text-xs text-blue-600 font-medium">Standard</span>
-                                  )}
+                      <SelectContent>
+                        {invoiceTemplates.map((template) => {
+                          const defaults = template.defaults || { status: 'Offen' }
+                          const statusColor =
+                            defaults.status === 'Bezahlt' ? 'text-green-600' :
+                              defaults.status === 'Storniert' ? 'text-red-600' :
+                                defaults.status === 'Erstattet' ? 'text-purple-600' :
+                                  defaults.status === 'Mahnung' ? 'text-orange-600' :
+                                    'text-blue-600'
+
+                          // Remove status icons - clean text only
+
+                          return (
+                            <SelectItem key={template.id} value={template.id} className="py-2">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center flex-1">
+                                  <div className={`w-2 h-2 rounded-full mr-3 ${defaults.status === 'Bezahlt' ? 'bg-green-500' :
+                                      defaults.status === 'Storniert' ? 'bg-red-500' :
+                                        defaults.status === 'Erstattet' ? 'bg-purple-500' :
+                                          defaults.status === 'Mahnung' ? 'bg-orange-500' :
+                                            'bg-blue-500'
+                                    }`}></div>
+                                  <div className="flex items-center">
+                                    <span className="font-medium text-sm">{template.name}</span>
+                                    {template.isDefault && (
+                                      <span className="ml-2 text-xs text-blue-600 font-medium">Standard</span>
+                                    )}
+                                  </div>
                                 </div>
+                                <span className={`ml-3 text-xs font-medium px-2 py-1 rounded ${defaults.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
+                                    defaults.status === 'Storniert' ? 'bg-red-100 text-red-700' :
+                                      defaults.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
+                                        defaults.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
+                                          'bg-blue-100 text-blue-700'
+                                  }`}>
+                                  {defaults.status}
+                                </span>
                               </div>
-                              <span className={`ml-3 text-xs font-medium px-2 py-1 rounded ${
-                                defaults.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                                defaults.status === 'Storniert' ? 'bg-red-100 text-red-700' :
-                                defaults.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                                defaults.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                                'bg-blue-100 text-blue-700'
-                              }`}>
-                                {defaults.status}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
-                  {selectedTemplate && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Ausgewählt: <span className="font-medium">{selectedTemplate.name}</span></span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          invoiceData.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                          invoiceData.status === 'Storniert' ? 'bg-red-100 text-red-700' :
-                          invoiceData.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                          invoiceData.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                          'bg-blue-100 text-blue-700'
-                        }`}>
-                          {invoiceData.status}
-                        </span>
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {selectedTemplate && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Ausgewählt: <span className="font-medium">{selectedTemplate.name}</span></span>
+                          <span className={`text-xs px-2 py-1 rounded ${invoiceData.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
+                              invoiceData.status === 'Storniert' ? 'bg-red-100 text-red-700' :
+                                invoiceData.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
+                                  invoiceData.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-blue-100 text-blue-700'
+                            }`}>
+                            {invoiceData.status}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   </div>
                 </div>
                 <div>
@@ -533,7 +530,7 @@ export default function NewInvoicePage() {
                   <Input
                     type="number"
                     value={invoiceData.taxRate}
-                    onChange={(e) => setInvoiceData({...invoiceData, taxRate: Number(e.target.value)})}
+                    onChange={(e) => setInvoiceData({ ...invoiceData, taxRate: Number(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -543,7 +540,7 @@ export default function NewInvoicePage() {
                   <Input
                     type="date"
                     value={invoiceData.date}
-                    onChange={(e) => setInvoiceData({...invoiceData, date: e.target.value})}
+                    onChange={(e) => setInvoiceData({ ...invoiceData, date: e.target.value })}
                   />
                 </div>
                 <div>
@@ -553,7 +550,7 @@ export default function NewInvoicePage() {
                   <Input
                     type="date"
                     value={invoiceData.dueDate}
-                    onChange={(e) => setInvoiceData({...invoiceData, dueDate: e.target.value})}
+                    onChange={(e) => setInvoiceData({ ...invoiceData, dueDate: e.target.value })}
                   />
                 </div>
               </CardContent>
@@ -574,7 +571,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Input
                     value={customer.name}
-                    onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                     placeholder="z.B. Max Mustermann"
                   />
                 </div>
@@ -584,7 +581,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Input
                     value={customer.companyName}
-                    onChange={(e) => setCustomer({...customer, companyName: e.target.value})}
+                    onChange={(e) => setCustomer({ ...customer, companyName: e.target.value })}
                     placeholder="z.B. Mustermann GmbH"
                   />
                 </div>
@@ -595,7 +592,7 @@ export default function NewInvoicePage() {
                   <Input
                     type="email"
                     value={customer.email}
-                    onChange={(e) => setCustomer({...customer, email: e.target.value})}
+                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
                     placeholder="kunde@beispiel.de"
                   />
                 </div>
@@ -605,7 +602,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Input
                     value={customer.address}
-                    onChange={(e) => setCustomer({...customer, address: e.target.value})}
+                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
                     placeholder="Musterstraße 123"
                   />
                 </div>
@@ -615,7 +612,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Input
                     value={customer.zipCode}
-                    onChange={(e) => setCustomer({...customer, zipCode: e.target.value})}
+                    onChange={(e) => setCustomer({ ...customer, zipCode: e.target.value })}
                     placeholder="12345"
                   />
                 </div>
@@ -625,7 +622,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Input
                     value={customer.city}
-                    onChange={(e) => setCustomer({...customer, city: e.target.value})}
+                    onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
                     placeholder="Berlin"
                   />
                 </div>
@@ -635,7 +632,7 @@ export default function NewInvoicePage() {
                   </label>
                   <Select
                     value={customer.country}
-                    onValueChange={(value) => setCustomer({...customer, country: value})}
+                    onValueChange={(value) => setCustomer({ ...customer, country: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Land auswählen" />
@@ -659,7 +656,7 @@ export default function NewInvoicePage() {
                     Produkte und Dienstleistungen
                   </CardDescription>
                 </div>
-                
+
                 {/* Action Buttons Bar */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4">
                   <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
@@ -798,7 +795,7 @@ export default function NewInvoicePage() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Second row: Quantity, Price, Total, Delete */}
                       <div className="grid grid-cols-12 gap-4 items-end">
                         <div className="col-span-2">
@@ -922,19 +919,19 @@ export default function NewInvoicePage() {
                     </div>
                     <Switch
                       checked={qrCodeSettings.enabled}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setQrCodeSettings(prev => ({ ...prev, enabled: checked }))
                       }
                     />
                   </div>
-                  
+
                   {qrCodeSettings.enabled && (
                     <div className="space-y-3 pl-6 border-l-2 border-blue-100">
                       <div>
                         <Label htmlFor="paymentMethod" className="text-xs">Zahlungsmethode</Label>
                         <Select
                           value={qrCodeSettings.paymentMethod}
-                          onValueChange={(value) => 
+                          onValueChange={(value) =>
                             setQrCodeSettings(prev => ({ ...prev, paymentMethod: value }))
                           }
                         >
@@ -953,7 +950,7 @@ export default function NewInvoicePage() {
                         <Label htmlFor="qrPlacement" className="text-xs">QR-Code Position</Label>
                         <Select
                           value={qrCodeSettings.placement}
-                          onValueChange={(value) => 
+                          onValueChange={(value) =>
                             setQrCodeSettings(prev => ({ ...prev, placement: value }))
                           }
                         >
@@ -977,7 +974,7 @@ export default function NewInvoicePage() {
                             <Input
                               id="recipientName"
                               value={qrCodeSettings.recipientName}
-                              onChange={(e) => 
+                              onChange={(e) =>
                                 setQrCodeSettings(prev => ({ ...prev, recipientName: e.target.value }))
                               }
                               placeholder="Firmenname"
@@ -989,7 +986,7 @@ export default function NewInvoicePage() {
                             <Input
                               id="iban"
                               value={qrCodeSettings.iban}
-                              onChange={(e) => 
+                              onChange={(e) =>
                                 setQrCodeSettings(prev => ({ ...prev, iban: e.target.value }))
                               }
                               placeholder="DE89 3704 0044 0532 0130 00"
@@ -1001,7 +998,7 @@ export default function NewInvoicePage() {
                             <Input
                               id="bic"
                               value={qrCodeSettings.bic}
-                              onChange={(e) => 
+                              onChange={(e) =>
                                 setQrCodeSettings(prev => ({ ...prev, bic: e.target.value }))
                               }
                               placeholder="COBADEFFXXX"
@@ -1017,7 +1014,7 @@ export default function NewInvoicePage() {
                           <Input
                             id="paypalEmail"
                             value={qrCodeSettings.paypalEmail}
-                            onChange={(e) => 
+                            onChange={(e) =>
                               setQrCodeSettings(prev => ({ ...prev, paypalEmail: e.target.value }))
                             }
                             placeholder="payment@company.com"
@@ -1032,7 +1029,7 @@ export default function NewInvoicePage() {
                           <Input
                             id="customText"
                             value={qrCodeSettings.customText}
-                            onChange={(e) => 
+                            onChange={(e) =>
                               setQrCodeSettings(prev => ({ ...prev, customText: e.target.value }))
                             }
                             placeholder="Zahlungslink oder Anweisungen"
@@ -1040,7 +1037,7 @@ export default function NewInvoicePage() {
                           />
                         </div>
                       )}
-                      
+
                       <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                         💡 Der QR-Code wird automatisch auf der Rechnung generiert und enthält alle Zahlungsinformationen.
                       </div>

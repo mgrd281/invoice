@@ -10,12 +10,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { 
-  FileText, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Copy, 
+import {
+  FileText,
+  Plus,
+  Edit,
+  Trash2,
+  Copy,
   Star,
   ArrowLeft,
   Save,
@@ -31,7 +31,7 @@ export default function TemplatesPage() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
-  
+
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [editingTemplate, setEditingTemplate] = useState<InvoiceTemplate | null>(null)
@@ -48,7 +48,7 @@ export default function TemplatesPage() {
     try {
       const response = await authenticatedFetch('/api/invoice-templates')
       const result = await response.json()
-      
+
       if (result.success) {
         setTemplates(result.data)
       }
@@ -62,11 +62,11 @@ export default function TemplatesPage() {
   const handleCreateNew = () => {
     const newTemplate: InvoiceTemplate = {
       id: '',
-      name: 'قالب جديد / Neue Vorlage',
+      name: 'Neue Vorlage',
       type: 'custom',
       isDefault: false,
       texts: {
-        title: 'فاتورة',
+        title: 'Rechnung',
         subtitle: '',
         footerNote: '',
         paymentNote: '',
@@ -83,7 +83,7 @@ export default function TemplatesPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
-    
+
     setEditingTemplate(newTemplate)
     setIsCreating(true)
   }
@@ -99,15 +99,15 @@ export default function TemplatesPage() {
     try {
       const url = isCreating ? '/api/invoice-templates' : '/api/invoice-templates'
       const method = isCreating ? 'POST' : 'PUT'
-      
+
       const response = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingTemplate)
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success) {
         await loadTemplates()
         setEditingTemplate(null)
@@ -128,9 +128,9 @@ export default function TemplatesPage() {
       const response = await authenticatedFetch(`/api/invoice-templates?id=${templateId}`, {
         method: 'DELETE'
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success) {
         await loadTemplates()
       } else {
@@ -149,7 +149,7 @@ export default function TemplatesPage() {
       name: `${template.name} (Kopie)`,
       isDefault: false
     }
-    
+
     setEditingTemplate(duplicated)
     setIsCreating(true)
   }
@@ -157,7 +157,7 @@ export default function TemplatesPage() {
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       'offen': 'Zahlungsaufforderung',
-      'bezahlt': 'Zahlungsbestätigung', 
+      'bezahlt': 'Zahlungsbestätigung',
       'storniert': 'Stornierung',
       'promo': 'Sonderangebot',
       'erstattet': 'Rückerstattung',
@@ -276,12 +276,12 @@ export default function TemplatesPage() {
 
                 <Separator />
 
-                {/* Static Texts - Same Design, Different Content */}
+                {/* Static Texts */}
                 <div>
-                  <h3 className="text-lg font-medium mb-4">نصوص ثابتة للقالب</h3>
+                  <h3 className="text-lg font-medium mb-4">Feste Vorlagentexte</h3>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="title">عنوان الفاتورة / Invoice Title</Label>
+                      <Label htmlFor="title">Rechnungstitel</Label>
                       <Input
                         id="title"
                         value={editingTemplate.texts.title}
@@ -289,11 +289,11 @@ export default function TemplatesPage() {
                           ...editingTemplate,
                           texts: { ...editingTemplate.texts, title: e.target.value }
                         })}
-                        placeholder="مثل: فاتورة مفتوحة، فاتورة مدفوعة، فاتورة ملغاة"
+                        placeholder="z.B.: Offene Rechnung, Bezahlte Rechnung"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="subtitle">نص توضيحي تحت العنوان / Subtitle</Label>
+                      <Label htmlFor="subtitle">Untertitel</Label>
                       <Textarea
                         id="subtitle"
                         value={editingTemplate.texts.subtitle || ''}
@@ -301,12 +301,12 @@ export default function TemplatesPage() {
                           ...editingTemplate,
                           texts: { ...editingTemplate.texts, subtitle: e.target.value }
                         })}
-                        placeholder="مثل: يرجى سداد المبلغ قبل تاريخ الاستحقاق"
+                        placeholder="z.B.: Bitte zahlen Sie den Betrag vor dem Fälligkeitsdatum"
                         rows={2}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="paymentNote">تعليمات الدفع / Payment Instructions</Label>
+                      <Label htmlFor="paymentNote">Zahlungshinweise</Label>
                       <Textarea
                         id="paymentNote"
                         value={editingTemplate.texts.paymentNote || ''}
@@ -314,12 +314,12 @@ export default function TemplatesPage() {
                           ...editingTemplate,
                           texts: { ...editingTemplate.texts, paymentNote: e.target.value }
                         })}
-                        placeholder="تعليمات خاصة بالدفع حسب نوع الفاتورة"
+                        placeholder="Spezielle Zahlungsanweisungen je nach Rechnungstyp"
                         rows={3}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="footerNote">التوقيع أو الفوتر الثابت / Footer Signature</Label>
+                      <Label htmlFor="footerNote">Fußzeile / Signatur</Label>
                       <Textarea
                         id="footerNote"
                         value={editingTemplate.texts.footerNote || ''}
@@ -327,12 +327,12 @@ export default function TemplatesPage() {
                           ...editingTemplate,
                           texts: { ...editingTemplate.texts, footerNote: e.target.value }
                         })}
-                        placeholder="نص ثابت في أسفل الفاتورة"
+                        placeholder="Fester Text am Ende der Rechnung"
                         rows={2}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="thankYouNote">رسالة شكر / Thank You Message</Label>
+                      <Label htmlFor="thankYouNote">Dankesnachricht</Label>
                       <Textarea
                         id="thankYouNote"
                         value={editingTemplate.texts.thankYouNote || ''}
@@ -340,7 +340,7 @@ export default function TemplatesPage() {
                           ...editingTemplate,
                           texts: { ...editingTemplate.texts, thankYouNote: e.target.value }
                         })}
-                        placeholder="رسالة شكر مخصصة حسب نوع الفاتورة"
+                        placeholder="Individuelle Dankesnachricht je nach Rechnungstyp"
                         rows={2}
                       />
                     </div>
@@ -351,10 +351,10 @@ export default function TemplatesPage() {
 
                 {/* Default Settings */}
                 <div>
-                  <h3 className="text-lg font-medium mb-4">الإعدادات الافتراضية / Default Settings</h3>
+                  <h3 className="text-lg font-medium mb-4">Standardeinstellungen</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="defaultStatus">حالة الفاتورة الافتراضية / Default Status</Label>
+                      <Label htmlFor="defaultStatus">Standardstatus</Label>
                       <Select
                         value={editingTemplate.defaults?.status || 'Offen'}
                         onValueChange={(value: any) => setEditingTemplate({
@@ -366,16 +366,16 @@ export default function TemplatesPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Offen">Offen (مفتوحة)</SelectItem>
-                          <SelectItem value="Bezahlt">Bezahlt (مدفوعة)</SelectItem>
-                          <SelectItem value="Storniert">Storniert (ملغاة)</SelectItem>
-                          <SelectItem value="Erstattet">Erstattet (مستردة)</SelectItem>
-                          <SelectItem value="Mahnung">Mahnung (تذكير)</SelectItem>
+                          <SelectItem value="Offen">Offen</SelectItem>
+                          <SelectItem value="Bezahlt">Bezahlt</SelectItem>
+                          <SelectItem value="Storniert">Storniert</SelectItem>
+                          <SelectItem value="Erstattet">Erstattet</SelectItem>
+                          <SelectItem value="Mahnung">Mahnung</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="dueDays">أيام الاستحقاق الافتراضية / Default Due Days</Label>
+                      <Label htmlFor="dueDays">Zahlungsziel (Tage)</Label>
                       <Input
                         id="dueDays"
                         type="number"
@@ -388,7 +388,7 @@ export default function TemplatesPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="taxRate">معدل الضريبة الافتراضي / Default Tax Rate (%)</Label>
+                      <Label htmlFor="taxRate">Steuersatz (%)</Label>
                       <Input
                         id="taxRate"
                         type="number"
@@ -401,7 +401,7 @@ export default function TemplatesPage() {
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="showBankDetails">إظهار بيانات البنك / Show Bank Details</Label>
+                      <Label htmlFor="showBankDetails">Bankdaten anzeigen</Label>
                       <Switch
                         id="showBankDetails"
                         checked={editingTemplate.defaults?.showBankDetails || true}
@@ -412,7 +412,7 @@ export default function TemplatesPage() {
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="showPaymentInstructions">إظهار تعليمات الدفع / Show Payment Instructions</Label>
+                      <Label htmlFor="showPaymentInstructions">Zahlungshinweise anzeigen</Label>
                       <Switch
                         id="showPaymentInstructions"
                         checked={editingTemplate.defaults?.showPaymentInstructions || true}
@@ -478,13 +478,12 @@ export default function TemplatesPage() {
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <div className="flex items-center">
                           <span className="text-xs text-gray-500 mr-2">Status:</span>
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                            (template.defaults?.status || 'Offen') === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                            (template.defaults?.status || 'Offen') === 'Storniert' ? 'bg-red-100 text-red-700' :
-                            (template.defaults?.status || 'Offen') === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                            (template.defaults?.status || 'Offen') === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${(template.defaults?.status || 'Offen') === 'Bezahlt' ? 'bg-green-100 text-green-700' :
+                              (template.defaults?.status || 'Offen') === 'Storniert' ? 'bg-red-100 text-red-700' :
+                                (template.defaults?.status || 'Offen') === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
+                                  (template.defaults?.status || 'Offen') === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-blue-100 text-blue-700'
+                            }`}>
                             {template.defaults?.status || 'Offen'}
                           </span>
                         </div>
@@ -493,7 +492,7 @@ export default function TemplatesPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center">
                       <div className="flex space-x-2">
                         <Button

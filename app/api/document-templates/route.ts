@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
-import { 
+import {
   DocumentTemplate,
   DocumentType,
   getAllDocumentTemplates,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       category: templateData.category || 'financial',
       isDefault: templateData.isDefault || false,
       content: {
-        title: templateData.content?.title || 'عنوان المستند',
+        title: templateData.content?.title || 'Dokumenttitel',
         subtitle: templateData.content?.subtitle || '',
         headerNote: templateData.content?.headerNote || '',
         bodyText: templateData.content?.bodyText || '',
@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
 
     // If this is set as default, remove default from other templates of same type
     if (newTemplate.isDefault) {
-      global.documentTemplates = global.documentTemplates?.map(template => 
-        template.type === newTemplate.type 
+      global.documentTemplates = global.documentTemplates?.map(template =>
+        template.type === newTemplate.type
           ? { ...template, isDefault: false }
           : template
       ) || []
@@ -175,7 +175,7 @@ export async function PUT(request: NextRequest) {
 
     // If this is set as default, remove default from other templates of same type
     if (updatedTemplate.isDefault) {
-      global.documentTemplates = global.documentTemplates?.map(template => 
+      global.documentTemplates = global.documentTemplates?.map(template =>
         template.type === updatedTemplate.type && template.id !== updatedTemplate.id
           ? { ...template, isDefault: false }
           : template

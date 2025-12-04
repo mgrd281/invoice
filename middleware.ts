@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// الصفحات المحمية التي تتطلب تسجيل دخول
+// Geschützte Seiten, die eine Anmeldung erfordern
 const protectedRoutes = [
   '/dashboard',
   '/invoices',
-  '/customers', 
+  '/customers',
   '/organizations',
   '/upload',
   '/settings',
   '/shopify'
 ]
 
-// الصفحات العامة التي لا تتطلب تسجيل دخول
+// Öffentliche Seiten, die keine Anmeldung erfordern
 const publicRoutes = [
   '/',
   '/auth/login',
@@ -21,8 +21,8 @@ const publicRoutes = [
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
-  // السماح بالوصول للملفات الثابتة والـ API
+
+  // Zugriff auf statische Dateien und API erlauben
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -35,7 +35,7 @@ export function middleware(request: NextRequest) {
   // Note: Since we're using client-side authentication with localStorage,
   // we can't check authentication status in middleware (server-side)
   // The actual authentication check happens in the AuthProvider on the client
-  
+
   // Allow all routes to pass through - authentication is handled by AuthProvider
   return NextResponse.next()
 }

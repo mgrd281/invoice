@@ -1,4 +1,4 @@
-// Legacy Import API محسن لدعم ملايين الطلبات
+// Legacy Import API optimiert für Millionen von Bestellungen
 import { NextRequest, NextResponse } from 'next/server'
 import { BackgroundJobManager, RateLimiter } from '@/lib/background-jobs'
 import { IdempotencyManager } from '@/lib/idempotency'
@@ -37,12 +37,12 @@ interface ShopifyOrder {
   shipping_address?: any
 }
 
-// الحصول على إعدادات Shopify
+// Shopify-Einstellungen abrufen
 async function getShopifySettings() {
-  // استخدام نظام الإعدادات الموحد
+  // Einheitliches Einstellungssystem verwenden
   const { getShopifySettings: loadSettings } = await import('@/lib/shopify-settings')
   const settings = loadSettings()
-  
+
   return {
     shop_domain: settings.shopDomain,
     access_token: settings.accessToken,
@@ -50,11 +50,11 @@ async function getShopifySettings() {
   }
 }
 
-// جلب الطلبات مع دعم cursor pagination
+// Bestellungen mit Cursor-Pagination abrufen
 async function fetchOrdersWithPagination(
   settings: any,
   params: LegacyImportRequest,
-  maxOrders: number = 1000000 // حد أقصى للنظام القديم - 1 Million Bestellungen
+  maxOrders: number = 1000000 // Limit für Legacy-System - 1 Million Bestellungen
 ): Promise<{
   orders: ShopifyOrder[]
   hasNextPage: boolean
@@ -70,20 +70,20 @@ async function fetchOrdersWithPagination(
 
   while (hasNextPage && totalFetched < maxOrders) {
     try {
-      // بناء URL مع المعاملات
+      // URL mit Parametern erstellen
       const urlParams = new URLSearchParams({
-        limit: '250', // الحد الأقصى لـ Shopify
+        limit: '250', // Shopify-Limit
         status: 'any',
         ...(cursor && { page_info: cursor }),
-        ...(params.financial_status && params.financial_status !== 'any' && { 
-          financial_status: params.financial_status 
+        ...(params.financial_status && params.financial_status !== 'any' && {
+          financial_status: params.financial_status
         }),
         ...(params.created_at_min && { created_at_min: params.created_at_min }),
         ...(params.created_at_max && { created_at_max: params.created_at_max })
       })
 
       const url = `https://${settings.shop_domain}/admin/api/${settings.api_version}/orders.json?${urlParams}`
-      
+
       console.log(`📡 Fetching batch: ${Math.floor(totalFetched / 250) + 1}, cursor: ${cursor?.substring(0, 20)}...`)
       console.log(`🔗 Full URL: ${url}`)
       console.log(`📋 URL Params:`, Object.fromEntries(urlParams.entries()))
@@ -108,11 +108,11 @@ async function fetchOrdersWithPagination(
 
       console.log(`📦 Received ${orders.length} orders in this batch`)
 
-      // إضافة الطلبات إلى المجموعة
+      // Bestellungen zur Sammlung hinzufügen
       allOrders.push(...orders)
       totalFetched += orders.length
 
-      // فحص الصفحة التالية
+      // Nächste Seite prüfen
       const linkHeader = response.headers.get('Link')
       if (linkHeader) {
         const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
@@ -127,13 +127,13 @@ async function fetchOrdersWithPagination(
         hasNextPage = orders.length === 250
       }
 
-      // إذا وصلنا للحد الأقصى، توقف
+      // Wenn Limit erreicht, stoppen
       if (totalFetched >= maxOrders) {
         hasNextPage = false
         console.log(`⚠️ Reached maximum limit of ${maxOrders} orders`)
       }
 
-      // تأخير قصير بين الطلبات لتجنب rate limiting
+      // Kurze Verzögerung zur Vermeidung von Rate Limiting
       if (hasNextPage) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
@@ -148,13 +148,13 @@ async function fetchOrdersWithPagination(
 
   return {
     orders: allOrders,
-    hasNextPage: totalFetched >= maxOrders, // true إذا توقفنا بسبب الحد الأقصى
+    hasNextPage: totalFetched >= maxOrders, // true wenn wegen Limit gestoppt
     nextCursor: cursor,
     totalFetched
   }
 }
 
-// تحويل الطلبات إلى فواتير
+// Bestellungen in Rechnungen umwandeln
 async function convertOrdersToInvoices(orders: ShopifyOrder[]): Promise<{
   imported: number
   failed: number
@@ -170,21 +170,21 @@ async function convertOrdersToInvoices(orders: ShopifyOrder[]): Promise<{
 
   for (const order of orders) {
     try {
-      // فحص idempotency
+      // Idempotency prüfen
       const fingerprint = IdempotencyManager.createRequestFingerprint(order)
       const check = IdempotencyManager.checkIdempotency(order.id.toString(), fingerprint)
-      
+
       if (check.exists) {
         skipped++
         console.log(`⏭️ Order ${order.id} already processed, skipping`)
         continue
       }
 
-      // بدء معالجة idempotent
+      // Idempotente Verarbeitung starten
       const key = IdempotencyManager.startProcessing(order.id.toString(), fingerprint)
 
       try {
-        // تحويل بيانات الطلب إلى فاتورة
+        // Bestelldaten in Rechnung umwandeln
         const invoiceData = {
           customer: {
             name: `${order.customer.first_name} ${order.customer.last_name}`.trim(),
@@ -215,7 +215,7 @@ async function convertOrdersToInvoices(orders: ShopifyOrder[]): Promise<{
           currency: order.currency
         }
 
-        // إنشاء الفاتورة - use absolute URL for server-side fetch
+        // Rechnung erstellen - use absolute URL for server-side fetch
         const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
         const response = await fetch(`${baseUrl}/api/invoices`, {
           method: 'POST',
@@ -231,15 +231,15 @@ async function convertOrdersToInvoices(orders: ShopifyOrder[]): Promise<{
         }
 
         const result = await response.json()
-        
-        // إكمال المعالجة
+
+        // Verarbeitung abschließen
         IdempotencyManager.completeProcessing(key, result.id)
-        
+
         imported++
         console.log(`✅ Created invoice ${result.id} for order ${order.id}`)
 
       } catch (error) {
-        // فشل المعالجة
+        // Verarbeitung fehlgeschlagen
         IdempotencyManager.failProcessing(key, error instanceof Error ? error.message : String(error))
         throw error
       }
@@ -257,7 +257,7 @@ async function convertOrdersToInvoices(orders: ShopifyOrder[]): Promise<{
   return { imported, failed, skipped, errors }
 }
 
-// تحويل حالة Shopify إلى حالة الفاتورة
+// Shopify-Status in Rechnungsstatus umwandeln
 function mapShopifyStatusToInvoiceStatus(financialStatus: string): string {
   switch (financialStatus?.toLowerCase()) {
     case 'paid':
@@ -275,14 +275,14 @@ function mapShopifyStatusToInvoiceStatus(financialStatus: string): string {
   }
 }
 
-// GET - جلب الطلبات (للعرض)
+// GET - Bestellungen abrufen (für Anzeige)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     let limit = parseInt(searchParams.get('limit') || '250')
     const financialStatus = searchParams.get('financial_status') || 'any'
-    
-    // Validate and cap limit to prevent memory issues
+
+    // Limit validieren und begrenzen
     if (limit > 10000) {
       console.warn(`⚠️ Limit ${limit} too high, capping at 10000 for legacy system`)
       limit = 10000
@@ -291,13 +291,13 @@ export async function GET(request: NextRequest) {
       console.warn(`⚠️ Invalid limit ${limit}, using default 250`)
       limit = 250
     }
-    
-    // Properly decode URL-encoded date parameters
+
+    // URL-kodierte Datumsparameter dekodieren
     let createdAtMin = searchParams.get('created_at_min') ? decodeURIComponent(searchParams.get('created_at_min')!) : null
     let createdAtMax = searchParams.get('created_at_max') ? decodeURIComponent(searchParams.get('created_at_max')!) : null
     const pageInfo = searchParams.get('page_info')
-    
-    // Validate and format dates for Shopify API
+
+    // Daten validieren und formatieren für Shopify API
     if (createdAtMin) {
       try {
         const date = new Date(createdAtMin)
@@ -312,7 +312,7 @@ export async function GET(request: NextRequest) {
         createdAtMin = null
       }
     }
-    
+
     if (createdAtMax) {
       try {
         const date = new Date(createdAtMax)
@@ -333,13 +333,13 @@ export async function GET(request: NextRequest) {
 
     const settings = await getShopifySettings()
     console.log(`⚙️ Shopify settings loaded: ${settings.shop_domain}`)
-    
-    // Store original limit for warning message
+
+    // Original-Limit für Warnmeldung speichern
     const originalLimit = parseInt(searchParams.get('limit') || '250')
     const wasLimitCapped = originalLimit > 10000
 
-    // للطلبات الكبيرة، استخدم نظام pagination محسن
-    const maxOrdersForLegacy = Math.min(limit, 10000) // حد أقصى 10k للنظام القديم
+    // Für große Anfragen verbessertes Pagination-System verwenden
+    const maxOrdersForLegacy = Math.min(limit, 10000) // Max 10k für Legacy
 
     const result = await fetchOrdersWithPagination(settings, {
       limit,
@@ -349,7 +349,7 @@ export async function GET(request: NextRequest) {
       page_info: pageInfo || undefined
     }, maxOrdersForLegacy)
 
-    // تحويل إلى التنسيق المتوقع
+    // In erwartetes Format umwandeln
     const formattedOrders = result.orders.map(order => ({
       id: order.id,
       name: order.name,
@@ -375,9 +375,9 @@ export async function GET(request: NextRequest) {
         totalFetched: result.totalFetched,
         isLimited: result.totalFetched >= maxOrdersForLegacy
       },
-      message: wasLimitCapped 
+      message: wasLimitCapped
         ? `Limit ${originalLimit} zu hoch - auf ${maxOrdersForLegacy} reduziert. Nutzen Sie das Advanced Import System für unbegrenzte Bestellungen.`
-        : result.totalFetched >= maxOrdersForLegacy 
+        : result.totalFetched >= maxOrdersForLegacy
           ? `Reached legacy system limit of ${maxOrdersForLegacy} orders. Use Advanced Import for unlimited access.`
           : `Fetched ${result.totalFetched} orders successfully`
     })
@@ -385,8 +385,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Legacy import GET error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Fehler beim Abrufen der Shopify-Bestellungen',
         details: error instanceof Error ? error.message : 'Unbekannter Fehler'
       },
@@ -395,7 +395,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - استيراد الطلبات وتحويلها إلى فواتير
+// POST - Bestellungen importieren und in Rechnungen umwandeln
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -411,10 +411,10 @@ export async function POST(request: NextRequest) {
 
     const settings = await getShopifySettings()
 
-    // للاستيراد، استخدم حد أقصى معقول للنظام القديم
-    const maxOrdersForImport = Math.min(limit, 50000) // حد أقصى 50k للاستيراد القديم
+    // Für Import vernünftiges Limit für Legacy-System verwenden
+    const maxOrdersForImport = Math.min(limit, 50000) // Max 50k für Legacy-Import
 
-    // جلب الطلبات
+    // Bestellungen abrufen
     const result = await fetchOrdersWithPagination(settings, {
       limit,
       financial_status,
@@ -429,7 +429,7 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     }
 
-    // تحويل إلى فواتير إذا كان مطلوباً
+    // In Rechnungen umwandeln falls gewünscht
     if (auto_convert && result.orders.length > 0) {
       importResult = await convertOrdersToInvoices(result.orders)
     }
@@ -455,8 +455,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Legacy import POST error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Fehler beim Importieren der Shopify-Bestellungen',
         details: error instanceof Error ? error.message : 'Unbekannter Fehler'
       },

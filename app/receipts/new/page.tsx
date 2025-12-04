@@ -85,7 +85,7 @@ export default function NewReceiptPage() {
       setLoading(true)
       const receiptTemplates = getTemplatesByType('receipt')
       setTemplates(receiptTemplates)
-      
+
       // Select default template
       const defaultTemplate = receiptTemplates.find(t => t.isDefault)
       if (defaultTemplate) {
@@ -154,20 +154,20 @@ export default function NewReceiptPage() {
     try {
       // TODO: Implement API call to save receipt
       console.log('Saving receipt:', { receiptData, template: selectedTemplate })
-      
+
       // For now, just show success and redirect
-      alert('تم حفظ إشعار الاستلام بنجاح! / Receipt saved successfully!')
+      alert('Quittung erfolgreich gespeichert!')
       router.push('/receipts')
     } catch (error) {
       console.error('Error saving receipt:', error)
-      alert('حدث خطأ في حفظ إشعار الاستلام / Error saving receipt')
+      alert('Fehler beim Speichern der Quittung')
     }
   }
 
   const handlePreview = () => {
     // TODO: Implement PDF preview
     console.log('Preview receipt:', { receiptData, template: selectedTemplate })
-    alert('معاينة PDF قريباً / PDF preview coming soon')
+    alert('PDF-Vorschau kommt bald')
   }
 
   if (loading) {
@@ -176,7 +176,7 @@ export default function NewReceiptPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">جاري التحميل... / Laden...</p>
+            <p className="mt-2 text-gray-600">Laden...</p>
           </div>
         </div>
       </div>
@@ -193,14 +193,14 @@ export default function NewReceiptPage() {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>رجوع / Zurück</span>
+            <span>Zurück</span>
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              إنشاء إشعار استلام جديد / Neue Empfangsbestätigung
+              Neue Empfangsbestätigung
             </h1>
             <p className="text-gray-600">
-              إنشاء إشعار رسمي لاستلام الدفعات / Erstellen Sie eine offizielle Zahlungsbestätigung
+              Erstellen Sie eine offizielle Zahlungsbestätigung
             </p>
           </div>
         </div>
@@ -212,15 +212,15 @@ export default function NewReceiptPage() {
           {/* Template Selection */}
           <Card>
             <CardHeader>
-              <CardTitle>اختيار القالب / Template Selection</CardTitle>
+              <CardTitle>Vorlagenauswahl</CardTitle>
               <CardDescription>
-                اختر قالب إشعار الاستلام المناسب / Wählen Sie die passende Empfangsbestätigungsvorlage
+                Wählen Sie die passende Empfangsbestätigungsvorlage
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-1">
-                  قالب إشعار الاستلام / Receipt Template
+                  Quittungsvorlage
                 </Label>
                 <Select
                   value={selectedTemplate?.id || ''}
@@ -230,7 +230,7 @@ export default function NewReceiptPage() {
                   }}
                 >
                   <SelectTrigger className="h-10 border border-gray-300 hover:border-gray-400 focus:border-blue-500 flex items-center">
-                    <SelectValue placeholder="اختر قالب / Template auswählen" />
+                    <SelectValue placeholder="Vorlage auswählen" />
                   </SelectTrigger>
                   <SelectContent>
                     {templates.map((template) => (
@@ -256,7 +256,7 @@ export default function NewReceiptPage() {
                 {selectedTemplate && (
                   <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600">مختار: <span className="font-medium">{selectedTemplate.name}</span></span>
+                      <span className="text-gray-600">Ausgewählt: <span className="font-medium">{selectedTemplate.name}</span></span>
                       <Badge className="text-xs bg-green-100 text-green-700">
                         {selectedTemplate.content.title}
                       </Badge>
@@ -270,54 +270,54 @@ export default function NewReceiptPage() {
           {/* Receipt Details */}
           <Card>
             <CardHeader>
-              <CardTitle>تفاصيل الإشعار / Receipt Details</CardTitle>
+              <CardTitle>Quittungsdetails</CardTitle>
               <CardDescription>
-                المعلومات الأساسية لإشعار الاستلام / Grundlegende Informationen für die Empfangsbestätigung
+                Grundlegende Informationen für die Empfangsbestätigung
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="receiptNumber">رقم الإشعار / Receipt Number</Label>
+                <Label htmlFor="receiptNumber">Quittungsnummer</Label>
                 <Input
                   id="receiptNumber"
                   value={receiptData.receiptNumber}
-                  onChange={(e) => setReceiptData({...receiptData, receiptNumber: e.target.value})}
+                  onChange={(e) => setReceiptData({ ...receiptData, receiptNumber: e.target.value })}
                   placeholder="REC-2025-001"
                 />
               </div>
               <div>
-                <Label htmlFor="date">التاريخ / Date</Label>
+                <Label htmlFor="date">Datum</Label>
                 <Input
                   id="date"
                   type="date"
                   value={receiptData.date}
-                  onChange={(e) => setReceiptData({...receiptData, date: e.target.value})}
+                  onChange={(e) => setReceiptData({ ...receiptData, date: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="paymentMethod">طريقة الدفع / Payment Method</Label>
+                <Label htmlFor="paymentMethod">Zahlungsmethode</Label>
                 <Select
                   value={receiptData.paymentMethod}
-                  onValueChange={(value) => setReceiptData({...receiptData, paymentMethod: value})}
+                  onValueChange={(value) => setReceiptData({ ...receiptData, paymentMethod: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bank_transfer">تحويل بنكي / Bank Transfer</SelectItem>
-                    <SelectItem value="cash">نقداً / Cash</SelectItem>
-                    <SelectItem value="credit_card">بطاقة ائتمان / Credit Card</SelectItem>
+                    <SelectItem value="bank_transfer">Banküberweisung</SelectItem>
+                    <SelectItem value="cash">Bargeld</SelectItem>
+                    <SelectItem value="credit_card">Kreditkarte</SelectItem>
                     <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="check">شيك / Check</SelectItem>
+                    <SelectItem value="check">Scheck</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="referenceNumber">رقم المرجع / Reference Number</Label>
+                <Label htmlFor="referenceNumber">Referenznummer</Label>
                 <Input
                   id="referenceNumber"
                   value={receiptData.referenceNumber}
-                  onChange={(e) => setReceiptData({...receiptData, referenceNumber: e.target.value})}
+                  onChange={(e) => setReceiptData({ ...receiptData, referenceNumber: e.target.value })}
                   placeholder="REF-123456"
                 />
               </div>
@@ -327,35 +327,35 @@ export default function NewReceiptPage() {
           {/* Customer Information */}
           <Card>
             <CardHeader>
-              <CardTitle>معلومات العميل / Customer Information</CardTitle>
+              <CardTitle>Kundeninformationen</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="customerName">اسم العميل / Customer Name</Label>
+                <Label htmlFor="customerName">Kundenname</Label>
                 <Input
                   id="customerName"
                   value={receiptData.customerName}
-                  onChange={(e) => setReceiptData({...receiptData, customerName: e.target.value})}
-                  placeholder="اسم العميل الكامل"
+                  onChange={(e) => setReceiptData({ ...receiptData, customerName: e.target.value })}
+                  placeholder="Vollständiger Name des Kunden"
                 />
               </div>
               <div>
-                <Label htmlFor="customerEmail">البريد الإلكتروني / Email</Label>
+                <Label htmlFor="customerEmail">E-Mail</Label>
                 <Input
                   id="customerEmail"
                   type="email"
                   value={receiptData.customerEmail}
-                  onChange={(e) => setReceiptData({...receiptData, customerEmail: e.target.value})}
-                  placeholder="customer@example.com"
+                  onChange={(e) => setReceiptData({ ...receiptData, customerEmail: e.target.value })}
+                  placeholder="kunde@beispiel.de"
                 />
               </div>
               <div>
-                <Label htmlFor="customerAddress">العنوان / Address</Label>
+                <Label htmlFor="customerAddress">Adresse</Label>
                 <Textarea
                   id="customerAddress"
                   value={receiptData.customerAddress}
-                  onChange={(e) => setReceiptData({...receiptData, customerAddress: e.target.value})}
-                  placeholder="عنوان العميل الكامل"
+                  onChange={(e) => setReceiptData({ ...receiptData, customerAddress: e.target.value })}
+                  placeholder="Vollständige Kundenadresse"
                   rows={3}
                 />
               </div>
@@ -366,10 +366,10 @@ export default function NewReceiptPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>البنود / Items</span>
+                <span>Positionen</span>
                 <Button onClick={addItem} size="sm" className="flex items-center space-x-2">
                   <Plus className="w-4 h-4" />
-                  <span>إضافة بند / Add Item</span>
+                  <span>Position hinzufügen</span>
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -378,15 +378,15 @@ export default function NewReceiptPage() {
                 {receiptData.items.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-end">
                     <div className="col-span-5">
-                      <Label>الوصف / Description</Label>
+                      <Label>Beschreibung</Label>
                       <Input
                         value={item.description}
                         onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                        placeholder="وصف الخدمة أو المنتج"
+                        placeholder="Beschreibung der Leistung oder des Produkts"
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label>الكمية / Qty</Label>
+                      <Label>Menge</Label>
                       <Input
                         type="number"
                         value={item.quantity}
@@ -395,7 +395,7 @@ export default function NewReceiptPage() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label>السعر / Price</Label>
+                      <Label>Preis</Label>
                       <Input
                         type="number"
                         value={item.unitPrice}
@@ -405,7 +405,7 @@ export default function NewReceiptPage() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label>المجموع / Total</Label>
+                      <Label>Summe</Label>
                       <Input
                         type="number"
                         value={item.total.toFixed(2)}
@@ -434,38 +434,38 @@ export default function NewReceiptPage() {
           {/* Payment Information */}
           <Card>
             <CardHeader>
-              <CardTitle>معلومات الدفع / Payment Information</CardTitle>
+              <CardTitle>Zahlungsinformationen</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="paidAmount">المبلغ المدفوع / Paid Amount</Label>
+                <Label htmlFor="paidAmount">Gezahlter Betrag</Label>
                 <Input
                   id="paidAmount"
                   type="number"
                   value={receiptData.paidAmount}
-                  onChange={(e) => setReceiptData({...receiptData, paidAmount: Number(e.target.value)})}
+                  onChange={(e) => setReceiptData({ ...receiptData, paidAmount: Number(e.target.value) })}
                   min="0"
                   step="0.01"
                 />
               </div>
               <div>
-                <Label htmlFor="taxRate">معدل الضريبة (%) / Tax Rate (%)</Label>
+                <Label htmlFor="taxRate">Steuersatz (%)</Label>
                 <Input
                   id="taxRate"
                   type="number"
                   value={receiptData.taxRate}
-                  onChange={(e) => setReceiptData({...receiptData, taxRate: Number(e.target.value)})}
+                  onChange={(e) => setReceiptData({ ...receiptData, taxRate: Number(e.target.value) })}
                   min="0"
                   max="100"
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="notes">ملاحظات / Notes</Label>
+                <Label htmlFor="notes">Anmerkungen</Label>
                 <Textarea
                   id="notes"
                   value={receiptData.notes}
-                  onChange={(e) => setReceiptData({...receiptData, notes: e.target.value})}
-                  placeholder="ملاحظات إضافية حول الدفعة"
+                  onChange={(e) => setReceiptData({ ...receiptData, notes: e.target.value })}
+                  placeholder="Zusätzliche Anmerkungen zur Zahlung"
                   rows={3}
                 />
               </div>
@@ -480,31 +480,31 @@ export default function NewReceiptPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Receipt className="w-5 h-5" />
-                <span>ملخص الإشعار / Receipt Summary</span>
+                <span>Zusammenfassung</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">المجموع الفرعي / Subtotal:</span>
+                  <span className="text-gray-600">Zwischensumme:</span>
                   <span className="font-medium">€{receiptData.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">الضريبة ({receiptData.taxRate}%):</span>
+                  <span className="text-gray-600">MwSt. ({receiptData.taxRate}%):</span>
                   <span className="font-medium">€{receiptData.taxAmount.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
-                  <span>المجموع الكلي / Total:</span>
+                  <span>Gesamtbetrag:</span>
                   <span>€{receiptData.totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-green-600 font-medium">
-                  <span>المبلغ المدفوع / Paid:</span>
+                  <span>Gezahlt:</span>
                   <span>€{receiptData.paidAmount.toFixed(2)}</span>
                 </div>
                 {receiptData.remainingAmount > 0 && (
                   <div className="flex justify-between text-orange-600 font-medium">
-                    <span>المبلغ المتبقي / Remaining:</span>
+                    <span>Restbetrag:</span>
                     <span>€{receiptData.remainingAmount.toFixed(2)}</span>
                   </div>
                 )}
@@ -515,11 +515,11 @@ export default function NewReceiptPage() {
               <div className="space-y-3">
                 <Button onClick={handleSave} className="w-full flex items-center space-x-2">
                   <Save className="w-4 h-4" />
-                  <span>حفظ الإشعار / Save Receipt</span>
+                  <span>Quittung speichern</span>
                 </Button>
                 <Button onClick={handlePreview} variant="outline" className="w-full flex items-center space-x-2">
                   <Eye className="w-4 h-4" />
-                  <span>معاينة PDF / Preview PDF</span>
+                  <span>PDF-Vorschau</span>
                 </Button>
               </div>
             </CardContent>
@@ -529,22 +529,22 @@ export default function NewReceiptPage() {
           {selectedTemplate && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">معلومات القالب / Template Info</CardTitle>
+                <CardTitle className="text-sm">Vorlageninfo</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div>
-                  <span className="font-medium">النوع / Type:</span>
+                  <span className="font-medium">Typ:</span>
                   <Badge className="ml-2 text-xs bg-green-100 text-green-700">
                     {selectedTemplate.content.title}
                   </Badge>
                 </div>
                 <div>
-                  <span className="font-medium">الفئة / Category:</span>
+                  <span className="font-medium">Kategorie:</span>
                   <span className="ml-2 text-gray-600">{selectedTemplate.category}</span>
                 </div>
                 {selectedTemplate.content.subtitle && (
                   <div>
-                    <span className="font-medium">الوصف / Description:</span>
+                    <span className="font-medium">Beschreibung:</span>
                     <p className="text-gray-600 text-xs mt-1">{selectedTemplate.content.subtitle}</p>
                   </div>
                 )}

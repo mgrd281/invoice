@@ -1,17 +1,17 @@
-// API للتحكم في مهام الاستيراد الفردية
+// API zur Steuerung einzelner Import-Jobs
 import { NextRequest, NextResponse } from 'next/server'
 import { BackgroundJobManager } from '@/lib/background-jobs'
 import { CheckpointManager } from '@/lib/background-jobs'
 import { IdempotencyManager } from '@/lib/idempotency'
 
-// GET - الحصول على تفاصيل مهمة محددة
+// GET - Details zu einem bestimmten Job abrufen
 export async function GET(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
     const { jobId } = params
-    
+
     if (!jobId) {
       return NextResponse.json(
         { error: 'Job ID is required' },
@@ -27,7 +27,7 @@ export async function GET(
       )
     }
 
-    // إضافة معلومات إضافية
+    // Zusätzliche Informationen hinzufügen
     const checkpoint = CheckpointManager.getCheckpoint(jobId)
     const idempotencyStats = IdempotencyManager.getStats()
 
@@ -49,7 +49,7 @@ export async function GET(
   }
 }
 
-// PATCH - تحديث حالة المهمة
+// PATCH - Job-Status aktualisieren
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { jobId: string } }
@@ -92,7 +92,7 @@ export async function PATCH(
         if (job.status === 'paused') {
           const checkpoint = CheckpointManager.getCheckpoint(jobId)
           if (checkpoint) {
-            BackgroundJobManager.updateJob(jobId, { 
+            BackgroundJobManager.updateJob(jobId, {
               status: 'running',
               data: {
                 ...job.data,
@@ -115,8 +115,8 @@ export async function PATCH(
           success = BackgroundJobManager.cancelJob(jobId)
           newStatus = 'cancelled'
           message = success ? 'Job cancelled successfully' : 'Failed to cancel job'
-          
-          // تنظيف checkpoint
+
+          // Checkpoint bereinigen
           CheckpointManager.clearCheckpoint(jobId)
         } else {
           message = `Cannot cancel job with status: ${job.status}`
@@ -125,7 +125,7 @@ export async function PATCH(
 
       case 'retry':
         if (job.status === 'failed') {
-          // إعادة تعيين حالة المهمة للمحاولة مرة أخرى
+          // Job-Status für erneuten Versuch zurücksetzen
           BackgroundJobManager.updateJob(jobId, {
             status: 'pending',
             results: {
@@ -149,7 +149,7 @@ export async function PATCH(
         break
 
       case 'update':
-        // تحديث عام للمهمة
+        // Allgemeine Job-Aktualisierung
         if (updates) {
           BackgroundJobManager.updateJob(jobId, updates)
           success = true
@@ -166,7 +166,7 @@ export async function PATCH(
         )
     }
 
-    // إرجاع المهمة المحدثة
+    // Aktualisierten Job zurückgeben
     const updatedJob = BackgroundJobManager.getJob(jobId)
 
     return NextResponse.json({
@@ -186,14 +186,14 @@ export async function PATCH(
   }
 }
 
-// DELETE - حذف مهمة
+// DELETE - Job löschen
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
     const { jobId } = params
-    
+
     if (!jobId) {
       return NextResponse.json(
         { error: 'Job ID is required' },
@@ -209,7 +209,7 @@ export async function DELETE(
       )
     }
 
-    // لا يمكن حذف المهام النشطة
+    // Aktive Jobs können nicht gelöscht werden
     if (['running', 'pending'].includes(job.status)) {
       return NextResponse.json(
         { error: 'Cannot delete active job. Cancel it first.' },
@@ -217,20 +217,20 @@ export async function DELETE(
       )
     }
 
-    // إلغاء المهمة أولاً إذا كانت متوقفة
+    // Job zuerst abbrechen, wenn pausiert
     if (job.status === 'paused') {
       BackgroundJobManager.cancelJob(jobId)
     }
 
-    // حذف المهمة والـ checkpoint
+    // Job und Checkpoint löschen
     if (global.backgroundJobs) {
       global.backgroundJobs.delete(jobId)
     }
-    
+
     if (global.activeJobControllers) {
       global.activeJobControllers.delete(jobId)
     }
-    
+
     CheckpointManager.clearCheckpoint(jobId)
 
     return NextResponse.json({

@@ -60,12 +60,12 @@ function verifyShopifyWebhook(body: string, signature: string, secret: string): 
   }
 }
 
-// معالجة إنشاء طلب جديد
+// Neue Bestellung verarbeiten
 async function handleOrderCreate(payload: ShopifyWebhookPayload) {
   console.log(`📦 New order created: ${payload.id}`)
 
   try {
-    // التحقق من وجود الطلب مسبقاً
+    // Prüfen ob Bestellung bereits existiert
     const fingerprint = IdempotencyManager.createRequestFingerprint(payload)
     const check = IdempotencyManager.checkIdempotency(payload.id.toString(), fingerprint)
 
@@ -74,17 +74,17 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
       return { success: true, invoiceId: check.invoiceId, duplicate: true }
     }
 
-    // إنشاء فاتورة جديدة تلقائياً إذا كان الطلب مدفوع
+    // Automatisch Rechnung erstellen, wenn bezahlt
     if (payload.financial_status === 'paid') {
       const invoiceData = {
         customer: {
           name: payload.email || 'Unknown Customer',
           email: payload.email || '',
-          // يمكن إضافة المزيد من البيانات حسب payload
+          // Weitere Daten könnten hier hinzugefügt werden
         },
         number: `SH-${payload.order_number || payload.id}`,
         date: new Date(payload.created_at).toISOString().split('T')[0],
-        dueDate: new Date().toISOString().split('T')[0], // مدفوع بالفعل
+        dueDate: new Date().toISOString().split('T')[0], // Bereits bezahlt
         items: [
           {
             description: `Shopify Order #${payload.order_number || payload.id}`,
@@ -115,7 +115,7 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
         const result = await response.json()
         console.log(`✅ Auto-created invoice ${result.id} for order ${payload.id}`)
 
-        // Check if auto-send email is enabled
+        // Prüfen ob automatischer E-Mail-Versand aktiviert ist
         const settings = getShopifySettings()
         if (settings.autoSendEmail && payload.email) {
           console.log(`📧 Auto-sending email to ${payload.email} for invoice ${result.invoiceNumber || result.number}`)
@@ -125,11 +125,11 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
               payload.email,
               payload.name || payload.email,
               result.invoiceNumber || result.number,
-              undefined, // Default company name
-              undefined, // Default subject
-              undefined, // Default message
+              undefined, // Standard Firmenname
+              undefined, // Standard Betreff
+              undefined, // Standard Nachricht
               `${payload.total_price} ${payload.currency || 'EUR'}`,
-              new Date().toISOString().split('T')[0] // Due date (today)
+              new Date().toISOString().split('T')[0] // Fälligkeitsdatum (heute)
             )
 
             if (emailResult.success) {
@@ -157,16 +157,16 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
   }
 }
 
-// معالجة تحديث طلب
+// Bestellaktualisierung verarbeiten
 async function handleOrderUpdate(payload: ShopifyWebhookPayload) {
   console.log(`🔄 Order updated: ${payload.id}`)
 
   try {
-    // البحث عن الفاتورة المرتبطة
+    // Zugehörige Rechnung suchen
     const existingInvoiceId = global.orderToInvoiceMap?.get(payload.id.toString())
 
     if (existingInvoiceId) {
-      // تحديث حالة الفاتورة حسب حالة الطلب
+      // Rechnungsstatus basierend auf Bestellstatus aktualisieren
       const newStatus = mapShopifyStatusToInvoiceStatus(payload.financial_status || '')
 
       const updateResponse = await fetch(`/api/invoices/${existingInvoiceId}`, {
@@ -188,7 +188,7 @@ async function handleOrderUpdate(payload: ShopifyWebhookPayload) {
         throw new Error(`Failed to update invoice: ${updateResponse.status}`)
       }
     } else {
-      // إذا لم توجد فاتورة وأصبح الطلب مدفوع، أنشئ فاتورة جديدة
+      // Wenn keine Rechnung existiert und Bestellung bezahlt ist, neue erstellen
       if (payload.financial_status === 'paid') {
         return await handleOrderCreate(payload)
       } else {
@@ -203,21 +203,21 @@ async function handleOrderUpdate(payload: ShopifyWebhookPayload) {
   }
 }
 
-// معالجة استرداد
+// Rückerstattung verarbeiten
 async function handleRefundCreate(payload: any) {
   console.log(`💰 Refund created for order: ${payload.order_id}`)
 
   try {
-    // البحث عن الفاتورة المرتبطة
+    // Zugehörige Rechnung suchen
     const existingInvoiceId = global.orderToInvoiceMap?.get(payload.order_id.toString())
 
     if (existingInvoiceId) {
-      // حساب مبلغ الاسترداد
+      // Rückerstattungsbetrag berechnen
       const refundAmount = payload.transactions
         ?.filter((t: any) => t.kind === 'refund' && t.status === 'success')
         ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0) || 0
 
-      // تحديث الفاتورة لتصبح مستردة
+      // Rechnung als erstattet markieren
       const updateResponse = await fetch(`/api/invoices/${existingInvoiceId}`, {
         method: 'PATCH',
         headers: {
@@ -249,7 +249,7 @@ async function handleRefundCreate(payload: any) {
   }
 }
 
-// تحويل حالة Shopify إلى حالة الفاتورة
+// Shopify-Status in Rechnungsstatus umwandeln
 function mapShopifyStatusToInvoiceStatus(financialStatus: string): string {
   switch (financialStatus?.toLowerCase()) {
     case 'paid':
@@ -267,10 +267,10 @@ function mapShopifyStatusToInvoiceStatus(financialStatus: string): string {
   }
 }
 
-// معالج webhook رئيسي
+// Haupt-Webhook-Handler
 export async function POST(request: NextRequest) {
   try {
-    // قراءة البيانات الخام
+    // Rohdaten lesen
     const body = await request.text()
     const signature = request.headers.get('X-Shopify-Hmac-Sha256')
     const topic = request.headers.get('X-Shopify-Topic')
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📨 Webhook received: ${topic} from ${shopDomain}`)
 
-    // التحقق من صحة الـ webhook
+    // Webhook validieren
     const webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET
     if (webhookSecret && signature) {
       const isValid = verifyShopifyWebhook(body, signature, webhookSecret)
@@ -293,11 +293,11 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ Webhook signature verification skipped (no secret configured)')
     }
 
-    // تحليل البيانات
+    // Daten parsen
     const payload = JSON.parse(body)
     let result
 
-    // معالجة حسب نوع الـ webhook
+    // Je nach Webhook-Typ verarbeiten
     switch (topic) {
       case 'orders/create':
         result = await handleOrderCreate(payload)
@@ -308,13 +308,13 @@ export async function POST(request: NextRequest) {
         break
 
       case 'orders/paid':
-        // معالجة خاصة للطلبات المدفوعة
+        // Spezielle Behandlung für bezahlte Bestellungen
         payload.financial_status = 'paid'
         result = await handleOrderUpdate(payload)
         break
 
       case 'orders/cancelled':
-        // تحديث الفاتورة لتصبح ملغية
+        // Rechnung als storniert markieren
         payload.financial_status = 'voided'
         result = await handleOrderUpdate(payload)
         break
@@ -354,33 +354,33 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - معلومات عن الـ webhooks المدعومة
+// GET - Informationen über unterstützte Webhooks
 export async function GET() {
   return NextResponse.json({
     supportedWebhooks: [
       {
         topic: 'orders/create',
-        description: 'إنشاء فاتورة تلقائياً للطلبات المدفوعة',
+        description: 'Automatische Rechnungserstellung für bezahlte Bestellungen',
         endpoint: '/api/shopify/webhooks'
       },
       {
         topic: 'orders/updated',
-        description: 'تحديث حالة الفاتورة عند تغيير حالة الطلب',
+        description: 'Rechnungsstatus aktualisieren bei Bestelländerung',
         endpoint: '/api/shopify/webhooks'
       },
       {
         topic: 'orders/paid',
-        description: 'تحديث الفاتورة عند دفع الطلب',
+        description: 'Rechnung aktualisieren wenn Bestellung bezahlt',
         endpoint: '/api/shopify/webhooks'
       },
       {
         topic: 'orders/cancelled',
-        description: 'إلغاء الفاتورة عند إلغاء الطلب',
+        description: 'Rechnung stornieren wenn Bestellung storniert',
         endpoint: '/api/shopify/webhooks'
       },
       {
         topic: 'refunds/create',
-        description: 'تحديث الفاتورة عند إنشاء استرداد',
+        description: 'Rechnung aktualisieren bei Rückerstattung',
         endpoint: '/api/shopify/webhooks'
       }
     ],
