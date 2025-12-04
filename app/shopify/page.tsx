@@ -93,7 +93,7 @@ export default function ShopifyPage() {
     enabled: true,
     shopDomain: '45dv93-bk.myshopify.com',
     accessToken: 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
-    apiVersion: '2025-11',
+    apiVersion: '2025-10',
     autoImport: false,
     importInterval: 60,
     defaultTaxRate: 19,
@@ -202,7 +202,7 @@ export default function ShopifyPage() {
         setMessage(data.message)
       } else {
         setConnectionStatus('error')
-        setMessage(data.message)
+        setMessage(data.error || data.message || 'Verbindungsfehler')
       }
     } catch (error) {
       setConnectionStatus('error')
