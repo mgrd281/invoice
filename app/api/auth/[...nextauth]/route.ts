@@ -59,7 +59,7 @@ const authOptions: NextAuthOptions = {
             id: user.id || crypto.randomUUID(),
             email: user.email,
             name: user.name || user.email.split('@')[0],
-            image: user.image,
+            image: user.image || undefined,
             provider: account?.provider || 'unknown'
           })
         }
