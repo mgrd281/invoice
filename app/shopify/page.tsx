@@ -93,7 +93,7 @@ export default function ShopifyPage() {
     enabled: true,
     shopDomain: '45dv93-bk.myshopify.com',
     accessToken: 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
-    apiVersion: '2025-10',
+    apiVersion: '2024-10',
     autoImport: false,
     importInterval: 60,
     defaultTaxRate: 19,
