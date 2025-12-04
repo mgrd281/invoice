@@ -67,17 +67,11 @@ function getShopifySettings(): ShopifySettings {
 
 // Simple Shopify API implementation
 async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
-  // Valid top-level fields only - Nested syntax like customer[id] is NOT valid for 'fields' param
-  const validFields = [
-    'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
-    'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
-    'customer', 'billing_address', 'shipping_address', 'line_items', 'tax_lines'
-  ].join(',')
+  // REMOVED: fields parameter to ensure we get ALL data including billing_address
 
   const urlParams = new URLSearchParams({
     limit: Math.min(params.limit || 250, 250).toString(), // Shopify maximum is 250
     status: 'any',  // CRITICAL: Required to get all orders!
-    fields: validFields
   })
 
   // FIXED: Always add financial_status, use 'paid' as default
@@ -132,19 +126,6 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
     const urlParams = new URLSearchParams({
       limit: '250' // Shopify Maximum per page
     })
-
-    // Request COMPLETE customer data
-    if (!cursor) {
-      // Valid top-level fields only
-      const validFields = [
-        'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
-        'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
-        'customer', 'billing_address', 'shipping_address', 'line_items', 'tax_lines'
-      ].join(',')
-
-      urlParams.append('fields', validFields)
-      console.log('📋 Requesting valid fields')
-    }
 
     // CRITICAL: Shopify API doesn't allow other parameters when page_info is present
     if (cursor) {

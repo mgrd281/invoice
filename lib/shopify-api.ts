@@ -856,88 +856,27 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
 
   } else {
     console.log('❌ No real address data found in Shopify')
-    console.log('🏠 Generating minimal address based on available country data...')
 
-    // Generate varied addresses based on order details
-    const orderNumber = order.name || order.id.toString()
-    const orderDate = new Date(order.created_at)
+    // Use empty strings instead of fake addresses
+    finalAddress1 = ''
+    finalCity = ''
+    finalZipCode = ''
 
-    // Create variety based on order characteristics for Germany
-    const germanAddressVariations = [
-      {
-        address1: `Karinex Digital Store, Bestellung ${orderNumber}`,
-        city: 'Berlin',
-        zipCode: '10115'
-      },
-      {
-        address1: `Online-Handel Karinex, Kunde ${orderNumber}`,
-        city: 'Hamburg',
-        zipCode: '20095'
-      },
-      {
-        address1: `E-Commerce Zentrum, Order ${orderNumber}`,
-        city: 'München',
-        zipCode: '80331'
-      },
-      {
-        address1: `Digitaler Vertrieb Karinex, Nr. ${orderNumber}`,
-        city: 'Köln',
-        zipCode: '50667'
-      },
-      {
-        address1: `Web-Shop Karinex, Auftrag ${orderNumber}`,
-        city: 'Frankfurt',
-        zipCode: '60311'
-      }
-    ]
-
-    // Select variation based on order ID to ensure consistency
-    const variation = parseInt(order.id.toString().slice(-1)) % germanAddressVariations.length
-    const addressData = germanAddressVariations[variation]
-
-    finalAddress1 = addressData.address1
-    finalCity = addressData.city
-    finalZipCode = addressData.zipCode
-    finalCountry = country
-
-    console.log('✅ Generated minimal address based on country:', {
-      address1: finalAddress1,
-      city: finalCity,
-      zipCode: finalZipCode,
-      country: finalCountry,
-      source: 'MINIMAL_COUNTRY_BASED'
-    })
+    console.log('✅ Using empty address fields (no fake data generated)')
   }
+  finalCountry = country
 
-  // No email domain updates - keep emails as extracted from Shopify only
-
-  // Update the processed values
-  console.log('🔍 DEBUG: Final address data:', {
+  console.log('✅ Generated minimal address based on country:', {
     address1: finalAddress1,
-    address2: finalAddress2,
-    zipCode: finalZipCode,
     city: finalCity,
+    zipCode: finalZipCode,
     country: finalCountry,
-    countryCode,
-    company
+    source: 'MINIMAL_COUNTRY_BASED'
   })
-
-  const customer = {
-    name: customerName,
-    email: customerEmail,
-    address: finalAddress1,
-    address2: finalAddress2,
-    zipCode: finalZipCode,
-    city: finalCity,
-    country: finalCountry,
-    countryCode: countryCode,
-    phone: extractedInfo.phone || order.customer?.phone || (order.billing_address as any)?.phone || '',
-    company: extractedInfo.company || company
-  }
 
   // Convert line items with complete product information
   const rateDecimal = (settings.defaultTaxRate ?? 19) / 100
-  const items = order.line_items.map(item => {
+  const items = order.line_items.map((item: any) => {
     const unitPriceGross = parseFloat(item.price)
     const quantity = item.quantity
     const totalGross = unitPriceGross * quantity
@@ -950,16 +889,13 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     return {
       description: item.title,
       quantity: quantity,
-      unitPrice: unitPriceNet, // Net price for German invoices
-      unitPriceGross: unitPriceGross, // Keep gross for reference
-      total: totalNet, // Net total
-      totalGross: totalGross, // Gross total
+      unitPrice: unitPriceNet, // Store NET price
+      taxRate: settings.defaultTaxRate,
+      total: totalNet, // Store NET total
       taxAmount: taxAmount,
-      taxRate: settings.defaultTaxRate ?? 19,
-      ean: item.sku || '',
+      sku: item.sku || '',
       productId: item.product_id?.toString() || '',
       variantId: item.variant_id?.toString() || '',
-      // Additional product details
       vendor: item.vendor || '',
       fulfillable_quantity: item.fulfillable_quantity || 0,
       grams: item.grams || 0,
@@ -1001,8 +937,19 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     number: invoiceNumber,
     date: order.created_at,
     dueDate: dueDate.toISOString(),
-    customer,
-    items,
+    customer: {
+      name: customerName,
+      email: customerEmail,
+      address: finalAddress1,
+      address2: finalAddress2,
+      zip: finalZipCode,
+      city: finalCity,
+      country: finalCountry,
+      countryCode: countryCode,
+      phone: extractedInfo.phone || order.customer?.phone || (order.billing_address as any)?.phone || '',
+      company: extractedInfo.company || company
+    },
+    items: items,
     subtotal: subtotalNet, // Net subtotal for German invoices
     subtotalGross: subtotalGross, // Keep gross for reference
     taxRate: Math.round(taxRate * 100) / 100, // Ensure exactly 19.00 if defaultTaxRate=19
