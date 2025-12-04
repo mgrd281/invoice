@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       apiKey: "SHOPIFY_API_KEY_PLACEHOLDER", // API-Schlüssel
       secretKey: "SHOPIFY_SECRET_KEY_PLACEHOLDER", // Geheimer API-Schlüssel
       adminUrl: "https://admin.shopify.com/store/45dv93-bk",
-      apiVersion: "2024-01",
+      apiVersion: "2027-01",
       autoImport: false,
       importInterval: 60,
       defaultTaxRate: 19,
@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🔄 Updating Shopify settings with complete data...')
-    
+
     // Save the complete settings
     saveShopifySettings(completeSettings)
-    
+
     console.log('✅ Shopify settings updated successfully!')
-    
+
     return NextResponse.json({
       success: true,
       message: 'Shopify-Einstellungen mit vollständigen Daten aktualisiert',

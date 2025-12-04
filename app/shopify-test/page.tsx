@@ -13,7 +13,7 @@ export default function ShopifyTestPage() {
   const testConnection = async () => {
     setLoading(true)
     setTestResult(null)
-    
+
     try {
       const response = await fetch('/api/shopify/test-connection')
       const data = await response.json()
@@ -31,7 +31,7 @@ export default function ShopifyTestPage() {
   const testOrders = async () => {
     setLoading(true)
     setOrdersResult(null)
-    
+
     try {
       const response = await fetch('/api/shopify/import?limit=5')
       const data = await response.json()
@@ -49,7 +49,7 @@ export default function ShopifyTestPage() {
   const updateSettings = async () => {
     setLoading(true)
     setUpdateResult(null)
-    
+
     try {
       const response = await fetch('/api/shopify/update-settings', {
         method: 'POST'
@@ -69,7 +69,7 @@ export default function ShopifyTestPage() {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-8">Shopify API Test</h1>
-      
+
       <div className="grid gap-6">
         {/* Connection Test */}
         <Card>
@@ -80,14 +80,14 @@ export default function ShopifyTestPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={testConnection} 
+            <Button
+              onClick={testConnection}
               disabled={loading}
               className="mb-4"
             >
               {loading ? 'Teste...' : 'Verbindung testen'}
             </Button>
-            
+
             {testResult && (
               <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                 <h3 className={`font-semibold ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
@@ -122,21 +122,21 @@ export default function ShopifyTestPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={testOrders} 
+            <Button
+              onClick={testOrders}
               disabled={loading}
               className="mb-4"
             >
               {loading ? 'Lade...' : 'Bestellungen abrufen'}
             </Button>
-            
+
             {ordersResult && (
               <div className={`p-4 rounded-lg ${ordersResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                 <h3 className={`font-semibold ${ordersResult.success ? 'text-green-800' : 'text-red-800'}`}>
                   {ordersResult.success ? '✅ Erfolgreich' : '❌ Fehler'}
                 </h3>
                 <p className={ordersResult.success ? 'text-green-700' : 'text-red-700'}>
-                  {ordersResult.success 
+                  {ordersResult.success
                     ? `${ordersResult.orders?.length || 0} Bestellungen gefunden`
                     : ordersResult.error
                   }
@@ -175,15 +175,15 @@ export default function ShopifyTestPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={updateSettings} 
+            <Button
+              onClick={updateSettings}
               disabled={loading}
               className="mb-4"
               variant="outline"
             >
               {loading ? 'Aktualisiere...' : 'Einstellungen aktualisieren'}
             </Button>
-            
+
             {updateResult && (
               <div className={`p-4 rounded-lg ${updateResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                 <h3 className={`font-semibold ${updateResult.success ? 'text-green-800' : 'text-red-800'}`}>
@@ -222,7 +222,7 @@ export default function ShopifyTestPage() {
             <div className="space-y-2 text-sm">
               <p><strong>Shop Domain:</strong> 45dv93-bk.myshopify.com</p>
               <p><strong>Admin URL:</strong> https://admin.shopify.com/store/45dv93-bk</p>
-              <p><strong>API Version:</strong> 2024-01</p>
+              <p><strong>API Version:</strong> 2027-01</p>
               <p><strong>API-Schlüssel:</strong> 7d4ea1cf...f8dd (gekürzt)</p>
               <p><strong>Geheimer API-Schlüssel:</strong> 1e24702b...0bc9 (gekürzt)</p>
               <p><strong>Admin API-Token:</strong> SHOPIFY_ACCESS_TOKEN_PLACEHOLDER...dd6 (gekürzt)</p>

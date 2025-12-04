@@ -7,40 +7,40 @@ async function testFullShopifyData() {
   try {
     const shopDomain = '45dv93-bk.myshopify.com'
     const accessToken = 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER'
-    const apiVersion = '2024-01'
-    
+    const apiVersion = '2027-01'
+
     // Test different orders to see if any have customer data
     const orderIds = ['7611177894155', '7610574536971', '7609695699211']
-    
+
     for (const orderId of orderIds) {
       console.log(`\n📋 Testing Order: ${orderId}`)
-      
+
       // Get order with NO field restrictions to get ALL data
       const url = `https://${shopDomain}/admin/api/${apiVersion}/orders/${orderId}.json`
-      
+
       console.log('🌐 Fetching ALL fields from:', url)
-      
+
       const response = await fetch(url, {
         headers: {
           'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (!response.ok) {
         console.log('❌ Failed to fetch order:', response.status, response.statusText)
         continue
       }
-      
+
       const data = await response.json()
       const order = data.order
-      
+
       console.log('📊 Order Analysis:')
       console.log('   Order Name:', order.name)
       console.log('   Order Email:', order.email || 'NULL')
       console.log('   Contact Email:', order.contact_email || 'NULL')
       console.log('   Buyer Accepts Marketing:', order.buyer_accepts_marketing)
-      
+
       // Customer analysis
       if (order.customer) {
         console.log('\n👤 Customer Data:')
@@ -58,7 +58,7 @@ async function testFullShopifyData() {
         console.log('   Updated At:', order.customer.updated_at)
         console.log('   Note:', order.customer.note || 'NULL')
         console.log('   Tags:', order.customer.tags || 'NULL')
-        
+
         // Check if customer has addresses
         if (order.customer.addresses && order.customer.addresses.length > 0) {
           console.log('\n   📍 Customer Addresses:')
@@ -76,7 +76,7 @@ async function testFullShopifyData() {
             console.log(`         Default: ${addr.default}`)
           })
         }
-        
+
         // Check default address
         if (order.customer.default_address) {
           console.log('\n   🏠 Default Address:')
@@ -92,7 +92,7 @@ async function testFullShopifyData() {
           console.log(`      Phone: "${addr.phone || 'NULL'}"`)
         }
       }
-      
+
       // Billing address analysis
       if (order.billing_address) {
         console.log('\n📮 Billing Address:')
@@ -107,7 +107,7 @@ async function testFullShopifyData() {
         console.log(`   Country: "${addr.country || 'NULL'}"`)
         console.log(`   Phone: "${addr.phone || 'NULL'}"`)
       }
-      
+
       // Shipping address analysis
       if (order.shipping_address) {
         console.log('\n🚚 Shipping Address:')
@@ -122,7 +122,7 @@ async function testFullShopifyData() {
         console.log(`   Country: "${addr.country || 'NULL'}"`)
         console.log(`   Phone: "${addr.phone || 'NULL'}"`)
       }
-      
+
       // Check for any name in any field
       console.log('\n🔍 Name Search Results:')
       const possibleNames = [
@@ -140,42 +140,42 @@ async function testFullShopifyData() {
         order.email,
         order.contact_email
       ].filter(name => name && name !== 'NULL' && name.trim() !== '')
-      
+
       if (possibleNames.length > 0) {
         console.log('   ✅ Found names:', possibleNames)
       } else {
         console.log('   ❌ No names found in any field')
       }
-      
+
       console.log('\n' + '='.repeat(80))
     }
-    
+
     // Test: Get recent orders to see if any have customer data
     console.log('\n\n🔍 Testing Recent Orders for Customer Data...')
-    
+
     const recentUrl = `https://${shopDomain}/admin/api/${apiVersion}/orders.json?limit=10&status=any&financial_status=any`
     console.log('🌐 Fetching recent orders:', recentUrl)
-    
+
     const recentResponse = await fetch(recentUrl, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json'
       }
     })
-    
+
     if (recentResponse.ok) {
       const recentData = await recentResponse.json()
       console.log(`📊 Found ${recentData.orders?.length || 0} recent orders`)
-      
+
       let foundCustomerData = false
-      
+
       recentData.orders?.slice(0, 5).forEach((order, index) => {
         console.log(`\n📋 Order ${index + 1}: ${order.name} (${order.id})`)
-        
+
         const hasCustomerName = order.customer?.first_name || order.customer?.last_name ||
-                               order.billing_address?.first_name || order.billing_address?.last_name ||
-                               order.billing_address?.name || order.billing_address?.company
-        
+          order.billing_address?.first_name || order.billing_address?.last_name ||
+          order.billing_address?.name || order.billing_address?.company
+
         if (hasCustomerName) {
           console.log('   ✅ HAS CUSTOMER DATA!')
           console.log('      Customer Name:', order.customer?.first_name, order.customer?.last_name)
@@ -186,7 +186,7 @@ async function testFullShopifyData() {
           console.log('   ❌ No customer data')
         }
       })
-      
+
       if (!foundCustomerData) {
         console.log('\n⚠️  WARNING: No customer data found in any recent orders!')
         console.log('   This suggests that customers are not providing personal information during checkout.')

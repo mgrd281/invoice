@@ -8,7 +8,7 @@ console.log('');
 const shopifyConfig = {
   shopDomain: '45dv93-bk.myshopify.com',
   accessToken: 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
-  apiVersion: '2024-01'
+  apiVersion: '2027-01'
 };
 
 console.log('📋 Verbindungsdaten:');
@@ -20,7 +20,7 @@ console.log('');
 async function testShopifyConnection() {
   try {
     console.log('1️⃣ Grundverbindungstest...');
-    
+
     // Verbindungstest mit Shop API
     const shopResponse = await fetch(`https://${shopifyConfig.shopDomain}/admin/api/${shopifyConfig.apiVersion}/shop.json`, {
       headers: {
@@ -43,7 +43,7 @@ async function testShopifyConnection() {
     console.log('');
 
     console.log('2️⃣ Bezahlte Bestellungen abrufen...');
-    
+
     // Bezahlte Bestellungen abrufen
     const ordersResponse = await fetch(`https://${shopifyConfig.shopDomain}/admin/api/${shopifyConfig.apiVersion}/orders.json?status=any&financial_status=paid&limit=50`, {
       headers: {
@@ -61,11 +61,11 @@ async function testShopifyConnection() {
 
     const ordersData = await ordersResponse.json();
     console.log(`📦 Anzahl bezahlter Bestellungen: ${ordersData.orders.length}`);
-    
+
     if (ordersData.orders.length === 0) {
       console.log('⚠️  Keine bezahlten Bestellungen im Shop gefunden');
       console.log('');
-      
+
       // Alle Bestellungen zur Überprüfung abrufen
       console.log('3️⃣ Alle Bestellungen zur Überprüfung abrufen...');
       const allOrdersResponse = await fetch(`https://${shopifyConfig.shopDomain}/admin/api/${shopifyConfig.apiVersion}/orders.json?status=any&limit=50`, {
@@ -78,7 +78,7 @@ async function testShopifyConnection() {
       if (allOrdersResponse.ok) {
         const allOrdersData = await allOrdersResponse.json();
         console.log(`📋 Gesamte Bestellungen: ${allOrdersData.orders.length}`);
-        
+
         if (allOrdersData.orders.length > 0) {
           console.log('');
           console.log('📊 Bestellungsdetails:');
@@ -101,7 +101,7 @@ async function testShopifyConnection() {
 
     console.log('');
     console.log('4️⃣ Shopify-Einstellungen speichern...');
-    
+
     // Einstellungen im user-storage Ordner speichern
     const userStorageDir = './user-storage';
     if (!fs.existsSync(userStorageDir)) {
@@ -121,7 +121,7 @@ async function testShopifyConnection() {
 
     fs.writeFileSync(`${userStorageDir}/shopify-settings.json`, JSON.stringify(settings, null, 2));
     console.log('✅ Einstellungen in user-storage/shopify-settings.json gespeichert');
-    
+
     console.log('');
     console.log('🎯 Ergebnis:');
     if (ordersData.orders.length > 0) {

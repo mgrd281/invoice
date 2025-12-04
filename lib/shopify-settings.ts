@@ -9,7 +9,7 @@ export interface ShopifySettings {
   apiKey?: string // API-Schlüssel (optional for some operations)
   secretKey?: string // Geheimer API-Schlüssel (optional for webhooks)
   adminUrl?: string // Shopify Admin URL
-  apiVersion: string // e.g., "2024-01"
+  apiVersion: string // e.g., "2027-01"
   autoImport: boolean
   importInterval: number // minutes
   lastImport?: string // ISO date string
@@ -21,7 +21,7 @@ const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   enabled: true,
   shopDomain: '45dv93-bk.myshopify.com',
   accessToken: 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
-  apiVersion: '2026-01',
+  apiVersion: '2027-01',
   autoImport: false,
   importInterval: 60, // 1 hour
   defaultTaxRate: 19, // 19% German VAT

@@ -7,35 +7,35 @@ async function debugRealCustomerData() {
   try {
     const shopDomain = '45dv93-bk.myshopify.com'
     const accessToken = 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER'
-    const apiVersion = '2024-01'
-    
+    const apiVersion = '2027-01'
+
     // Test with the most recent orders to see what data is actually available
     console.log('1️⃣ Getting recent orders with ALL possible fields...')
-    
+
     const ordersUrl = `https://${shopDomain}/admin/api/${apiVersion}/orders.json?limit=5&status=any`
-    
+
     const response = await fetch(ordersUrl, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json'
       }
     })
-    
+
     if (!response.ok) {
       console.log('❌ Failed to fetch orders:', response.status)
       return
     }
-    
+
     const data = await response.json()
     const orders = data.orders || []
-    
+
     console.log(`📊 Analyzing ${orders.length} recent orders for ALL available data...\n`)
-    
+
     orders.forEach((order, index) => {
       console.log(`📋 Order ${index + 1}: ${order.name} (${order.id})`)
       console.log(`   Created: ${order.created_at}`)
       console.log(`   Total: ${order.total_price} ${order.currency}`)
-      
+
       // Show ALL available fields in the order object
       console.log('\n   📊 ALL ORDER FIELDS:')
       Object.keys(order).forEach(key => {
@@ -50,7 +50,7 @@ async function debugRealCustomerData() {
           }
         }
       })
-      
+
       // Deep dive into customer object
       if (order.customer) {
         console.log('\n   👤 CUSTOMER OBJECT DETAILS:')
@@ -87,7 +87,7 @@ async function debugRealCustomerData() {
           }
         })
       }
-      
+
       // Deep dive into billing address
       if (order.billing_address) {
         console.log('\n   📮 BILLING ADDRESS DETAILS:')
@@ -98,7 +98,7 @@ async function debugRealCustomerData() {
           }
         })
       }
-      
+
       // Deep dive into shipping address
       if (order.shipping_address) {
         console.log('\n   🚚 SHIPPING ADDRESS DETAILS:')
@@ -109,7 +109,7 @@ async function debugRealCustomerData() {
           }
         })
       }
-      
+
       // Check line items for any customer info
       if (order.line_items && order.line_items.length > 0) {
         console.log('\n   📦 LINE ITEMS:')
@@ -124,7 +124,7 @@ async function debugRealCustomerData() {
           }
         })
       }
-      
+
       // Check note attributes
       if (order.note_attributes && order.note_attributes.length > 0) {
         console.log('\n   📝 NOTE ATTRIBUTES:')
@@ -132,23 +132,23 @@ async function debugRealCustomerData() {
           console.log(`      ${attr.name}: "${attr.value}"`)
         })
       }
-      
+
       // Check order note
       if (order.note) {
         console.log('\n   📝 ORDER NOTE:')
         console.log(`      "${order.note}"`)
       }
-      
+
       console.log('\n' + '='.repeat(100))
     })
-    
+
     // Also test the conversion function directly
     console.log('\n2️⃣ Testing conversion function with recent order...')
-    
+
     if (orders.length > 0) {
       const testOrder = orders[0]
       console.log(`Testing with order: ${testOrder.name} (${testOrder.id})`)
-      
+
       const conversionResponse = await fetch(`http://127.0.0.1:51539/api/shopify/move-to-invoices`, {
         method: 'POST',
         headers: {
@@ -158,22 +158,22 @@ async function debugRealCustomerData() {
           orderIds: [testOrder.id.toString()]
         })
       })
-      
+
       console.log(`Conversion Status: ${conversionResponse.status}`)
-      
+
       if (conversionResponse.ok) {
         const result = await conversionResponse.json()
         console.log('Conversion Result:', result)
-        
+
         // Check the created invoice
         setTimeout(async () => {
           const invoicesResponse = await fetch('http://127.0.0.1:51539/api/invoices')
           if (invoicesResponse.ok) {
             const invoicesData = await invoicesResponse.json()
-            const createdInvoice = invoicesData.invoices?.find(inv => 
+            const createdInvoice = invoicesData.invoices?.find(inv =>
               inv.shopifyOrderId?.toString() === testOrder.id.toString()
             )
-            
+
             if (createdInvoice) {
               console.log('\n3️⃣ Created Invoice Analysis:')
               console.log(`   Invoice: ${createdInvoice.number}`)
@@ -184,14 +184,14 @@ async function debugRealCustomerData() {
               console.log(`   City: "${createdInvoice.customerCity}"`)
               console.log(`   ZIP: "${createdInvoice.customerZip}"`)
               console.log(`   Country: "${createdInvoice.customerCountry}"`)
-              
+
               console.log('\n🎯 ANALYSIS:')
               if (createdInvoice.customerName.includes('Shopify Kunde')) {
                 console.log('❌ Still using fallback customer name')
               } else {
                 console.log('✅ Using real customer name')
               }
-              
+
               if (createdInvoice.customerAddress.includes('straße') || createdInvoice.customerAddress.includes('gasse')) {
                 console.log('❌ Still using generated address')
               } else {
