@@ -67,11 +67,17 @@ function getShopifySettings(): ShopifySettings {
 
 // Simple Shopify API implementation
 async function fetchShopifyOrders(settings: ShopifySettings, params: any) {
-  // REMOVED: fields parameter to ensure we get ALL data including billing_address
+  // Valid top-level fields only - Nested syntax like customer[id] is NOT valid for 'fields' param
+  const validFields = [
+    'id', 'name', 'email', 'created_at', 'updated_at', 'total_price', 'subtotal_price', 'total_tax',
+    'currency', 'financial_status', 'fulfillment_status', 'note', 'note_attributes',
+    'customer', 'billing_address', 'shipping_address', 'line_items', 'tax_lines'
+  ].join(',')
 
   const urlParams = new URLSearchParams({
     limit: Math.min(params.limit || 250, 250).toString(), // Shopify maximum is 250
     status: 'any',  // CRITICAL: Required to get all orders!
+    fields: validFields
   })
 
   // FIXED: Always add financial_status, use 'paid' as default
@@ -134,6 +140,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
     } else {
       // Only add filters on first request (no cursor)
       urlParams.append('status', 'any')  // CRITICAL: Required to get all orders!
+      urlParams.append('fields', 'id,name,email,created_at,updated_at,total_price,subtotal_price,total_tax,currency,financial_status,fulfillment_status,note,note_attributes,customer,billing_address,shipping_address,line_items,tax_lines')
 
       // Add financial_status filter
       if (params.financial_status && params.financial_status !== 'any') {
