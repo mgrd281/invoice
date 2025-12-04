@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -61,10 +62,10 @@ const errorMessages: Record<string, { title: string; description: string }> = {
   }
 }
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error') || 'default'
-  
+
   const errorInfo = errorMessages[error] || errorMessages.default
 
   return (
@@ -84,7 +85,7 @@ export default function AuthErrorPage() {
               {errorInfo.description}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-md p-4">
               <div className="text-sm text-red-800">
@@ -104,7 +105,7 @@ export default function AuthErrorPage() {
                   Erneut versuchen
                 </Button>
               </Link>
-              
+
               <Link href="/">
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="h-4 w-4 mr-2" />
@@ -124,5 +125,13 @@ export default function AuthErrorPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Laden...</div>}>
+      <AuthErrorContent />
+    </Suspense>
   )
 }

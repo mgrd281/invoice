@@ -41,26 +41,26 @@ export async function sendInvoiceEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string; logId?: string }> {
   try {
     console.log('📧 Starting email send process for invoice:', invoiceNumber)
-    
+
     // Check if we're in development mode
     if (process.env.EMAIL_DEV_MODE === 'true') {
       console.log('🧪 DEVELOPMENT MODE: Simulating email send')
       console.log('📧 Would send to:', customerEmail)
       console.log('📄 Invoice:', invoiceNumber)
       console.log('👤 Customer:', customerName)
-      
+
       // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 1500))
-      
+
       const devMessageId = `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
+
       return {
         success: true,
         messageId: devMessageId,
         logId: 'dev-log-id'
       }
     }
-    
+
     // Check Resend API key
     if (!process.env.RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY not configured')
@@ -76,9 +76,9 @@ export async function sendInvoiceEmail(
 
     // Generate PDF
     console.log('📄 Generating PDF for invoice:', invoiceNumber)
-    const doc = generateArizonaPDF(invoiceData)
+    const doc = await generateArizonaPDF(invoiceData)
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
-    
+
     if (!pdfBuffer || pdfBuffer.length === 0) {
       throw new Error('Failed to generate PDF for invoice')
     }
@@ -95,7 +95,7 @@ export async function sendInvoiceEmail(
     // Send email with Resend
     console.log('📧 Sending email via Resend to:', customerEmail)
     console.log('📨 Using From:', fromAddress)
-    
+
     const emailData = {
       // Temporary dev-safe default as requested
       from: fromAddress,
@@ -139,7 +139,7 @@ export async function sendInvoiceEmail(
 
     console.log('✅ Email sent successfully!')
     console.log('📝 Message ID:', result.data?.id)
-    
+
     return {
       success: true,
       messageId: result.data?.id,
@@ -148,9 +148,9 @@ export async function sendInvoiceEmail(
 
   } catch (error) {
     console.error('❌ Error sending invoice email:', error)
-    
+
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    
+
     return {
       success: false,
       error: errorMessage,
@@ -161,15 +161,15 @@ export async function sendInvoiceEmail(
 
 // Generate HTML email template
 function generateEmailHTML(
-  customerName: string, 
-  invoiceNumber: string, 
+  customerName: string,
+  invoiceNumber: string,
   companyName: string,
   customMessage?: string,
   invoiceAmount?: string,
   dueDate?: string
 ): string {
   const formattedDueDate = dueDate ? new Date(dueDate).toLocaleDateString('de-DE') : 'Bei Erhalt'
-  
+
   return `
     <!DOCTYPE html>
     <html lang="de">

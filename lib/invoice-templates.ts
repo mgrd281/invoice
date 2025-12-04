@@ -34,6 +34,22 @@ export interface InvoiceTemplate {
     showPaymentInstructions: boolean // Show payment notes
   }
 
+  // New settings and styling fields
+  settings?: {
+    showBankDetails: boolean
+    showPaymentInstructions: boolean
+    showDueDate: boolean
+    showTaxInfo: boolean
+    highlightTotal: boolean
+  }
+
+  styling?: {
+    primaryColor: string
+    secondaryColor: string
+    textColor: string
+    backgroundColor: string
+  }
+
   createdAt: string
   updatedAt: string
 }

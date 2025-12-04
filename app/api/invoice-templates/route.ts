@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  getAllTemplates, 
-  getTemplateById, 
-  saveTemplate, 
-  deleteTemplate, 
+import {
+  getAllTemplates,
+  getTemplateById,
+  saveTemplate,
+  deleteTemplate,
   setDefaultTemplate,
   generateTemplateId,
-  InvoiceTemplate 
+  InvoiceTemplate
 } from '@/lib/invoice-templates'
 import { requireAuth } from '@/lib/auth-middleware'
 
@@ -37,15 +37,15 @@ export async function GET(request: NextRequest) {
 
     // Get all templates or filter by type
     let templates = getAllTemplates()
-    
+
     if (type) {
       templates = templates.filter(t => t.type === type)
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: templates,
-      count: templates.length 
+      count: templates.length
     })
 
   } catch (error) {
@@ -99,6 +99,14 @@ export async function POST(request: NextRequest) {
         backgroundColor: '#ffffff',
         ...templateData.styling
       },
+      defaults: {
+        status: 'Offen',
+        dueDays: 14,
+        taxRate: 19,
+        showBankDetails: true,
+        showPaymentInstructions: true,
+        ...templateData.defaults
+      },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -108,10 +116,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Created new template: ${newTemplate.name} (${newTemplate.id})`)
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: newTemplate,
-      message: 'Template created successfully' 
+      message: 'Template created successfully'
     })
 
   } catch (error) {
@@ -161,10 +169,10 @@ export async function PUT(request: NextRequest) {
 
     console.log(`✅ Updated template: ${updatedTemplate.name} (${updatedTemplate.id})`)
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: updatedTemplate,
-      message: 'Template updated successfully' 
+      message: 'Template updated successfully'
     })
 
   } catch (error) {
@@ -197,7 +205,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
       const deleted = deleteTemplate(templateId)
-      
+
       if (!deleted) {
         return NextResponse.json(
           { success: false, error: 'Template not found' },
@@ -207,9 +215,9 @@ export async function DELETE(request: NextRequest) {
 
       console.log(`✅ Deleted template: ${templateId}`)
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Template deleted successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Template deleted successfully'
       })
 
     } catch (error: any) {

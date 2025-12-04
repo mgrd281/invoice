@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,14 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Mail, Clock, RefreshCw, CheckCircle, XCircle, ArrowLeft, Shield } from 'lucide-react'
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   // URL-Parameter
   const emailParam = searchParams.get('email') || ''
   const codeParam = searchParams.get('code') || ''
-  
+
   // State
   const [email, setEmail] = useState(emailParam)
   const [code, setCode] = useState(codeParam)
@@ -24,7 +24,7 @@ export default function VerifyEmailPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [verified, setVerified] = useState(false)
-  
+
   // Countdown und Rate Limiting
   const [countdown, setCountdown] = useState(0)
   const [attempts, setAttempts] = useState(0)
@@ -32,19 +32,19 @@ export default function VerifyEmailPage() {
   const [blocked, setBlocked] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [attemptsRemaining, setAttemptsRemaining] = useState(5)
-  
+
   // Refs
   const codeInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const countdownInterval = useRef<NodeJS.Timeout | null>(null)
   const resendInterval = useRef<NodeJS.Timeout | null>(null)
-  
+
   // Auto-Verifizierung wenn Code in URL
   useEffect(() => {
     if (emailParam && codeParam && codeParam.length === 6) {
       handleVerify(codeParam, emailParam)
     }
   }, [emailParam, codeParam])
-  
+
   // Countdown Timer
   useEffect(() => {
     if (countdown > 0) {
@@ -60,14 +60,14 @@ export default function VerifyEmailPage() {
         })
       }, 1000)
     }
-    
+
     return () => {
       if (countdownInterval.current) {
         clearInterval(countdownInterval.current)
       }
     }
   }, [countdown])
-  
+
   // Resend Cooldown Timer
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -83,41 +83,41 @@ export default function VerifyEmailPage() {
         })
       }, 1000)
     }
-    
+
     return () => {
       if (resendInterval.current) {
         clearInterval(resendInterval.current)
       }
     }
   }, [resendCooldown])
-  
+
   // Code Input Handler
   const handleCodeChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return // Nur Zahlen
-    
+
     const newCode = code.split('')
     newCode[index] = value
     const updatedCode = newCode.join('')
     setCode(updatedCode)
-    
+
     // Auto-focus nächstes Feld
     if (value && index < 5) {
       codeInputRefs.current[index + 1]?.focus()
     }
-    
+
     // Auto-verify wenn 6 Stellen
     if (updatedCode.length === 6 && email) {
       handleVerify(updatedCode, email)
     }
   }
-  
+
   // Backspace Handler
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
       codeInputRefs.current[index - 1]?.focus()
     }
   }
-  
+
   // Paste Handler
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
@@ -129,32 +129,32 @@ export default function VerifyEmailPage() {
       }
     }
   }
-  
+
   // Verifizierung
   const handleVerify = async (verificationCode?: string, verificationEmail?: string) => {
     const codeToVerify = verificationCode || code
     const emailToVerify = verificationEmail || email
-    
+
     if (!emailToVerify || !emailToVerify.includes('@')) {
       setError('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
       return
     }
-    
+
     if (!codeToVerify || codeToVerify.length !== 6) {
       setError('Bitte geben Sie den vollständigen 6-stelligen Code ein.')
       return
     }
-    
+
     if (attempts >= maxAttempts) {
       setError('Maximale Anzahl Versuche erreicht. Bitte fordern Sie einen neuen Code an.')
       setBlocked(true)
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const response = await fetch('/api/auth/email-verification/verify', {
         method: 'POST',
@@ -166,13 +166,13 @@ export default function VerifyEmailPage() {
           code: codeToVerify
         })
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         setSuccess('E-Mail erfolgreich verifiziert! Sie werden weitergeleitet...')
         setVerified(true)
-        
+
         // Weiterleitung nach 2 Sekunden
         setTimeout(() => {
           router.push('/auth/login?verified=true')
@@ -180,15 +180,15 @@ export default function VerifyEmailPage() {
       } else {
         setAttempts(prev => prev + 1)
         setError(data.error || 'Verifizierung fehlgeschlagen')
-        
+
         if (data.remainingAttempts !== undefined) {
           setAttemptsRemaining(data.remainingAttempts)
-          
+
           if (data.remainingAttempts <= 0) {
             setBlocked(true)
           }
         }
-        
+
         // Code zurücksetzen bei Fehler
         setCode('')
         codeInputRefs.current[0]?.focus()
@@ -200,23 +200,23 @@ export default function VerifyEmailPage() {
       setLoading(false)
     }
   }
-  
+
   // Code erneut senden
   const handleResendCode = async () => {
     if (!email || !email.includes('@')) {
       setError('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
       return
     }
-    
+
     if (resendCooldown > 0) {
       setError(`Bitte warten Sie noch ${resendCooldown} Sekunden.`)
       return
     }
-    
+
     setResending(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const response = await fetch('/api/auth/email-verification/send', {
         method: 'POST',
@@ -228,27 +228,27 @@ export default function VerifyEmailPage() {
           name: 'Nutzer' // Fallback name
         })
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         setSuccess('Neuer Verifizierungscode wurde gesendet!')
         setCode('')
         setAttempts(0)
         setBlocked(false)
         setAttemptsRemaining(5)
-        
+
         // Countdown starten (10 Minuten)
         setCountdown(10 * 60)
-        
+
         // Resend Cooldown (60 Sekunden)
         setResendCooldown(60)
-        
+
         // Focus erstes Input
         codeInputRefs.current[0]?.focus()
       } else {
         setError(data.error || 'Code konnte nicht gesendet werden')
-        
+
         if (data.cooldownSeconds) {
           setResendCooldown(data.cooldownSeconds)
         }
@@ -260,14 +260,14 @@ export default function VerifyEmailPage() {
       setResending(false)
     }
   }
-  
+
   // Zeit formatieren
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       {/* Background decoration */}
@@ -303,7 +303,7 @@ export default function VerifyEmailPage() {
               {verified ? 'Verifiziert!' : 'E-Mail bestätigen'}
             </CardTitle>
             <CardDescription className="text-gray-600">
-              {verified 
+              {verified
                 ? 'Ihre E-Mail-Adresse wurde erfolgreich bestätigt'
                 : 'Geben Sie den 6-stelligen Code aus Ihrer E-Mail ein'
               }
@@ -448,7 +448,7 @@ export default function VerifyEmailPage() {
                   <p className="font-medium">E-Mail erfolgreich bestätigt!</p>
                   <p className="text-sm mt-2">Sie können sich jetzt anmelden.</p>
                 </div>
-                
+
                 <Button
                   onClick={() => router.push('/auth/login?verified=true')}
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -485,5 +485,13 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Laden...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }

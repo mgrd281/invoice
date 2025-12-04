@@ -4,6 +4,7 @@ import './globals.css'
 import './animations.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import { AuthProvider as CustomAuthProvider } from '@/lib/auth-context'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,9 +22,11 @@ export default function RootLayout({
     <html lang="de">
       <body className={inter.className}>
         <ThemeProvider defaultTheme="light">
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <CustomAuthProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </CustomAuthProvider>
         </ThemeProvider>
         <script src="/interactive-orbs.js" defer></script>
       </body>

@@ -124,7 +124,7 @@ export class BackgroundJobManager {
   static cleanupOldJobs(maxAge: number = 24 * 60 * 60 * 1000): void {
     const cutoff = Date.now() - maxAge
 
-    for (const [jobId, job] of global.backgroundJobs!) {
+    for (const [jobId, job] of Array.from(global.backgroundJobs!.entries())) {
       const jobTime = new Date(job.createdAt).getTime()
       if (jobTime < cutoff && (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled')) {
         global.backgroundJobs!.delete(jobId)

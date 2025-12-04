@@ -76,18 +76,18 @@ export async function hashCode(code: string): Promise<string> {
  * Erstellt einen neuen Verifizierungscode
  */
 export async function createVerificationCode(
-  email: string, 
-  ipAddress?: string, 
+  email: string,
+  ipAddress?: string,
   userAgent?: string
 ): Promise<{ code: string; id: string; expiresAt: Date }> {
   // Cleanup alte Codes
   cleanupExpiredCodes()
-  
+
   const code = generateVerificationCode()
   const hashedCode = await hashCode(code)
   const now = new Date()
   const expiresAt = new Date(now.getTime() + VERIFICATION_CONFIG.CODE_EXPIRY_MINUTES * 60 * 1000)
-  
+
   const verificationCode: VerificationCode = {
     id: `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     email: email.toLowerCase(),
@@ -101,18 +101,18 @@ export async function createVerificationCode(
     ipAddress,
     userAgent
   }
-  
+
   // Alte Codes für diese E-Mail invalidieren
-  for (const [key, existingCode] of verificationCodes.entries()) {
+  for (const [key, existingCode] of Array.from(verificationCodes.entries())) {
     if (existingCode.email === email.toLowerCase()) {
       verificationCodes.delete(key)
     }
   }
-  
+
   verificationCodes.set(verificationCode.id, verificationCode)
-  
+
   console.log(`📧 Verification code created for ${email}: ${code} (expires: ${expiresAt.toISOString()})`)
-  
+
   return {
     code,
     id: verificationCode.id,
@@ -124,21 +124,21 @@ export async function createVerificationCode(
  * Verifiziert einen eingegebenen Code
  */
 export async function verifyCode(
-  email: string, 
-  inputCode: string, 
+  email: string,
+  inputCode: string,
   ipAddress?: string
 ): Promise<{ success: boolean; message: string; remainingAttempts?: number }> {
   const normalizedEmail = email.toLowerCase()
-  
+
   // Finde aktiven Code für diese E-Mail
   let activeCode: VerificationCode | undefined
-  for (const code of verificationCodes.values()) {
+  for (const code of Array.from(verificationCodes.values())) {
     if (code.email === normalizedEmail && !code.isUsed && code.expiresAt > new Date()) {
       activeCode = code
       break
     }
   }
-  
+
   if (!activeCode) {
     logVerificationAttempt(normalizedEmail, ipAddress || '', false)
     return {
@@ -146,7 +146,7 @@ export async function verifyCode(
       message: 'Kein gültiger Verifizierungscode gefunden. Bitte fordern Sie einen neuen Code an.'
     }
   }
-  
+
   // Prüfe Attempts
   if (activeCode.attempts >= activeCode.maxAttempts) {
     logVerificationAttempt(normalizedEmail, ipAddress || '', false)
@@ -155,19 +155,19 @@ export async function verifyCode(
       message: 'Zu viele Fehlversuche. Bitte fordern Sie einen neuen Code an.'
     }
   }
-  
+
   // Increment attempts
   activeCode.attempts++
-  
+
   // Verifiziere Code
   const hashedInput = await hashCode(inputCode)
   const isValid = hashedInput === activeCode.hashedCode
-  
+
   if (isValid) {
     activeCode.isUsed = true
     logVerificationAttempt(normalizedEmail, ipAddress || '', true, inputCode)
     console.log(`✅ Email verification successful for ${email}`)
-    
+
     return {
       success: true,
       message: 'E-Mail erfolgreich verifiziert!'
@@ -175,14 +175,14 @@ export async function verifyCode(
   } else {
     const remainingAttempts = activeCode.maxAttempts - activeCode.attempts
     logVerificationAttempt(normalizedEmail, ipAddress || '', false, inputCode)
-    
+
     if (remainingAttempts <= 0) {
       return {
         success: false,
         message: 'Ungültiger Code. Maximale Anzahl Versuche erreicht. Bitte fordern Sie einen neuen Code an.'
       }
     }
-    
+
     return {
       success: false,
       message: `Ungültiger Code. Noch ${remainingAttempts} Versuche übrig.`,
@@ -203,9 +203,9 @@ export function checkSendRateLimit(email: string, ipAddress: string): {
   const key = `${email.toLowerCase()}_${ipAddress}`
   const now = new Date()
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-  
+
   let rateLimit = rateLimits.get(key)
-  
+
   if (!rateLimit) {
     rateLimit = {
       email: email.toLowerCase(),
@@ -217,7 +217,7 @@ export function checkSendRateLimit(email: string, ipAddress: string): {
     }
     rateLimits.set(key, rateLimit)
   }
-  
+
   // Prüfe Block
   if (rateLimit.blockedUntil && rateLimit.blockedUntil > now) {
     const remainingSeconds = Math.ceil((rateLimit.blockedUntil.getTime() - now.getTime()) / 1000)
@@ -226,12 +226,12 @@ export function checkSendRateLimit(email: string, ipAddress: string): {
       message: `Temporär gesperrt. Versuchen Sie es in ${remainingSeconds} Sekunden erneut.`
     }
   }
-  
+
   // Reset Stunden-Counter
   if (rateLimit.lastSendAt < oneHourAgo) {
     rateLimit.sendAttempts = 0
   }
-  
+
   // Prüfe Stunden-Limit
   if (rateLimit.sendAttempts >= VERIFICATION_CONFIG.MAX_SEND_ATTEMPTS_PER_HOUR) {
     return {
@@ -239,11 +239,11 @@ export function checkSendRateLimit(email: string, ipAddress: string): {
       message: 'Maximale Anzahl E-Mails pro Stunde erreicht. Bitte versuchen Sie es später erneut.'
     }
   }
-  
+
   // Prüfe Cooldown
   const timeSinceLastSend = now.getTime() - rateLimit.lastSendAt.getTime()
   const cooldownMs = VERIFICATION_CONFIG.RESEND_COOLDOWN_SECONDS * 1000
-  
+
   if (timeSinceLastSend < cooldownMs) {
     const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastSend) / 1000)
     return {
@@ -252,7 +252,7 @@ export function checkSendRateLimit(email: string, ipAddress: string): {
       cooldownSeconds: remainingSeconds
     }
   }
-  
+
   return {
     allowed: true,
     attemptsRemaining: VERIFICATION_CONFIG.MAX_SEND_ATTEMPTS_PER_HOUR - rateLimit.sendAttempts
@@ -265,7 +265,7 @@ export function checkSendRateLimit(email: string, ipAddress: string): {
 export function updateSendRateLimit(email: string, ipAddress: string): void {
   const key = `${email.toLowerCase()}_${ipAddress}`
   const rateLimit = rateLimits.get(key)
-  
+
   if (rateLimit) {
     rateLimit.sendAttempts++
     rateLimit.lastSendAt = new Date()
@@ -276,9 +276,9 @@ export function updateSendRateLimit(email: string, ipAddress: string): void {
  * Loggt Verifizierungsversuche
  */
 function logVerificationAttempt(
-  email: string, 
-  ipAddress: string, 
-  success: boolean, 
+  email: string,
+  ipAddress: string,
+  success: boolean,
   code?: string
 ): void {
   const attempt: VerificationAttempt = {
@@ -288,14 +288,14 @@ function logVerificationAttempt(
     success,
     code: success ? code : undefined // Nur erfolgreiche Codes loggen
   }
-  
+
   verificationAttempts.push(attempt)
-  
+
   // Behalte nur die letzten 1000 Attempts
   if (verificationAttempts.length > 1000) {
     verificationAttempts.splice(0, verificationAttempts.length - 1000)
   }
-  
+
   console.log(`🔍 Verification attempt: ${email} from ${ipAddress} - ${success ? 'SUCCESS' : 'FAILED'}`)
 }
 
@@ -305,15 +305,15 @@ function logVerificationAttempt(
 export function cleanupExpiredCodes(): void {
   const now = new Date()
   const toDelete: string[] = []
-  
-  for (const [key, code] of verificationCodes.entries()) {
+
+  for (const [key, code] of Array.from(verificationCodes.entries())) {
     if (code.expiresAt < now || code.isUsed) {
       toDelete.push(key)
     }
   }
-  
+
   toDelete.forEach(key => verificationCodes.delete(key))
-  
+
   if (toDelete.length > 0) {
     console.log(`🧹 Cleaned up ${toDelete.length} expired verification codes`)
   }
@@ -324,14 +324,14 @@ export function cleanupExpiredCodes(): void {
  */
 export function isEmailVerified(email: string): boolean {
   const normalizedEmail = email.toLowerCase()
-  
+
   // Prüfe ob es einen verwendeten Code gibt
-  for (const code of verificationCodes.values()) {
+  for (const code of Array.from(verificationCodes.values())) {
     if (code.email === normalizedEmail && code.isUsed) {
       return true
     }
   }
-  
+
   return false
 }
 
@@ -347,14 +347,14 @@ export function getVerificationStats(): {
   const now = new Date()
   const activeCodes = Array.from(verificationCodes.values())
     .filter(code => !code.isUsed && code.expiresAt > now).length
-  
+
   const totalAttempts = verificationAttempts.length
   const successfulVerifications = verificationAttempts
     .filter(attempt => attempt.success).length
-  
+
   const blockedIPs = Array.from(rateLimits.values())
     .filter(limit => limit.blockedUntil && limit.blockedUntil > now).length
-  
+
   return {
     activeCodes,
     totalAttempts,

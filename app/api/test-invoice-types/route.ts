@@ -5,8 +5,8 @@ import { DocumentKind } from '@/lib/document-types'
 // Test invoice data
 const createTestInvoice = (documentKind?: DocumentKind, status?: string) => ({
   id: 'test-001',
-  number: documentKind === DocumentKind.CANCELLATION ? 'ST-2024-001' : 
-          documentKind === DocumentKind.CREDIT_NOTE ? 'GS-2024-001' : 'RE-2024-001',
+  number: documentKind === DocumentKind.CANCELLATION ? 'ST-2024-001' :
+    documentKind === DocumentKind.CREDIT_NOTE ? 'GS-2024-001' : 'RE-2024-001',
   date: new Date().toISOString(),
   dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
   subtotal: documentKind === DocumentKind.CANCELLATION || documentKind === DocumentKind.CREDIT_NOTE ? -100.00 : 100.00,
@@ -15,10 +15,10 @@ const createTestInvoice = (documentKind?: DocumentKind, status?: string) => ({
   total: documentKind === DocumentKind.CANCELLATION || documentKind === DocumentKind.CREDIT_NOTE ? -119.00 : 119.00,
   status: status || 'Offen',
   document_kind: documentKind,
-  reference_number: documentKind === DocumentKind.CANCELLATION ? 'RE-2024-001' : 
-                   documentKind === DocumentKind.CREDIT_NOTE ? 'RE-2024-001' : undefined,
-  grund: documentKind === DocumentKind.CANCELLATION ? 'Auf Kundenwunsch' : 
-         documentKind === DocumentKind.CREDIT_NOTE ? 'Defekte Ware' : undefined,
+  reference_number: documentKind === DocumentKind.CANCELLATION ? 'RE-2024-001' :
+    documentKind === DocumentKind.CREDIT_NOTE ? 'RE-2024-001' : undefined,
+  grund: documentKind === DocumentKind.CANCELLATION ? 'Auf Kundenwunsch' :
+    documentKind === DocumentKind.CREDIT_NOTE ? 'Defekte Ware' : undefined,
   customer: {
     name: 'Max Mustermann',
     email: 'max.mustermann@example.com',
@@ -60,10 +60,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'normal'
-    
+
     let documentKind: DocumentKind | undefined
     let status = 'Offen'
-    
+
     switch (type) {
       case 'storno':
         documentKind = DocumentKind.CANCELLATION
@@ -79,16 +79,16 @@ export async function GET(request: NextRequest) {
         status = 'Offen'
         break
     }
-    
+
     const testInvoice = createTestInvoice(documentKind, status)
-    const doc = generateArizonaPDF(testInvoice as any)
-    
+    const doc = await generateArizonaPDF(testInvoice as any)
+
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
-    
+
     const filename = type === 'storno' ? 'Test-Storno.pdf' :
-                    type === 'gutschrift' ? 'Test-Gutschrift.pdf' :
-                    'Test-Rechnung.pdf'
-    
+      type === 'gutschrift' ? 'Test-Gutschrift.pdf' :
+        'Test-Rechnung.pdf'
+
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',

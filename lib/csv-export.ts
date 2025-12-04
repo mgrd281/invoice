@@ -73,7 +73,7 @@ export const CSV_COLUMNS = [
  */
 export const NUMERIC_COLUMNS = [
   'verkaufspreis',
-  'einkaufspreis', 
+  'einkaufspreis',
   'versandkosten',
   'amazonGebuehren',
   'mwst',
@@ -127,11 +127,11 @@ export function formatValueForCSV(value: any, type: string): string {
   switch (type) {
     case 'date':
       return value instanceof Date ? formatDateForCSV(value) : ''
-    
+
     case 'currency':
     case 'number':
       return typeof value === 'number' ? formatNumberForCSV(value) : '0,00'
-    
+
     case 'text':
     default:
       return escapeCSVValue(String(value))
@@ -141,7 +141,7 @@ export function formatValueForCSV(value: any, type: string): string {
 /**
  * Generiert CSV-Header mit UTF-8 BOM
  */
-export function generateCSVHeader(columns: typeof CSV_COLUMNS): string {
+export function generateCSVHeader(columns: typeof CSV_COLUMNS | Array<typeof CSV_COLUMNS[number]>): string {
   // UTF-8 BOM für korrekte Darstellung in Excel
   const BOM = '\uFEFF'
   const headers = columns.map(col => escapeCSVValue(col.label)).join(';')
@@ -151,12 +151,12 @@ export function generateCSVHeader(columns: typeof CSV_COLUMNS): string {
 /**
  * Konvertiert Datenzeile zu CSV-Format
  */
-export function convertRowToCSV(data: InvoiceExportData, columns: typeof CSV_COLUMNS): string {
+export function convertRowToCSV(data: InvoiceExportData, columns: typeof CSV_COLUMNS | Array<typeof CSV_COLUMNS[number]>): string {
   const values = columns.map(col => {
     const value = data[col.key as keyof InvoiceExportData]
     return formatValueForCSV(value, col.type)
   })
-  
+
   return values.join(';')
 }
 
@@ -165,34 +165,34 @@ export function convertRowToCSV(data: InvoiceExportData, columns: typeof CSV_COL
  */
 export function calculateSummary(data: InvoiceExportData[]): Record<string, number> {
   const summary: Record<string, number> = {}
-  
+
   NUMERIC_COLUMNS.forEach(column => {
     summary[column] = data.reduce((sum, row) => {
       const value = row[column as keyof InvoiceExportData] as number
       return sum + (typeof value === 'number' ? value : 0)
     }, 0)
   })
-  
+
   return summary
 }
 
 /**
  * Generiert SUMME-Zeile für CSV
  */
-export function generateSummaryRow(summary: Record<string, number>, columns: typeof CSV_COLUMNS): string {
+export function generateSummaryRow(summary: Record<string, number>, columns: typeof CSV_COLUMNS | Array<typeof CSV_COLUMNS[number]>): string {
   const values = columns.map(col => {
     if (col.key === 'datum') {
       return escapeCSVValue('SUMME')
     }
-    
+
     if (NUMERIC_COLUMNS.includes(col.key as any)) {
       const value = summary[col.key] || 0
       return formatNumberForCSV(value)
     }
-    
+
     return '' // Leere Zellen für Text-Spalten
   })
-  
+
   return values.join(';')
 }
 
@@ -205,7 +205,7 @@ export function generateCSVFilename(customName?: string): string {
     .replace(/T/, '_')
     .replace(/:/g, '-')
     .substring(0, 16) // YYYY-MM-DD_HH-mm
-  
+
   return customName || `rechnungen_export_${timestamp}.csv`
 }
 
@@ -213,27 +213,27 @@ export function generateCSVFilename(customName?: string): string {
  * Hauptfunktion: Generiert kompletten CSV-Inhalt
  */
 export function generateCSVContent(
-  data: InvoiceExportData[], 
+  data: InvoiceExportData[],
   options: CSVExportOptions = {}
 ): string {
-  const columns = options.columns 
+  const columns = options.columns
     ? CSV_COLUMNS.filter(col => options.columns!.includes(col.key))
     : CSV_COLUMNS
 
   // Header generieren
   const csvLines: string[] = [generateCSVHeader(columns)]
-  
+
   // Datenzeilen generieren
   data.forEach(row => {
     csvLines.push(convertRowToCSV(row, columns))
   })
-  
+
   // Summenzeile hinzufügen (falls gewünscht)
   if (options.includeSummary !== false && data.length > 0) {
     const summary = calculateSummary(data)
     csvLines.push(generateSummaryRow(summary, columns))
   }
-  
+
   return csvLines.join('\n')
 }
 
@@ -247,7 +247,7 @@ export function generateSampleInvoiceData(count: number = 10): InvoiceExportData
     'Nike Air Max', 'Adidas Ultraboost', 'Levi\'s Jeans', 'H&M T-Shirt',
     'Kaffeemaschine', 'Staubsauger', 'Mikrowelle', 'Toaster'
   ]
-  
+
   return Array.from({ length: count }, (_, i) => {
     const verkaufspreis = Math.random() * 500 + 50
     const einkaufspreis = verkaufspreis * (0.6 + Math.random() * 0.2)
@@ -258,7 +258,7 @@ export function generateSampleInvoiceData(count: number = 10): InvoiceExportData
     const werbungskosten = Math.random() * 15
     const sonstigeKosten = Math.random() * 5
     const gewinn = verkaufspreis - einkaufspreis - versandkosten - amazonGebuehren - retouren - werbungskosten - sonstigeKosten
-    
+
     return {
       id: `inv_${i + 1}`,
       datum: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000), // Letzte 90 Tage
@@ -284,32 +284,32 @@ export function generateSampleInvoiceData(count: number = 10): InvoiceExportData
  * Filtert Daten basierend auf Optionen
  */
 export function filterInvoiceData(
-  data: InvoiceExportData[], 
+  data: InvoiceExportData[],
   options: CSVExportOptions
 ): InvoiceExportData[] {
   let filtered = [...data]
-  
+
   // Filter nach ausgewählten IDs
   if (options.selectedIds && options.selectedIds.length > 0) {
     filtered = filtered.filter(item => options.selectedIds!.includes(item.id))
   }
-  
+
   // Filter nach Datum
   if (options.filters?.dateFrom) {
     filtered = filtered.filter(item => item.datum >= options.filters!.dateFrom!)
   }
-  
+
   if (options.filters?.dateTo) {
     filtered = filtered.filter(item => item.datum <= options.filters!.dateTo!)
   }
-  
+
   // Filter nach Kategorie
   if (options.filters?.category) {
-    filtered = filtered.filter(item => 
+    filtered = filtered.filter(item =>
       item.kategorie.toLowerCase().includes(options.filters!.category!.toLowerCase())
     )
   }
-  
+
   return filtered
 }
 
@@ -319,13 +319,13 @@ export function filterInvoiceData(
 export async function exportInvoicesToCSV(options: CSVExportOptions = {}): Promise<CSVExportResult> {
   try {
     console.log('🔄 Starting CSV export with options:', options)
-    
+
     // Daten laden (hier Beispieldaten, in Production aus DB)
     const allData = generateSampleInvoiceData(1000)
-    
+
     // Daten filtern
     const filteredData = filterInvoiceData(allData, options)
-    
+
     if (filteredData.length === 0) {
       return {
         success: false,
@@ -335,19 +335,19 @@ export async function exportInvoicesToCSV(options: CSVExportOptions = {}): Promi
         error: 'Keine Daten zum Exportieren gefunden'
       }
     }
-    
+
     // CSV-Inhalt generieren
     const csvContent = generateCSVContent(filteredData, options)
-    
+
     // Dateiname generieren
     const filename = generateCSVFilename(options.filename)
-    
+
     // Gesamtsumme berechnen
     const summary = calculateSummary(filteredData)
     const totalAmount = summary.gewinn || 0
-    
+
     console.log(`✅ CSV export completed: ${filteredData.length} rows, total: €${totalAmount.toFixed(2)}`)
-    
+
     return {
       success: true,
       filename,
@@ -355,7 +355,7 @@ export async function exportInvoicesToCSV(options: CSVExportOptions = {}): Promi
       totalAmount,
       downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`
     }
-    
+
   } catch (error) {
     console.error('❌ CSV export failed:', error)
     return {
@@ -377,11 +377,11 @@ export async function exportLargeDatasetToCSV(
 ): Promise<CSVExportResult> {
   try {
     console.log('🔄 Starting chunked CSV export for large dataset')
-    
+
     // Hier würde man die Daten in Chunks aus der DB laden
     // Für Demo verwenden wir die normale Funktion
     return await exportInvoicesToCSV(options)
-    
+
   } catch (error) {
     console.error('❌ Chunked CSV export failed:', error)
     return {

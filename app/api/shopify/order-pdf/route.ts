@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Generate PDF using Arizona generator
-    const doc = generateArizonaPDF(invoice as any)
+    const doc = await generateArizonaPDF(invoice as any)
     const arrayBuffer = doc.output('arraybuffer')
     const pdfBuffer = Buffer.from(arrayBuffer)
 

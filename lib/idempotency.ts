@@ -126,7 +126,7 @@ export class IdempotencyManager {
   static cleanup(maxAge: number = 24 * 60 * 60 * 1000): void {
     const cutoff = Date.now() - maxAge
 
-    for (const [key, record] of global.idempotencyRecords!) {
+    for (const [key, record] of Array.from(global.idempotencyRecords!.entries())) {
       const recordTime = new Date(record.createdAt).getTime()
       if (recordTime < cutoff && record.status !== 'processing') {
         global.idempotencyRecords!.delete(key)
@@ -143,7 +143,7 @@ export class IdempotencyManager {
   static detectCollisions(): { collisions: string[], total: number } {
     const fingerprints = new Map<string, string[]>()
 
-    for (const record of global.idempotencyRecords!.values()) {
+    for (const record of Array.from(global.idempotencyRecords!.values())) {
       const fp = record.requestFingerprint
       if (!fingerprints.has(fp)) {
         fingerprints.set(fp, [])
@@ -152,7 +152,7 @@ export class IdempotencyManager {
     }
 
     const collisions: string[] = []
-    for (const [fingerprint, orderIds] of fingerprints) {
+    for (const [fingerprint, orderIds] of Array.from(fingerprints)) {
       if (orderIds.length > 1) {
         collisions.push(`Fingerprint ${fingerprint.substring(0, 10)}... used by orders: ${orderIds.join(', ')}`)
       }

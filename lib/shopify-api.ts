@@ -25,6 +25,7 @@ export interface ShopifyOrder {
     email?: string
     first_name?: string
     last_name?: string
+    name?: string
     phone?: string | null
     default_address?: {
       first_name?: string
@@ -43,6 +44,7 @@ export interface ShopifyOrder {
   billing_address: {
     first_name?: string
     last_name?: string
+    name?: string
     address1?: string
     address2?: string | null
     city?: string
@@ -115,10 +117,10 @@ export class ShopifyAPI {
    */
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     console.log(`🔗 Making Shopify API request to: ${url}`)
     console.log(`🔑 Using access token: ${this.settings.accessToken.substring(0, 10)}...`)
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -146,7 +148,7 @@ export class ShopifyAPI {
     try {
       const response = await this.makeRequest('/shop.json')
       const data = await response.json()
-      
+
       return {
         success: true,
         message: `Verbindung erfolgreich! Shop: ${data.shop?.name}`,
@@ -174,16 +176,16 @@ export class ShopifyAPI {
       // Remove limit restriction for complete import
       const requestedLimit = params.limit || 999999 // Unlimited by default
       const maxPerPage = 250 // Shopify API maximum per page
-      
+
       let allOrders: ShopifyOrder[] = []
       let pageCount = 0
       let hasMorePages = true
       let pageInfo: any = null
-      
+
       console.log(`🚀 Starting UNLIMITED fetch of orders`)
       console.log(`📅 Date range: ${params.created_at_min} to ${params.created_at_max}`)
       console.log(`💰 Financial status: ${params.financial_status || 'any'}`)
-      
+
       // Some Shopify API versions reject the `status` param with 400. We'll try with status=any first,
       // and if the first page fails due to 400, we'll retry without the status param.
       let tryWithStatusAny = true
@@ -201,12 +203,12 @@ export class ShopifyAPI {
         if (tryWithStatusAny) {
           searchParams.set('status', 'any')
         }
-        
+
         // Financial status filter
         if (params.financial_status && params.financial_status !== 'any') {
           searchParams.set('financial_status', params.financial_status)
         }
-        
+
         // Date range with proper timezone handling
         if (params.created_at_min) {
           searchParams.set('created_at_min', params.created_at_min)
@@ -214,7 +216,7 @@ export class ShopifyAPI {
         if (params.created_at_max) {
           searchParams.set('created_at_max', params.created_at_max)
         }
-        
+
         // Cursor pagination using page_info
         if (pageInfo && pageInfo.next) {
           searchParams.set('page_info', pageInfo.next)
@@ -223,51 +225,51 @@ export class ShopifyAPI {
         try {
           console.log(`🔄 Page ${pageCount + 1}: Fetching ${maxPerPage} orders...`)
           console.log(`🔗 URL params: ${searchParams.toString()}`)
-          
+
           const response = await this.makeRequest(`/orders.json?${searchParams}`)
-          
+
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
-          
+
           const data = await response.json()
           const orders = data.orders || []
-          
+
           // Extract pagination info from Link header
           const linkHeader = response.headers.get('Link')
           pageInfo = this.parseLinkHeader(linkHeader)
-          
+
           console.log(`📦 Page ${pageCount + 1}: Received ${orders.length} orders`)
           console.log(`🔗 Has next page: ${!!pageInfo?.next}`)
-          
+
           if (orders.length === 0) {
             console.log('🏁 No more orders available')
             hasMorePages = false
             break
           }
-          
+
           // Filter out duplicates
-          const newOrders = orders.filter((order: any) => 
+          const newOrders = orders.filter((order: any) =>
             !allOrders.some(existing => existing.id === order.id)
           )
-          
+
           if (newOrders.length === 0 && !pageInfo?.next) {
             console.log('🔄 No new orders found and no next page, stopping')
             hasMorePages = false
             break
           }
-          
+
           allOrders.push(...newOrders)
           pageCount++
-          
+
           console.log(`✅ Page ${pageCount}: Added ${newOrders.length} new orders, total: ${allOrders.length}`)
-          
+
           // Check if we have more pages
           if (!pageInfo?.next) {
             console.log('📄 No more pages available')
             hasMorePages = false
           }
-          
+
           // Rate limiting - more aggressive for unlimited import
           if (pageCount % 10 === 0) {
             console.log(`⏳ Rate limiting: waiting 3 seconds after ${pageCount} pages...`)
@@ -275,7 +277,7 @@ export class ShopifyAPI {
           } else {
             await new Promise(resolve => setTimeout(resolve, 1000))
           }
-          
+
         } catch (error: any) {
           console.error(`❌ Error on page ${pageCount + 1}:`, error)
           // If the very first page failed and we tried with status=any, retry once without it
@@ -296,17 +298,17 @@ export class ShopifyAPI {
           }
         }
       }
-      
+
       // Sort final results by created_at descending
       allOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      
+
       console.log(`✅ UNLIMITED IMPORT COMPLETED: ${allOrders.length} orders fetched in ${pageCount} pages`)
-      
+
       // Only apply limit if specifically requested and not unlimited
       if (params.limit && params.limit < 999999) {
         return allOrders.slice(0, params.limit)
       }
-      
+
       return allOrders
     } catch (error) {
       console.error('Error fetching Shopify orders:', error)
@@ -319,24 +321,24 @@ export class ShopifyAPI {
    */
   private parseLinkHeader(linkHeader: string | null): { next?: string, previous?: string } {
     if (!linkHeader) return {}
-    
+
     const links: any = {}
     const parts = linkHeader.split(',')
-    
+
     parts.forEach(part => {
       const section = part.split(';')
       if (section.length !== 2) return
-      
+
       const url = section[0].replace(/<(.*)>/, '$1').trim()
       const rel = section[1].replace(/rel="(.*)"/, '$1').trim()
-      
+
       // Extract page_info from URL
       const pageInfoMatch = url.match(/page_info=([^&]+)/)
       if (pageInfoMatch) {
         links[rel] = decodeURIComponent(pageInfoMatch[1])
       }
     })
-    
+
     return links
   }
 
@@ -349,16 +351,16 @@ export class ShopifyAPI {
       const response = await this.makeRequest(`/orders/${orderId}.json`)
       const data = await response.json()
       const order = data.order
-      
+
       if (!order) return null
-      
+
       // If order has a customer ID, try to get full customer data separately
       if (order.customer?.id) {
         try {
           console.log(`🔍 Fetching detailed customer data for customer ID: ${order.customer.id}`)
           const customerResponse = await this.makeRequest(`/customers/${order.customer.id}.json`)
           const customerData = await customerResponse.json()
-          
+
           if (customerData.customer) {
             console.log('✅ Enhanced customer data retrieved:', {
               first_name: customerData.customer.first_name,
@@ -367,7 +369,7 @@ export class ShopifyAPI {
               phone: customerData.customer.phone,
               addresses_count: customerData.customer.addresses?.length || 0
             })
-            
+
             // Merge enhanced customer data
             order.customer = {
               ...order.customer,
@@ -378,7 +380,7 @@ export class ShopifyAPI {
           console.log('⚠️ Could not fetch detailed customer data:', customerError.message)
         }
       }
-      
+
       return order
     } catch (error) {
       console.error(`Error fetching Shopify order ${orderId}:`, error)
@@ -394,7 +396,7 @@ export class ShopifyAPI {
       console.log(`🔍 Fetching customer data for ID: ${customerId}`)
       const response = await this.makeRequest(`/customers/${customerId}.json`)
       const data = await response.json()
-      
+
       if (data.customer) {
         console.log('✅ Customer data retrieved:', {
           id: data.customer.id,
@@ -405,7 +407,7 @@ export class ShopifyAPI {
           addresses_count: data.customer.addresses?.length || 0
         })
       }
-      
+
       return data.customer || null
     } catch (error) {
       console.error(`Error fetching customer ${customerId}:`, error)
@@ -423,14 +425,14 @@ export class ShopifyAPI {
     try {
       const searchParams = new URLSearchParams()
       searchParams.set('limit', (params.limit || 50).toString())
-      
+
       if (params.product_type) {
         searchParams.set('product_type', params.product_type)
       }
 
       const response = await this.makeRequest(`/products.json?${searchParams}`)
       const data = await response.json()
-      
+
       return data.products || []
     } catch (error) {
       console.error('Error fetching Shopify products:', error)
@@ -465,7 +467,7 @@ export class ShopifyAPI {
  */
 export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: ShopifySettings): any {
   console.log('🔍 DEBUG: Enhanced customer data extraction for order:', order.name)
-  
+
   // Log all available data sources
   console.log('📊 Available data sources:', {
     'order.email': order.email,
@@ -486,7 +488,7 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     'shipping_address_exists': !!(order as any).shipping_address,
     'line_items_count': order.line_items?.length || 0
   })
-  
+
   // Enhanced extraction from all available order data
   let extractedInfo = {
     name: '',
@@ -497,19 +499,19 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     ip: '',
     region: ''
   }
-  
+
   // Extract locale and region information
   if ((order as any).customer_locale) {
     extractedInfo.locale = (order as any).customer_locale
     console.log('✅ Extracted locale:', extractedInfo.locale)
   }
-  
+
   // Extract IP for region detection
   if ((order as any).browser_ip) {
     extractedInfo.ip = (order as any).browser_ip
     console.log('✅ Extracted IP:', extractedInfo.ip)
   }
-  
+
   // Check if there's any customer info in order notes or attributes
   if ((order as any).note) {
     console.log('📝 Order note:', (order as any).note)
@@ -519,14 +521,14 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       extractedInfo.email = emailMatch[0]
       console.log('✅ Extracted email from note:', extractedInfo.email)
     }
-    
+
     // Try to extract name patterns from note
     const namePatterns = [
       /name[:\s]+([a-zA-ZäöüÄÖÜß\s]+)/i,
       /kunde[:\s]+([a-zA-ZäöüÄÖÜß\s]+)/i,
       /customer[:\s]+([a-zA-ZäöüÄÖÜß\s]+)/i
     ]
-    
+
     namePatterns.forEach(pattern => {
       const nameMatch = (order as any).note.match(pattern)
       if (nameMatch && nameMatch[1]) {
@@ -535,11 +537,11 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       }
     })
   }
-  
+
   // Check order attributes for customer info
   if ((order as any).note_attributes && Array.isArray((order as any).note_attributes)) {
     console.log('📋 Order attributes:', (order as any).note_attributes)
-    const noteAttributes = (order as any).note_attributes as Array<{name: string, value: string}>
+    const noteAttributes = (order as any).note_attributes as Array<{ name: string, value: string }>
     noteAttributes.forEach((attr) => {
       if (attr.name && attr.value) {
         if (attr.name.toLowerCase().includes('name') || attr.name.toLowerCase().includes('kunde')) {
@@ -557,13 +559,13 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       }
     })
   }
-  
+
   // Check line items for custom properties
   if (order.line_items && order.line_items.length > 0) {
     order.line_items.forEach((item, index) => {
       if ((item as any).properties && Array.isArray((item as any).properties)) {
         console.log(`📦 Line item ${index + 1} properties:`, (item as any).properties)
-        const properties = (item as any).properties as Array<{name: string, value: string}>
+        const properties = (item as any).properties as Array<{ name: string, value: string }>
         properties.forEach((prop) => {
           if (prop.name && prop.value) {
             if (prop.name.toLowerCase().includes('name') || prop.name.toLowerCase().includes('kunde')) {
@@ -582,29 +584,29 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
 
   // Extract customer name with enhanced fallback for German customers
   let customerName = extractedInfo.name || // Priority 1: Extracted from notes/attributes
-                    order.customer?.first_name && order.customer?.last_name 
-                      ? `${order.customer.first_name} ${order.customer.last_name}`
-                      : order.customer?.name || 
-                        order.customer?.first_name ||
-                        order.customer?.last_name ||
-                        (order.billing_address?.first_name && order.billing_address?.last_name 
-                          ? `${order.billing_address.first_name} ${order.billing_address.last_name}`
-                          : order.billing_address?.name) ||
-                        ((order as any).shipping_address?.first_name && (order as any).shipping_address?.last_name 
-                          ? `${(order as any).shipping_address.first_name} ${(order as any).shipping_address.last_name}`
-                          : (order as any).shipping_address?.name)
+    order.customer?.first_name && order.customer?.last_name
+    ? `${order.customer.first_name} ${order.customer.last_name}`
+    : order.customer?.name ||
+    order.customer?.first_name ||
+    order.customer?.last_name ||
+    (order.billing_address?.first_name && order.billing_address?.last_name
+      ? `${order.billing_address.first_name} ${order.billing_address.last_name}`
+      : order.billing_address?.name) ||
+    ((order as any).shipping_address?.first_name && (order as any).shipping_address?.last_name
+      ? `${(order as any).shipping_address.first_name} ${(order as any).shipping_address.last_name}`
+      : (order as any).shipping_address?.name)
 
   // Enhanced fallback for German digital store with variety
-  if (!customerName || customerName.trim() === '' || 
-      customerName === 'MISSING' || customerName === 'NULL' ||
-      customerName.includes('undefined')) {
-    
+  if (!customerName || customerName.trim() === '' ||
+    customerName === 'MISSING' || customerName === 'NULL' ||
+    customerName.includes('undefined')) {
+
     // Generate varied professional customer names based on order details
     const orderNumber = order.name || order.id.toString()
     const orderDate = new Date(order.created_at)
     const month = orderDate.getMonth() + 1
     const day = orderDate.getDate()
-    
+
     // Create variety based on order characteristics
     const nameVariations = [
       `Digitalkunde ${orderNumber}`,
@@ -613,25 +615,25 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       `E-Commerce Kunde ${orderNumber}`,
       `Web-Kunde ${orderNumber}`
     ]
-    
+
     // Select variation based on order ID to ensure consistency
     const variation = parseInt(order.id.toString().slice(-1)) % nameVariations.length
     customerName = nameVariations[variation]
-    
+
     console.log('✅ Using varied professional fallback:', customerName)
   }
 
-  const firstName = order.customer?.first_name || 
-                   order.billing_address?.first_name || 
-                   (order as any).shipping_address?.first_name ||
-                   order.customer?.default_address?.first_name || 
-                   ''
-  const lastName = order.customer?.last_name || 
-                  order.billing_address?.last_name || 
-                  (order as any).shipping_address?.last_name ||
-                  order.customer?.default_address?.last_name || 
-                  ''
-  
+  const firstName = order.customer?.first_name ||
+    order.billing_address?.first_name ||
+    (order as any).shipping_address?.first_name ||
+    order.customer?.default_address?.first_name ||
+    ''
+  const lastName = order.customer?.last_name ||
+    order.billing_address?.last_name ||
+    (order as any).shipping_address?.last_name ||
+    order.customer?.default_address?.last_name ||
+    ''
+
   // Build customer name with comprehensive fallbacks
   // Priority 1: Real extracted info from notes/attributes/line items
   if (extractedInfo.name && extractedInfo.name.trim() !== '') {
@@ -659,19 +661,19 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       console.log('✅ Using REAL name from address:', customerName)
     }
   }
-  
+
   // Priority 4: Real company name
   if (!customerName) {
-    const company = extractedInfo.company || 
-                   order.billing_address?.company || 
-                   (order as any).shipping_address?.company ||
-                   (order.customer?.default_address?.company) || ''
+    const company = extractedInfo.company ||
+      order.billing_address?.company ||
+      (order as any).shipping_address?.company ||
+      (order.customer?.default_address?.company) || ''
     if (company && company !== 'MISSING' && company !== 'NULL' && company.trim() !== '') {
       customerName = company.trim()
       console.log('✅ Using REAL company name:', customerName)
     }
   }
-  
+
   // If NO real name found, leave empty or use minimal fallback
   if (!customerName) {
     console.log('❌ No real customer name found in Shopify data')
@@ -679,27 +681,27 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     customerName = `Order ${order.name || order.id}`
     console.log('⚠️ Using minimal fallback:', customerName)
   }
-  
+
   // Extract ONLY real email from Shopify - no fake emails
   console.log('🔍 Extracting ONLY real email from Shopify...')
-  
+
   let customerEmail = extractedInfo.email || // Priority 1: Extracted from notes/attributes
-                     order.customer?.email || 
-                     order.email || 
-                     '' // Default empty string
-  
+    order.customer?.email ||
+    order.email ||
+    '' // Default empty string
+
   // If real email found, use it
-  if (customerEmail && customerEmail.trim() !== '' && 
-      customerEmail !== 'MISSING' && customerEmail !== 'NULL') {
+  if (customerEmail && customerEmail.trim() !== '' &&
+    customerEmail !== 'MISSING' && customerEmail !== 'NULL') {
     customerEmail = customerEmail.trim()
     console.log('✅ Using REAL email from Shopify:', customerEmail)
   } else {
     // Generate varied professional emails based on order details
     console.log('❌ No real email found in Shopify')
-    
+
     const orderNumber = order.name || order.id.toString()
     const orderDate = new Date(order.created_at)
-    
+
     // Create variety based on order characteristics
     const emailVariations = [
       `kunde${orderNumber.replace('#', '')}@karinex.com`,
@@ -708,86 +710,86 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       `online${orderNumber.replace('#', '')}@karinex.com`,
       `shop${orderNumber.replace('#', '')}@karinex.com`
     ]
-    
+
     // Select variation based on order ID to ensure consistency
     const variation = parseInt(order.id.toString().slice(-1)) % emailVariations.length
     customerEmail = emailVariations[variation]
-    
+
     console.log('✅ Using varied professional fallback email:', customerEmail)
   }
-  
+
   console.log('📧 Email result:', {
     'final_email': customerEmail,
     'source': customerEmail ? 'REAL_SHOPIFY_DATA' : 'NO_FAKE_EMAIL_GENERATED'
   })
-  
+
   // Enhanced address extraction with priority for real data
   // Helper function to check if a value is real (not null, not empty, not "MISSING", not "NULL")
   const isRealValue = (value: any): boolean => {
-    return value && 
-           value !== 'MISSING' && 
-           value !== 'NULL' && 
-           value.toString().trim() !== ''
+    return value &&
+      value !== 'MISSING' &&
+      value !== 'NULL' &&
+      value.toString().trim() !== ''
   }
-  
+
   // Extract real address data with SHIPPING ADDRESS PRIORITY (as requested by user)
   // NEW Priority: 1. Shipping Address, 2. Billing Address, 3. Default Address
   console.log('🏠 Address extraction priority: Shipping → Billing → Default (USER REQUESTED)')
-  
+
   const address1 = (isRealValue((order as any).shipping_address?.address1)) ? (order as any).shipping_address.address1 :
-                   (isRealValue(order.billing_address?.address1)) ? order.billing_address.address1 :
-                   (isRealValue(order.customer?.default_address?.address1)) ? order.customer.default_address.address1 : ''
-                   
+    (isRealValue(order.billing_address?.address1)) ? order.billing_address.address1 :
+      (isRealValue(order.customer?.default_address?.address1)) ? order.customer?.default_address?.address1 : ''
+
   const address2 = (isRealValue((order as any).shipping_address?.address2)) ? (order as any).shipping_address.address2 :
-                   (isRealValue(order.billing_address?.address2)) ? order.billing_address.address2 :
-                   (isRealValue(order.customer?.default_address?.address2)) ? order.customer.default_address.address2 : ''
-                   
+    (isRealValue(order.billing_address?.address2)) ? order.billing_address.address2 :
+      (isRealValue(order.customer?.default_address?.address2)) ? order.customer?.default_address?.address2 : ''
+
   const zipCode = (isRealValue((order as any).shipping_address?.zip)) ? (order as any).shipping_address.zip :
-                  (isRealValue(order.billing_address?.zip)) ? order.billing_address.zip :
-                  (isRealValue(order.customer?.default_address?.zip)) ? order.customer.default_address.zip : ''
-                  
+    (isRealValue(order.billing_address?.zip)) ? order.billing_address.zip :
+      (isRealValue(order.customer?.default_address?.zip)) ? order.customer?.default_address?.zip : ''
+
   const city = (isRealValue((order as any).shipping_address?.city)) ? (order as any).shipping_address.city :
-               (isRealValue(order.billing_address?.city)) ? order.billing_address.city :
-               (isRealValue(order.customer?.default_address?.city)) ? order.customer.default_address.city :
-               // Fallback: use province as city if available (Shipping → Billing → Default)
-               (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
-               (isRealValue(order.billing_address?.province)) ? order.billing_address.province :
-               (isRealValue(order.customer?.default_address?.province)) ? order.customer.default_address.province : ''
-               
+    (isRealValue(order.billing_address?.city)) ? order.billing_address.city :
+      (isRealValue(order.customer?.default_address?.city)) ? order.customer?.default_address?.city :
+        // Fallback: use province as city if available (Shipping → Billing → Default)
+        (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
+          (isRealValue(order.billing_address?.province)) ? order.billing_address.province :
+            (isRealValue(order.customer?.default_address?.province)) ? order.customer?.default_address?.province : ''
+
   const country = (isRealValue((order as any).shipping_address?.country)) ? (order as any).shipping_address.country :
-                  (isRealValue(order.billing_address?.country)) ? order.billing_address.country :
-                  (isRealValue(order.customer?.default_address?.country)) ? order.customer.default_address.country : 'Germany'
-                  
+    (isRealValue(order.billing_address?.country)) ? order.billing_address.country :
+      (isRealValue(order.customer?.default_address?.country)) ? order.customer?.default_address?.country : 'Germany'
+
   const countryCode = (isRealValue((order as any).shipping_address?.country_code)) ? (order as any).shipping_address.country_code :
-                      (isRealValue(order.billing_address?.country_code)) ? order.billing_address.country_code :
-                      (isRealValue(order.customer?.default_address?.country_code)) ? order.customer.default_address.country_code : 'DE'
-                      
+    (isRealValue(order.billing_address?.country_code)) ? order.billing_address.country_code :
+      (isRealValue(order.customer?.default_address?.country_code)) ? order.customer?.default_address?.country_code : 'DE'
+
   const company = (isRealValue((order as any).shipping_address?.company)) ? (order as any).shipping_address.company :
-                  (isRealValue(order.billing_address?.company)) ? order.billing_address.company : ''
-                  
+    (isRealValue(order.billing_address?.company)) ? order.billing_address.company : ''
+
   // Log which address source was used
   const addressSource = address1 && isRealValue((order as any).shipping_address?.address1) ? 'SHIPPING' :
-                       address1 && isRealValue(order.billing_address?.address1) ? 'BILLING' :
-                       address1 && isRealValue(order.customer?.default_address?.address1) ? 'DEFAULT' : 'NONE'
+    address1 && isRealValue(order.billing_address?.address1) ? 'BILLING' :
+      address1 && isRealValue(order.customer?.default_address?.address1) ? 'DEFAULT' : 'NONE'
   console.log(`📍 Address source used: ${addressSource}`)
-  
+
   const citySource = city && isRealValue((order as any).shipping_address?.city) ? 'SHIPPING' :
-                    city && isRealValue(order.billing_address?.city) ? 'BILLING' :
-                    city && isRealValue(order.customer?.default_address?.city) ? 'DEFAULT' :
-                    city && isRealValue((order as any).shipping_address?.province) ? 'SHIPPING_PROVINCE' :
-                    city && isRealValue(order.billing_address?.province) ? 'BILLING_PROVINCE' :
-                    city && isRealValue(order.customer?.default_address?.province) ? 'DEFAULT_PROVINCE' : 'NONE'
+    city && isRealValue(order.billing_address?.city) ? 'BILLING' :
+      city && isRealValue(order.customer?.default_address?.city) ? 'DEFAULT' :
+        city && isRealValue((order as any).shipping_address?.province) ? 'SHIPPING_PROVINCE' :
+          city && isRealValue(order.billing_address?.province) ? 'BILLING_PROVINCE' :
+            city && isRealValue(order.customer?.default_address?.province) ? 'DEFAULT_PROVINCE' : 'NONE'
   console.log(`🏙️ City source used: ${citySource}`)
-  
+
   // Also extract province/state information
   const province = (isRealValue(order.billing_address?.province)) ? order.billing_address.province :
-                   (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
-                   (isRealValue(order.customer?.default_address?.province)) ? order.customer.default_address.province : ''
+    (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
+      (isRealValue(order.customer?.default_address?.province)) ? order.customer?.default_address?.province : ''
 
   console.log('🔍 DEBUG: Processed address data:', {
     address1, address2, zipCode, city, country, countryCode, company
   })
-  
+
   // Generate reasonable default address for invoice completeness
   // Since this is a digital store with no shipping addresses, we'll create professional defaults
   let finalAddress1 = address1
@@ -795,28 +797,28 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   let finalCity = city
   let finalZipCode = zipCode
   let finalCountry = country
-  
+
   // Extract ONLY real address data from Shopify - no fake addresses
   console.log('🔍 Extracting ONLY real address data from Shopify...')
-  
+
   // Check if we have ANY real address data
   const hasRealAddressData = address1 || city || zipCode || province
-  
+
   if (hasRealAddressData) {
     console.log('🎯 Real address data found! Using ONLY real data...')
-    
+
     // Use ONLY real data, no generated content
     finalAddress1 = address1 || ''
     finalCity = city || province || ''
     finalZipCode = zipCode || ''
     finalCountry = country
-    
+
     // If we have province but no city, use province as city (this is real data)
     if (!city && province) {
       finalCity = province
       console.log(`✅ Using real province "${province}" as city`)
     }
-    
+
     console.log('✅ Using ONLY real address data:', {
       address1: finalAddress1,
       city: finalCity,
@@ -824,15 +826,15 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       country: finalCountry,
       source: 'REAL_SHOPIFY_DATA_ONLY'
     })
-    
+
   } else {
     console.log('❌ No real address data found in Shopify')
     console.log('🏠 Generating minimal address based on available country data...')
-    
+
     // Generate varied addresses based on order details
     const orderNumber = order.name || order.id.toString()
     const orderDate = new Date(order.created_at)
-    
+
     // Create variety based on order characteristics for Germany
     const germanAddressVariations = [
       {
@@ -861,16 +863,16 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
         zipCode: '60311'
       }
     ]
-    
+
     // Select variation based on order ID to ensure consistency
     const variation = parseInt(order.id.toString().slice(-1)) % germanAddressVariations.length
     const addressData = germanAddressVariations[variation]
-    
+
     finalAddress1 = addressData.address1
     finalCity = addressData.city
     finalZipCode = addressData.zipCode
     finalCountry = country
-    
+
     console.log('✅ Generated minimal address based on country:', {
       address1: finalAddress1,
       city: finalCity,
@@ -879,17 +881,17 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
       source: 'MINIMAL_COUNTRY_BASED'
     })
   }
-  
+
   // No email domain updates - keep emails as extracted from Shopify only
-  
+
   // Update the processed values
   console.log('🔍 DEBUG: Final address data:', {
-    address1: finalAddress1, 
-    address2: finalAddress2, 
-    zipCode: finalZipCode, 
-    city: finalCity, 
-    country: finalCountry, 
-    countryCode, 
+    address1: finalAddress1,
+    address2: finalAddress2,
+    zipCode: finalZipCode,
+    city: finalCity,
+    country: finalCountry,
+    countryCode,
     company
   })
 
@@ -912,12 +914,12 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     const unitPriceGross = parseFloat(item.price)
     const quantity = item.quantity
     const totalGross = unitPriceGross * quantity
-    
+
     // Calculate net price using fixed default tax rate (ensures exact 19%)
     const unitPriceNet = unitPriceGross / (1 + rateDecimal)
     const totalNet = unitPriceNet * quantity
     const taxAmount = totalGross - totalNet
-    
+
     return {
       description: item.title,
       quantity: quantity,
@@ -941,7 +943,7 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   // Calculate totals with fixed tax rate to avoid rounding drift (ensure 19%)
   const subtotalGross = parseFloat(order.subtotal_price)
   const totalGross = parseFloat(order.total_price)
-  
+
   // Recompute from gross using fixed rate to keep consistency
   const subtotalNet = subtotalGross / (1 + rateDecimal)
   const totalNet = totalGross / (1 + rateDecimal)
@@ -1020,7 +1022,7 @@ export async function importShopifyOrders(
   }
 ): Promise<ImportResult> {
   const shopifySettings = settings || getShopifySettings()
-  
+
   if (!shopifySettings.enabled) {
     return {
       success: false,
@@ -1033,7 +1035,7 @@ export async function importShopifyOrders(
 
   try {
     const api = new ShopifyAPI(shopifySettings)
-    
+
     // Test connection first
     const connectionTest = await api.testConnection()
     if (!connectionTest.success) {
@@ -1066,7 +1068,7 @@ export async function importShopifyOrders(
       // default behavior
       orders = await api.getNewOrders()
     }
-    
+
     if (orders.length === 0) {
       return {
         success: true,
@@ -1079,16 +1081,16 @@ export async function importShopifyOrders(
 
     // Convert orders to invoices
     const invoices = orders.map(order => convertShopifyOrderToInvoice(order, shopifySettings))
-    
+
     // Save invoices to the system
     let imported = 0
     let skipped = 0
     const errors: string[] = []
-    
+
     // Import invoices using file system (same as manual invoice creation)
     const fs = require('fs')
     const path = require('path')
-    
+
     for (const invoice of invoices) {
       try {
         // Create invoice directory if it doesn't exist
@@ -1096,29 +1098,29 @@ export async function importShopifyOrders(
         if (!fs.existsSync(invoicesDir)) {
           fs.mkdirSync(invoicesDir, { recursive: true })
         }
-        
+
         // Generate unique filename
         const filename = `${invoice.id}.json`
         const filepath = path.join(invoicesDir, filename)
-        
+
         // Check if invoice already exists
         if (fs.existsSync(filepath)) {
           console.log(`⚠️ Invoice ${invoice.number} already exists, skipping`)
           skipped++
           continue
         }
-        
+
         // Save invoice to file
         fs.writeFileSync(filepath, JSON.stringify(invoice, null, 2))
         imported++
         console.log(`✅ Invoice ${invoice.number} imported successfully`)
-        
+
       } catch (error) {
         errors.push(`Fehler beim Speichern von ${invoice.number}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`)
         skipped++
       }
     }
-    
+
     return {
       success: true, // Always return success if no errors occurred
       imported,
