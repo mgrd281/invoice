@@ -24,14 +24,26 @@ export async function GET() {
                 .map((inv: any) => inv.shopifyOrderId?.toString())
         )
 
-        // 2. Fetch recent orders from Shopify (last 10 is enough for frequent polling)
-        // We use 'any' status to catch everything
-        const recentOrders = await api.getOrders({ limit: 10, status: 'any' })
+        // 2. Determine fetch strategy
+        let fetchParams: any = { limit: 10, status: 'any' }
+
+        // If we have NO invoices (or very few), assume we need a full history sync from Nov 1st
+        if (existingInvoices.length < 5) {
+            console.log('🕳️ Invoice list empty or small. Triggering HISTORICAL SYNC from 2024-11-01...')
+            fetchParams = {
+                limit: 250, // Fetch up to 250 orders (max per page)
+                status: 'any',
+                created_at_min: '2024-11-01T00:00:00'
+            }
+        }
+
+        // 3. Fetch orders from Shopify
+        const recentOrders = await api.getOrders(fetchParams)
 
         let syncedCount = 0
         const newInvoiceIds: string[] = []
 
-        // 3. Check for new orders
+        // 4. Check for new orders
         for (const order of recentOrders) {
             const orderIdStr = order.id.toString()
 
