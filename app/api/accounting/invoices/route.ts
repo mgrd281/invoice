@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import { requireAuth } from '@/lib/auth-middleware'
 import { AccountingInvoice, InvoiceStatus } from '@/lib/accounting-types'
 
@@ -96,6 +97,6 @@ function mapInvoiceStatus(status: string): InvoiceStatus {
     'Storniert': 'storniert',
     'Überfällig': 'überfällig'
   }
-  
+
   return statusMap[status] || 'offen'
 }

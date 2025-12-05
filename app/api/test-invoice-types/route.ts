@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import { generateArizonaPDF } from '@/lib/arizona-pdf-generator'
 import { DocumentKind } from '@/lib/document-types'
 

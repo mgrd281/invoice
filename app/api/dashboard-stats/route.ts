@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import fs from 'fs'
 import path from 'path'
 import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
@@ -74,14 +75,14 @@ export async function GET(request: NextRequest) {
     const belongsToUser = (entity: any) => {
       const uid = user.id
       const email = user.email
-      
+
       // Check various ownership fields
       const hasUserId = entity?.userId === uid
-      const hasOwnerId = entity?.ownerId === uid  
+      const hasOwnerId = entity?.ownerId === uid
       const hasCreatedBy = entity?.createdBy?.id === uid
       const hasCustomerUserId = entity?.customer?.userId === uid || entity?.customerUserId === uid
       const hasUserEmail = entity?.userEmail === email || entity?.customer?.userEmail === email
-      
+
       return hasUserId || hasOwnerId || hasCreatedBy || hasCustomerUserId || hasUserEmail
     }
 
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
       const beforeFilter = activeInvoices.length
       activeInvoices = activeInvoices.filter(belongsToUser)
       console.log(`🔒 User filtering: ${beforeFilter} → ${activeInvoices.length} invoices`)
-      
+
       const beforeCustomerFilter = allCustomers.length
       allCustomers = allCustomers.filter((c: any) => belongsToUser(c))
       console.log(`🔒 User filtering: ${beforeCustomerFilter} → ${allCustomers.length} customers`)
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
     // Helper function to extract amount from invoice
     const extractAmount = (invoice: any): number => {
       let amount = 0
-      
+
       // Try to extract numeric value from different amount formats
       if (typeof invoice.total === 'number') {
         amount = invoice.total
@@ -139,7 +140,7 @@ export async function GET(request: NextRequest) {
       } else if (typeof invoice.amount === 'number') {
         amount = invoice.amount
       }
-      
+
       return amount
     }
 
@@ -173,7 +174,7 @@ export async function GET(request: NextRequest) {
       return status === 'überfällig' || status === 'overdue' || status === 'mahnung'
     })
     const overdueInvoicesAmount = overdueInvoices.reduce((sum: number, invoice: any) => sum + extractAmount(invoice), 0)
-    
+
     const paidInvoicesAmount = totalRevenue
 
     const stats: DashboardStats = {
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching dashboard statistics:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch dashboard statistics',
         message: 'Ein Fehler ist beim Laden der Statistiken aufgetreten'
       },

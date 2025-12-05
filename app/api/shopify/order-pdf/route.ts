@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import { ShopifyAPI, convertShopifyOrderToInvoice } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 import { generateArizonaPDF } from '@/lib/arizona-pdf-generator'
