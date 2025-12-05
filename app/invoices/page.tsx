@@ -37,6 +37,9 @@ export default function InvoicesPage() {
   const [hiddenInvoices, setHiddenInvoices] = useState<Set<string>>(new Set())
   const { showToast, ToastContainer } = useToast()
 
+  const [isAutoSyncing, setIsAutoSyncing] = useState(true)
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
+
   useEffect(() => {
     fetchInvoices()
 
@@ -60,10 +63,36 @@ export default function InvoicesPage() {
     // Custom event listener for invoice updates
     window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
 
+    // ---------------------------------------------------------
+    // AUTO-SYNC POLLING (Every 10 seconds)
+    // ---------------------------------------------------------
+    let syncInterval: NodeJS.Timeout
+
+    if (isAuthenticated && isAutoSyncing) {
+      console.log('🔄 Starting Auto-Sync polling (every 10s)...')
+      syncInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/shopify/auto-sync')
+          const data = await res.json()
+
+          setLastSyncTime(new Date())
+
+          if (data.synced > 0) {
+            console.log(`✅ Auto-Sync found ${data.synced} new invoices! Refreshing...`)
+            showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
+            fetchInvoices() // Refresh the list
+          }
+        } catch (err) {
+          console.error('Auto-Sync failed:', err)
+        }
+      }, 10000) // 10 seconds
+    }
+
     return () => {
       window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
+      if (syncInterval) clearInterval(syncInterval)
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user, isAutoSyncing])
 
   const fetchInvoices = async () => {
     if (!isAuthenticated || !user) {
