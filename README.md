@@ -48,37 +48,40 @@ Ein umfassendes System zur Verwaltung und Erstellung von Rechnungen auf Deutsch 
    npm run dev
    ```
 
-## 🔧 Umgebungsvariablen
+## 🔧 Umgebungsvariablen (Environment Variables)
+
+Erstellen Sie eine `.env` Datei oder konfigurieren Sie diese Variablen in Vercel:
 
 ```env
-# Datenbank
-DATABASE_URL="postgresql://username:password@host:port/database"
+# Datenbank (optional, falls verwendet)
+DATABASE_URL="postgresql://..."
 
 # Authentifizierung
-NEXTAUTH_SECRET="your-secret-key-32-characters-minimum"
-NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="ein-langes-sicheres-geheimnis"
+NEXTAUTH_URL="http://localhost:3000" (oder Ihre Vercel URL)
 
-# E-Mail (Resend)
-RESEND_API_KEY="re_your_api_key_here"
-RESEND_FROM_EMAIL="rechnung@yourdomain.com"
-EMAIL_DEV_MODE="true"
+# E-Mail (SMTP - Gmail, Outlook, etc.)
+EMAIL_DEV_MODE="false"       # "true" für Simulation, "false" für echten Versand
+SMTP_HOST="smtp.gmail.com"
+SMTP_USER="ihre-email@gmail.com"
+SMTP_PASS="ihr-app-passwort" # Nicht das normale Passwort!
+EMAIL_FROM="ihre-email@gmail.com"
+
+# Shopify (Wichtig für Vercel!)
+SHOPIFY_SHOP_DOMAIN="ihr-shop.myshopify.com"
+SHOPIFY_ACCESS_TOKEN="shpat_xxxxxxxxxxxxxxxxxxxx"
 ```
 
-## 📧 E-Mail-Einrichtung
+## 📧 E-Mail-Einrichtung (SMTP)
 
-1. **Resend-Konto erstellen:**
-   - Gehen Sie zu [resend.com](https://resend.com)
-   - Erstellen Sie ein kostenloses Konto
+Das System nutzt Standard-SMTP. Für Gmail:
+1. Aktivieren Sie die **2-Faktor-Authentifizierung** in Ihrem Google-Konto.
+2. Erstellen Sie ein **App-Passwort** (Suche nach "App-Passwörter" im Google-Konto).
+3. Nutzen Sie dieses Passwort als `SMTP_PASS`.
 
-2. **API-Schlüssel erhalten:**
-   - Im Dashboard ← API Keys
-   - Erstellen Sie einen neuen Schlüssel
+## 🛍️ Shopify Integration
 
-3. **Schlüssel hinzufügen:**
-   ```env
-   RESEND_API_KEY="re_your_api_key"
-   EMAIL_DEV_MODE="false"  # Für den tatsächlichen Versand
-   ```
+Für eine dauerhafte Verbindung auf Vercel müssen Sie `SHOPIFY_SHOP_DOMAIN` und `SHOPIFY_ACCESS_TOKEN` in den Environment Variables hinterlegen.
 
 ## 📊 CSV-Import
 
