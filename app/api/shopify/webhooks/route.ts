@@ -86,8 +86,9 @@ async function handleOrderCreate(payload: ShopifyWebhookPayload) {
       return { success: true, invoiceId: check.invoiceId, duplicate: true }
     }
 
-    // Automatisch Rechnung erstellen, wenn bezahlt
-    if (payload.financial_status === 'paid') {
+    // Automatisch Rechnung erstellen für alle gültigen Bestellungen (auch Vorkasse/Rechnung)
+    // Wir schließen nur stornierte oder komplett erstattete aus
+    if (payload.financial_status !== 'voided' && payload.financial_status !== 'refunded') {
 
       // Kundendaten extrahieren
       const customerData = {
