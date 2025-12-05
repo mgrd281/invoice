@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    log('⏰ Starting Daily Report Cron Job (Enhanced)...')
+    log('⏰ Starting Daily Report Cron Job (Enhanced + CSV)...')
 
     const now = new Date()
     const startOfDay = new Date(now)
@@ -52,6 +52,9 @@ export async function GET(req: Request) {
     const attachments = []
     const orderRows = []
 
+    // CSV Header
+    let csvContent = 'Rechnungsnummer;Datum;Kunde;Email;Produkte;Netto;MwSt;Brutto\n'
+
     for (const partialOrder of orders) {
       try {
         // Fetch FULL order details to ensure we have complete customer/address data
@@ -61,6 +64,11 @@ export async function GET(req: Request) {
         if (!order) {
           console.warn(`Could not fetch full details for order ${partialOrder.id}, using partial data.`)
           order = partialOrder
+        }
+
+        // Debug Log for Address Issues
+        if (!order.billing_address && !(order as any).shipping_address && !order.customer?.default_address) {
+          console.warn(`⚠️ Order ${order.name} has NO address data! Raw keys:`, Object.keys(order))
         }
 
         // Convert to Invoice Object to get calculations and PDF
@@ -84,22 +92,50 @@ export async function GET(req: Request) {
         const tax = invoice.taxAmount
         const net = invoice.subtotal
 
+        // Extract Product Names
+        const productNames = order.line_items?.map((item: any) => `${item.quantity}x ${item.title}`).join(', ') || 'Keine Produkte'
+
+        totalGross += gross
         totalTax += tax
         totalNet += net
 
         orderRows.push(`
           <tr>
             <td style="padding: 8px; border-bottom: 1px solid #ddd;">${invoice.number}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${invoice.customer.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+                ${invoice.customer.name}<br>
+                <span style="font-size: 11px; color: #666;">${productNames}</span>
+            </td>
             <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${net.toFixed(2)} €</td>
             <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${tax.toFixed(2)} €</td>
             <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;"><strong>${gross.toFixed(2)} €</strong></td>
           </tr>
         `)
+
+        // Add to CSV
+        const csvRow = [
+          invoice.number,
+          new Date(order.created_at).toLocaleDateString('de-DE'),
+          `"${invoice.customer.name}"`,
+          invoice.customer.email,
+          `"${productNames}"`,
+          net.toFixed(2).replace('.', ','),
+          tax.toFixed(2).replace('.', ','),
+          gross.toFixed(2).replace('.', ',')
+        ].join(';')
+        csvContent += csvRow + '\n'
+
       } catch (err) {
         console.error(`Failed to process order ${partialOrder.name} for report:`, err)
       }
     }
+
+    // Add CSV Attachment
+    attachments.push({
+      filename: `Tagesabschluss_${now.toISOString().split('T')[0]}.csv`,
+      content: Buffer.from(csvContent, 'utf-8'),
+      contentType: 'text/csv'
+    })
 
     // HTML Email Content
     const emailHtml = `
@@ -133,7 +169,7 @@ export async function GET(req: Request) {
           <thead>
             <tr style="background-color: #eee;">
               <th style="padding: 8px;">Rechnung #</th>
-              <th style="padding: 8px;">Kunde</th>
+              <th style="padding: 8px;">Kunde / Produkte</th>
               <th style="padding: 8px; text-align: right;">Netto</th>
               <th style="padding: 8px; text-align: right;">MwSt</th>
               <th style="padding: 8px; text-align: right;">Brutto</th>
@@ -145,14 +181,14 @@ export async function GET(req: Request) {
         </table>
 
         <p style="margin-top: 30px; font-size: 12px; color: #888;">
-          Anbei finden Sie alle Rechnungen des Tages als PDF.<br>
+          Anbei finden Sie alle Rechnungen des Tages als PDF sowie eine CSV-Exportdatei.<br>
           Zeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}
         </p>
       </div>
     `
 
     const targetEmail = 'karinakhristich@gmail.com'
-    log(`📧 Sending enhanced daily report to ${targetEmail} with ${attachments.length} PDFs...`)
+    log(`📧 Sending enhanced daily report to ${targetEmail} with ${attachments.length} attachments...`)
 
     await sendEmail({
       to: targetEmail,
