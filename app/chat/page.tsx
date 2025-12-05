@@ -96,17 +96,17 @@ export default function ChatPage() {
             setMessages([{
                 id: 'welcome',
                 role: 'assistant',
-                content: `مرحباً! 👋 أنا مساعدك الذكي لتحليل المبيعات والفواتير.
+                content: `Hallo! 👋 Ich bin Ihr intelligenter Geschäftsassistent.
 
-يمكنني مساعدتك في:
-• 📊 تحليل المبيعات والإيرادات
-• 📈 مراجعة الاتجاهات والإحصائيات
-• 💰 حساب الضرائب والتقارير المالية
-• ⚠️ اكتشاف الطلبات المشبوهة
-• ✉️ كتابة رسائل احترافية للعملاء
-• 📦 تقارير المخزون والمنتجات
+Ich kann Ihnen helfen bei:
+• 📊 Verkaufs- und Umsatzanalysen
+• 📈 Trends und Statistiken
+• 💰 Steuerberechnungen und Finanzberichten
+• ⚠️ Erkennung auffälliger Bestellungen
+• ✉️ Verfassen professioneller Kunden-E-Mails
+• 📦 Bestands- und Produktberichten
 
-اختر أحد الخيارات السريعة أدناه، أو اكتب سؤالك مباشرة!`,
+Wählen Sie eine der Schnellaktionen unten oder stellen Sie einfach Ihre Frage!`,
                 timestamp: new Date()
             }])
         }
@@ -158,7 +158,7 @@ export default function ChatPage() {
             const errorMessage: Message = {
                 id: `error-${Date.now()}`,
                 role: 'assistant',
-                content: `❌ حدث خطأ: ${error.message}. يرجى المحاولة مرة أخرى.`,
+                content: `❌ Ein Fehler ist aufgetreten: ${error.message}. Bitte versuchen Sie es erneut.`,
                 timestamp: new Date()
             }
             setMessages(prev => [...prev, errorMessage])
@@ -178,7 +178,7 @@ export default function ChatPage() {
         setMessages([{
             id: 'welcome',
             role: 'assistant',
-            content: `مرحباً! 👋 تم مسح المحادثة. كيف يمكنني مساعدتك؟`,
+            content: `Hallo! 👋 Der Chatverlauf wurde geleert. Wie kann ich Ihnen helfen?`,
             timestamp: new Date()
         }])
     }
@@ -232,7 +232,7 @@ export default function ChatPage() {
                                     <Sparkles className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1" />
                                 </div>
                                 <div className="ml-3">
-                                    <h1 className="text-xl font-bold text-gray-900">مساعد الأعمال الذكي</h1>
+                                    <h1 className="text-xl font-bold text-gray-900">Intelligenter Geschäftsassistent</h1>
                                     <p className="text-xs text-gray-500">AI Business Assistant • GPT-4</p>
                                 </div>
                             </div>
@@ -295,8 +295,8 @@ export default function ChatPage() {
                                         {/* Avatar */}
                                         <div
                                             className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${message.role === 'user'
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
                                                 }`}
                                         >
                                             {message.role === 'user' ? (
@@ -309,8 +309,8 @@ export default function ChatPage() {
                                         {/* Message Bubble */}
                                         <div
                                             className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === 'user'
-                                                    ? 'bg-blue-600 text-white rounded-tr-sm'
-                                                    : 'bg-white shadow-md border border-gray-100 rounded-tl-sm'
+                                                ? 'bg-blue-600 text-white rounded-tr-sm'
+                                                : 'bg-white shadow-md border border-gray-100 rounded-tl-sm'
                                                 }`}
                                         >
                                             <div
@@ -340,7 +340,7 @@ export default function ChatPage() {
                                         <div className="bg-white shadow-md border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
                                             <div className="flex items-center gap-2 text-gray-500">
                                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                                <span className="text-sm">جاري التحليل...</span>
+                                                <span className="text-sm">Analysiere...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -358,7 +358,7 @@ export default function ChatPage() {
                                             value={input}
                                             onChange={(e) => setInput(e.target.value)}
                                             onKeyDown={handleKeyDown}
-                                            placeholder="اكتب سؤالك هنا... (مثال: ما هو إجمالي المبيعات اليوم؟)"
+                                            placeholder="Stellen Sie Ihre Frage hier... (z.B.: Wie hoch ist der Umsatz heute?)"
                                             className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[50px] max-h-[150px]"
                                             rows={1}
                                             disabled={isLoading}
@@ -377,7 +377,7 @@ export default function ChatPage() {
                                     </Button>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-2 text-center">
-                                    مدعوم بـ GPT-4 • يمكنك السؤال بالعربية أو الألمانية أو الإنجليزية
+                                    Powered by GPT-4 • Sie können auf Deutsch, Englisch oder Arabisch fragen
                                 </p>
                             </div>
                         </Card>
