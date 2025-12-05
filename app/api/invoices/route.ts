@@ -37,6 +37,16 @@ import { handleOrderCreate } from '@/lib/shopify-order-handler'
 
 export async function GET(request: NextRequest) {
   try {
+    // Always reload from disk to ensure we have the latest data from import scripts
+    // This is crucial because import scripts run in a separate process
+    try {
+      const persisted = loadInvoicesFromDisk()
+      global.allInvoices = Array.isArray(persisted) ? persisted : []
+      console.log(`[GET /api/invoices] Reloaded ${global.allInvoices.length} invoices from disk`)
+    } catch (e) {
+      console.error('Failed to reload invoices from disk:', e)
+    }
+
     // Require authentication
     const authResult = requireAuth(request)
     if ('error' in authResult) {
