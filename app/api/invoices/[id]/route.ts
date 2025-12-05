@@ -4,6 +4,9 @@ import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 import { handleOrderCreate } from '@/lib/shopify-order-handler'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Access global storage for all invoice data
 declare global {
   var csvInvoices: any[] | undefined
@@ -247,19 +250,31 @@ export async function GET(
     let finalSubtotal = invoice.subtotal || 0
     let finalTaxAmount = invoice.taxAmount || 0
 
-    // If it's a Shopify invoice (or derived from one), assume items are Gross prices
-    // and recalculate backwards to fix any old data
-    if (invoice.id.startsWith('shopify-') || invoice.source === 'shopify' || (invoice.items && invoice.items.length > 0)) {
+    // Check if it's a Shopify invoice (even old ones with UUIDs)
+    // We check for:
+    // 1. ID starts with 'shopify-' (new ones)
+    // 2. source is 'shopify'
+    // 3. Has reference_number (usually Shopify order name like #1001)
+    // 4. Has shopifyOrderId
+    const isShopifyInvoice =
+      invoice.id.startsWith('shopify-') ||
+      invoice.source === 'shopify' ||
+      invoice.reference_number ||
+      invoice.shopifyOrderId ||
+      (invoice.number && invoice.number.startsWith('RE-') === false && invoice.number.startsWith('#')) // Heuristic for Shopify numbers
+
+    if (isShopifyInvoice && invoice.items && invoice.items.length > 0) {
+      console.log(`🔄 Recalculating totals for Shopify invoice ${invoice.number} (Gross Prices)`)
       const calculatedTotal = invoice.items.reduce((sum: number, item: any) => sum + (item.total || 0), 0)
 
-      // If the stored total matches the sum of items (meaning items are gross), 
-      // but the stored subtotal is equal to total (meaning tax was added on top previously or not calculated),
-      // OR if we just want to be safe:
-      // Let's trust the item totals as GROSS and recalculate everything.
-
+      // Trust the item totals as GROSS and recalculate everything backwards
       finalTotal = calculatedTotal
       finalSubtotal = finalTotal / 1.19
       finalTaxAmount = finalTotal - finalSubtotal
+    } else {
+      // For manual invoices, we might want to keep existing values, 
+      // OR recalculate assuming Net prices if that was the intent.
+      // But for safety, let's leave manual invoices alone unless they are clearly broken.
     }
 
     // Format the invoice for the frontend
