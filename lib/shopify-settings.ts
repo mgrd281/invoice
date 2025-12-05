@@ -21,7 +21,7 @@ export interface ShopifySettings {
 export const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   enabled: true,
   shopDomain: process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com',
-  accessToken: process.env.SHOPIFY_ACCESS_TOKEN || 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
+  accessToken: process.env.SHOPIFY_ACCESS_TOKEN || '',
   apiVersion: '2024-10',
   autoImport: false,
   importInterval: 60, // 1 hour
@@ -38,9 +38,21 @@ export const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
  * Get Shopify settings from storage
  */
 export function getShopifySettings(): ShopifySettings {
+  // Always prioritize Environment Variables if they exist (Critical for Vercel)
+  const envSettings = {
+    shopDomain: process.env.SHOPIFY_SHOP_DOMAIN,
+    accessToken: process.env.SHOPIFY_ACCESS_TOKEN
+  }
+
   if (typeof window === 'undefined') {
     // Server-side: load from file or database
-    return loadShopifySettingsFromFile()
+    const fileSettings = loadShopifySettingsFromFile()
+    return {
+      ...fileSettings,
+      // Override with env vars if present
+      shopDomain: envSettings.shopDomain || fileSettings.shopDomain,
+      accessToken: envSettings.accessToken || fileSettings.accessToken
+    }
   }
 
   // Client-side: load from localStorage
