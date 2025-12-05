@@ -208,7 +208,8 @@ export class ShopifyAPI {
         })
         const searchParams = new URLSearchParams()
         // Request specific fields including customer data
-        searchParams.set('fields', 'id,name,email,created_at,updated_at,total_price,subtotal_price,total_tax,currency,financial_status,fulfillment_status,customer,billing_address,shipping_address,line_items,tax_lines')
+        // Request ALL fields by default to ensure no data is missing (especially addresses)
+        // searchParams.set('fields', 'id,name,email,created_at,updated_at,total_price,subtotal_price,total_tax,currency,financial_status,fulfillment_status,customer,billing_address,shipping_address,line_items,tax_lines')
         // Attempt to include all orders (open/closed/cancelled)
         if (tryWithStatusAny) {
           searchParams.set('status', 'any')
