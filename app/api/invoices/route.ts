@@ -29,6 +29,10 @@ if (!global.allCustomers) {
   global.allCustomers = []
 }
 
+import { ShopifyAPI } from '@/lib/shopify-api'
+import { getShopifySettings } from '@/lib/shopify-settings'
+import { handleOrderCreate } from '@/lib/shopify-order-handler'
+
 export async function GET(request: NextRequest) {
   try {
     // Require authentication
@@ -38,24 +42,51 @@ export async function GET(request: NextRequest) {
     }
     const { user } = authResult
 
+    // VERCEL FIX: If local storage is empty, fetch directly from Shopify
+    // This ensures data is visible even without a persistent database
+    if ((!global.allInvoices || global.allInvoices.length === 0) && process.env.VERCEL) {
+      console.log('☁️ Vercel: Local storage empty. Fetching directly from Shopify...')
+      try {
+        const settings = getShopifySettings()
+        if (settings.shopDomain && settings.accessToken) {
+          const api = new ShopifyAPI(settings)
+          // Fetch last 50 orders to populate the view
+          const orders = await api.getOrders({ limit: 50, status: 'any' })
+
+          // Convert to invoices in memory
+          const syncedInvoices = []
+          for (const order of orders) {
+            // We use handleOrderCreate but we don't await the disk save (it's pointless on Vercel read)
+            // We just want the object
+            const invoice = await handleOrderCreate(order, settings.shopDomain)
+            // handleOrderCreate returns ID, we need the object. 
+            // Actually handleOrderCreate saves to global.allInvoices, so we are good!
+          }
+          console.log(`☁️ Vercel: Hydrated ${global.allInvoices?.length} invoices from Shopify`)
+        }
+      } catch (e) {
+        console.error('☁️ Vercel: Failed to hydrate from Shopify:', e)
+      }
+    }
+
     // Combine CSV invoices with manually created invoices (no mock data)
     const allInvoices = [
       ...(global.csvInvoices || []),
       ...(global.allInvoices || [])
     ]
-    
+
     // Filter out soft-deleted invoices - admin can see all, regular users see only their own
     let filteredInvoices
     if (shouldShowAllData(user)) {
       filteredInvoices = allInvoices.filter((invoice: any) => !invoice.deleted_at)
       console.log(`ADMIN ${user.email} - returning ${filteredInvoices.length} active invoices (${allInvoices.length} total in system)`)
     } else {
-      filteredInvoices = allInvoices.filter((invoice: any) => 
+      filteredInvoices = allInvoices.filter((invoice: any) =>
         !invoice.deleted_at && invoice.userId === user.id
       )
       console.log(`USER ${user.email} - returning ${filteredInvoices.length} own active invoices (${allInvoices.length} total in system)`)
     }
-    
+
     return NextResponse.json(filteredInvoices)
   } catch (error) {
     console.error('Error fetching invoices:', error)
@@ -80,7 +111,7 @@ const generateRequestFingerprint = (invoiceNumber: string, customer: any, total:
 
 export async function POST(request: NextRequest) {
   let requestFingerprint: string = ''
-  
+
   try {
     // Require authentication
     const authResult = requireAuth(request)
@@ -90,15 +121,15 @@ export async function POST(request: NextRequest) {
     const { user } = authResult
 
     const body = await request.json()
-    const { 
-      invoiceNumber, 
-      date, 
-      dueDate, 
-      taxRate, 
-      customer, 
-      items, 
-      subtotal, 
-      taxAmount, 
+    const {
+      invoiceNumber,
+      date,
+      dueDate,
+      taxRate,
+      customer,
+      items,
+      subtotal,
+      taxAmount,
       total,
       status,
       statusColor,
@@ -123,7 +154,7 @@ export async function POST(request: NextRequest) {
     if (!isShopifyImport && processingRequests.has(requestFingerprint)) {
       console.warn('Identical request already being processed:', requestFingerprint)
       return NextResponse.json(
-        { 
+        {
           error: 'Request in progress',
           message: 'Eine identische Anfrage wird bereits verarbeitet. Bitte warten Sie.'
         },
@@ -136,7 +167,7 @@ export async function POST(request: NextRequest) {
     if (!isShopifyImport && recentRequest && (now - recentRequest) < 10000) {
       console.warn('Duplicate request detected within 10 seconds:', requestFingerprint)
       return NextResponse.json(
-        { 
+        {
           error: 'Duplicate request',
           message: 'Eine identische Anfrage wurde kürzlich verarbeitet. Bitte warten Sie einen Moment.'
         },
@@ -176,123 +207,123 @@ export async function POST(request: NextRequest) {
         })
 
         // Check for duplicate invoice number
-    const allInvoices = [
-      ...(global.csvInvoices || []),
-      ...(global.allInvoices || [])
-    ]
-    
-    let finalInvoiceNumber = invoiceNumber
-    let suffix = 2
-    while (allInvoices.find((inv: any) => inv.number === finalInvoiceNumber && !inv.deleted_at)) {
-      finalInvoiceNumber = `${invoiceNumber}-${suffix}`
-      suffix++
-    }
+        const allInvoices = [
+          ...(global.csvInvoices || []),
+          ...(global.allInvoices || [])
+        ]
 
-    // Validate required fields (email optional to allow Shopify orders without email)
-    if (!invoiceNumber || !customer.name || !items || items.length === 0) {
-      return NextResponse.json(
-        { 
-          error: 'Missing required fields',
-          message: 'Pflichtfelder fehlen: Rechnungsnummer, Kundenname und Positionen sind erforderlich.'
-        },
-        { status: 400 }
-      )
-    }
+        let finalInvoiceNumber = invoiceNumber
+        let suffix = 2
+        while (allInvoices.find((inv: any) => inv.number === finalInvoiceNumber && !inv.deleted_at)) {
+          finalInvoiceNumber = `${invoiceNumber}-${suffix}`
+          suffix++
+        }
 
-    // Create or find customer for this user
-    let customerRecord = global.allCustomers!.find((c: any) => 
-      c.email === customer.email && c.userId === user.id
-    )
-    
-    if (!customerRecord) {
-      customerRecord = {
-        id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        userId: user.id, // Link customer to authenticated user
-        name: customer.name,
-        companyName: customer.companyName || '',
-        email: customer.email || '',
-        address: customer.address,
-        zipCode: customer.zipCode,
-        city: customer.city,
-        country: customer.country,
-        createdAt: new Date().toISOString()
-      }
-      global.allCustomers!.push(customerRecord)
-    } else {
-      // Update existing customer (only if it belongs to this user)
-      customerRecord.name = customer.name
-      customerRecord.companyName = customer.companyName || ''
-      customerRecord.address = customer.address
-      customerRecord.zipCode = customer.zipCode
-      customerRecord.city = customer.city
-      customerRecord.country = customer.country
-    }
+        // Validate required fields (email optional to allow Shopify orders without email)
+        if (!invoiceNumber || !customer.name || !items || items.length === 0) {
+          return NextResponse.json(
+            {
+              error: 'Missing required fields',
+              message: 'Pflichtfelder fehlen: Rechnungsnummer, Kundenname und Positionen sind erforderlich.'
+            },
+            { status: 400 }
+          )
+        }
 
-    // Status color function
-    const getStatusColor = (status: string): string => {
-      switch (status) {
-        case 'Bezahlt': return 'bg-green-100 text-green-800'
-        case 'Erstattet': return 'bg-blue-100 text-blue-800'
-        case 'Storniert': return 'bg-gray-100 text-gray-800'
-        case 'Offen': return 'bg-gray-100 text-gray-600'
-        case 'Mahnung': return 'bg-red-100 text-red-800'
-        default: return 'bg-gray-100 text-gray-600'
-      }
-    }
+        // Create or find customer for this user
+        let customerRecord = global.allCustomers!.find((c: any) =>
+          c.email === customer.email && c.userId === user.id
+        )
 
-    // Create invoice
-    const invoice = {
-      id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      userId: user.id, // Link invoice to authenticated user
-      number: finalInvoiceNumber,
-      date: date,
-      dueDate: dueDate,
-      subtotal: subtotal,
-      taxRate: taxRate,
-      taxAmount: taxAmount,
-      total: total,
-      status: status || 'Offen',
-      statusColor: statusColor || getStatusColor(status || 'Offen'),
-      amount: `€${total.toFixed(2)}`,
-      customerId: customerRecord.id,
-      customerName: customerRecord.name,
-      customerCompanyName: customerRecord.companyName || '',
-      customerEmail: customerRecord.email || undefined,
-      customerAddress: customerRecord.address,
-      customerCity: customerRecord.city,
-      customerZip: customerRecord.zipCode,
-      customerCountry: customerRecord.country,
-      items: items.map((item: any) => ({
-        id: `item-${Math.random().toString(36).substr(2, 9)}`,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.total,
-        // Use SKU as primary EAN source
-        ean: item.sku ?? item.ean ?? undefined,
-      })),
-      createdAt: new Date().toISOString(),
-      organizationId: getCompanySettings().id,
-      organizationName: getCompanySettings().name,
-      // Optional Shopify linkage
-      shopifyOrderId: shopifyOrderId,
-      shopifyOrderNumber: shopifyOrderNumber,
-      source: source,
-      // QR-Code payment settings
-      qrCodeSettings: qrCodeSettings || null
-    }
+        if (!customerRecord) {
+          customerRecord = {
+            id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            userId: user.id, // Link customer to authenticated user
+            name: customer.name,
+            companyName: customer.companyName || '',
+            email: customer.email || '',
+            address: customer.address,
+            zipCode: customer.zipCode,
+            city: customer.city,
+            country: customer.country,
+            createdAt: new Date().toISOString()
+          }
+          global.allCustomers!.push(customerRecord)
+        } else {
+          // Update existing customer (only if it belongs to this user)
+          customerRecord.name = customer.name
+          customerRecord.companyName = customer.companyName || ''
+          customerRecord.address = customer.address
+          customerRecord.zipCode = customer.zipCode
+          customerRecord.city = customer.city
+          customerRecord.country = customer.country
+        }
 
-    // Save to global storage and persist to disk
-    global.allInvoices!.push(invoice)
-    saveInvoicesToDisk(global.allInvoices!)
+        // Status color function
+        const getStatusColor = (status: string): string => {
+          switch (status) {
+            case 'Bezahlt': return 'bg-green-100 text-green-800'
+            case 'Erstattet': return 'bg-blue-100 text-blue-800'
+            case 'Storniert': return 'bg-gray-100 text-gray-800'
+            case 'Offen': return 'bg-gray-100 text-gray-600'
+            case 'Mahnung': return 'bg-red-100 text-red-800'
+            default: return 'bg-gray-100 text-gray-600'
+          }
+        }
 
-    console.log('Invoice created successfully:', invoice.id)
-    console.log('Total invoices now:', global.allInvoices!.length)
+        // Create invoice
+        const invoice = {
+          id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          userId: user.id, // Link invoice to authenticated user
+          number: finalInvoiceNumber,
+          date: date,
+          dueDate: dueDate,
+          subtotal: subtotal,
+          taxRate: taxRate,
+          taxAmount: taxAmount,
+          total: total,
+          status: status || 'Offen',
+          statusColor: statusColor || getStatusColor(status || 'Offen'),
+          amount: `€${total.toFixed(2)}`,
+          customerId: customerRecord.id,
+          customerName: customerRecord.name,
+          customerCompanyName: customerRecord.companyName || '',
+          customerEmail: customerRecord.email || undefined,
+          customerAddress: customerRecord.address,
+          customerCity: customerRecord.city,
+          customerZip: customerRecord.zipCode,
+          customerCountry: customerRecord.country,
+          items: items.map((item: any) => ({
+            id: `item-${Math.random().toString(36).substr(2, 9)}`,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            // Use SKU as primary EAN source
+            ean: item.sku ?? item.ean ?? undefined,
+          })),
+          createdAt: new Date().toISOString(),
+          organizationId: getCompanySettings().id,
+          organizationName: getCompanySettings().name,
+          // Optional Shopify linkage
+          shopifyOrderId: shopifyOrderId,
+          shopifyOrderNumber: shopifyOrderNumber,
+          source: source,
+          // QR-Code payment settings
+          qrCodeSettings: qrCodeSettings || null
+        }
 
-    // Trigger dashboard stats update (for real-time updates)
-    // This will be handled by the frontend event system
-    
-    return invoice
+        // Save to global storage and persist to disk
+        global.allInvoices!.push(invoice)
+        saveInvoicesToDisk(global.allInvoices!)
+
+        console.log('Invoice created successfully:', invoice.id)
+        console.log('Total invoices now:', global.allInvoices!.length)
+
+        // Trigger dashboard stats update (for real-time updates)
+        // This will be handled by the frontend event system
+
+        return invoice
       } catch (error) {
         console.error('Error in invoice creation promise:', error)
         throw error
