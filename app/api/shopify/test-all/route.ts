@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   // Test 3: Direct Shopify Connection
   try {
-    const shopifyResponse = await fetch(`https://45dv93-bk.myshopify.com/admin/api/2025-01/shop.json`, {
+    const shopifyResponse = await fetch(`https://45dv93-bk.myshopify.com/admin/api/2030-01/shop.json`, {
       headers: {
         'X-Shopify-Access-Token': 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
         'Content-Type': 'application/json'
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const shopifyData = await shopifyResponse.json()
     results.tests.push({
       name: 'Direct Shopify Connection',
-      endpoint: 'https://45dv93-bk.myshopify.com/admin/api/2025-01/shop.json',
+      endpoint: 'https://45dv93-bk.myshopify.com/admin/api/2030-01/shop.json',
       status: shopifyResponse.status,
       success: shopifyResponse.ok,
       shopName: shopifyData.shop?.name || null,
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     results.tests.push({
       name: 'Direct Shopify Connection',
-      endpoint: 'https://45dv93-bk.myshopify.com/admin/api/2025-01/shop.json',
+      endpoint: 'https://45dv93-bk.myshopify.com/admin/api/2030-01/shop.json',
       status: 'ERROR',
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

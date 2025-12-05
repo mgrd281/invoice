@@ -22,7 +22,7 @@ const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   enabled: true,
   shopDomain: process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com',
   accessToken: process.env.SHOPIFY_ACCESS_TOKEN || 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
-  apiVersion: '2025-01',
+  apiVersion: '2030-01',
   autoImport: false,
   importInterval: 60, // 1 hour
   defaultTaxRate: 19, // 19% German VAT

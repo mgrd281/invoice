@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       apiKey: "SHOPIFY_API_KEY_PLACEHOLDER", // API-Schlüssel
       secretKey: "SHOPIFY_SECRET_KEY_PLACEHOLDER", // Geheimer API-Schlüssel
       adminUrl: "https://admin.shopify.com/store/45dv93-bk",
-      apiVersion: "2025-01",
+      apiVersion: '2030-01',
       autoImport: false,
       importInterval: 60,
       defaultTaxRate: 19,
