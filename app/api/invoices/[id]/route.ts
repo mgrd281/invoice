@@ -165,6 +165,67 @@ export async function GET(
     const invoice = allInvoices.find((inv: any) => inv.id === invoiceId)
 
     if (!invoice) {
+      // VERCEL FIX: Fallback to Shopify API if invoice not found locally
+      // This allows stateless viewing of invoices
+      if (invoiceId.startsWith('shopify-')) {
+        console.log('☁️ Vercel: Invoice not found locally. Attempting fetch from Shopify for ID:', invoiceId)
+        try {
+          const settings = getShopifySettings()
+          if (settings.shopDomain && settings.accessToken) {
+            const api = new ShopifyAPI(settings)
+            // Extract Shopify Order ID (remove 'shopify-' prefix)
+            const shopifyOrderId = invoiceId.replace('shopify-', '')
+
+            console.log('Fetching order from Shopify:', shopifyOrderId)
+            const order = await api.getOrder(shopifyOrderId)
+
+            if (order) {
+              // Convert to invoice on the fly
+              // This will use the deterministic ID logic we just added
+              const fetchedInvoice = await handleOrderCreate(order, settings.shopDomain)
+
+              // Return this invoice directly
+              // We also add it to global storage for this session
+              if (fetchedInvoice) {
+                // Ensure it's in the global list for subsequent requests
+                if (!global.allInvoices!.find((i: any) => i.id === fetchedInvoice.id)) {
+                  global.allInvoices!.push(fetchedInvoice)
+                }
+
+                // Format and return
+                const formattedInvoice = {
+                  id: fetchedInvoice.id,
+                  number: fetchedInvoice.number,
+                  date: fetchedInvoice.date,
+                  dueDate: fetchedInvoice.dueDate || new Date(new Date(fetchedInvoice.date).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                  subtotal: fetchedInvoice.subtotal || 0,
+                  taxRate: fetchedInvoice.taxRate || 19,
+                  taxAmount: fetchedInvoice.taxAmount || 0,
+                  total: fetchedInvoice.total || 0,
+                  status: fetchedInvoice.status || 'Offen',
+                  customer: {
+                    id: fetchedInvoice.customerId || 'unknown',
+                    name: fetchedInvoice.customerName || 'Unbekannter Kunde',
+                    companyName: fetchedInvoice.customerCompanyName || '',
+                    email: fetchedInvoice.customerEmail || '',
+                    address: fetchedInvoice.customerAddress || '',
+                    zipCode: fetchedInvoice.customerZip || '',
+                    city: fetchedInvoice.customerCity || '',
+                    country: fetchedInvoice.customerCountry || 'Deutschland'
+                  },
+                  organization: getCompanySettings(),
+                  items: fetchedInvoice.items || [],
+                  qrCodeSettings: fetchedInvoice.qrCodeSettings || null
+                }
+                return NextResponse.json(formattedInvoice)
+              }
+            }
+          }
+        } catch (e) {
+          console.error('☁️ Vercel: Failed to fetch single invoice from Shopify:', e)
+        }
+      }
+
       console.log('Invoice not found')
       return NextResponse.json(
         { error: 'Invoice not found' },
@@ -269,8 +330,8 @@ export async function DELETE(
         // Soft delete: add deleted_at timestamp
         global.csvInvoices[csvIndex].deleted_at = new Date().toISOString()
         console.log('Soft deleted CSV invoice:', invoiceId)
-        return NextResponse.json({ 
-          success: true, 
+        return NextResponse.json({
+          success: true,
           message: 'Rechnung erfolgreich gelöscht',
           type: 'csv'
         })
@@ -295,8 +356,8 @@ export async function DELETE(
         // Soft delete: add deleted_at timestamp
         global.allInvoices[allIndex].deleted_at = new Date().toISOString()
         console.log('Soft deleted invoice:', invoiceId)
-        return NextResponse.json({ 
-          success: true, 
+        return NextResponse.json({
+          success: true,
           message: 'Rechnung erfolgreich gelöscht',
           type: 'manual'
         })
@@ -331,7 +392,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting invoice:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Fehler beim Löschen',
         message: 'Ein unerwarteter Fehler ist aufgetreten.'
       },
@@ -347,7 +408,7 @@ export async function PUT(
   try {
     const invoiceId = params.id
     const updatedData = await request.json()
-    
+
     console.log('Updating invoice with ID:', invoiceId)
     console.log('Updated data:', updatedData)
 
@@ -356,7 +417,7 @@ export async function PUT(
       const csvIndex = global.csvInvoices.findIndex((inv: any) => inv.id === invoiceId)
       if (csvIndex !== -1) {
         const originalInvoice = global.csvInvoices[csvIndex]
-        
+
         // Update the invoice with new data
         global.csvInvoices[csvIndex] = {
           ...originalInvoice,
@@ -377,7 +438,7 @@ export async function PUT(
           items: updatedData.items || originalInvoice.items,
           updated_at: new Date().toISOString()
         }
-        
+
         console.log('Updated CSV invoice successfully')
         return NextResponse.json({ success: true, message: 'Invoice updated successfully' })
       }
@@ -388,7 +449,7 @@ export async function PUT(
       const allIndex = global.allInvoices.findIndex((inv: any) => inv.id === invoiceId)
       if (allIndex !== -1) {
         const originalInvoice = global.allInvoices[allIndex]
-        
+
         // Update the invoice with new data
         global.allInvoices[allIndex] = {
           ...originalInvoice,
@@ -409,7 +470,7 @@ export async function PUT(
           items: updatedData.items || originalInvoice.items,
           updated_at: new Date().toISOString()
         }
-        
+
         console.log('Updated manual invoice successfully')
         return NextResponse.json({ success: true, message: 'Invoice updated successfully' })
       }

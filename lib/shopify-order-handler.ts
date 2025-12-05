@@ -27,8 +27,13 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     // Neue Rechnung erstellen
 
     // 1. Kundendaten extrahieren
+    // Use deterministic ID for customer based on Shopify Customer ID or Order ID
+    const customerId = order.customer?.id
+        ? `shopify-cust-${order.customer.id}`
+        : `shopify-cust-order-${order.id}`
+
     const customer = {
-        id: crypto.randomUUID(),
+        id: customerId,
         name: `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim() || 'Gast',
         email: order.email || '',
         address: order.billing_address?.address1 || '',
@@ -39,8 +44,8 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     }
 
     // 2. Rechnungspositionen extrahieren
-    const items = order.line_items.map((item: any) => ({
-        id: crypto.randomUUID(),
+    const items = order.line_items.map((item: any, index: number) => ({
+        id: `shopify-item-${order.id}-${index}`,
         description: item.title,
         quantity: item.quantity,
         unitPrice: parseFloat(item.price),
@@ -54,9 +59,12 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     const total = subtotal + taxAmount
 
     // 4. Rechnungsobjekt erstellen
+    // Use deterministic ID for invoice based on Shopify Order ID
+    const invoiceId = `shopify-${order.id}`
+
     const newInvoice = {
-        id: crypto.randomUUID(),
-        number: `RE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        id: invoiceId,
+        number: order.name || `RE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         date: new Date().toISOString(),
         dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         status: order.financial_status === 'paid' ? 'paid' : 'pending',
