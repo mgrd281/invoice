@@ -606,200 +606,72 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   // 3. Customer Name (often just first/last)
   // 4. Customer First/Last
 
-  let customerName =
-    (order.billing_address?.first_name && order.billing_address?.last_name
-      ? `${order.billing_address.first_name} ${order.billing_address.last_name}`
-      : order.billing_address?.name) ||
-    ((order as any).shipping_address?.first_name && (order as any).shipping_address?.last_name
-      ? `${(order as any).shipping_address.first_name} ${(order as any).shipping_address.last_name}`
-      : (order as any).shipping_address?.name) ||
-    (order.customer?.first_name && order.customer?.last_name
-      ? `${order.customer.first_name} ${order.customer.last_name}`
-      : order.customer?.name) ||
-    extractedInfo.name
+  // ------------------------------------------------------------------
+  // ROBUST NAME & ADDRESS EXTRACTION STRATEGY (SIMPLIFIED)
+  // ------------------------------------------------------------------
 
-  // Enhanced fallback for German digital store with variety
-  // REMOVED: "Web-Kunde" fallback causing confusion. Using real data or empty string.
-  if (!customerName || customerName.trim() === '' ||
-    customerName === 'MISSING' || customerName === 'NULL' ||
-    customerName.includes('undefined')) {
+  // 1. Extract Name
+  // Priority: Billing Name > Shipping Name > Customer Name > Email User
+  let customerName = ''
 
-    // Try one last time with default address
-    if (order.customer?.default_address?.first_name && order.customer?.default_address?.last_name) {
-      customerName = `${order.customer.default_address.first_name} ${order.customer.default_address.last_name}`
-    } else if ((order as any).email) {
-      // Use email user part as last resort if really nothing else exists
-      customerName = (order as any).email.split('@')[0]
-    }
-  }
+  const billingName = order.billing_address?.name || (order.billing_address?.first_name ? `${order.billing_address.first_name} ${order.billing_address.last_name || ''}` : '')
+  const shippingName = (order as any).shipping_address?.name || ((order as any).shipping_address?.first_name ? `${(order as any).shipping_address.first_name} ${(order as any).shipping_address.last_name || ''}` : '')
+  const customerRecordName = order.customer?.name || (order.customer?.first_name ? `${order.customer.first_name} ${order.customer.last_name || ''}` : '')
+  const defaultAddressName = (order.customer?.default_address as any)?.name || (order.customer?.default_address?.first_name ? `${order.customer.default_address.first_name} ${order.customer.default_address.last_name || ''}` : '')
 
-  const firstName = order.customer?.first_name ||
-    order.billing_address?.first_name ||
-    (order as any).shipping_address?.first_name ||
-    order.customer?.default_address?.first_name ||
-    ''
-  const lastName = order.customer?.last_name ||
-    order.billing_address?.last_name ||
-    (order as any).shipping_address?.last_name ||
-    order.customer?.default_address?.last_name ||
-    ''
+  if (isRealValue(billingName)) customerName = billingName.trim()
+  else if (isRealValue(shippingName)) customerName = shippingName.trim()
+  else if (isRealValue(customerRecordName)) customerName = customerRecordName.trim()
+  else if (isRealValue(defaultAddressName)) customerName = defaultAddressName.trim()
+  else if (extractedInfo.name) customerName = extractedInfo.name
+  else if ((order as any).email) customerName = (order as any).email.split('@')[0]
+  else customerName = `Order ${order.name || order.id}`
 
-  // Build customer name with comprehensive fallbacks
-  // Priority 1: Real extracted info from notes/attributes/line items
-  if (extractedInfo.name && extractedInfo.name.trim() !== '') {
-    customerName = extractedInfo.name.trim()
-    console.log('✅ Using REAL name from extracted info:', customerName)
-  }
-  // Priority 2: Real first/last name from Shopify
-  else if (firstName && firstName !== 'MISSING' && firstName !== 'NULL' && firstName.trim() !== '') {
-    if (lastName && lastName !== 'MISSING' && lastName !== 'NULL' && lastName.trim() !== '') {
-      customerName = `${firstName} ${lastName}`.trim()
-      console.log('✅ Using REAL name from first/last:', customerName)
-    } else {
-      customerName = firstName.trim()
-      console.log('✅ Using REAL first name only:', customerName)
-    }
-  } else if (lastName && lastName !== 'MISSING' && lastName !== 'NULL' && lastName.trim() !== '') {
-    customerName = lastName.trim()
-    console.log('✅ Using REAL last name only:', customerName)
-  }
-  // Priority 3: Real full name from address blocks
-  else {
-    const fullName = (order.billing_address as any)?.name || (order as any).shipping_address?.name || ''
-    if (fullName && fullName !== 'MISSING' && fullName !== 'NULL' && fullName.trim() !== '') {
-      customerName = fullName.trim()
-      console.log('✅ Using REAL name from address:', customerName)
-    }
-  }
+  console.log('✅ Final Customer Name:', customerName)
 
-  // Helper function to check if a value is real
-  const isRealValue = (value: any): boolean => {
-    return value &&
-      value !== 'MISSING' &&
-      value !== 'NULL' &&
-      value !== 'undefined' &&
-      value.toString().trim() !== ''
-  }
+  // 2. Extract Address
+  // Priority: Billing (Preferred for invoices) > Shipping > Default Address
+  // We look for the first "complete" address (has address1 AND city)
 
-  // Priority 4: Real company name
-  if (!customerName) {
-    const company = extractedInfo.company ||
-      (isRealValue(order.billing_address?.company) ? order.billing_address?.company : '') ||
-      (isRealValue((order as any).shipping_address?.company) ? (order as any).shipping_address?.company : '') ||
-      (isRealValue(order.customer?.default_address?.company) ? order.customer?.default_address?.company : '')
+  let finalAddressSrc: any = {}
+  let addressSourceType = 'NONE'
 
-    if (company) {
-      customerName = company.trim()
-      console.log('✅ Using REAL company name as customer name:', customerName)
-    }
-  }
+  const billing = order.billing_address
+  const shipping = (order as any).shipping_address
+  const defaultAddr = order.customer?.default_address
 
-  // If NO real name found, leave empty or use minimal fallback
-  if (!customerName) {
-    console.log('❌ No real customer name found in Shopify data')
+  // Helper to check if address is usable
+  const isUsable = (addr: any) => addr && isRealValue(addr.address1) && isRealValue(addr.city)
 
-    // Try email username as fallback before Order ID
-    if ((order as any).email) {
-      customerName = (order as any).email.split('@')[0]
-      console.log('⚠️ Using email username as fallback:', customerName)
-    } else {
-      // Only use order number as minimal identifier
-      customerName = `Order ${order.name || order.id}`
-      console.log('⚠️ Using minimal fallback:', customerName)
-    }
-  }
-
-  // Extract ONLY real email from Shopify - no fake emails
-  console.log('🔍 Extracting ONLY real email from Shopify...')
-
-  let customerEmail = extractedInfo.email || // Priority 1: Extracted from notes/attributes
-    order.customer?.email ||
-    order.email ||
-    '' // Default empty string
-
-  // If real email found, use it
-  if (customerEmail && customerEmail.trim() !== '' &&
-    customerEmail !== 'MISSING' && customerEmail !== 'NULL') {
-    customerEmail = customerEmail.trim()
-    console.log('✅ Using REAL email from Shopify:', customerEmail)
+  if (isUsable(billing)) {
+    finalAddressSrc = billing
+    addressSourceType = 'BILLING'
+  } else if (isUsable(shipping)) {
+    finalAddressSrc = shipping
+    addressSourceType = 'SHIPPING'
+  } else if (isUsable(defaultAddr)) {
+    finalAddressSrc = defaultAddr
+    addressSourceType = 'DEFAULT'
   } else {
-    // Generate varied professional emails based on order details
-    console.log('❌ No real email found in Shopify')
-
-    const orderNumber = order.name || order.id.toString()
-    const orderDate = new Date(order.created_at)
-
-    // Create variety based on order characteristics
-    const emailVariations = [
-      `kunde${orderNumber.replace('#', '')}@karinex.com`,
-      `order${orderNumber.replace('#', '')}@karinex.com`,
-      `digital${orderNumber.replace('#', '')}@karinex.com`,
-      `online${orderNumber.replace('#', '')}@karinex.com`,
-      `shop${orderNumber.replace('#', '')}@karinex.com`
-    ]
-
-    // Select variation based on order ID to ensure consistency
-    const variation = parseInt(order.id.toString().slice(-1)) % emailVariations.length
-    customerEmail = emailVariations[variation]
-
-    console.log('✅ Using varied professional fallback email:', customerEmail)
+    // Fallback: Try to piece together whatever we have, starting with Billing
+    finalAddressSrc = billing || shipping || defaultAddr || {}
+    addressSourceType = 'PARTIAL_FALLBACK'
   }
 
-  console.log('📧 Email result:', {
-    'final_email': customerEmail,
-    'source': customerEmail ? 'REAL_SHOPIFY_DATA' : 'NO_FAKE_EMAIL_GENERATED'
-  })
+  console.log(`🏠 Selected Address Source: ${addressSourceType}`)
 
-  // Enhanced address extraction with priority for real data
+  let address1 = finalAddressSrc.address1 || ''
+  let address2 = finalAddressSrc.address2 || ''
+  let zipCode = finalAddressSrc.zip || ''
+  let city = finalAddressSrc.city || ''
+  let country = finalAddressSrc.country || 'Germany'
+  let countryCode = finalAddressSrc.country_code || 'DE'
+  let company = finalAddressSrc.company || ''
 
-  // Extract real address data with SHIPPING ADDRESS PRIORITY (as requested by user)
-  // NEW Priority: 1. Shipping Address, 2. Billing Address, 3. Default Address
-  console.log('🏠  // Address extraction with priority: Shipping → Billing → Default')
-  let address1 = (isRealValue((order as any).shipping_address?.address1)) ? (order as any).shipping_address.address1 :
-    (isRealValue(order.billing_address?.address1)) ? order.billing_address.address1 :
-      (isRealValue(order.customer?.default_address?.address1)) ? order.customer?.default_address?.address1 : ''
+  // If we still have no address1, try to use customer info as a last resort placeholder if requested
+  // but for now we leave it empty to avoid fake data.
 
-  let address2 = (isRealValue((order as any).shipping_address?.address2)) ? (order as any).shipping_address.address2 :
-    (isRealValue(order.billing_address?.address2)) ? order.billing_address.address2 :
-      (isRealValue(order.customer?.default_address?.address2)) ? order.customer?.default_address?.address2 : ''
-
-  let zipCode = (isRealValue((order as any).shipping_address?.zip)) ? (order as any).shipping_address.zip :
-    (isRealValue(order.billing_address?.zip)) ? order.billing_address.zip :
-      (isRealValue(order.customer?.default_address?.zip)) ? order.customer?.default_address?.zip : ''
-
-  let city = (isRealValue((order as any).shipping_address?.city)) ? (order as any).shipping_address.city :
-    (isRealValue(order.billing_address?.city)) ? order.billing_address.city :
-      (isRealValue(order.customer?.default_address?.city)) ? order.customer?.default_address?.city :
-        // Fallback: use province as city if available
-        (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
-          (isRealValue(order.billing_address?.province)) ? order.billing_address.province :
-            (isRealValue(order.customer?.default_address?.province)) ? order.customer?.default_address?.province : ''
-
-  let country = (isRealValue((order as any).shipping_address?.country)) ? (order as any).shipping_address.country :
-    (isRealValue(order.billing_address?.country)) ? order.billing_address.country :
-      (isRealValue(order.customer?.default_address?.country)) ? order.customer?.default_address?.country : 'Germany'
-
-  // If address is still empty, check for "Web-Shop Karinex" fallback and REMOVE IT
-  // We want real data or empty strings
-  if (!address1 && !city && !zipCode) {
-    console.log('⚠️ No address data found in Shipping, Billing, or Default Address')
-  }
-
-  // Log extracted address
-  console.log('🏠 Extracted Address:', { address1, address2, zipCode, city, country })
-
-  const countryCode = (isRealValue((order as any).shipping_address?.country_code)) ? (order as any).shipping_address.country_code :
-    (isRealValue(order.billing_address?.country_code)) ? order.billing_address.country_code :
-      (isRealValue(order.customer?.default_address?.country_code)) ? order.customer?.default_address?.country_code : 'DE'
-
-  const company = (isRealValue((order as any).shipping_address?.company)) ? (order as any).shipping_address.company :
-    (isRealValue(order.billing_address?.company)) ? order.billing_address.company : ''
-
-  // Log which address source was used
-  const addressSource = address1 && isRealValue((order as any).shipping_address?.address1) ? 'SHIPPING' :
-    address1 && isRealValue(order.billing_address?.address1) ? 'BILLING' :
-      address1 && isRealValue(order.customer?.default_address?.address1) ? 'DEFAULT' : 'NONE'
-  console.log(`📍 Address source used: ${addressSource}`)
+  console.log(`📍 Address source used: ${addressSourceType}`)
 
   const citySource = city && isRealValue((order as any).shipping_address?.city) ? 'SHIPPING' :
     city && isRealValue(order.billing_address?.city) ? 'BILLING' :
