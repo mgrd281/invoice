@@ -56,11 +56,11 @@ export async function GET(req: Request) {
       try {
         // Fetch FULL order details to ensure we have complete customer/address data
         // The list endpoint often returns incomplete data
-        const order = await api.getOrder(partialOrder.id)
+        let order = await api.getOrder(partialOrder.id)
 
         if (!order) {
-          console.error(`Could not fetch full details for order ${partialOrder.id}`)
-          continue
+          console.warn(`Could not fetch full details for order ${partialOrder.id}, using partial data.`)
+          order = partialOrder
         }
 
         // Convert to Invoice Object to get calculations and PDF
