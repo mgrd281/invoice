@@ -103,6 +103,15 @@ export interface ImportResult {
 // SHOPIFY API CLIENT
 // ========================================
 
+// Helper function to check if a value is real and meaningful
+const isValidValue = (value: any): boolean => {
+  return value &&
+    value !== 'MISSING' &&
+    value !== 'NULL' &&
+    value !== 'undefined' &&
+    value.toString().trim() !== ''
+}
+
 export class ShopifyAPI {
   private settings: ShopifySettings
   private baseUrl: string
@@ -120,6 +129,7 @@ export class ShopifyAPI {
 
     this.baseUrl = `https://${this.settings.shopDomain}/admin/api/${this.settings.apiVersion}`
   }
+
 
   /**
    * Make authenticated request to Shopify API
@@ -619,10 +629,10 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   const customerRecordName = order.customer?.name || (order.customer?.first_name ? `${order.customer.first_name} ${order.customer.last_name || ''}` : '')
   const defaultAddressName = (order.customer?.default_address as any)?.name || (order.customer?.default_address?.first_name ? `${order.customer.default_address.first_name} ${order.customer.default_address.last_name || ''}` : '')
 
-  if (isRealValue(billingName)) customerName = billingName.trim()
-  else if (isRealValue(shippingName)) customerName = shippingName.trim()
-  else if (isRealValue(customerRecordName)) customerName = customerRecordName.trim()
-  else if (isRealValue(defaultAddressName)) customerName = defaultAddressName.trim()
+  if (isValidValue(billingName)) customerName = billingName.trim()
+  else if (isValidValue(shippingName)) customerName = shippingName.trim()
+  else if (isValidValue(customerRecordName)) customerName = customerRecordName.trim()
+  else if (isValidValue(defaultAddressName)) customerName = defaultAddressName.trim()
   else if (extractedInfo.name) customerName = extractedInfo.name
   else if ((order as any).email) customerName = (order as any).email.split('@')[0]
   else customerName = `Order ${order.name || order.id}`
@@ -641,7 +651,7 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
   const defaultAddr = order.customer?.default_address
 
   // Helper to check if address is usable
-  const isUsable = (addr: any) => addr && isRealValue(addr.address1) && isRealValue(addr.city)
+  const isUsable = (addr: any) => addr && isValidValue(addr.address1) && isValidValue(addr.city)
 
   if (isUsable(billing)) {
     finalAddressSrc = billing
@@ -673,18 +683,18 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
 
   console.log(`📍 Address source used: ${addressSourceType}`)
 
-  const citySource = city && isRealValue((order as any).shipping_address?.city) ? 'SHIPPING' :
-    city && isRealValue(order.billing_address?.city) ? 'BILLING' :
-      city && isRealValue(order.customer?.default_address?.city) ? 'DEFAULT' :
-        city && isRealValue((order as any).shipping_address?.province) ? 'SHIPPING_PROVINCE' :
-          city && isRealValue(order.billing_address?.province) ? 'BILLING_PROVINCE' :
-            city && isRealValue(order.customer?.default_address?.province) ? 'DEFAULT_PROVINCE' : 'NONE'
+  const citySource = city && isValidValue((order as any).shipping_address?.city) ? 'SHIPPING' :
+    city && isValidValue(order.billing_address?.city) ? 'BILLING' :
+      city && isValidValue(order.customer?.default_address?.city) ? 'DEFAULT' :
+        city && isValidValue((order as any).shipping_address?.province) ? 'SHIPPING_PROVINCE' :
+          city && isValidValue(order.billing_address?.province) ? 'BILLING_PROVINCE' :
+            city && isValidValue(order.customer?.default_address?.province) ? 'DEFAULT_PROVINCE' : 'NONE'
   console.log(`🏙️ City source used: ${citySource}`)
 
   // Also extract province/state information
-  const province = (isRealValue(order.billing_address?.province)) ? order.billing_address.province :
-    (isRealValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
-      (isRealValue(order.customer?.default_address?.province)) ? order.customer?.default_address?.province : ''
+  const province = (isValidValue(order.billing_address?.province)) ? order.billing_address.province :
+    (isValidValue((order as any).shipping_address?.province)) ? (order as any).shipping_address.province :
+      (isValidValue(order.customer?.default_address?.province)) ? order.customer?.default_address?.province : ''
 
   console.log('🔍 DEBUG: Processed address data:', {
     address1, address2, zipCode, city, country, countryCode, company
