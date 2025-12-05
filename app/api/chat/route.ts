@@ -27,13 +27,13 @@ import { loadInvoicesFromDisk } from '@/lib/server-storage'
 
 // Helper function to get invoice statistics
 function getInvoiceStats() {
-    // Ensure we have data loaded
-    if (!global.allInvoices || global.allInvoices.length === 0) {
-        try {
-            global.allInvoices = loadInvoicesFromDisk()
-        } catch (e) {
-            console.warn('Failed to load invoices from disk for chat stats:', e)
-        }
+    // Always load fresh data from disk to ensure accuracy
+    try {
+        global.allInvoices = loadInvoicesFromDisk()
+        console.log(`💬 Chat API loaded ${global.allInvoices.length} invoices from disk`)
+    } catch (e) {
+        console.warn('Failed to load invoices from disk for chat stats:', e)
+        global.allInvoices = []
     }
 
     const invoices = global.allInvoices || []
