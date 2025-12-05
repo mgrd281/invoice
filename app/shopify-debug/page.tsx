@@ -11,6 +11,9 @@ export default function ShopifyDebugPage() {
     const [loading, setLoading] = useState(false)
     const [logs, setLogs] = useState<string[]>([])
 
+    const [syncResult, setSyncResult] = useState<any>(null)
+    const [syncing, setSyncing] = useState(false)
+
     const runDiagnosis = async () => {
         setLoading(true)
         setLogs([])
@@ -25,6 +28,22 @@ export default function ShopifyDebugPage() {
         }
     }
 
+    const forceSync = async () => {
+        setSyncing(true)
+        setSyncResult(null)
+        try {
+            const res = await fetch('/api/shopify/auto-sync')
+            const data = await res.json()
+            setSyncResult(data)
+            // Refresh diagnosis after sync
+            runDiagnosis()
+        } catch (error: any) {
+            setSyncResult({ error: error.message })
+        } finally {
+            setSyncing(false)
+        }
+    }
+
     useEffect(() => {
         runDiagnosis()
     }, [])
@@ -33,11 +52,30 @@ export default function ShopifyDebugPage() {
         <div className="container mx-auto py-10 max-w-4xl">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Shopify Connection Diagnosis</h1>
-                <Button onClick={runDiagnosis} disabled={loading}>
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    Run Diagnosis
-                </Button>
+                <div className="space-x-2">
+                    <Button onClick={forceSync} disabled={syncing || loading} variant="secondary">
+                        {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Force Sync Now
+                    </Button>
+                    <Button onClick={runDiagnosis} disabled={loading}>
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Run Diagnosis
+                    </Button>
+                </div>
             </div>
+
+            {syncResult && (
+                <Card className="mb-6 border-blue-500 bg-blue-50">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg text-blue-700">Sync Result</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <pre className="text-xs overflow-auto max-h-60 p-2 bg-white rounded border">
+                            {JSON.stringify(syncResult, null, 2)}
+                        </pre>
+                    </CardContent>
+                </Card>
+            )}
 
             {status && (
                 <div className="grid gap-6">
