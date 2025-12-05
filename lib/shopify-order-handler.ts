@@ -54,9 +54,17 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     }))
 
     // 3. Summen berechnen
-    const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0)
-    const taxAmount = subtotal * 0.19
-    const total = subtotal + taxAmount
+    // 3. Summen berechnen
+    // FIX: Shopify prices are GROSS (inclusive of VAT).
+    // We must calculate tax backwards, not add it on top.
+
+    // Total is simply the sum of all item totals (which are gross)
+    const total = items.reduce((sum: number, item: any) => sum + item.total, 0)
+
+    // Calculate Net (Subtotal) and Tax from the Gross Total
+    // Net = Total / 1.19
+    const subtotal = total / 1.19
+    const taxAmount = total - subtotal
 
     // 4. Rechnungsobjekt erstellen
     // Use deterministic ID for invoice based on Shopify Order ID
