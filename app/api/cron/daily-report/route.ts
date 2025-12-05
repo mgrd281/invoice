@@ -52,8 +52,17 @@ export async function GET(req: Request) {
     const attachments = []
     const orderRows = []
 
-    for (const order of orders) {
+    for (const partialOrder of orders) {
       try {
+        // Fetch FULL order details to ensure we have complete customer/address data
+        // The list endpoint often returns incomplete data
+        const order = await api.getOrder(partialOrder.id)
+
+        if (!order) {
+          console.error(`Could not fetch full details for order ${partialOrder.id}`)
+          continue
+        }
+
         // Convert to Invoice Object to get calculations and PDF
         const invoice = convertShopifyOrderToInvoice(order, settings)
 
@@ -67,12 +76,14 @@ export async function GET(req: Request) {
           contentType: 'application/pdf'
         })
 
+        // Add a small delay to prevent hitting Shopify API rate limits
+        await new Promise(r => setTimeout(r, 500))
+
         // Calculate totals (Parse from invoice to ensure consistency with PDF)
         const gross = invoice.total
         const tax = invoice.taxAmount
         const net = invoice.subtotal
 
-        totalGross += gross
         totalTax += tax
         totalNet += net
 
@@ -86,7 +97,7 @@ export async function GET(req: Request) {
           </tr>
         `)
       } catch (err) {
-        console.error(`Failed to process order ${order.name} for report:`, err)
+        console.error(`Failed to process order ${partialOrder.name} for report:`, err)
       }
     }
 
