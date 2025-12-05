@@ -8,7 +8,9 @@ export type JsonValue = any
 
 function getPaths() {
   const path = require('path')
-  const root = process.cwd()
+  // On Vercel (or any read-only env), use /tmp for writable storage
+  // Otherwise use local project root
+  const root = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME ? '/tmp' : process.cwd()
   const storageDir = path.join(root, 'user-storage')
   return { path, root, storageDir }
 }
