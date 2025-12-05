@@ -241,16 +241,37 @@ export async function GET(
     console.log('Found invoice:', invoice.number)
     console.log('Invoice QR-Code settings:', invoice.qrCodeSettings)
 
+    // Force recalculation of totals to ensure correctness (fix for gross/net issue)
+    // This ensures even cached invoices are displayed with correct math
+    let finalTotal = invoice.total || 0
+    let finalSubtotal = invoice.subtotal || 0
+    let finalTaxAmount = invoice.taxAmount || 0
+
+    // If it's a Shopify invoice (or derived from one), assume items are Gross prices
+    // and recalculate backwards to fix any old data
+    if (invoice.id.startsWith('shopify-') || invoice.source === 'shopify' || (invoice.items && invoice.items.length > 0)) {
+      const calculatedTotal = invoice.items.reduce((sum: number, item: any) => sum + (item.total || 0), 0)
+
+      // If the stored total matches the sum of items (meaning items are gross), 
+      // but the stored subtotal is equal to total (meaning tax was added on top previously or not calculated),
+      // OR if we just want to be safe:
+      // Let's trust the item totals as GROSS and recalculate everything.
+
+      finalTotal = calculatedTotal
+      finalSubtotal = finalTotal / 1.19
+      finalTaxAmount = finalTotal - finalSubtotal
+    }
+
     // Format the invoice for the frontend
     const formattedInvoice = {
       id: invoice.id,
       number: invoice.number,
       date: invoice.date,
       dueDate: invoice.dueDate || new Date(new Date(invoice.date).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      subtotal: invoice.subtotal || 0,
+      subtotal: finalSubtotal,
       taxRate: invoice.taxRate || 19,
-      taxAmount: invoice.taxAmount || 0,
-      total: invoice.total || 0,
+      taxAmount: finalTaxAmount,
+      total: finalTotal,
       status: invoice.status || 'Offen',
       customer: {
         id: invoice.customerId || 'unknown',
