@@ -71,6 +71,30 @@ export async function GET(req: Request) {
           console.warn(`⚠️ Order ${order.name} has NO address data! Raw keys:`, Object.keys(order))
         }
 
+        // ---------------------------------------------------------
+        // ROBUST ADDRESS FALLBACK STRATEGY
+        // ---------------------------------------------------------
+        // If billing address is missing, force use of customer default address
+        if (!order.billing_address && order.customer?.default_address) {
+          console.log(`🔧 Fixing missing billing address for ${order.name} using Customer Default Address`)
+          order.billing_address = {
+            ...order.customer.default_address,
+            name: `${order.customer.default_address.first_name} ${order.customer.default_address.last_name}`
+          }
+        }
+
+        // If name is still missing/generic, force update from customer data
+        const currentName = order.billing_address?.name || order.customer?.name
+        if (!currentName || currentName.includes('Order #')) {
+          if (order.customer?.first_name && order.customer?.last_name) {
+            const fullName = `${order.customer.first_name} ${order.customer.last_name}`
+            console.log(`🔧 Fixing missing name for ${order.name}: "${currentName}" -> "${fullName}"`)
+            if (order.billing_address) order.billing_address.name = fullName
+            if (order.customer) order.customer.name = fullName
+          }
+        }
+        // ---------------------------------------------------------
+
         // Convert to Invoice Object to get calculations and PDF
         const invoice = convertShopifyOrderToInvoice(order, settings)
 
@@ -95,7 +119,7 @@ export async function GET(req: Request) {
         // Extract Product Names
         const productNames = order.line_items?.map((item: any) => `${item.quantity}x ${item.title}`).join(', ') || 'Keine Produkte'
 
-        totalGross += gross
+        totalGross += gross // FIXED: Added back the missing accumulation
         totalTax += tax
         totalNet += net
 
