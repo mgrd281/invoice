@@ -39,37 +39,37 @@ const quickPrompts: QuickPrompt[] = [
     {
         icon: <TrendingUp className="h-4 w-4" />,
         label: 'Tagesumsatz',
-        prompt: 'اعطني ملخص مبيعات اليوم لجميع المنتجات.',
+        prompt: 'Gib mir eine Zusammenfassung der heutigen Verkäufe für alle Produkte.',
         color: 'bg-green-100 text-green-700 hover:bg-green-200'
     },
     {
         icon: <FileText className="h-4 w-4" />,
         label: '7-Tage Analyse',
-        prompt: 'حلل لي مبيعات المفاتيح الرقمية فقط خلال آخر 7 أيام.',
+        prompt: 'Analysiere die Verkäufe von digitalen Schlüsseln der letzten 7 Tage.',
         color: 'bg-blue-100 text-blue-700 hover:bg-blue-200'
     },
     {
         icon: <Calculator className="h-4 w-4" />,
         label: 'Steuerübersicht',
-        prompt: 'ما هي الضريبة المستحقة لهذا الشهر؟',
+        prompt: 'Wie hoch ist die geschuldete Steuer für diesen Monat?',
         color: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
     },
     {
         icon: <AlertTriangle className="h-4 w-4" />,
         label: 'Verdächtige Bestellungen',
-        prompt: 'هل يوجد طلبات مشبوهة يجب الانتباه لها؟',
+        prompt: 'Gibt es verdächtige Bestellungen, auf die ich achten sollte?',
         color: 'bg-red-100 text-red-700 hover:bg-red-200'
     },
     {
         icon: <Mail className="h-4 w-4" />,
         label: 'Kundenmail',
-        prompt: 'اكتب رسالة احترافية لعميل لم يتمكن من تفعيل مفتاح PlayStation.',
+        prompt: 'Verfasse eine professionelle E-Mail an einen Kunden, der seinen PlayStation-Key nicht aktivieren konnte.',
         color: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
     },
     {
         icon: <Package className="h-4 w-4" />,
         label: 'Top Produkte',
-        prompt: 'ما هي المنتجات التي حققت أعلى ربح حتى الآن؟',
+        prompt: 'Welche Produkte haben bisher den höchsten Gewinn erzielt?',
         color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
     }
 ]

@@ -4,7 +4,7 @@ import { verifyShopifyWebhook } from '@/lib/shopify'
 import { handleOrderCreate, handleOrderUpdate } from '@/lib/shopify-order-handler'
 import { log } from '@/lib/logger'
 import { sendInvoiceEmail } from '@/lib/email-service'
-import { DEFAULT_SHOPIFY_SETTINGS } from '@/lib/shopify-settings'
+import { getShopifySettings } from '@/lib/shopify-settings'
 
 export async function POST(req: Request) {
   try {
@@ -44,7 +44,8 @@ export async function POST(req: Request) {
           log(`✅ Invoice created successfully! Invoice ID: ${invoice.id}`)
 
           // Auto-send email if enabled
-          if (DEFAULT_SHOPIFY_SETTINGS.autoSendEmail) {
+          const settings = getShopifySettings()
+          if (settings.autoSendEmail) {
             log('📧 Auto-send email is ENABLED. Attempting to send...')
             const emailResult = await sendInvoiceEmail(
               invoice.id,

@@ -21,7 +21,18 @@ export async function GET(req: Request) {
   try {
     log('⏰ Starting Daily Report Cron Job (Enhanced + CSV)...')
 
-    const now = new Date()
+    const { searchParams } = new URL(req.url)
+    const dateParam = searchParams.get('date')
+
+    let now = new Date()
+    if (dateParam) {
+      const parsedDate = new Date(dateParam)
+      if (!isNaN(parsedDate.getTime())) {
+        now = parsedDate
+        log(`📅 Using custom date from parameter: ${dateParam}`)
+      }
+    }
+
     const startOfDay = new Date(now)
     startOfDay.setHours(0, 0, 0, 0)
 

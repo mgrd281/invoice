@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { loadInvoicesFromDisk, saveInvoicesToDisk } from '@/lib/server-storage'
+import { loadInvoicesFromDisk, saveInvoicesToDisk, loadCustomersFromDisk } from '@/lib/server-storage'
 import { getCompanySettings } from '@/lib/company-settings'
 import { requireAuth, getUserFromRequest, shouldShowAllData } from '@/lib/auth-middleware'
 
@@ -26,7 +26,9 @@ if (!global.allInvoices) {
   console.log(`[init /api/invoices] Loaded ${global.allInvoices.length} invoices from disk`)
 }
 if (!global.allCustomers) {
-  global.allCustomers = []
+  const persisted = loadCustomersFromDisk()
+  global.allCustomers = Array.isArray(persisted) ? persisted : []
+  console.log(`[init /api/invoices] Loaded ${global.allCustomers.length} customers from disk`)
 }
 
 import { ShopifyAPI } from '@/lib/shopify-api'

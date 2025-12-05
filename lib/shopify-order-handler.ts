@@ -75,7 +75,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         number: order.name || `RE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         date: new Date().toISOString(),
         dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        status: order.financial_status === 'paid' ? 'paid' : 'pending',
+        status: order.financial_status === 'paid' ? 'Bezahlt' : 'Offen',
         customer: customer,
         items: items,
         subtotal: subtotal,
@@ -110,14 +110,14 @@ export async function handleOrderUpdate(order: any) {
 
     let updated = false
 
-    if (order.financial_status === 'paid' && invoice.status !== 'paid') {
-        invoice.status = 'paid'
+    if (order.financial_status === 'paid' && invoice.status !== 'Bezahlt') {
+        invoice.status = 'Bezahlt'
         updated = true
         log(`💰 Invoice ${invoice.number} marked as paid.`)
     }
 
-    if (order.cancelled_at && invoice.status !== 'cancelled') {
-        invoice.status = 'cancelled'
+    if (order.cancelled_at && invoice.status !== 'Storniert') {
+        invoice.status = 'Storniert'
         updated = true
         log(`🚫 Invoice ${invoice.number} marked as cancelled.`)
     }

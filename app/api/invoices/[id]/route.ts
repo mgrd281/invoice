@@ -234,15 +234,15 @@ export async function GET(
         }
       }
 
-      console.log('Invoice not found')
+      console.log('Rechnung nicht gefunden')
       return NextResponse.json(
-        { error: 'Invoice not found' },
+        { error: 'Rechnung nicht gefunden' },
         { status: 404 }
       )
     }
 
-    console.log('Found invoice:', invoice.number)
-    console.log('Invoice QR-Code settings:', invoice.qrCodeSettings)
+    console.log('Rechnung gefunden:', invoice.number)
+    console.log('Rechnung QR-Code Einstellungen:', invoice.qrCodeSettings)
 
     // Force recalculation of totals to ensure correctness (fix for gross/net issue)
     // This ensures even cached invoices are displayed with correct math
@@ -264,7 +264,7 @@ export async function GET(
       (invoice.number && invoice.number.startsWith('RE-') === false && invoice.number.startsWith('#')) // Heuristic for Shopify numbers
 
     if (isShopifyInvoice && invoice.items && invoice.items.length > 0) {
-      console.log(`🔄 Recalculating totals for Shopify invoice ${invoice.number} (Gross Prices)`)
+      console.log(`🔄 Berechne Summen neu für Shopify Rechnung ${invoice.number} (Brutto Preise)`)
       const calculatedTotal = invoice.items.reduce((sum: number, item: any) => sum + (item.total || 0), 0)
 
       // Trust the item totals as GROSS and recalculate everything backwards
@@ -306,9 +306,9 @@ export async function GET(
 
     return NextResponse.json(formattedInvoice)
   } catch (error) {
-    console.error('Error fetching invoice:', error)
+    console.error('Fehler beim Abrufen der Rechnung:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch invoice' },
+      { error: 'Fehler beim Abrufen der Rechnung' },
       { status: 500 }
     )
   }
@@ -320,7 +320,7 @@ export async function DELETE(
 ) {
   try {
     const invoiceId = params.id
-    console.log('Deleting invoice with ID:', invoiceId)
+    console.log('Lösche Rechnung mit ID:', invoiceId)
 
     // Mock invoices for fallback
     const mockInvoices = [
@@ -431,7 +431,7 @@ export async function DELETE(
     )
 
   } catch (error) {
-    console.error('Error deleting invoice:', error)
+    console.error('Fehler beim Löschen der Rechnung:', error)
     return NextResponse.json(
       {
         error: 'Fehler beim Löschen',
@@ -450,8 +450,8 @@ export async function PUT(
     const invoiceId = params.id
     const updatedData = await request.json()
 
-    console.log('Updating invoice with ID:', invoiceId)
-    console.log('Updated data:', updatedData)
+    console.log('Aktualisiere Rechnung mit ID:', invoiceId)
+    console.log('Aktualisierte Daten:', updatedData)
 
     // Find and update in CSV invoices
     if (global.csvInvoices) {
@@ -480,8 +480,8 @@ export async function PUT(
           updated_at: new Date().toISOString()
         }
 
-        console.log('Updated CSV invoice successfully')
-        return NextResponse.json({ success: true, message: 'Invoice updated successfully' })
+        console.log('CSV Rechnung erfolgreich aktualisiert')
+        return NextResponse.json({ success: true, message: 'Rechnung erfolgreich aktualisiert' })
       }
     }
 
@@ -512,21 +512,21 @@ export async function PUT(
           updated_at: new Date().toISOString()
         }
 
-        console.log('Updated manual invoice successfully')
-        return NextResponse.json({ success: true, message: 'Invoice updated successfully' })
+        console.log('Manuelle Rechnung erfolgreich aktualisiert')
+        return NextResponse.json({ success: true, message: 'Rechnung erfolgreich aktualisiert' })
       }
     }
 
     // Invoice not found
     return NextResponse.json(
-      { error: 'Invoice not found' },
+      { error: 'Rechnung nicht gefunden' },
       { status: 404 }
     )
 
   } catch (error) {
-    console.error('Error updating invoice:', error)
+    console.error('Fehler beim Aktualisieren der Rechnung:', error)
     return NextResponse.json(
-      { error: 'Failed to update invoice' },
+      { error: 'Fehler beim Aktualisieren der Rechnung' },
       { status: 500 }
     )
   }

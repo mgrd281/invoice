@@ -23,8 +23,19 @@ function getOpenAIClient(): OpenAI {
     return openaiClient
 }
 
+import { loadInvoicesFromDisk } from '@/lib/server-storage'
+
 // Helper function to get invoice statistics
 function getInvoiceStats() {
+    // Ensure we have data loaded
+    if (!global.allInvoices || global.allInvoices.length === 0) {
+        try {
+            global.allInvoices = loadInvoicesFromDisk()
+        } catch (e) {
+            console.warn('Failed to load invoices from disk for chat stats:', e)
+        }
+    }
+
     const invoices = global.allInvoices || []
 
     const today = new Date()
@@ -169,16 +180,17 @@ ${stats.recentInvoices.map(inv =>
 DEINE AUFGABEN:
 1. Beantworte Fragen zu Verkäufen, Umsätzen und Statistiken basierend auf den obigen Daten.
 2. Analysiere Trends und gib Geschäftsempfehlungen.
-3. Hilf beim Verfassen professioneller Kundennachrichten (auf Deutsch).
+3. Hilf beim Verfassen professioneller Kundennachrichten.
 4. Erkenne mögliche Probleme oder Auffälligkeiten in den Daten.
 5. Berechne Steuern und Finanzberichte.
 
-WICHTIG:
-- Antworte immer auf Deutsch, professionell aber freundlich.
+WICHTIG - SPRACHE & KOMMUNIKATION:
+- **ANTWORTE IMMER AUF DEUTSCH.**
+- Egal in welcher Sprache der Nutzer fragt, antworte immer auf Deutsch.
+- Sei professionell, höflich und lösungsorientiert.
+- Formatiere Zahlen immer mit € und 2 Dezimalstellen.
 - Nutze Emojis sparsam für bessere Lesbarkeit.
-- Wenn du keine Daten hast, sage das ehrlich.
-- Bei Kundennachrichten: Sei professionell, höflich und lösungsorientiert.
-- Formatiere Zahlen immer mit € und 2 Dezimalstellen.`
+- Wenn du keine Daten hast, sage das ehrlich.`
 
         // Build messages array
         const messages: OpenAI.ChatCompletionMessageParam[] = [

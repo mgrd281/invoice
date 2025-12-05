@@ -28,6 +28,8 @@ declare global {
   var allCustomers: any[] | undefined
 }
 
+import { loadInvoicesFromDisk, loadCustomersFromDisk } from '@/lib/server-storage'
+
 // Initialize global storage
 if (!global.csvInvoices) {
   global.csvInvoices = []
@@ -36,10 +38,24 @@ if (!global.csvCustomers) {
   global.csvCustomers = []
 }
 if (!global.allInvoices) {
-  global.allInvoices = []
+  try {
+    const persisted = loadInvoicesFromDisk()
+    global.allInvoices = Array.isArray(persisted) ? persisted : []
+    console.log(`[init /api/dashboard-stats] Loaded ${global.allInvoices.length} invoices from disk`)
+  } catch (e) {
+    console.warn('Failed to load invoices from disk:', e)
+    global.allInvoices = []
+  }
 }
 if (!global.allCustomers) {
-  global.allCustomers = []
+  try {
+    const persisted = loadCustomersFromDisk()
+    global.allCustomers = Array.isArray(persisted) ? persisted : []
+    console.log(`[init /api/dashboard-stats] Loaded ${global.allCustomers.length} customers from disk`)
+  } catch (e) {
+    console.warn('Failed to load customers from disk:', e)
+    global.allCustomers = []
+  }
 }
 
 export async function GET(request: NextRequest) {
