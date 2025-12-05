@@ -18,7 +18,7 @@ export interface ShopifySettings {
   autoSendEmail: boolean // Automatically send invoice email to customer
 }
 
-const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
+export const DEFAULT_SHOPIFY_SETTINGS: ShopifySettings = {
   enabled: true,
   shopDomain: process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com',
   accessToken: process.env.SHOPIFY_ACCESS_TOKEN || 'SHOPIFY_ACCESS_TOKEN_PLACEHOLDER',
