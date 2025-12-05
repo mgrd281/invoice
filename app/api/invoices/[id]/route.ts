@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCompanySettings } from '@/lib/company-settings'
+import { ShopifyAPI } from '@/lib/shopify-api'
+import { getShopifySettings } from '@/lib/shopify-settings'
+import { handleOrderCreate } from '@/lib/shopify-order-handler'
 
 // Access global storage for all invoice data
 declare global {
@@ -197,7 +200,7 @@ export async function GET(
                   id: fetchedInvoice.id,
                   number: fetchedInvoice.number,
                   date: fetchedInvoice.date,
-                  dueDate: fetchedInvoice.dueDate || new Date(new Date(fetchedInvoice.date).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                  dueDate: fetchedInvoice.dueDate ? new Date(fetchedInvoice.dueDate).toISOString().split('T')[0] : new Date(new Date(fetchedInvoice.date).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                   subtotal: fetchedInvoice.subtotal || 0,
                   taxRate: fetchedInvoice.taxRate || 19,
                   taxAmount: fetchedInvoice.taxAmount || 0,
