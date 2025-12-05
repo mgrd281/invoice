@@ -212,11 +212,9 @@ export class ShopifyAPI {
       let firstAttemptDone = false
 
       while (hasMorePages && pageCount < 1000) { // Safety limit of 1000 pages
-        const urlParams = new URLSearchParams({
-          limit: '250' // Shopify Maximum per page
-          // Get ALL fields to ensure we have complete customer data
-        })
         const searchParams = new URLSearchParams()
+        searchParams.set('limit', '250') // Always request max per page for efficiency
+
         // Request specific fields including customer data
         // Request ALL fields by default to ensure no data is missing (especially addresses)
         // searchParams.set('fields', 'id,name,email,created_at,updated_at,total_price,subtotal_price,total_tax,currency,financial_status,fulfillment_status,customer,billing_address,shipping_address,line_items,tax_lines')
