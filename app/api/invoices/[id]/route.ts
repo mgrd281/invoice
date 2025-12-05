@@ -180,7 +180,9 @@ export async function GET(
             const shopifyOrderId = invoiceId.replace('shopify-', '')
 
             console.log('Fetching order from Shopify:', shopifyOrderId)
-            const order = await api.getOrder(shopifyOrderId)
+            // Parse to number as required by ShopifyAPI.getOrder
+            // Note: Shopify IDs are large integers, but the API wrapper expects number type
+            const order = await api.getOrder(parseInt(shopifyOrderId, 10))
 
             if (order) {
               // Convert to invoice on the fly
