@@ -66,6 +66,35 @@ export async function GET(req: Request) {
           order = partialOrder
         }
 
+        // ---------------------------------------------------------
+        // DEEP CUSTOMER FETCH STRATEGY (For Digital Products)
+        // ---------------------------------------------------------
+        // If we still lack basic data, fetch the FULL Customer Profile explicitly
+        if ((!order.billing_address || !order.customer?.first_name) && order.customer?.id) {
+          console.log(`🕵️‍♀️ Fetching FULL Customer Profile for #${order.customer.id} to fix missing data...`)
+          try {
+            const fullCustomer = await api.getCustomer(order.customer.id)
+            if (fullCustomer) {
+              // Merge customer data into order
+              if (!order.customer.first_name) order.customer.first_name = fullCustomer.first_name
+              if (!order.customer.last_name) order.customer.last_name = fullCustomer.last_name
+              if (!order.customer.email) order.customer.email = fullCustomer.email
+
+              // Use default address as billing address if missing
+              if (!order.billing_address && fullCustomer.default_address) {
+                console.log(`✅ Applied Default Address from Customer Profile to Order ${order.name}`)
+                order.billing_address = {
+                  ...fullCustomer.default_address,
+                  name: `${fullCustomer.first_name} ${fullCustomer.last_name}`
+                }
+              }
+            }
+          } catch (custErr) {
+            console.error('Failed to fetch customer profile:', custErr)
+          }
+        }
+        // ---------------------------------------------------------
+
         // Debug Log for Address Issues
         if (!order.billing_address && !(order as any).shipping_address && !order.customer?.default_address) {
           console.warn(`⚠️ Order ${order.name} has NO address data! Raw keys:`, Object.keys(order))
