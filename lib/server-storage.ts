@@ -1,5 +1,3 @@
-import 'server-only'
-
 // Lightweight server-side JSON storage utilities
 // Uses a user-storage directory in the project root to persist small pieces of state
 

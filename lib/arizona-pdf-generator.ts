@@ -749,18 +749,9 @@ export async function saveArizonaPDF(invoice: InvoiceData): Promise<void> {
 /**
  * Generates PDF as buffer for email attachments
  */
-import { loadInvoicesFromDisk } from './server-storage'
-
 export async function generateArizonaPDFBuffer(invoiceId: string): Promise<Buffer | null> {
   try {
-    // Direct data access instead of fetch (which fails on Vercel)
-    // We need to dynamically import to avoid circular dependencies if possible, 
-    // or just use the imported function if it's safe.
-    // Since we are in a server context here, we can read directly.
-
-    // Note: In a real app we might need to handle this better, but for now:
-    // We will try to find the invoice in the global state or load from disk
-
+    // Direct data access instead of fetch
     let invoiceData = null;
 
     // Try to find in global scope if available (server runtime)
@@ -768,10 +759,17 @@ export async function generateArizonaPDFBuffer(invoiceId: string): Promise<Buffe
       invoiceData = global.allInvoices.find((inv: any) => inv.id === invoiceId)
     }
 
-    // If not found, try to load from disk
+    // If not found, try to load from disk using dynamic import to avoid client-side bundling issues
     if (!invoiceData) {
-      const allInvoices = loadInvoicesFromDisk()
-      invoiceData = allInvoices.find((inv: any) => inv.id === invoiceId)
+      try {
+        // Dynamically import server-storage only when running on server
+        // @ts-ignore
+        const { loadInvoicesFromDisk } = require('./server-storage')
+        const allInvoices = loadInvoicesFromDisk()
+        invoiceData = allInvoices.find((inv: any) => inv.id === invoiceId)
+      } catch (e) {
+        console.warn('Could not load invoices from disk (likely client-side)', e)
+      }
     }
 
     if (!invoiceData) {
