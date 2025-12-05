@@ -749,18 +749,38 @@ export async function saveArizonaPDF(invoice: InvoiceData): Promise<void> {
 /**
  * Generates PDF as buffer for email attachments
  */
+import { loadInvoicesFromDisk } from './server-storage'
+
 export async function generateArizonaPDFBuffer(invoiceId: string): Promise<Buffer | null> {
   try {
-    // Fetch invoice data from API
-    const response = await fetch(`http://localhost:3000/api/invoices/${invoiceId}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch invoice data')
+    // Direct data access instead of fetch (which fails on Vercel)
+    // We need to dynamically import to avoid circular dependencies if possible, 
+    // or just use the imported function if it's safe.
+    // Since we are in a server context here, we can read directly.
+
+    // Note: In a real app we might need to handle this better, but for now:
+    // We will try to find the invoice in the global state or load from disk
+
+    let invoiceData = null;
+
+    // Try to find in global scope if available (server runtime)
+    if (global.allInvoices) {
+      invoiceData = global.allInvoices.find((inv: any) => inv.id === invoiceId)
     }
 
-    const invoice = await response.json()
+    // If not found, try to load from disk
+    if (!invoiceData) {
+      const allInvoices = loadInvoicesFromDisk()
+      invoiceData = allInvoices.find((inv: any) => inv.id === invoiceId)
+    }
+
+    if (!invoiceData) {
+      console.error(`Invoice ${invoiceId} not found for PDF generation`)
+      return null
+    }
 
     // Generate PDF document
-    const doc = await generateArizonaPDF(invoice)
+    const doc = await generateArizonaPDF(invoiceData)
 
     // Convert to buffer for email attachment
     return Buffer.from(doc.output('arraybuffer'))
