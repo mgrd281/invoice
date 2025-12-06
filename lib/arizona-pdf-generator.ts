@@ -503,7 +503,10 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
       doc.text(eanText, 110, yPos, { align: 'center' })
       doc.text(`${item.quantity} Stk.`, 125, yPos)
-      doc.text(`${invoice.taxRate}%`, 145, yPos)
+
+      // Fix undefined% issue by defaulting to 19 if taxRate is missing or 0
+      const taxRate = invoice.taxRate || 19
+      doc.text(`${taxRate}%`, 145, yPos)
 
       const unitPrice = Math.abs(item.unitPrice)
       const total = Math.abs(item.total)
@@ -538,7 +541,8 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     }
 
     yPos += 6
-    doc.text(`MwSt. ${invoice.taxRate}%`, 140, yPos)
+    const finalTaxRate = invoice.taxRate || 19
+    doc.text(`MwSt. ${finalTaxRate}%`, 140, yPos)
     const taxAmount = Math.abs(invoice.taxAmount)
     if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE) {
       doc.text(`-${taxAmount.toFixed(2)}`, 180, yPos)
