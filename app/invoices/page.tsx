@@ -924,9 +924,15 @@ export default function InvoicesPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{invoice.customerName}</TableCell>
-                      <TableCell>{invoice.date}</TableCell>
-                      <TableCell className="font-medium">{invoice.amount}</TableCell>
+                      <TableCell>
+                        {invoice.customerName || invoice.customer?.name || 'Unbekannter Kunde'}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.date ? new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {new Intl.NumberFormat('de-DE', { style: 'currency', currency: invoice.currency || 'EUR' }).format(invoice.amount || invoice.total || 0)}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${invoice.statusColor}`}>

@@ -109,16 +109,21 @@ export async function GET(request: NextRequest) {
       ...(global.allInvoices || [])
     ]
 
-    // Filter out soft-deleted invoices - admin can see all, regular users see only their own
+    // Filter out soft-deleted invoices
+    // Admin sees all
+    // Regular users see:
+    // 1. Their own invoices (userId matches)
+    // 2. Imported/System invoices (no userId)
     let filteredInvoices
     if (shouldShowAllData(user)) {
       filteredInvoices = allInvoices.filter((invoice: any) => !invoice.deleted_at)
-      console.log(`ADMIN ${user.email} - returning ${filteredInvoices.length} active invoices (${allInvoices.length} total in system)`)
+      log(`ADMIN access: returning ${filteredInvoices.length} active invoices`);
     } else {
       filteredInvoices = allInvoices.filter((invoice: any) =>
-        !invoice.deleted_at && invoice.userId === user.id
+        !invoice.deleted_at &&
+        (!invoice.userId || invoice.userId === user.id || invoice.source === 'shopify')
       )
-      console.log(`USER ${user.email} - returning ${filteredInvoices.length} own active invoices (${allInvoices.length} total in system)`)
+      log(`USER access: returning ${filteredInvoices.length} invoices (own + system)`);
     }
 
     return NextResponse.json(filteredInvoices)
