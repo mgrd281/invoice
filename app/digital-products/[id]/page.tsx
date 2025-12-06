@@ -25,11 +25,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     // Edit product state
     const [isEditingProduct, setIsEditingProduct] = useState(false)
     const [editProductData, setEditProductData] = useState({ title: '' })
-    const [loading, setLoading] = useState(true)
-    const [newKeys, setNewKeys] = useState('')
-    const [template, setTemplate] = useState('')
-    const [savingTemplate, setSavingTemplate] = useState(false)
-    const [addingKeys, setAddingKeys] = useState(false)
+
 
     useEffect(() => {
         loadData()
@@ -131,7 +127,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
         }
     }
 
-    const [uploadProgress, setUploadProgress] = useState(0)
+
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
