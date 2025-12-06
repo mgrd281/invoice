@@ -15,11 +15,76 @@ export default function SupportPage() {
     const [tickets, setTickets] = useState<any[]>([])
     const [newTemplate, setNewTemplate] = useState({ title: '', content: '', keywords: '' })
 
+    // Search State
+    const [query, setQuery] = useState('')
+    const [results, setResults] = useState<any[]>([])
+    const [loading, setLoading] = useState(false)
+    const [selectedResult, setSelectedResult] = useState<any>(null)
+    const [replyText, setReplyText] = useState('')
+
     // Load templates and tickets on mount
     useEffect(() => {
         loadTemplates()
         loadTickets()
     }, [])
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!query.trim()) return
+
+        setLoading(true)
+        setSelectedResult(null)
+        try {
+            const res = await fetch(`/api/support/search?query=${encodeURIComponent(query)}`)
+            const data = await res.json()
+            if (data.success) {
+                setResults(data.data)
+            }
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSendReply = async () => {
+        if (!selectedResult?.customer?.email || !replyText.trim()) return
+
+        setLoading(true)
+        try {
+            const res = await fetch('/api/support/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: selectedResult.customer.email,
+                    subject: `Re: Bestellung ${selectedResult.order?.orderNumber || ''}`,
+                    content: replyText
+                })
+            })
+
+            if (res.ok) {
+                alert('E-Mail erfolgreich gesendet!')
+                setReplyText('')
+            } else {
+                alert('Fehler beim Senden der E-Mail.')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('Ein Fehler ist aufgetreten.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleAiGenerate = () => {
+        const templates = [
+            "Sehr geehrter Kunde,\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage geprüft und können Ihnen mitteilen, dass...\n\nMit freundlichen Grüßen,\nIhr Support-Team",
+            "Hallo,\n\nentschuldigen Sie bitte die Unannehmlichkeiten. Wir haben das Problem identifiziert und...\n\nBeste Grüße",
+            "Guten Tag,\n\nvielen Dank für Ihren Einkauf. Hier sind weitere Informationen zu Ihrer Bestellung...\n\nViele Grüße"
+        ]
+        const randomTemplate = templates[Math.floor(Math.random() * templates.length)]
+        setReplyText(randomTemplate)
+    }
 
     const loadTemplates = async () => {
         try {
