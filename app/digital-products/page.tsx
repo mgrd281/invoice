@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Plus, Key, ShoppingBag, CheckCircle, XCircle, Trash2 } from 'lucide-react'
+import { Plus, Key, ShoppingBag, CheckCircle, XCircle, Trash2, BarChart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface DigitalProduct {
@@ -71,10 +71,16 @@ export default function DigitalProductsPage() {
                         </div>
                         <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                     </div>
-                    <Button onClick={() => router.push('/digital-products/new')}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Neues Produkt
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => router.push('/digital-products/reports')}>
+                            <BarChart className="w-4 h-4 mr-2" />
+                            Berichte
+                        </Button>
+                        <Button onClick={() => router.push('/digital-products/new')}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Neues Produkt
+                        </Button>
+                    </div>
                 </div>
             </header>
 
