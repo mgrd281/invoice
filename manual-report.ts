@@ -7,6 +7,7 @@ import { loadInvoicesFromDisk, saveInvoicesToDisk } from './lib/server-storage'
 import * as fs from 'fs'
 import * as path from 'path'
 import dotenv from 'dotenv'
+import JSZip from 'jszip'
 
 // Load environment variables manually
 try {
@@ -50,21 +51,19 @@ console.log('SHOPIFY_ACCESS_TOKEN length:', process.env.SHOPIFY_ACCESS_TOKEN ? p
 
 async function run() {
     try {
-        console.log('⏰ Starting Manual Daily Report...')
+        console.log('⏰ Starting Manual Report for Range...')
 
-        // Hardcoded date as requested: 5.12.2025
-        // Note: Month is 0-indexed in JS Date constructor if using (year, month, day), but string parsing is 1-indexed.
-        // "2025-12-05" is safer.
-        const targetDateStr = "2025-12-05"
-        const now = new Date(targetDateStr)
+        // Date Range: 01.11.2025 to 30.11.2025
+        const startTargetDate = "2025-11-01"
+        const endTargetDate = "2025-11-30"
 
-        console.log(`📅 Using date: ${now.toLocaleDateString('de-DE')}`)
-
-        const startOfDay = new Date(now)
+        const startOfDay = new Date(startTargetDate)
         startOfDay.setHours(0, 0, 0, 0)
 
-        const endOfDay = new Date(now)
+        const endOfDay = new Date(endTargetDate)
         endOfDay.setHours(23, 59, 59, 999)
+
+        console.log(`📅 Report Range: ${startOfDay.toLocaleDateString('de-DE')} - ${endOfDay.toLocaleDateString('de-DE')}`)
 
         const startDateStr = startOfDay.toISOString()
         const endDateStr = endOfDay.toISOString()
@@ -139,11 +138,11 @@ async function run() {
                 const invDate = new Date(inv.date)
                 return invDate >= startOfDay && invDate <= endOfDay
             })
-            console.log(`📦 Found ${invoices.length} invoices for date ${targetDateStr} in local storage.`)
+            console.log(`📦 Found ${invoices.length} invoices for range in local storage.`)
         }
 
         if (invoices.length === 0) {
-            console.log('⚠️ No invoices found for this date.')
+            console.log('⚠️ No invoices found for this date range.')
             return
         }
 
@@ -154,6 +153,10 @@ async function run() {
 
         const attachments = []
         const orderRows = []
+
+        // Initialize ZIP
+        const zip = new JSZip()
+        const invoicesFolder = zip.folder("Rechnungen")
 
         // CSV Header
         let csvContent = 'Rechnungsnummer;Datum;Kunde;Email;Produkte;Netto;MwSt;Brutto\n'
@@ -177,13 +180,16 @@ async function run() {
                 const doc = await generateArizonaPDF(invoice)
                 const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
 
-                attachments.push({
-                    filename: `Rechnung_${invoice.number}.pdf`,
-                    content: pdfBuffer,
-                    contentType: 'application/pdf'
-                })
+                // Add to ZIP
+                invoicesFolder?.file(`Rechnung_${invoice.number}.pdf`, pdfBuffer)
 
-                await new Promise(r => setTimeout(r, 500))
+                // Add individual PDF to attachments (optional, but maybe too many? Let's keep them if not too many, or just ZIP)
+                // User asked for ZIP, but usually individual PDFs are good too if few. 
+                // However, user said "add also all invoices as zip", implying both or just zip.
+                // To avoid email size limits, let's ONLY attach the ZIP and the CSV if there are many.
+                // But for safety, let's attach the ZIP as the main thing.
+
+                await new Promise(r => setTimeout(r, 200)) // Faster timeout
 
                 const gross = invoice.total || 0
                 const tax = invoice.taxAmount || 0
@@ -199,6 +205,7 @@ async function run() {
                 orderRows.push(`
           <tr>
             <td style="padding: 8px; border-bottom: 1px solid #ddd;">${invoice.number}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date(invoice.date).toLocaleDateString('de-DE')}</td>
             <td style="padding: 8px; border-bottom: 1px solid #ddd;">
                 ${invoice.customerName || invoice.customer?.name}<br>
                 <span style="font-size: 11px; color: #666;">${productNames}</span>
@@ -226,6 +233,25 @@ async function run() {
             }
         }
 
+        // Generate ZIP Buffer
+        console.log('🗜️ Generating ZIP file...')
+        const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
+        console.log(`📦 ZIP generated, size: ${(zipBuffer.length / 1024 / 1024).toFixed(2)} MB`)
+
+        // Attach CSV
+        attachments.push({
+            filename: `Export_${startTargetDate}_bis_${endTargetDate}.csv`,
+            content: Buffer.from(csvContent, 'utf-8'),
+            contentType: 'text/csv'
+        })
+
+        // Attach ZIP
+        attachments.push({
+            filename: `Rechnungen_${startTargetDate}_bis_${endTargetDate}.zip`,
+            content: zipBuffer,
+            contentType: 'application/zip'
+        })
+
         // SAVE TO DISK for Chatbot/Dashboard visibility
         if (source === 'shopify' && invoices.length > 0) {
             try {
@@ -243,7 +269,7 @@ async function run() {
 
                 if (newCount > 0) {
                     saveInvoicesToDisk(existingInvoices)
-                    console.log(`💾 Saved ${newCount} new invoices to local database (visible in Dashboard/Chatbot).`)
+                    console.log(`💾 Saved ${newCount} new invoices to local database.`)
                 } else {
                     console.log('💾 All invoices already exist in local database.')
                 }
@@ -252,15 +278,9 @@ async function run() {
             }
         }
 
-        attachments.push({
-            filename: `Tagesabschluss_${now.toISOString().split('T')[0]}.csv`,
-            content: Buffer.from(csvContent, 'utf-8'),
-            contentType: 'text/csv'
-        })
-
         const emailHtml = `
-      <div style="font-family: Arial, sans-serif; color: #333; max-width: 700px; margin: 0 auto;">
-        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Tagesabschluss: ${now.toLocaleDateString('de-DE')}</h1>
+      <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto;">
+        <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Rechnungsbericht: ${startOfDay.toLocaleDateString('de-DE')} - ${endOfDay.toLocaleDateString('de-DE')}</h1>
         
         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h2 style="margin-top: 0;">Zusammenfassung</h2>
@@ -289,6 +309,7 @@ async function run() {
           <thead>
             <tr style="background-color: #eee;">
               <th style="padding: 8px;">Rechnung #</th>
+              <th style="padding: 8px;">Datum</th>
               <th style="padding: 8px;">Kunde / Produkte</th>
               <th style="padding: 8px; text-align: right;">Netto</th>
               <th style="padding: 8px; text-align: right;">MwSt</th>
@@ -296,31 +317,31 @@ async function run() {
             </tr>
           </thead>
           <tbody>
-            ${orderRows.join('') || '<tr><td colspan="5" style="padding: 10px; text-align: center;">Keine Bestellungen heute.</td></tr>'}
+            ${orderRows.join('') || '<tr><td colspan="6" style="padding: 10px; text-align: center;">Keine Bestellungen in diesem Zeitraum.</td></tr>'}
           </tbody>
         </table>
 
         <p style="margin-top: 30px; font-size: 12px; color: #888;">
-          Anbei finden Sie alle Rechnungen des Tages als PDF sowie eine CSV-Exportdatei.<br>
+          Anbei finden Sie alle Rechnungen als ZIP-Archiv sowie eine CSV-Exportdatei.<br>
           Zeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}
         </p>
       </div>
     `
 
         const targetEmail = 'karinakhristich@gmail.com'
-        console.log(`📧 Sending enhanced daily report to ${targetEmail} with ${attachments.length} attachments...`)
+        console.log(`📧 Sending report to ${targetEmail} with ZIP and CSV...`)
 
         await sendEmail({
             to: targetEmail,
-            subject: `Tagesabschluss ${now.toLocaleDateString('de-DE')} - ${totalGross.toFixed(2)} € Umsatz`,
+            subject: `Rechnungsbericht ${startOfDay.toLocaleDateString('de-DE')} - ${endOfDay.toLocaleDateString('de-DE')} (${invoices.length} Rechnungen)`,
             html: emailHtml,
             attachments: attachments
         })
 
-        console.log('✅ Enhanced daily report sent successfully!')
+        console.log('✅ Report sent successfully!')
 
     } catch (error) {
-        console.error('❌ Error in daily report:', error)
+        console.error('❌ Error in report:', error)
     }
 }
 

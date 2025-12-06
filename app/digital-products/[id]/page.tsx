@@ -289,9 +289,14 @@ Viel Spaß!`
                                 <CardTitle>Status</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                                    <span className="text-green-700 font-medium">Verfügbar</span>
-                                    <span className="text-2xl font-bold text-green-700">{availableKeys}</span>
+                                <div className={`flex justify-between items-center p-3 rounded-lg ${availableKeys < 10 ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50'}`}>
+                                    <div className="flex flex-col">
+                                        <span className={`${availableKeys < 10 ? 'text-yellow-800' : 'text-green-700'} font-medium`}>Verfügbar</span>
+                                        {availableKeys < 10 && (
+                                            <span className="text-xs text-yellow-600 font-semibold mt-1">⚠️ Niedriger Bestand</span>
+                                        )}
+                                    </div>
+                                    <span className={`text-2xl font-bold ${availableKeys < 10 ? 'text-yellow-800' : 'text-green-700'}`}>{availableKeys}</span>
                                 </div>
                                 <div className="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
                                     <span className="text-gray-700 font-medium">Verbraucht</span>

@@ -129,9 +129,17 @@ export default function DigitalProductsPage() {
                                     <CardContent>
                                         <div className="flex items-center justify-between mt-4">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full ${product._count.keys > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                <span className="text-sm font-medium text-gray-700">
+                                                <div className={`w-3 h-3 rounded-full ${product._count.keys === 0 ? 'bg-red-500' :
+                                                        product._count.keys < 10 ? 'bg-yellow-500' : 'bg-green-500'
+                                                    }`} />
+                                                <span className={`text-sm font-medium ${product._count.keys < 10 ? 'text-yellow-700' : 'text-gray-700'
+                                                    }`}>
                                                     {product._count.keys} Keys verfügbar
+                                                    {product._count.keys < 10 && (
+                                                        <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                                                            Niedriger Bestand
+                                                        </span>
+                                                    )}
                                                 </span>
                                             </div>
                                             <Button variant="ghost" size="sm">Verwalten &rarr;</Button>
