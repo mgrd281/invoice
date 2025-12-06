@@ -70,6 +70,19 @@ export async function processDigitalProductOrder(
         return { success: false, error: 'Product not configured as digital product' }
     }
 
+    // Check if key already assigned for this order
+    const existingKey = await prisma.licenseKey.findFirst({
+        where: {
+            digitalProductId: digitalProduct.id,
+            shopifyOrderId: shopifyOrderId
+        }
+    })
+
+    if (existingKey) {
+        console.log(`Key already assigned for order ${shopifyOrderId} and product ${digitalProduct.id}`)
+        return { success: true, key: existingKey.key, message: 'Key already assigned' }
+    }
+
     const key = await getAvailableKey(digitalProduct.id)
 
     if (!key) {
