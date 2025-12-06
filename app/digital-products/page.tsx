@@ -65,11 +65,18 @@ export default function DigitalProductsPage() {
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-blue-600 p-2 rounded-lg">
-                            <Key className="h-6 w-6 text-white" />
+                    <div className="flex items-center gap-4">
+                        <Link href="/dashboard">
+                            <Button variant="ghost" size="icon" className="hover:bg-gray-100">
+                                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                            </Button>
+                        </Link>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-blue-600 p-2 rounded-lg">
+                                <Key className="h-6 w-6 text-white" />
+                            </div>
+                            <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                         </div>
-                        <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => router.push('/digital-products/reports')}>
