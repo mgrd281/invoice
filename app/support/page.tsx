@@ -429,28 +429,28 @@ export default function SupportPage() {
                                 <CardContent className="p-6 space-y-6">
                                     {/* Quick Templates */}
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 block">Schnell-Vorlagen</label>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 block">Schnell-Vorlagen (Digitale Produkte)</label>
                                         <div className="flex gap-2 flex-wrap">
                                             <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100" onClick={() => setNewTemplate({
-                                                title: 'Rückerstattung Anfrage',
-                                                keywords: 'rückerstattung, refund, geld zurück, storno',
-                                                content: 'Sehr geehrter Kunde,\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage zur Rückerstattung erhalten. Unsere Buchhaltung wird dies innerhalb von 24 Stunden prüfen.\n\nMit freundlichen Grüßen,\nIhr Support-Team'
+                                                title: 'Kein Lizenzschlüssel erhalten',
+                                                keywords: 'key, schlüssel, code, nicht erhalten, fehlt',
+                                                content: 'Guten Tag,\n\nvielen Dank für Ihre Nachricht. Ihr Lizenzschlüssel wurde automatisch an Ihre E-Mail-Adresse gesendet. Bitte prüfen Sie auch Ihren Spam-Ordner.\n\nFalls er dort nicht zu finden ist, senden wir ihn Ihnen gerne erneut zu.\n\nMit freundlichen Grüßen,\nIhr Support-Team'
                                             })}>
-                                                💰 Rückerstattung
+                                                🔑 Key fehlt
                                             </Button>
                                             <Button variant="outline" size="sm" className="bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100" onClick={() => setNewTemplate({
-                                                title: 'Wo ist meine Bestellung?',
-                                                keywords: 'wo, lieferung, versand, status, wann',
-                                                content: 'Hallo,\n\nvielen Dank für Ihre Geduld. Aufgrund hoher Nachfrage kann sich der Versand um 1-2 Tage verzögern. Ihre Bestellung wird priorisiert behandelt.\n\nBeste Grüße'
+                                                title: 'Download funktioniert nicht',
+                                                keywords: 'download, herunterladen, link, fehler, geht nicht',
+                                                content: 'Hallo,\n\nes tut uns leid, dass Sie Probleme beim Download haben. Bitte versuchen Sie es mit einem anderen Browser (z.B. Chrome oder Firefox) und deaktivieren Sie kurzzeitig Ihren VPN/Adblocker.\n\nHier ist ein direkter Alternativ-Link für Sie: [LINK]\n\nBeste Grüße'
                                             })}>
-                                                📦 Lieferstatus
+                                                ⬇️ Download Problem
                                             </Button>
                                             <Button variant="outline" size="sm" className="bg-green-50 text-green-700 border-green-100 hover:bg-green-100" onClick={() => setNewTemplate({
-                                                title: 'Rechnung anfordern',
-                                                keywords: 'rechnung, beleg, invoice, steuer',
-                                                content: 'Guten Tag,\n\nSie finden Ihre Rechnung direkt im Anhang Ihrer Bestellbestätigung oder in Ihrem Kundenkonto unter "Bestellungen".\n\nViele Grüße'
+                                                title: 'Aktivierung fehlgeschlagen',
+                                                keywords: 'aktivierung, aktivieren, ungültig, error, fehlercode',
+                                                content: 'Guten Tag,\n\nbitte stellen Sie sicher, dass Sie die Software als Administrator ausführen und keine Leerzeichen beim Kopieren des Codes mitnehmen.\n\nSollte der Fehler weiterhin bestehen, senden Sie uns bitte einen Screenshot der Fehlermeldung.\n\nViele Grüße'
                                             })}>
-                                                📄 Rechnung
+                                                ⚠️ Aktivierung
                                             </Button>
                                         </div>
                                     </div>
