@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Search, Mail, User, ShoppingBag, Key, MessageSquare, Send, Trash2 } from 'lucide-react'
+import { Search, Mail, User, ShoppingBag, Key, MessageSquare, Send, Trash2, Sparkles, Plus, RefreshCw, Clock, Archive, Reply, Bot } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -310,66 +310,94 @@ export default function SupportPage() {
                     </TabsContent>
 
                     <TabsContent value="tickets" className="space-y-6">
-                        <div className="flex justify-between items-center mb-4">
+                        <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h2 className="text-lg font-bold text-gray-900">Posteingang</h2>
-                                <p className="text-sm text-gray-500">Verwalten Sie hier alle eingehenden Kundenanfragen.</p>
+                                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Posteingang</h2>
+                                <p className="text-gray-500 mt-1">Verwalten Sie Kundenanfragen und automatische Antworten.</p>
                             </div>
-                            <Button variant="outline" size="sm" onClick={loadTickets}>
-                                🔄 Aktualisieren
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={loadTickets} className="gap-2">
+                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                    Aktualisieren
+                                </Button>
+                            </div>
                         </div>
 
                         {tickets.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl border border-dashed">
-                                <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-500 font-medium">Keine Nachrichten vorhanden</p>
-                                <p className="text-sm text-gray-400">Neue E-Mails erscheinen hier automatisch.</p>
+                            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                    <Mail className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">Alles erledigt!</h3>
+                                <p className="text-gray-500 text-sm mt-1">Keine neuen Nachrichten im Posteingang.</p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="grid gap-4">
                                 {tickets.map((ticket, i) => (
-                                    <div key={i} className="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+                                    <div key={i} className="group bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200 overflow-hidden">
                                         {/* Ticket Header */}
-                                        <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-start">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                        <div className="p-5 flex justify-between items-start gap-4">
+                                            <div className="flex items-start gap-4">
+                                                {/* Avatar */}
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0 ${['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'][ticket.customerEmail?.length % 5]
+                                                    }`}>
                                                     {ticket.customerEmail?.substring(0, 2).toUpperCase() || 'KD'}
                                                 </div>
+
+                                                {/* Info */}
                                                 <div>
-                                                    <h4 className="font-bold text-gray-900 leading-tight">{ticket.subject || 'Kein Betreff'}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs text-gray-500 font-mono bg-white px-1.5 py-0.5 rounded border">{ticket.customerEmail}</span>
-                                                        <span className="text-xs text-gray-400">•</span>
-                                                        <span className="text-xs text-gray-500">{new Date(ticket.createdAt).toLocaleString('de-DE')}</span>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h4 className="font-bold text-gray-900 text-lg leading-tight">{ticket.subject || 'Kein Betreff'}</h4>
+                                                        <Badge variant={ticket.status === 'OPEN' ? 'default' : 'secondary'} className={`uppercase text-[10px] tracking-wider font-bold ${ticket.status === 'OPEN' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600'}`}>
+                                                            {ticket.status === 'OPEN' ? 'OFFEN' : ticket.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-sm text-gray-500">
+                                                        <span className="font-medium text-gray-700">{ticket.customerEmail}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {new Date(ticket.createdAt).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Badge variant={ticket.status === 'OPEN' ? 'default' : 'secondary'} className={ticket.status === 'OPEN' ? 'bg-green-600 hover:bg-green-700' : ''}>
-                                                {ticket.status}
-                                            </Badge>
+
+                                            {/* Actions (Visible on Hover) */}
+                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-700">
+                                                    <Archive className="w-4 h-4" />
+                                                </Button>
+                                                <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm" onClick={() => {
+                                                    setActiveTab('search')
+                                                    setQuery(ticket.customerEmail)
+                                                }}>
+                                                    <Reply className="w-4 h-4" />
+                                                    Antworten
+                                                </Button>
+                                            </div>
                                         </div>
 
-                                        {/* Conversation View */}
-                                        <div className="p-4 space-y-4 bg-white">
+                                        {/* Conversation Thread */}
+                                        <div className="bg-gray-50/50 border-t border-gray-100 p-5 space-y-4">
                                             {/* Customer Message */}
                                             {ticket.messages[0] && (
-                                                <div className="flex gap-3">
+                                                <div className="flex gap-4">
                                                     <div className="flex-1">
-                                                        <div className="bg-gray-50 text-gray-800 p-3.5 rounded-2xl rounded-tl-none inline-block max-w-[90%] text-sm leading-relaxed whitespace-pre-wrap border border-gray-100">
+                                                        <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
                                                             {ticket.messages[0].content}
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {/* Auto-Reply or System Messages */}
+                                            {/* Auto-Reply */}
                                             {ticket.messages.slice(1).map((msg: any, m: number) => (
-                                                <div key={m} className="flex gap-3 justify-end">
+                                                <div key={m} className="flex gap-4 justify-end">
                                                     <div className="flex-1 flex justify-end">
-                                                        <div className="bg-blue-50 text-blue-900 p-3.5 rounded-2xl rounded-tr-none inline-block max-w-[90%] text-sm leading-relaxed border border-blue-100 shadow-sm">
-                                                            <div className="flex items-center gap-2 mb-1 text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                                        <div className="bg-blue-50/80 p-4 rounded-2xl rounded-tr-none border border-blue-100 text-blue-900 text-sm leading-relaxed max-w-[90%] shadow-sm">
+                                                            <div className="flex items-center gap-2 mb-2 text-xs font-bold text-blue-600 uppercase tracking-wider border-b border-blue-100 pb-2">
+                                                                <Bot className="w-3 h-3" />
                                                                 Automatische Antwort
                                                             </div>
                                                             {msg.content}
@@ -377,19 +405,6 @@ export default function SupportPage() {
                                                     </div>
                                                 </div>
                                             ))}
-                                        </div>
-
-                                        {/* Quick Actions Footer */}
-                                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
-                                                Archivieren
-                                            </Button>
-                                            <Button size="sm" variant="outline" onClick={() => {
-                                                setActiveTab('search')
-                                                setQuery(ticket.customerEmail)
-                                            }}>
-                                                Antworten & Details
-                                            </Button>
                                         </div>
                                     </div>
                                 ))}
