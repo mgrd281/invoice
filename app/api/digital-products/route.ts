@@ -30,10 +30,36 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { shopifyProductId, title, organizationId } = body
+        let { shopifyProductId, title, organizationId } = body
 
-        if (!shopifyProductId || !title || !organizationId) {
+        if (!shopifyProductId || !title) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+        }
+
+        // If no organizationId provided or it's the dummy one, try to find a valid one
+        if (!organizationId || organizationId === 'default-org-id') {
+            const firstOrg = await prisma.organization.findFirst()
+            if (firstOrg) {
+                organizationId = firstOrg.id
+            } else {
+                // Create a default organization if none exists
+                // This is a fallback for initial setup
+                try {
+                    const newOrg = await prisma.organization.create({
+                        data: {
+                            name: 'Default Organization',
+                            slug: 'default-org-' + Date.now(),
+                            address: 'Default Address',
+                            zipCode: '00000',
+                            city: 'Default City'
+                        }
+                    })
+                    organizationId = newOrg.id
+                } catch (e) {
+                    console.error('Failed to create default org:', e)
+                    return NextResponse.json({ error: 'Organization setup failed' }, { status: 500 })
+                }
+            }
         }
 
         const product = await prisma.digitalProduct.create({
