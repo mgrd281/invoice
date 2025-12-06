@@ -76,6 +76,8 @@ model Organization {
   auditLogs         AuditLog[]
   shopifyConnection ShopifyConnection?
   digitalProducts   DigitalProduct[]
+  supportTickets    SupportTicket[]
+  responseTemplates ResponseTemplate[]
 }
 
 model Account {
