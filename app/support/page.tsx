@@ -405,77 +405,162 @@ export default function SupportPage() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="settings">
-                    <div className="grid gap-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Neue Auto-Reply Regel erstellen</CardTitle>
-                                <CardDescription>
-                                    Wenn eine E-Mail diese Schlüsselwörter enthält, wird automatisch die Antwort gesendet.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid gap-4">
-                                    <div>
-                                        <label className="text-sm font-medium">Titel (Intern)</label>
-                                        <Input
-                                            placeholder="z.B. Rückerstattung Info"
-                                            value={newTemplate.title}
-                                            onChange={e => setNewTemplate({ ...newTemplate, title: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium">Schlüsselwörter (kommagetrennt)</label>
-                                        <Input
-                                            placeholder="z.B. rückerstattung, refund, geld zurück"
-                                            value={newTemplate.keywords}
-                                            onChange={e => setNewTemplate({ ...newTemplate, keywords: e.target.value })}
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Wichtig: Trennen Sie einzelne Begriffe mit einem Komma. Beispiel: "key, code, schlüssel".
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium">Antwort-Text</label>
-                                        <Textarea
-                                            placeholder="Sehr geehrter Kunde..."
-                                            className="min-h-[150px]"
-                                            value={newTemplate.content}
-                                            onChange={e => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                                        />
-                                    </div>
-                                    <Button onClick={handleSaveTemplate}>Regel Speichern</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                <TabsContent value="settings" className="space-y-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Automatische Antworten</h2>
+                            <p className="text-gray-500 mt-1">Konfigurieren Sie intelligente Regeln für automatische E-Mail-Antworten.</p>
+                        </div>
+                    </div>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Aktive Regeln & Vorlagen</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {templates.map((t, i) => (
-                                        <div key={i} className="flex justify-between items-start border p-4 rounded-lg">
-                                            <div>
-                                                <h4 className="font-bold">{t.title}</h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Left Column: Create New Rule */}
+                        <div className="lg:col-span-7 space-y-6">
+                            <Card className="border-none shadow-md bg-white overflow-hidden">
+                                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Bot className="w-6 h-6 text-blue-100" />
+                                        <h3 className="text-lg font-bold">Neue Regel erstellen</h3>
+                                    </div>
+                                    <p className="text-blue-100 text-sm opacity-90">
+                                        Definieren Sie Schlüsselwörter, auf die das System automatisch reagieren soll.
+                                    </p>
+                                </div>
+                                <CardContent className="p-6 space-y-6">
+                                    {/* Quick Templates */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 block">Schnell-Vorlagen</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100" onClick={() => setNewTemplate({
+                                                title: 'Rückerstattung Anfrage',
+                                                keywords: 'rückerstattung, refund, geld zurück, storno',
+                                                content: 'Sehr geehrter Kunde,\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage zur Rückerstattung erhalten. Unsere Buchhaltung wird dies innerhalb von 24 Stunden prüfen.\n\nMit freundlichen Grüßen,\nIhr Support-Team'
+                                            })}>
+                                                💰 Rückerstattung
+                                            </Button>
+                                            <Button variant="outline" size="sm" className="bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100" onClick={() => setNewTemplate({
+                                                title: 'Wo ist meine Bestellung?',
+                                                keywords: 'wo, lieferung, versand, status, wann',
+                                                content: 'Hallo,\n\nvielen Dank für Ihre Geduld. Aufgrund hoher Nachfrage kann sich der Versand um 1-2 Tage verzögern. Ihre Bestellung wird priorisiert behandelt.\n\nBeste Grüße'
+                                            })}>
+                                                📦 Lieferstatus
+                                            </Button>
+                                            <Button variant="outline" size="sm" className="bg-green-50 text-green-700 border-green-100 hover:bg-green-100" onClick={() => setNewTemplate({
+                                                title: 'Rechnung anfordern',
+                                                keywords: 'rechnung, beleg, invoice, steuer',
+                                                content: 'Guten Tag,\n\nSie finden Ihre Rechnung direkt im Anhang Ihrer Bestellbestätigung oder in Ihrem Kundenkonto unter "Bestellungen".\n\nViele Grüße'
+                                            })}>
+                                                📄 Rechnung
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 border-t border-gray-100 pt-6">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2 md:col-span-1">
+                                                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Regel-Name (Intern)</label>
+                                                <Input
+                                                    placeholder="z.B. Lizenzschlüssel Hilfe"
+                                                    value={newTemplate.title}
+                                                    onChange={e => setNewTemplate({ ...newTemplate, title: e.target.value })}
+                                                    className="bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                                                />
+                                            </div>
+                                            <div className="col-span-2 md:col-span-1">
+                                                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Schlüsselwörter</label>
+                                                <Input
+                                                    placeholder="key, code, aktivieren"
+                                                    value={newTemplate.keywords}
+                                                    onChange={e => setNewTemplate({ ...newTemplate, keywords: e.target.value })}
+                                                    className="bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                                                />
+                                                <p className="text-[10px] text-gray-400 mt-1">Mit Komma trennen</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Automatische Antwort</label>
+                                            <Textarea
+                                                placeholder="Schreiben Sie hier die automatische Antwort..."
+                                                className="min-h-[200px] p-4 text-base leading-relaxed bg-gray-50 border-gray-200 focus:bg-white transition-colors resize-none"
+                                                value={newTemplate.content}
+                                                onChange={e => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <Button onClick={handleSaveTemplate} className="w-full bg-gray-900 hover:bg-black text-white py-6 text-lg shadow-lg hover:shadow-xl transition-all">
+                                            <Plus className="w-5 h-5 mr-2" />
+                                            Neue Regel speichern
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Right Column: Active Rules List */}
+                        <div className="lg:col-span-5 space-y-6">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-yellow-500" />
+                                        Aktive Regeln
+                                    </h3>
+                                    <Badge variant="secondary" className="bg-white border border-gray-200 text-gray-600">
+                                        {templates.length} Aktiv
+                                    </Badge>
+                                </div>
+                                <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+                                    {templates.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-400">
+                                            <Bot className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                            <p>Keine Regeln definiert.</p>
+                                        </div>
+                                    ) : (
+                                        templates.map((t, i) => (
+                                            <div key={i} className="p-4 hover:bg-gray-50 transition-colors group">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-bold text-gray-800">{t.title}</h4>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDeleteTemplate(t.id)}>
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+
                                                 {t.autoReplyKeywords && (
-                                                    <div className="flex gap-1 mt-1 flex-wrap">
+                                                    <div className="flex gap-1.5 flex-wrap mb-3">
                                                         {t.autoReplyKeywords.split(',').map((k: string, j: number) => (
-                                                            <Badge key={j} variant="secondary" className="text-xs">{k.trim()}</Badge>
+                                                            <span key={j} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                                {k.trim()}
+                                                            </span>
                                                         ))}
                                                     </div>
                                                 )}
-                                                <p className="text-sm text-gray-500 mt-2 line-clamp-2">{t.content}</p>
+
+                                                <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                                                    <p className="text-xs text-gray-500 line-clamp-3 italic leading-relaxed">
+                                                        "{t.content}"
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <Button variant="ghost" size="sm" onClick={() => handleDeleteTemplate(t.id)}>
-                                                <Trash2 className="w-4 h-4 text-red-500" />
-                                            </Button>
-                                        </div>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+
+                            {/* Pro Tip Card */}
+                            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+                                        <Sparkles className="w-6 h-6 text-yellow-300" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-lg mb-1">Pro Tipp</h4>
+                                        <p className="text-purple-100 text-sm leading-relaxed opacity-90">
+                                            Verwenden Sie spezifische Schlüsselwörter wie "Bestellnummer" oder "Tracking", um Fehlalarme zu vermeiden. Je präziser die Keywords, desto besser die Automatisierung.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </TabsContent>
             </Tabs>
