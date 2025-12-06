@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Plus, Key, ShoppingBag, CheckCircle, XCircle, Trash2, BarChart } from 'lucide-react'
+import { Plus, Key, ShoppingBag, CheckCircle, XCircle, Trash2, BarChart, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface DigitalProduct {
