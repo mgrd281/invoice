@@ -150,5 +150,6 @@ function replaceVariables(template: string, variables: Record<string, string>) {
 }
 
 function convertToHtml(text: string) {
-    return text.split('\n').map(line => `<p>${line}</p>`).join('')
+    // Replace newlines with <br/> to preserve line breaks while allowing HTML tags
+    return text.replace(/\n/g, '<br/>')
 }

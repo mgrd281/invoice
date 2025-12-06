@@ -387,7 +387,11 @@ Viel Spaß!`
                                                 <strong>Verfügbare Variablen:</strong><br />
                                                 {'{{ customer_name }}'} - Name des Kunden<br />
                                                 {'{{ product_title }}'} - Name des Produkts<br />
-                                                {'{{ license_key }}'} - Der zugewiesene Key
+                                                {'{{ license_key }}'} - Der zugewiesene Key<br />
+                                                <br />
+                                                <strong>HTML & Links:</strong><br />
+                                                Sie können HTML verwenden. Beispiel für einen Link:<br />
+                                                <code className="bg-blue-100 px-1 rounded">&lt;a href="LINK_URL"&gt;LINK_TEXT&lt;/a&gt;</code>
                                             </div>
 
                                             <div className="space-y-2">
