@@ -38,3 +38,25 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         return NextResponse.json({ error: 'Failed to add keys' }, { status: 500 })
     }
 }
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+    try {
+        const { searchParams } = new URL(req.url)
+        const keyId = searchParams.get('keyId')
+
+        if (!keyId) {
+            return NextResponse.json({ error: 'Key ID required' }, { status: 400 })
+        }
+
+        await prisma.licenseKey.delete({
+            where: {
+                id: keyId,
+                digitalProductId: params.id // Ensure it belongs to this product
+            }
+        })
+
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('Error deleting key:', error)
+        return NextResponse.json({ error: 'Failed to delete key' }, { status: 500 })
+    }
+}

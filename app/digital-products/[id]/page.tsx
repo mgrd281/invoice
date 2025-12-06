@@ -189,6 +189,24 @@ Viel Spaß!`
     const availableKeys = keys.filter(k => !k.isUsed).length
     const usedKeys = keys.filter(k => k.isUsed).length
 
+    const handleDeleteKey = async (keyId: string) => {
+        if (!confirm('Möchten Sie diesen Key wirklich löschen?')) return
+
+        try {
+            const res = await fetch(`/api/digital-products/${params.id}/keys?keyId=${keyId}`, {
+                method: 'DELETE'
+            })
+
+            if (res.ok) {
+                loadData()
+            } else {
+                alert('Fehler beim Löschen')
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
@@ -304,6 +322,7 @@ Viel Spaß!`
                                                         <th className="px-4 py-3">Status</th>
                                                         <th className="px-4 py-3">Verwendet am</th>
                                                         <th className="px-4 py-3">Bestellung</th>
+                                                        <th className="px-4 py-3"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -333,6 +352,16 @@ Viel Spaß!`
                                                                             ? key.shopifyOrderId
                                                                             : `#${key.shopifyOrderId}`
                                                                     ) : '-'}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                                                        onClick={() => handleDeleteKey(key.id)}
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </Button>
                                                                 </td>
                                                             </tr>
                                                         ))
