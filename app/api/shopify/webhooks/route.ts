@@ -68,6 +68,7 @@ export async function POST(req: Request) {
               try {
                 await processDigitalProductOrder(
                   String(item.product_id),
+                  String(payload.id),
                   payload.name || String(payload.order_number) || String(payload.id), // Pass visible order number
                   payload.email || payload.customer?.email,
                   payload.shipping_address?.first_name || payload.customer?.first_name || 'Kunde',
