@@ -402,6 +402,27 @@ export default function DashboardPage() {
                 </Card>
               </Link>
 
+              <Link href="/support">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 relative">
+                      <MessageSquare className="h-6 w-6 text-white" />
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                      </span>
+                    </div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      Support Center
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">NEU</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Kundenanfragen und Tickets verwalten
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
               <Link href="/settings">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
