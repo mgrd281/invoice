@@ -309,41 +309,92 @@ export default function SupportPage() {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="tickets">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Eingegangene E-Mails & Tickets</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {tickets.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">Keine Tickets vorhanden.</div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {tickets.map((ticket, i) => (
-                                            <div key={i} className="border rounded-lg p-4 hover:bg-gray-50">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <h4 className="font-bold">{ticket.subject}</h4>
-                                                        <p className="text-sm text-gray-600">Von: {ticket.customerEmail}</p>
-                                                        <p className="text-xs text-gray-400">{new Date(ticket.createdAt).toLocaleString()}</p>
-                                                    </div>
-                                                    <Badge variant={ticket.status === 'OPEN' ? 'default' : 'secondary'}>{ticket.status}</Badge>
+                    <TabsContent value="tickets" className="space-y-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">Posteingang</h2>
+                                <p className="text-sm text-gray-500">Verwalten Sie hier alle eingehenden Kundenanfragen.</p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={loadTickets}>
+                                🔄 Aktualisieren
+                            </Button>
+                        </div>
+
+                        {tickets.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-xl border border-dashed">
+                                <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500 font-medium">Keine Nachrichten vorhanden</p>
+                                <p className="text-sm text-gray-400">Neue E-Mails erscheinen hier automatisch.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {tickets.map((ticket, i) => (
+                                    <div key={i} className="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+                                        {/* Ticket Header */}
+                                        <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                                    {ticket.customerEmail?.substring(0, 2).toUpperCase() || 'KD'}
                                                 </div>
-                                                <div className="mt-3 bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap">
-                                                    {ticket.messages[0]?.content}
-                                                </div>
-                                                {ticket.messages.length > 1 && (
-                                                    <div className="mt-2 ml-4 border-l-2 border-blue-200 pl-3">
-                                                        <p className="text-xs font-bold text-blue-600">Automatische Antwort:</p>
-                                                        <p className="text-sm text-gray-600">{ticket.messages[1]?.content}</p>
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 leading-tight">{ticket.subject || 'Kein Betreff'}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-xs text-gray-500 font-mono bg-white px-1.5 py-0.5 rounded border">{ticket.customerEmail}</span>
+                                                        <span className="text-xs text-gray-400">•</span>
+                                                        <span className="text-xs text-gray-500">{new Date(ticket.createdAt).toLocaleString('de-DE')}</span>
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
-                                        ))}
+                                            <Badge variant={ticket.status === 'OPEN' ? 'default' : 'secondary'} className={ticket.status === 'OPEN' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                                {ticket.status}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Conversation View */}
+                                        <div className="p-4 space-y-4 bg-white">
+                                            {/* Customer Message */}
+                                            {ticket.messages[0] && (
+                                                <div className="flex gap-3">
+                                                    <div className="flex-1">
+                                                        <div className="bg-gray-50 text-gray-800 p-3.5 rounded-2xl rounded-tl-none inline-block max-w-[90%] text-sm leading-relaxed whitespace-pre-wrap border border-gray-100">
+                                                            {ticket.messages[0].content}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Auto-Reply or System Messages */}
+                                            {ticket.messages.slice(1).map((msg: any, m: number) => (
+                                                <div key={m} className="flex gap-3 justify-end">
+                                                    <div className="flex-1 flex justify-end">
+                                                        <div className="bg-blue-50 text-blue-900 p-3.5 rounded-2xl rounded-tr-none inline-block max-w-[90%] text-sm leading-relaxed border border-blue-100 shadow-sm">
+                                                            <div className="flex items-center gap-2 mb-1 text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                                                Automatische Antwort
+                                                            </div>
+                                                            {msg.content}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Quick Actions Footer */}
+                                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
+                                                Archivieren
+                                            </Button>
+                                            <Button size="sm" variant="outline" onClick={() => {
+                                                setActiveTab('search')
+                                                setQuery(ticket.customerEmail)
+                                            }}>
+                                                Antworten & Details
+                                            </Button>
+                                        </div>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                ))}
+                            </div>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="settings">
