@@ -1,79 +1,40 @@
 import { NextResponse } from 'next/server'
 
-// Mock data for demonstration
-// In a real application, this would come from a database and a web scraper
-const trackedProducts = [
+// In-memory store for demonstration (would be a database in production)
+let trackedProducts = [
     {
         id: '1',
         name: 'Windows 11 Pro',
         myPrice: 14.99,
         competitors: [
-            { name: 'KeySeller24', price: 12.99, url: 'https://keyseller24.example/win11' },
-            { name: 'CheapKeys', price: 11.50, url: 'https://cheapkeys.example/win11' },
-            { name: 'SoftwareGiant', price: 19.99, url: 'https://softwaregiant.example/win11' }
+            { name: 'Idealo.de', price: 12.90, url: 'https://www.idealo.de/preisvergleich/OffersOfProduct/201616054_-windows-11-pro-microsoft.html', logo: 'idealo' },
+            { name: 'Billiger.de', price: 13.49, url: 'https://www.billiger.de/products/windows-11-pro', logo: 'billiger' },
+            { name: 'SoftwareDeals24', price: 15.90, url: 'https://softwaredeals24.de/windows-11', logo: 'sd24' },
+            { name: 'Best-Software', price: 14.90, url: 'https://best-software.de/windows-11-pro', logo: 'bs' }
         ],
         suggestion: {
             action: 'decrease',
-            suggestedPrice: 12.49,
-            reason: 'Konkurrenz ist günstiger. Empfohlener Preis um wettbewerbsfähig zu bleiben.'
+            suggestedPrice: 12.89,
+            reason: 'Idealo bietet den günstigsten Preis (12,90 €). Wir sollten knapp darunter liegen.'
         },
-        history: [
-            { date: '2025-12-01', price: 15.99 },
-            { date: '2025-12-02', price: 15.99 },
-            { date: '2025-12-03', price: 14.99 },
-            { date: '2025-12-04', price: 14.99 },
-            { date: '2025-12-05', price: 14.99 },
-            { date: '2025-12-06', price: 14.99 },
-            { date: '2025-12-07', price: 14.99 }
-        ]
+        history: []
     },
     {
         id: '2',
         name: 'Office 2021 Professional Plus',
         myPrice: 24.99,
         competitors: [
-            { name: 'KeySeller24', price: 29.99, url: 'https://keyseller24.example/office2021' },
-            { name: 'CheapKeys', price: 22.99, url: 'https://cheapkeys.example/office2021' },
-            { name: 'SoftwareGiant', price: 34.99, url: 'https://softwaregiant.example/office2021' }
+            { name: 'Idealo.de', price: 22.50, url: 'https://www.idealo.de/preisvergleich/MainSearchProductCategory.html?q=office+2021', logo: 'idealo' },
+            { name: 'Billiger.de', price: 23.99, url: 'https://www.billiger.de/suche?q=office+2021', logo: 'billiger' },
+            { name: 'SoftwareDeals24', price: 29.99, url: 'https://softwaredeals24.de/office-2021', logo: 'sd24' },
+            { name: 'Best-Software', price: 25.99, url: 'https://best-software.de/office-2021', logo: 'bs' }
         ],
         suggestion: {
-            action: 'hold',
-            suggestedPrice: 24.99,
-            reason: 'Preis ist stabil und wettbewerbsfähig. Keine Änderung empfohlen.'
+            action: 'decrease',
+            suggestedPrice: 22.49,
+            reason: 'Um auf Idealo Top-Ranking zu erreichen, müssen wir unter 22,50 € gehen.'
         },
-        history: [
-            { date: '2025-12-01', price: 24.99 },
-            { date: '2025-12-02', price: 24.99 },
-            { date: '2025-12-03', price: 24.99 },
-            { date: '2025-12-04', price: 24.99 },
-            { date: '2025-12-05', price: 24.99 },
-            { date: '2025-12-06', price: 24.99 },
-            { date: '2025-12-07', price: 24.99 }
-        ]
-    },
-    {
-        id: '3',
-        name: 'Norton 360 Deluxe',
-        myPrice: 19.99,
-        competitors: [
-            { name: 'KeySeller24', price: 24.99, url: 'https://keyseller24.example/norton' },
-            { name: 'CheapKeys', price: 21.99, url: 'https://cheapkeys.example/norton' },
-            { name: 'SoftwareGiant', price: 29.99, url: 'https://softwaregiant.example/norton' }
-        ],
-        suggestion: {
-            action: 'increase',
-            suggestedPrice: 21.49,
-            reason: 'Sie sind der Günstigste. Potenzial für höhere Marge.'
-        },
-        history: [
-            { date: '2025-12-01', price: 18.99 },
-            { date: '2025-12-02', price: 18.99 },
-            { date: '2025-12-03', price: 19.99 },
-            { date: '2025-12-04', price: 19.99 },
-            { date: '2025-12-05', price: 19.99 },
-            { date: '2025-12-06', price: 19.99 },
-            { date: '2025-12-07', price: 19.99 }
-        ]
+        history: []
     }
 ]
 
@@ -82,4 +43,58 @@ export async function GET() {
         success: true,
         data: trackedProducts
     })
+}
+
+export async function POST(req: Request) {
+    try {
+        const body = await req.json()
+
+        const newProduct = {
+            id: Date.now().toString(),
+            name: body.name,
+            myPrice: parseFloat(body.myPrice),
+            competitors: [
+                { name: 'Idealo.de', price: 0, url: body.idealoUrl || '', logo: 'idealo' },
+                { name: 'Billiger.de', price: 0, url: body.billigerUrl || '', logo: 'billiger' },
+                { name: 'SoftwareDeals24', price: 0, url: body.sd24Url || '', logo: 'sd24' },
+                { name: 'Best-Software', price: 0, url: body.bsUrl || '', logo: 'bs' }
+            ],
+            // Simulate fetching prices (random for demo)
+            suggestion: {
+                action: 'hold',
+                suggestedPrice: parseFloat(body.myPrice),
+                reason: 'Daten werden analysiert...'
+            },
+            history: []
+        }
+
+        // Simulate scraping delay and result
+        newProduct.competitors.forEach(comp => {
+            if (comp.url) {
+                // Mock price generation around the user's price
+                comp.price = parseFloat((newProduct.myPrice * (0.8 + Math.random() * 0.4)).toFixed(2))
+            }
+        })
+
+        trackedProducts.push(newProduct)
+
+        return NextResponse.json({ success: true, data: newProduct })
+    } catch (error) {
+        return NextResponse.json({ success: false, error: 'Failed to add product' }, { status: 500 })
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id')
+
+        if (id) {
+            trackedProducts = trackedProducts.filter(p => p.id !== id)
+        }
+
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        return NextResponse.json({ success: false, error: 'Failed to delete' }, { status: 500 })
+    }
 }
