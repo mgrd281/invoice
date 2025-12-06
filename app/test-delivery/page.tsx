@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,23 @@ export default function TestWebhookPage() {
     const [orderId, setOrderId] = useState('123456789')
     const [productId, setProductId] = useState('')
     const [email, setEmail] = useState('test@example.com')
+    const [products, setProducts] = useState<any[]>([])
+
+    // Fetch configured digital products on mount
+    useEffect(() => {
+        fetch('/api/digital-products')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setProducts(data.data)
+                    // Auto-select first product if available
+                    if (data.data.length > 0) {
+                        setProductId(data.data[0].shopifyProductId)
+                    }
+                }
+            })
+            .catch(err => console.error('Failed to fetch products:', err))
+    }, [])
 
     const handleTest = async () => {
         setLoading(true)
@@ -26,7 +43,7 @@ export default function TestWebhookPage() {
                     {
                         id: 999,
                         product_id: parseInt(productId),
-                        title: 'Test Product',
+                        title: products.find(p => p.shopifyProductId === productId)?.title || 'Test Product',
                         quantity: 1,
                         price: '10.00'
                     }
@@ -68,14 +85,31 @@ export default function TestWebhookPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <Label>Shopify Product ID (must match a configured digital product)</Label>
-                        <Input value={productId} onChange={e => setProductId(e.target.value)} placeholder="e.g. 10650102169867" />
+                        <Label>Select Digital Product</Label>
+                        {products.length > 0 ? (
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={productId}
+                                onChange={e => setProductId(e.target.value)}
+                            >
+                                {products.map(p => (
+                                    <option key={p.id} value={p.shopifyProductId}>
+                                        {p.title} (Keys: {p._count?.keys || 0})
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div className="text-sm text-muted-foreground">Loading products or none configured...</div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Only products configured in "Digital Products" are shown here.
+                        </p>
                     </div>
                     <div>
                         <Label>Test Email</Label>
                         <Input value={email} onChange={e => setEmail(e.target.value)} />
                     </div>
-                    <Button onClick={handleTest} disabled={loading}>
+                    <Button onClick={handleTest} disabled={loading || !productId}>
                         {loading ? 'Testing...' : 'Simulate Paid Order'}
                     </Button>
 
