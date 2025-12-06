@@ -23,3 +23,31 @@ export async function DELETE(
         return NextResponse.json({ error: 'Failed to delete ticket' }, { status: 500 })
     }
 }
+
+export async function PATCH(
+    req: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const ticketId = params.id
+        const body = await req.json()
+        const { status, subject } = body
+
+        if (!ticketId) {
+            return NextResponse.json({ error: 'Ticket ID required' }, { status: 400 })
+        }
+
+        const ticket = await prisma.supportTicket.update({
+            where: { id: ticketId },
+            data: {
+                ...(status && { status }),
+                ...(subject && { subject })
+            }
+        })
+
+        return NextResponse.json({ success: true, data: ticket })
+    } catch (error) {
+        console.error('Error updating ticket:', error)
+        return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 })
+    }
+}

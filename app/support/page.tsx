@@ -4,7 +4,18 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Search, Mail, User, ShoppingBag, Key, MessageSquare, Send, Trash2, Sparkles, Plus, RefreshCw, Clock, Archive, Reply, Bot, Edit, X } from 'lucide-react'
+import { Search, Mail, User, ShoppingBag, Key, MessageSquare, Send, Trash2, Sparkles, Plus, RefreshCw, Clock, Archive, Reply, Bot, Edit, X, Check, AlertCircle } from 'lucide-react'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -160,6 +171,24 @@ export default function SupportPage() {
                 setTickets(tickets.filter(t => t.id !== id))
             } else {
                 alert('Fehler beim Löschen.')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('Ein Fehler ist aufgetreten.')
+        }
+    }
+
+    const handleUpdateTicket = async (id: string, updates: any) => {
+        try {
+            const res = await fetch(`/api/support/tickets/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            })
+            if (res.ok) {
+                loadTickets()
+            } else {
+                alert('Fehler beim Aktualisieren.')
             }
         } catch (error) {
             console.error(error)
@@ -379,6 +408,50 @@ export default function SupportPage() {
 
                                         {/* Actions (Visible on Hover) */}
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50" title="Bearbeiten">
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent>
+                                                    <DialogHeader>
+                                                        <DialogTitle>Ticket bearbeiten</DialogTitle>
+                                                        <DialogDescription>
+                                                            Ändern Sie den Status oder den Betreff des Tickets.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="grid gap-4 py-4">
+                                                        <div className="grid grid-cols-4 items-center gap-4">
+                                                            <Label htmlFor="subject" className="text-right">
+                                                                Betreff
+                                                            </Label>
+                                                            <Input
+                                                                id="subject"
+                                                                defaultValue={ticket.subject}
+                                                                className="col-span-3"
+                                                                onChange={(e) => handleUpdateTicket(ticket.id, { subject: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="grid grid-cols-4 items-center gap-4">
+                                                            <Label htmlFor="status" className="text-right">
+                                                                Status
+                                                            </Label>
+                                                            <Select defaultValue={ticket.status} onValueChange={(val) => handleUpdateTicket(ticket.id, { status: val })}>
+                                                                <SelectTrigger className="col-span-3">
+                                                                    <SelectValue placeholder="Status wählen" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="OPEN">Offen</SelectItem>
+                                                                    <SelectItem value="CLOSED">Geschlossen</SelectItem>
+                                                                    <SelectItem value="PENDING">Wartend</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
