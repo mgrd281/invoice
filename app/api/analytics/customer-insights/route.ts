@@ -5,10 +5,18 @@ export async function GET() {
     try {
         const api = new ShopifyAPI()
 
-        // 1. Fetch Orders (Last 90 days for performance, or more if needed)
-        // For "Top Customers", we ideally want all-time data, but for performance let's fetch a good chunk.
-        // Let's try to fetch last 1000 orders.
-        const orders = await api.getOrders({ limit: 1000, status: 'any' })
+        // 1. Fetch Orders (Last 30 days, PAID only)
+        // User Requirement: Only show orders from the last 30 days that are fully PAID.
+        // Exclude refunded or partially refunded orders.
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+        const orders = await api.getOrders({
+            limit: 1000,
+            status: 'any',
+            financial_status: 'paid',
+            created_at_min: thirtyDaysAgo.toISOString()
+        })
 
         // 2. Fetch Abandoned Checkouts
         const checkouts = await api.getAbandonedCheckouts({ limit: 50 })
@@ -25,6 +33,9 @@ export async function GET() {
 
         orders.forEach(order => {
             if (!order.customer) return
+
+            // Double check financial status just in case
+            if (order.financial_status !== 'paid') return
 
             const customerId = order.customer.id.toString()
             const current = customerMap.get(customerId) || {
@@ -49,11 +60,7 @@ export async function GET() {
             .sort((a, b) => b.totalSpent - a.totalSpent)
             .slice(0, 10) // Top 10
 
-        // --- Process Popular Products (Last 30 Days) ---
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-        const recentOrders = orders.filter(o => new Date(o.created_at) >= thirtyDaysAgo)
+        // --- Process Popular Products (Last 30 Days - already filtered) ---
         const productMap = new Map<string, {
             id: number,
             title: string,
@@ -61,7 +68,10 @@ export async function GET() {
             revenue: number
         }>()
 
-        recentOrders.forEach(order => {
+        orders.forEach(order => {
+            // Double check financial status just in case
+            if (order.financial_status !== 'paid') return
+
             order.line_items.forEach(item => {
                 const productId = item.product_id.toString()
                 const current = productMap.get(productId) || {
