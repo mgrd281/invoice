@@ -251,6 +251,33 @@ export default function SupportPage() {
                         )}
                     </div>
                 </div>
+
+                {/* Auto-Reply Settings Section (Hidden by default, toggleable or separate tab in future) */}
+                <div className="mt-12 border-t pt-8">
+                    <h2 className="text-lg font-bold mb-4">Automatische Antworten (Beta)</h2>
+                    <p className="text-sm text-gray-500 mb-4">
+                        Um E-Mails automatisch zu empfangen, müssen Sie ein Google Apps Script einrichten, das E-Mails an
+                        <code className="bg-gray-100 p-1 rounded mx-1">/api/support/incoming</code> weiterleitet.
+                    </p>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Neue Regel erstellen</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4">
+                                <div>
+                                    <label className="text-sm font-medium">Schlüsselwörter (kommagetrennt)</label>
+                                    <Input placeholder="z.B. rückerstattung, refund, geld zurück" />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Antwort-Text</label>
+                                    <Textarea placeholder="Sehr geehrter Kunde..." />
+                                </div>
+                                <Button disabled>Speichern (Demnächst verfügbar)</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </main>
         </div>
     )

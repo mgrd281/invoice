@@ -349,6 +349,7 @@ model ResponseTemplate {
   title          String
   content        String       @db.Text
   category       String?      // e.g., "Technical", "Refund", "General"
+  autoReplyKeywords String?   // Comma separated keywords to trigger auto-reply
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
