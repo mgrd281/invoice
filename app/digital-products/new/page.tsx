@@ -18,11 +18,26 @@ export default function NewDigitalProductPage() {
     const [loading, setLoading] = useState(true)
     const [creating, setCreating] = useState<number | null>(null)
     const [products, setProducts] = useState<ShopifyProduct[]>([])
+    const [existingProductIds, setExistingProductIds] = useState<Set<string>>(new Set())
     const [search, setSearch] = useState('')
 
     useEffect(() => {
         fetchShopifyProducts()
+        fetchExistingDigitalProducts()
     }, [])
+
+    const fetchExistingDigitalProducts = async () => {
+        try {
+            const res = await fetch('/api/digital-products')
+            const data = await res.json()
+            if (data.success) {
+                const ids = new Set(data.data.map((p: any) => p.shopifyProductId))
+                setExistingProductIds(ids as Set<string>)
+            }
+        } catch (error) {
+            console.error('Failed to load existing digital products', error)
+        }
+    }
 
     const fetchShopifyProducts = async () => {
         try {
@@ -65,9 +80,9 @@ export default function NewDigitalProductPage() {
         }
     }
 
-    const filteredProducts = products.filter(p =>
-        p.title.toLowerCase().includes(search.toLowerCase())
-    )
+    const filteredProducts = products
+        .filter(p => !existingProductIds.has(String(p.id)))
+        .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
 
     return (
         <div className="min-h-screen bg-gray-50">

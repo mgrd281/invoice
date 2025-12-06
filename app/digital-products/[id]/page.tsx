@@ -9,12 +9,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw } from 'lucide-react'
-
+import Link from 'next/link'
+import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 export default function DigitalProductDetailPage({ params }: { params: { id: string } }) {
     const router = useRouter()
     const [product, setProduct] = useState<any>(null)
     const [keys, setKeys] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [newKeys, setNewKeys] = useState('')
+    const [template, setTemplate] = useState('')
+    const [savingTemplate, setSavingTemplate] = useState(false)
+    const [addingKeys, setAddingKeys] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState(0)
+    // Edit product state
+    const [isEditingProduct, setIsEditingProduct] = useState(false)
+    const [editProductData, setEditProductData] = useState({ title: '' })
     const [loading, setLoading] = useState(true)
     const [newKeys, setNewKeys] = useState('')
     const [template, setTemplate] = useState('')
@@ -212,15 +222,61 @@ Viel Spaß!`
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" onClick={() => router.push('/digital-products')}>
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Zurück
-                        </Button>
-                        <div>
+                        <Link href="/dashboard">
+                            <Button variant="ghost" size="sm" className="flex items-center">
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Zurück
+                            </Button>
+                        </Link>
+                        <div className="flex items-center gap-2">
                             <h1 className="text-xl font-bold text-gray-900">{product.title}</h1>
-                            <p className="text-xs text-gray-500">ID: {product.shopifyProductId}</p>
+                            <Button variant="ghost" size="icon" onClick={() => {
+                                setEditProductData({ title: product.title })
+                                setIsEditingProduct(true)
+                            }} title="Bearbeiten">
+                                <Edit className="w-4 h-4" />
+                            </Button>
                         </div>
+                        <p className="text-xs text-gray-500">ID: {product.shopifyProductId}</p>
                     </div>
+                    {/* Edit Product Dialog */}
+                    <Dialog open={isEditingProduct} onOpenChange={setIsEditingProduct}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Produkt bearbeiten</DialogTitle>
+                                <DialogDescription>Ändern Sie die Produktinformationen.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="productTitle" className="text-right">Titel</Label>
+                                    <Input id="productTitle" value={editProductData.title} className="col-span-3" onChange={e => setEditProductData({ ...editProductData, title: e.target.value })} />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button onClick={async () => {
+                                    try {
+                                        const res = await fetch(`/api/digital-products/${params.id}`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(editProductData)
+                                        })
+                                        if (res.ok) {
+                                            const updated = await res.json()
+                                            setProduct(updated.data)
+                                            setIsEditingProduct(false)
+                                            alert('Produkt aktualisiert')
+                                        } else {
+                                            alert('Fehler beim Aktualisieren')
+                                        }
+                                    } catch (e) {
+                                        console.error(e)
+                                        alert('Ein Fehler ist aufgetreten')
+                                    }
+                                }}>Speichern</Button>
+                                <Button variant="ghost" onClick={() => setIsEditingProduct(false)}>Abbrechen</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                     <Button variant="outline" size="sm" onClick={loadData}>
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Aktualisieren
