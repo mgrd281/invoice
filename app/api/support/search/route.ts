@@ -88,6 +88,71 @@ export async function GET(req: Request) {
             }
         }
 
+        // 3. Search in Shopify (Real-time fallback)
+        const { getShopifySettings } = await import('@/lib/shopify-settings')
+        const settings = getShopifySettings()
+
+        if (settings.enabled && settings.accessToken && settings.shopDomain) {
+            try {
+                let shopifyOrders = []
+                const headers = {
+                    'X-Shopify-Access-Token': settings.accessToken,
+                    'Content-Type': 'application/json'
+                }
+
+                // Determine search strategy
+                if (query.includes('@')) {
+                    // Search by email
+                    const res = await fetch(`https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders.json?status=any&email=${encodeURIComponent(query)}&fields=id,name,email,created_at,customer`, { headers })
+                    if (res.ok) {
+                        const data = await res.json()
+                        shopifyOrders = data.orders || []
+                    }
+                } else {
+                    // Search by name (Order Number)
+                    const res = await fetch(`https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders.json?status=any&name=${encodeURIComponent(query)}&fields=id,name,email,created_at,customer`, { headers })
+                    if (res.ok) {
+                        const data = await res.json()
+                        shopifyOrders = data.orders || []
+                    }
+                }
+
+                // Process Shopify Results
+                for (const sOrder of shopifyOrders) {
+                    const shopifyId = String(sOrder.id)
+
+                    // Check if we already have this order in our results
+                    const exists = results.find(r => r.order?.shopifyOrderId === shopifyId)
+
+                    if (!exists) {
+                        // Check if we have keys for this Shopify ID even if we don't have the order record
+                        const localKeys = await prisma.licenseKey.findMany({
+                            where: { shopifyOrderId: shopifyId },
+                            include: { digitalProduct: true }
+                        })
+
+                        results.push({
+                            type: 'shopify_order',
+                            order: {
+                                orderNumber: sOrder.name,
+                                shopifyOrderId: shopifyId,
+                                orderDate: new Date(sOrder.created_at),
+                                status: 'SHOPIFY_ONLY' // Indicator that this is not in local DB
+                            },
+                            customer: {
+                                name: sOrder.customer ? `${sOrder.customer.first_name || ''} ${sOrder.customer.last_name || ''}`.trim() : 'Shopify Customer',
+                                email: sOrder.email || sOrder.customer?.email
+                            },
+                            keys: localKeys // Might be empty if not processed
+                        })
+                    }
+                }
+            } catch (shopifyError) {
+                console.error('Shopify search error:', shopifyError)
+                // Continue without Shopify results if it fails
+            }
+        }
+
         return NextResponse.json({ success: true, data: results })
 
     } catch (error) {

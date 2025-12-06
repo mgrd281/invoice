@@ -35,9 +35,44 @@ export default function SupportPage() {
         }
     }
 
-    const handleSendReply = () => {
-        alert('Diese Funktion wird im nächsten Schritt implementiert (E-Mail senden).')
-        // Here we would call /api/support/reply
+    const handleSendReply = async () => {
+        if (!selectedResult?.customer?.email || !replyText.trim()) return
+
+        setLoading(true)
+        try {
+            const res = await fetch('/api/support/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: selectedResult.customer.email,
+                    subject: `Re: Bestellung ${selectedResult.order?.orderNumber || ''}`,
+                    content: replyText
+                })
+            })
+
+            if (res.ok) {
+                alert('E-Mail erfolgreich gesendet!')
+                setReplyText('')
+            } else {
+                alert('Fehler beim Senden der E-Mail.')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('Ein Fehler ist aufgetreten.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleAiGenerate = () => {
+        // Simulation of AI generation
+        const templates = [
+            "Sehr geehrter Kunde,\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage geprüft und können Ihnen mitteilen, dass...\n\nMit freundlichen Grüßen,\nIhr Support-Team",
+            "Hallo,\n\nentschuldigen Sie bitte die Unannehmlichkeiten. Wir haben das Problem identifiziert und...\n\nBeste Grüße",
+            "Guten Tag,\n\nvielen Dank für Ihren Einkauf. Hier sind weitere Informationen zu Ihrer Bestellung...\n\nViele Grüße"
+        ]
+        const randomTemplate = templates[Math.floor(Math.random() * templates.length)]
+        setReplyText(randomTemplate)
     }
 
     return (
@@ -190,7 +225,7 @@ export default function SupportPage() {
                                             <Button variant="outline" size="sm" onClick={() => setReplyText("Hallo,\n\nbitte prüfen Sie Ihren Spam-Ordner.\n\nViele Grüße")}>
                                                 Vorlage: Spam prüfen
                                             </Button>
-                                            <Button variant="outline" size="sm" className="text-purple-600 border-purple-200 bg-purple-50">
+                                            <Button variant="outline" size="sm" className="text-purple-600 border-purple-200 bg-purple-50" onClick={handleAiGenerate}>
                                                 ✨ AI Antwort generieren
                                             </Button>
                                         </div>
