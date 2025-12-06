@@ -89,7 +89,7 @@ export async function GET() {
 
         const topCustomers = Array.from(customerMap.values())
             .sort((a, b) => b.totalSpent - a.totalSpent)
-            .slice(0, 10) // Top 10
+            .slice(0, 50) // Top 50
 
         // --- Process Popular Products (Last 30 Days - already filtered) ---
         const productMap = new Map<string, {
