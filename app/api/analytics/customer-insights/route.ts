@@ -38,13 +38,44 @@ export async function GET() {
             if (order.financial_status !== 'paid') return
 
             const customerId = order.customer.id.toString()
+
+            // Enhanced Name Extraction Strategy
+            let extractedName = `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
+
+            // 1. Try Billing Address if customer name is empty
+            if (!extractedName && order.billing_address) {
+                extractedName = `${order.billing_address.first_name || ''} ${order.billing_address.last_name || ''}`.trim()
+            }
+
+            // 2. Try Default Address
+            if (!extractedName && order.customer.default_address) {
+                extractedName = `${order.customer.default_address.first_name || ''} ${order.customer.default_address.last_name || ''}`.trim()
+            }
+
+            // 3. Try Email
+            if (!extractedName && (order.customer.email || order.email)) {
+                extractedName = order.customer.email || order.email || ''
+            }
+
+            // 4. Fallback to Order Number
+            if (!extractedName) {
+                extractedName = `Bestellung ${order.name || '#' + order.id}`
+            }
+
             const current = customerMap.get(customerId) || {
                 id: order.customer.id,
-                name: `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim() || order.customer.email || 'Unbekannt',
-                email: order.customer.email || '',
+                name: extractedName,
+                email: order.customer.email || order.email || '',
                 totalSpent: 0,
                 orderCount: 0,
                 lastOrderDate: ''
+            }
+
+            // Update name if we found a better one (e.g. previously we only had email/order number, now we have a real name)
+            if (current.name.includes('@') || current.name.startsWith('Bestellung') || current.name === 'Unbekannt') {
+                if (extractedName && !extractedName.includes('@') && !extractedName.startsWith('Bestellung')) {
+                    current.name = extractedName
+                }
             }
 
             current.totalSpent += parseFloat(order.total_price)
