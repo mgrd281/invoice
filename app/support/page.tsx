@@ -372,6 +372,9 @@ export default function SupportPage() {
                                                 value={newTemplate.keywords}
                                                 onChange={e => setNewTemplate({ ...newTemplate, keywords: e.target.value })}
                                             />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Wichtig: Trennen Sie einzelne Begriffe mit einem Komma. Beispiel: "key, code, schlüssel".
+                                            </p>
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium">Antwort-Text</label>
