@@ -57,9 +57,18 @@ export async function POST(req: Request) {
                     organizationId = newOrg.id
                 } catch (e) {
                     console.error('Failed to create default org:', e)
-                    return NextResponse.json({ error: 'Organization setup failed' }, { status: 500 })
+                    return NextResponse.json({ error: `Organization setup failed: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 })
                 }
             }
+        }
+
+        // Check if product already exists
+        const existingProduct = await prisma.digitalProduct.findUnique({
+            where: { shopifyProductId }
+        })
+
+        if (existingProduct) {
+            return NextResponse.json({ error: 'Dieses Produkt ist bereits aktiviert.' }, { status: 409 })
         }
 
         const product = await prisma.digitalProduct.create({
@@ -74,6 +83,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, data: product })
     } catch (error) {
         console.error('Error creating digital product:', error)
-        return NextResponse.json({ error: 'Failed to create product' }, { status: 500 })
+        return NextResponse.json({ error: `Server Error: ${error instanceof Error ? error.message : String(error)}` }, { status: 500 })
     }
 }
+```

@@ -54,11 +54,12 @@ export default function NewDigitalProductPage() {
             if (res.ok) {
                 router.push('/digital-products')
             } else {
-                alert('Fehler beim Aktivieren des Produkts')
+                const data = await res.json()
+                alert(data.error || 'Fehler beim Aktivieren des Produkts')
             }
         } catch (error) {
             console.error(error)
-            alert('Ein Fehler ist aufgetreten')
+            alert('Ein Fehler ist aufgetreten: ' + (error instanceof Error ? error.message : String(error)))
         } finally {
             setCreating(null)
         }
