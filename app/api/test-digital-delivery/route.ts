@@ -16,6 +16,7 @@ export async function POST(req: Request) {
                     const result = await processDigitalProductOrder(
                         String(item.product_id),
                         String(id),
+                        'TEST-' + String(id), // Test order number
                         email,
                         customer.first_name || 'Test User',
                         item.title
