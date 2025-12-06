@@ -43,6 +43,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     try {
+        // Delete all associated keys first
+        await prisma.licenseKey.deleteMany({
+            where: { digitalProductId: params.id }
+        })
+
         await prisma.digitalProduct.delete({
             where: { id: params.id }
         })
