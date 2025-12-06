@@ -19,7 +19,8 @@ import {
   CheckCircle,
   Calculator,
   MessageSquare,
-  Bot
+  Bot,
+  Key
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -382,6 +383,20 @@ export default function DashboardPage() {
                     </CardTitle>
                     <CardDescription>
                       Intelligente Verkaufsanalyse mit GPT-4
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/digital-products">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
+                      <Key className="h-6 w-6 text-white" />
+                    </div>
+                    <CardTitle className="text-xl">Digitale Produkte</CardTitle>
+                    <CardDescription>
+                      Lizenzschlüssel und Downloads verwalten
                     </CardDescription>
                   </CardHeader>
                 </Card>

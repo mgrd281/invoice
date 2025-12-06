@@ -75,6 +75,7 @@ model Organization {
   uploadJobs        UploadJob[]
   auditLogs         AuditLog[]
   shopifyConnection ShopifyConnection?
+  digitalProducts   DigitalProduct[]
 }
 
 model Account {
@@ -288,3 +289,30 @@ model VerificationToken {
 }
 
 
+
+model DigitalProduct {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  shopifyProductId String @unique
+  title          String
+  emailTemplate  String?  @db.Text
+  keys           LicenseKey[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, shopifyProductId])
+}
+
+model LicenseKey {
+  id               String         @id @default(uuid())
+  digitalProductId String
+  digitalProduct   DigitalProduct @relation(fields: [digitalProductId], references: [id])
+  key              String
+  isUsed           Boolean        @default(false)
+  orderId          String?
+  shopifyOrderId   String?
+  usedAt           DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}

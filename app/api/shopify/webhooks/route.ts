@@ -58,6 +58,28 @@ export async function POST(req: Request) {
             log('🔕 Auto-send email is DISABLED.')
           }
 
+          // Process Digital Products
+          if (payload.financial_status === 'paid') {
+            log('🔐 Checking for digital products...')
+            const { processDigitalProductOrder } = await import('@/lib/digital-products')
+
+            for (const item of payload.line_items) {
+              if (item.product_id) {
+                try {
+                  await processDigitalProductOrder(
+                    String(item.product_id),
+                    String(payload.id),
+                    payload.email || payload.customer?.email,
+                    payload.shipping_address?.first_name || payload.customer?.first_name || 'Kunde',
+                    item.title
+                  )
+                } catch (err) {
+                  log(`❌ Error processing digital product ${item.product_id}:`, err)
+                }
+              }
+            }
+          }
+
         } catch (err) {
           log('❌ Error during invoice creation/sending:', err)
           console.error(err)
