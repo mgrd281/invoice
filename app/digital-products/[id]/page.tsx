@@ -53,22 +53,48 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const handleAddKeys = async () => {
         if (!newKeys.trim()) return
         setAddingKeys(true)
-        try {
-            const keyList = newKeys.split('\n').map(k => k.trim()).filter(k => k)
-            const res = await fetch(`/api/digital-products/${params.id}/keys`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keys: keyList })
-            })
+        setUploadProgress(0)
 
-            if (res.ok) {
-                setNewKeys('')
-                loadData() // Reload to see new keys
-            } else {
-                alert('Fehler beim Hinzufügen der Keys')
+        try {
+            // Split by newline OR comma, then trim and filter empty
+            const allKeys = newKeys.split(/[\n,]+/).map(k => k.trim()).filter(k => k && k.length > 0)
+            const totalKeys = allKeys.length
+            const chunkSize = 1000
+            let processed = 0
+
+            if (totalKeys === 0) {
+                setAddingKeys(false)
+                return
             }
+
+            for (let i = 0; i < totalKeys; i += chunkSize) {
+                const chunk = allKeys.slice(i, i + chunkSize)
+
+                try {
+                    const res = await fetch(`/api/digital-products/${params.id}/keys`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ keys: chunk })
+                    })
+
+                    if (!res.ok) {
+                        console.error('Failed to upload chunk', i)
+                    }
+
+                    processed += chunk.length
+                    setUploadProgress(Math.round((processed / totalKeys) * 100))
+                } catch (err) {
+                    console.error('Error uploading chunk:', err)
+                }
+            }
+
+            setNewKeys('')
+            setUploadProgress(0)
+            loadData() // Reload to see new keys
+            alert(`${totalKeys} Keys wurden erfolgreich hinzugefügt.`)
         } catch (error) {
             console.error(error)
+            alert('Ein Fehler ist aufgetreten.')
         } finally {
             setAddingKeys(false)
         }
@@ -109,7 +135,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
             const text = event.target?.result as string
             if (!text) return
 
-            const allKeys = text.split(/\r?\n/).map(k => k.trim()).filter(k => k)
+            const allKeys = text.split(/[\n,]+/).map(k => k.trim()).filter(k => k && k.length > 0)
             const totalKeys = allKeys.length
             const chunkSize = 1000
             let processed = 0
