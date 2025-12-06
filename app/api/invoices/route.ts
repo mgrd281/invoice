@@ -36,16 +36,38 @@ import { getShopifySettings } from '@/lib/shopify-settings'
 import { handleOrderCreate } from '@/lib/shopify-order-handler'
 
 export async function GET(request: NextRequest) {
+  const fs = require('fs');
+  const path = require('path');
+  const debugFile = path.join(process.cwd(), 'debug_route_output.txt');
+
+  const log = (msg: string) => {
+    try {
+      fs.appendFileSync(debugFile, new Date().toISOString() + ': ' + msg + '\n');
+    } catch (e) { }
+  };
+
   try {
+    log('GET /api/invoices called');
+
     // Always reload from disk to ensure we have the latest data from import scripts
     // This is crucial because import scripts run in a separate process
     try {
-      const persisted = loadInvoicesFromDisk()
-      global.allInvoices = Array.isArray(persisted) ? persisted : []
-      console.log(`[GET /api/invoices] Reloaded ${global.allInvoices.length} invoices from disk`)
-    } catch (e) {
-      console.error('Failed to reload invoices from disk:', e)
+      const persisted = loadInvoicesFromDisk();
+      log(`Loaded persisted data. IsArray: ${Array.isArray(persisted)}. Length: ${persisted?.length}`);
+
+      if (Array.isArray(persisted) && persisted.length > 0) {
+        global.allInvoices = persisted;
+        log(`Updated global.allInvoices. New length: ${global.allInvoices.length}`);
+      } else {
+        log('Persisted data was empty or invalid.');
+      }
+    } catch (e: any) {
+      log(`Failed to reload invoices from disk: ${e.message}`);
     }
+
+    // Check Vercel flag
+    log(`process.env.VERCEL: ${process.env.VERCEL}`);
+    log(`global.allInvoices length before fallback check: ${global.allInvoices?.length}`);
 
     // Require authentication
     const authResult = requireAuth(request)
