@@ -42,7 +42,7 @@ export async function GET(req: Request) {
             let totalRevenue = 0
 
             // Get unique Shopify Order IDs to fetch order totals
-            const shopifyOrderIds = [...new Set(keys.map(k => k.shopifyOrderId).filter(Boolean))]
+            const shopifyOrderIds = Array.from(new Set(keys.map(k => k.shopifyOrderId).filter(Boolean)))
 
             const orders = await prisma.order.findMany({
                 where: {
