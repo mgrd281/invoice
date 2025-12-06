@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Search, Mail, User, ShoppingBag, Key, MessageSquare, Send, Trash2, Sparkles, Plus, RefreshCw, Clock, Archive, Reply, Bot } from 'lucide-react'
+import { Search, Mail, User, ShoppingBag, Key, MessageSquare, Send, Trash2, Sparkles, Plus, RefreshCw, Clock, Archive, Reply, Bot, Edit, X } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -14,6 +14,7 @@ export default function SupportPage() {
     const [templates, setTemplates] = useState<any[]>([])
     const [tickets, setTickets] = useState<any[]>([])
     const [newTemplate, setNewTemplate] = useState({ title: '', content: '', keywords: '' })
+    const [editingId, setEditingId] = useState<string | null>(null)
 
     // Search State
     const [query, setQuery] = useState('')
@@ -105,15 +106,41 @@ export default function SupportPage() {
     const handleSaveTemplate = async () => {
         if (!newTemplate.title || !newTemplate.content) return
         try {
-            await fetch('/api/support/templates', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTemplate)
-            })
+            if (editingId) {
+                // Update existing
+                await fetch('/api/support/templates', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...newTemplate, id: editingId })
+                })
+                alert('Vorlage aktualisiert!')
+            } else {
+                // Create new
+                await fetch('/api/support/templates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTemplate)
+                })
+                alert('Vorlage gespeichert!')
+            }
             setNewTemplate({ title: '', content: '', keywords: '' })
+            setEditingId(null)
             loadTemplates()
-            alert('Vorlage gespeichert!')
         } catch (e) { alert('Fehler beim Speichern') }
+    }
+
+    const handleEditTemplate = (template: any) => {
+        setNewTemplate({
+            title: template.title,
+            content: template.content,
+            keywords: template.autoReplyKeywords || ''
+        })
+        setEditingId(template.id)
+    }
+
+    const handleCancelEdit = () => {
+        setNewTemplate({ title: '', content: '', keywords: '' })
+        setEditingId(null)
     }
 
     const handleDeleteTemplate = async (id: string) => {
@@ -420,10 +447,10 @@ export default function SupportPage() {
                                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
                                     <div className="flex items-center gap-3 mb-2">
                                         <Bot className="w-6 h-6 text-blue-100" />
-                                        <h3 className="text-lg font-bold">Neue Regel erstellen</h3>
+                                        <h3 className="text-lg font-bold">{editingId ? 'Regel bearbeiten' : 'Neue Regel erstellen'}</h3>
                                     </div>
                                     <p className="text-blue-100 text-sm opacity-90">
-                                        Definieren Sie Schlüsselwörter, auf die das System automatisch reagieren soll.
+                                        {editingId ? 'Passen Sie die bestehende Regel an.' : 'Definieren Sie Schlüsselwörter, auf die das System automatisch reagieren soll.'}
                                     </p>
                                 </div>
                                 <CardContent className="p-6 space-y-6">
@@ -488,10 +515,17 @@ export default function SupportPage() {
                                             />
                                         </div>
 
-                                        <Button onClick={handleSaveTemplate} className="w-full bg-gray-900 hover:bg-black text-white py-6 text-lg shadow-lg hover:shadow-xl transition-all">
-                                            <Plus className="w-5 h-5 mr-2" />
-                                            Neue Regel speichern
-                                        </Button>
+                                        <div className="flex gap-2">
+                                            {editingId && (
+                                                <Button variant="outline" onClick={handleCancelEdit} className="flex-1 py-6 text-lg">
+                                                    <X className="w-5 h-5 mr-2" />
+                                                    Abbrechen
+                                                </Button>
+                                            )}
+                                            <Button onClick={handleSaveTemplate} className={`flex-1 bg-gray-900 hover:bg-black text-white py-6 text-lg shadow-lg hover:shadow-xl transition-all ${editingId ? 'bg-blue-600 hover:bg-blue-700' : ''}`}>
+                                                {editingId ? <><Edit className="w-5 h-5 mr-2" /> Regel aktualisieren</> : <><Plus className="w-5 h-5 mr-2" /> Neue Regel speichern</>}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -520,9 +554,14 @@ export default function SupportPage() {
                                             <div key={i} className="p-4 hover:bg-gray-50 transition-colors group">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <h4 className="font-bold text-gray-800">{t.title}</h4>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDeleteTemplate(t.id)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50" onClick={() => handleEditTemplate(t)}>
+                                                            <Edit className="w-4 h-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDeleteTemplate(t.id)}>
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
 
                                                 {t.autoReplyKeywords && (

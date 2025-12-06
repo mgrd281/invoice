@@ -49,3 +49,25 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
     }
 }
+
+export async function PUT(req: Request) {
+    try {
+        const body = await req.json()
+        const { id, title, content, keywords } = body
+
+        if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+        const template = await prisma.responseTemplate.update({
+            where: { id },
+            data: {
+                title,
+                content,
+                autoReplyKeywords: keywords || null
+            }
+        })
+
+        return NextResponse.json({ success: true, data: template })
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to update template' }, { status: 500 })
+    }
+}
