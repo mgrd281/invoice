@@ -10,7 +10,9 @@ function getPaths() {
   const path = require('path')
   // Hardcode absolute path to ensure consistency
   const root = '/Users/m/Desktop/rechnung 6'
-  const storageDir = path.join(root, 'user-storage')
+  const storageDir = process.env.NODE_ENV === 'production'
+    ? '/tmp/user-storage'
+    : path.join(process.cwd(), 'user-storage')
   return { path, root, storageDir }
 }
 
