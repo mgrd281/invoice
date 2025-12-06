@@ -423,6 +423,23 @@ export default function DashboardPage() {
                 </Card>
               </Link>
 
+              <Link href="/analytics/customers">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-orange-300 bg-gradient-to-br from-white to-orange-50">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4">
+                      <TrendingUp className="h-6 w-6 text-white" />
+                    </div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      Kundenanalyse
+                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">BETA</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Top Kunden, Produkte & Warenkörbe
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
               <Link href="/settings">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>

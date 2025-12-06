@@ -467,6 +467,33 @@ export class ShopifyAPI {
   }
 
   /**
+   * Get abandoned checkouts from Shopify
+   */
+  async getAbandonedCheckouts(params: {
+    limit?: number
+    created_at_min?: string
+  } = {}): Promise<any[]> {
+    try {
+      const searchParams = new URLSearchParams()
+      searchParams.set('limit', (params.limit || 50).toString())
+
+      if (params.created_at_min) {
+        searchParams.set('created_at_min', params.created_at_min)
+      }
+
+      // Shopify API for checkouts
+      const response = await this.makeRequest(`/checkouts.json?${searchParams}`)
+      const data = await response.json()
+
+      return data.checkouts || []
+    } catch (error) {
+      console.error('Error fetching Shopify abandoned checkouts:', error)
+      // Return empty array instead of throwing to prevent breaking the whole dashboard
+      return []
+    }
+  }
+
+  /**
    * Get orders since last import
    */
   async getNewOrders(): Promise<ShopifyOrder[]> {
