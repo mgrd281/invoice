@@ -238,6 +238,13 @@ export class ShopifyAPI {
 
         // Cursor pagination using page_info
         if (pageInfo && pageInfo.next) {
+          // IMPORTANT: When using page_info, we MUST NOT send other filter parameters
+          // Shopify API requires ONLY page_info and limit
+          searchParams.delete('status')
+          searchParams.delete('financial_status')
+          searchParams.delete('created_at_min')
+          searchParams.delete('created_at_max')
+
           searchParams.set('page_info', pageInfo.next)
         }
 
