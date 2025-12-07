@@ -442,22 +442,7 @@ export default function DashboardPage() {
                 </Card>
               </Link>
 
-              <Link href="/price-intelligence">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-emerald-300 bg-gradient-to-br from-white to-emerald-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4">
-                      <DollarSign className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Price Intelligence
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Marktpreise überwachen & optimieren
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
+
 
               <Link href="/dunning">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-white to-red-50">
