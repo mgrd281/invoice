@@ -41,35 +41,51 @@ export class PriceScraper {
         return parseFloat(cleanText) || 0;
     }
 
-    static async scrapeIdealo(url: string): Promise<number> {
+    static async scrapeIdealo(url: string): Promise<{ price: number, shopName?: string, shopUrl?: string }> {
         const html = await this.fetchHTML(url);
-        if (!html) return 0;
+        if (!html) return { price: 0 };
 
         const $ = cheerio.load(html);
 
         // Idealo typically puts the best price in a prominent element
-        // Selectors might change, so we try a few common ones
-        let priceText = '';
+        // We want to find the FIRST offer in the list, which is the cheapest
 
-        // Strategy 1: The main "Offers" list price
-        // Usually found in the first item of the product offers list
-        const firstOfferPrice = $('.productOffers-listItemTitle .productOffers-listItemTitlePrice').first().text();
+        // 1. Find the first product offer item
+        const firstOffer = $('.productOffers-listItem').first();
 
-        // Strategy 2: The "ab X,XX €" text in header
-        const headerPrice = $('.oopStage-priceRangePrice').first().text();
+        // 2. Extract Price
+        let priceText = firstOffer.find('.productOffers-listItemTitlePrice').text().trim();
 
-        // Strategy 3: Generic price class search
-        const genericPrice = $('.price').first().text();
+        // Fallback strategies for price
+        if (!priceText) priceText = $('.oopStage-priceRangePrice').first().text();
+        if (!priceText) priceText = $('.price').first().text();
 
-        priceText = firstOfferPrice || headerPrice || genericPrice;
+        const price = this.parsePrice(priceText);
 
-        // Fallback: Try to find any price looking string if specific selectors fail
-        if (!priceText) {
-            // Sometimes it's in a button or link
-            priceText = $('a[href*="offer"] span').filter((i, el) => $(el).text().includes('€')).first().text();
+        // 3. Extract Shop Name
+        // Usually in an image alt tag or a specific shop name class
+        let shopName = firstOffer.find('.productOffers-listItemOfferShopV2LogoImage').attr('alt');
+        if (!shopName) shopName = firstOffer.find('.productOffers-listItemOfferShopV2Name').text().trim();
+
+        // Fallback: Try to find shop name in the "Sold by" section if available
+        if (!shopName) {
+            shopName = 'Idealo (Unbekannt)';
         }
 
-        return this.parsePrice(priceText);
+        // Clean up shop name (remove "Logo von " etc.)
+        shopName = shopName?.replace('Logo von ', '').replace('Logo ', '').trim();
+
+        // 4. Extract Shop URL (The "Zum Kauf" button)
+        // This is usually a redirect link from Idealo
+        let shopUrl = firstOffer.find('a.productOffers-listItemTitle').attr('href');
+        if (!shopUrl) shopUrl = firstOffer.find('.productOffers-listItemOfferShopV2Button').attr('href');
+
+        // If relative URL, prepend idealo.de
+        if (shopUrl && !shopUrl.startsWith('http')) {
+            shopUrl = `https://www.idealo.de${shopUrl}`;
+        }
+
+        return { price, shopName, shopUrl };
     }
 
     static async scrapeBilliger(url: string): Promise<number> {

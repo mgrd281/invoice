@@ -52,7 +52,20 @@ export async function GET() {
             let newPrice = 0
             try {
                 if (comp.name.includes('Idealo')) {
-                    newPrice = await PriceScraper.scrapeIdealo(comp.url)
+                    const result = await PriceScraper.scrapeIdealo(comp.url)
+                    newPrice = result.price
+
+                    // Update shop name and URL if we found a specific cheaper shop on Idealo
+                    if (result.shopName && result.shopName !== 'Idealo (Unbekannt)') {
+                        // We append the real shop name to Idealo, e.g. "Idealo (SoftwareBilliger)"
+                        comp.name = `Idealo (${result.shopName})`
+                    }
+                    if (result.shopUrl) {
+                        // Update the URL to point directly to the shop offer if possible, or keep Idealo link
+                        // For now, let's keep the Idealo link as the main "url" but maybe store the direct link elsewhere if needed.
+                        // Or we can just log it for now.
+                        console.log(`Found direct shop link for ${comp.name}: ${result.shopUrl}`)
+                    }
                 } else if (comp.name.includes('Billiger')) {
                     newPrice = await PriceScraper.scrapeBilliger(comp.url)
                 } else if (comp.name.includes('SoftwareDeals24')) {
