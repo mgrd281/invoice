@@ -39,9 +39,25 @@ function ShopifyEmbeddedContent() {
 
   useEffect(() => {
     if (shop) {
-      fetchData();
+      initShop();
     }
   }, [shop]);
+
+  const initShop = async () => {
+    try {
+      // 1. Ensure Organization exists
+      await fetch('/api/shopify/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop })
+      });
+
+      // 2. Fetch Data
+      fetchData();
+    } catch (error) {
+      console.error('Setup failed:', error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
