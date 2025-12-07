@@ -212,18 +212,18 @@ export async function GET(
                   total: fetchedInvoice.total || 0,
                   status: fetchedInvoice.status || 'Offen',
                   customer: {
-                    id: fetchedInvoice.customerId || 'unknown',
-                    name: fetchedInvoice.customerName || 'Unbekannter Kunde',
-                    companyName: fetchedInvoice.customerCompanyName || '',
-                    email: fetchedInvoice.customerEmail || '',
-                    address: fetchedInvoice.customerAddress || '',
-                    zipCode: fetchedInvoice.customerZip || '',
-                    city: fetchedInvoice.customerCity || '',
-                    country: fetchedInvoice.customerCountry || 'Deutschland'
+                    id: (fetchedInvoice.customer as any)?.id || 'unknown',
+                    name: fetchedInvoice.customer?.name || 'Unbekannter Kunde',
+                    companyName: (fetchedInvoice.customer as any)?.companyName || '',
+                    email: fetchedInvoice.customer?.email || '',
+                    address: fetchedInvoice.customer?.address || '',
+                    zipCode: fetchedInvoice.customer?.zipCode || '',
+                    city: fetchedInvoice.customer?.city || '',
+                    country: fetchedInvoice.customer?.country || 'Deutschland'
                   },
                   organization: getCompanySettings(),
                   items: fetchedInvoice.items || [],
-                  qrCodeSettings: fetchedInvoice.qrCodeSettings || null
+                  qrCodeSettings: (fetchedInvoice as any).qrCodeSettings || null
                 }
                 return NextResponse.json(formattedInvoice)
               }
