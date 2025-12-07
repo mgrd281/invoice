@@ -76,6 +76,22 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Cannot delete your own admin account' }, { status: 400 })
         }
 
+        // Create Audit Log
+        await prisma.auditLog.create({
+            data: {
+                organizationId: targetUser.organizationId || 'system',
+                userId: user.id,
+                action: 'DELETE_USER',
+                entityType: 'USER',
+                entityId: userId,
+                details: {
+                    targetEmail: targetUser.email,
+                    targetName: targetUser.name
+                },
+                ipAddress: request.headers.get('x-forwarded-for') || 'unknown'
+            }
+        })
+
         await prisma.user.delete({
             where: { id: userId }
         })
@@ -118,22 +134,44 @@ export async function PUT(request: NextRequest) {
         }
 
         const updateData: any = {}
+        let actionType = 'UPDATE_USER'
+        let actionDetails: any = {}
+
         if (typeof isVerified === 'boolean') {
             updateData.emailVerified = isVerified ? new Date() : null
+            actionType = isVerified ? 'VERIFY_USER' : 'UNVERIFY_USER'
         }
         if (typeof isSuspended === 'boolean') {
             updateData.isSuspended = isSuspended
+            actionType = isSuspended ? 'SUSPEND_USER' : 'UNSUSPEND_USER'
         }
         if (newPassword && typeof newPassword === 'string') {
             if (newPassword.length < 6) {
                 return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
             }
             updateData.passwordHash = await bcrypt.hash(newPassword, 10)
+            actionType = 'RESET_PASSWORD'
         }
 
         await prisma.user.update({
             where: { id: userId },
             data: updateData
+        })
+
+        // Create Audit Log
+        await prisma.auditLog.create({
+            data: {
+                organizationId: targetUser.organizationId || 'system', // Fallback
+                userId: user.id,
+                action: actionType,
+                entityType: 'USER',
+                entityId: userId,
+                details: {
+                    targetEmail: targetUser.email,
+                    ...actionDetails
+                },
+                ipAddress: request.headers.get('x-forwarded-for') || 'unknown'
+            }
         })
 
         return NextResponse.json({ success: true, message: 'User updated' })
