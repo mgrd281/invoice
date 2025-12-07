@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer'
-import { generateArizonaPDFBuffer } from './arizona-pdf-generator'
+import { generateArizonaPDFBuffer } from './server-pdf-generator'
 import { detectEmailProvider, getSmtpConfig } from './email-providers'
 import { createEmailLog, markEmailFailed, markEmailSent, updateEmailLog } from './email-tracking'
 
@@ -36,7 +36,7 @@ export async function verifyEmailConfig(): Promise<boolean> {
     // Use new SMTP environment variables if available, fallback to legacy
     const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || ''
     const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
-    
+
     // Validate required environment variables
     if (!smtpUser || !smtpPass) {
       console.error('❌ Missing required SMTP environment variables: SMTP_USER/EMAIL_USER, SMTP_PASS/EMAIL_PASS')
@@ -54,7 +54,7 @@ export async function verifyEmailConfig(): Promise<boolean> {
     const transporter = createTransporter(smtpUser)
     console.log('🔌 Testing SMTP connection...')
     await transporter.verify()
-    
+
     const provider = detectEmailProvider(smtpUser)
     console.log(`✅ Email configuration verified successfully for ${provider?.name || 'SMTP Provider'}`)
     return true
@@ -84,12 +84,12 @@ export async function sendEmail(options: {
       console.log('📄 Subject:', options.subject)
       console.log('⚠️  NO REAL EMAIL SENT - This is simulation only!')
       console.log('💡 To send real emails: set EMAIL_DEV_MODE="false" in .env.local')
-      
+
       // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       const devMessageId = `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
+
       return {
         success: true,
         messageId: devMessageId
@@ -99,7 +99,7 @@ export async function sendEmail(options: {
     // Use SMTP configuration for production
     const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || ''
     const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
-    
+
     if (!smtpUser || !smtpPass) {
       throw new Error('SMTP configuration missing')
     }
@@ -116,7 +116,7 @@ export async function sendEmail(options: {
     }
 
     const info = await transporter.sendMail(mailOptions)
-    
+
     return {
       success: true,
       messageId: info.messageId
@@ -156,31 +156,31 @@ export async function sendInvoiceEmail(
   try {
     console.log('📧 Starting email send process for invoice:', invoiceNumber)
     console.log('📝 Email log ID:', emailLog.id)
-    
+
     // Check if we're in development mode
     if (process.env.EMAIL_DEV_MODE === 'true') {
       console.log('🧪 DEVELOPMENT MODE: Simulating email send')
       console.log('📧 Would send to:', customerEmail)
       console.log('📄 Invoice:', invoiceNumber)
       console.log('👤 Customer:', customerName)
-      
+
       // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 1500))
-      
+
       const devMessageId = `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       markEmailSent(emailLog.id, devMessageId, 'Development mode simulation')
-      
+
       return {
         success: true,
         messageId: devMessageId,
         logId: emailLog.id
       }
     }
-    
+
     // Use new SMTP environment variables if available, fallback to legacy
     const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || ''
     const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
-    
+
     // Validate email configuration for production
     if (!smtpUser || !smtpPass) {
       const error = 'SMTP configuration missing. Please set SMTP_USER/EMAIL_USER and SMTP_PASS/EMAIL_PASS environment variables.'
@@ -195,7 +195,7 @@ export async function sendInvoiceEmail(
     // Generate PDF buffer for attachment
     console.log('📄 Generating PDF for invoice:', invoiceNumber)
     const pdfBuffer = await generateArizonaPDFBuffer(invoiceId)
-    
+
     if (!pdfBuffer) {
       const error = 'Failed to generate PDF for invoice'
       markEmailFailed(emailLog.id, error)
@@ -212,7 +212,7 @@ export async function sendInvoiceEmail(
 
     // Email content with CC support and custom fields
     const subject = customSubject || `Rechnung ${invoiceNumber} von ${companyName}`
-    const htmlContent = customMessage 
+    const htmlContent = customMessage
       ? generateCustomEmailHTML(customerName, invoiceNumber, companyName, customMessage, invoiceAmount, dueDate)
       : generateEmailHTML(customerName, invoiceNumber, companyName)
     const textContent = customMessage
@@ -239,7 +239,7 @@ export async function sendInvoiceEmail(
     if (process.env.EMAIL_CC) {
       console.log('📧 CC to:', process.env.EMAIL_CC)
     }
-    
+
     const effectiveFrom = `${process.env.EMAIL_FROM_NAME || companyName} <${process.env.EMAIL_FROM || process.env.EMAIL_USER || senderEmail}>`
     const effectiveReplyTo = process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM || process.env.EMAIL_USER || senderEmail
 
@@ -254,18 +254,18 @@ export async function sendInvoiceEmail(
     console.log('📝 Message ID:', info.messageId)
     console.log('📊 SMTP Response:', info.response)
     console.log('📧 Envelope:', info.envelope)
-    
+
     // Check for successful SMTP response (250 codes)
     const smtpResponse = info.response || ''
     const isSuccessful = smtpResponse.includes('250') || smtpResponse.includes('OK') || smtpResponse.includes('Queued')
-    
+
     if (!isSuccessful && smtpResponse) {
       console.warn('⚠️ Unexpected SMTP response:', smtpResponse)
     }
-    
+
     // Mark as sent in tracking with detailed response
     markEmailSent(emailLog.id, info.messageId, smtpResponse)
-    
+
     return {
       success: true,
       messageId: info.messageId,
@@ -274,11 +274,11 @@ export async function sendInvoiceEmail(
 
   } catch (error) {
     console.error('❌ Error sending invoice email:', error)
-    
+
     // Mark as failed in tracking
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     markEmailFailed(emailLog.id, errorMessage)
-    
+
     return {
       success: false,
       error: errorMessage,
@@ -364,15 +364,15 @@ Bei Fragen kontaktieren Sie uns über unsere regulären Kanäle.
 
 // Generate custom HTML email with user message
 function generateCustomEmailHTML(
-  customerName: string, 
-  invoiceNumber: string, 
-  companyName: string, 
+  customerName: string,
+  invoiceNumber: string,
+  companyName: string,
   customMessage: string,
   invoiceAmount?: string,
   dueDate?: string
 ): string {
   const formattedDueDate = dueDate ? new Date(dueDate).toLocaleDateString('de-DE') : 'Bei Erhalt'
-  
+
   return `
     <!DOCTYPE html>
     <html>
@@ -434,15 +434,15 @@ function generateCustomEmailHTML(
 
 // Generate custom plain text email with user message
 function generateCustomEmailText(
-  customerName: string, 
-  invoiceNumber: string, 
-  companyName: string, 
+  customerName: string,
+  invoiceNumber: string,
+  companyName: string,
   customMessage: string,
   invoiceAmount?: string,
   dueDate?: string
 ): string {
   const formattedDueDate = dueDate ? new Date(dueDate).toLocaleDateString('de-DE') : 'Bei Erhalt'
-  
+
   return `
 Rechnung ${invoiceNumber}
 
