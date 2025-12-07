@@ -113,17 +113,17 @@ export async function GET(request: NextRequest) {
     // Admin sees all
     // Regular users see:
     // 1. Their own invoices (userId matches)
-    // 2. Imported/System invoices (no userId)
     let filteredInvoices
     if (shouldShowAllData(user)) {
       filteredInvoices = allInvoices.filter((invoice: any) => !invoice.deleted_at)
       log(`ADMIN access: returning ${filteredInvoices.length} active invoices`);
     } else {
+      // STRICT ISOLATION: Users only see their own invoices
       filteredInvoices = allInvoices.filter((invoice: any) =>
         !invoice.deleted_at &&
-        (!invoice.userId || invoice.userId === user.id || invoice.source === 'shopify')
+        invoice.userId === user.id
       )
-      log(`USER access: returning ${filteredInvoices.length} invoices (own + system)`);
+      log(`USER access: returning ${filteredInvoices.length} invoices (own only)`);
     }
 
     return NextResponse.json(filteredInvoices)
