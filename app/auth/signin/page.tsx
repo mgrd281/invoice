@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { AlertCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 interface Provider {
@@ -26,10 +26,12 @@ function SignInContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
   const errorParam = searchParams.get('error')
+  const verifiedParam = searchParams.get('verified')
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -49,7 +51,13 @@ function SignInContent() {
     }
     checkSession()
 
-    // Handle error from URL params
+    // Handle messages from URL params
+    if (verifiedParam === 'true') {
+      setSuccess('E-Mail erfolgreich bestätigt! Sie können sich jetzt anmelden.')
+    } else if (verifiedParam === 'pending') {
+      setSuccess('Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.')
+    }
+
     if (errorParam) {
       switch (errorParam) {
         case 'OAuthSignin':
@@ -83,12 +91,13 @@ function SignInContent() {
           setError('Ein unbekannter Fehler ist aufgetreten')
       }
     }
-  }, [router, callbackUrl, errorParam])
+  }, [router, callbackUrl, errorParam, verifiedParam])
 
   const handleCredentialsSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setSuccess('')
 
     try {
       const result = await signIn('credentials', {
@@ -178,6 +187,13 @@ function SignInContent() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {success && (
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-600">{success}</span>
+              </div>
+            )}
+
             {/* OAuth Providers */}
             <div className="space-y-3">
               {Object.values(providers)

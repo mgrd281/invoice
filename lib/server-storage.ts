@@ -74,6 +74,7 @@ export function writeJson(fileName: string, data: JsonValue, namespace?: string)
 // Convenience helpers for this project
 const CUSTOMERS_FILE = 'customers.json'
 const INVOICES_FILE = 'invoices.json'
+const USERS_FILE = 'users.json'
 
 // Load all customers from disk (persistent store)
 export function loadCustomersFromDisk(shopDomain?: string): any[] {
@@ -97,4 +98,16 @@ export function loadInvoicesFromDisk(shopDomain?: string): any[] {
 // Save all invoices to disk
 export function saveInvoicesToDisk(invoices: any[], shopDomain?: string): boolean {
   return writeJson(INVOICES_FILE, { invoices, updatedAt: new Date().toISOString() }, shopDomain)
+}
+
+// Load all users from disk
+export function loadUsersFromDisk(): any[] {
+  const data = readJson(USERS_FILE, { users: [] })
+  if (data && Array.isArray(data.users)) return data.users
+  return []
+}
+
+// Save all users to disk
+export function saveUsersToDisk(users: any[]): boolean {
+  return writeJson(USERS_FILE, { users, updatedAt: new Date().toISOString() })
 }

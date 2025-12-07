@@ -3,19 +3,9 @@ import GoogleProvider from 'next-auth/providers/google'
 import AppleProvider from 'next-auth/providers/apple'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { NextAuthOptions } from 'next-auth'
-import jwt from 'jsonwebtoken'
-
-// Simple user storage for demo purposes
-// In production, use a proper database
-interface User {
-  id: string
-  email: string
-  name: string
-  image?: string
-  provider: string
-}
-
-const users: User[] = []
+import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage'
+import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -34,46 +24,87 @@ const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        // This is where you would validate credentials against your database
-        // For demo purposes, we'll accept any email/password combination
-        if (credentials?.email && credentials?.password) {
-          const user = {
-            id: '1',
-            email: credentials.email,
-            name: credentials.email.split('@')[0],
-            provider: 'credentials'
-          }
-          return user
+        if (!credentials?.email || !credentials?.password) {
+          return null
         }
-        return null
+
+        const users = loadUsersFromDisk()
+        const user = users.find((u: any) => u.email === credentials.email)
+
+        if (!user) {
+          return null
+        }
+
+        // Check password
+        // If user has no password (e.g. Google auth only), this will fail, which is correct
+        if (!user.password) {
+          return null
+        }
+
+        const isValid = await bcrypt.compare(credentials.password, user.password)
+
+        if (!isValid) {
+          return null
+        }
+
+        // Optional: Check verification status
+        // if (!user.isVerified) {
+        //   throw new Error('Please verify your email first')
+        // }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image
+        }
       }
     })
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Store user in our simple storage system
-      if (user.email) {
-        const existingUser = users.find(u => u.email === user.email)
+      // For OAuth providers (Google/Apple), we need to create/update the user in our DB
+      if (account?.provider === 'google' || account?.provider === 'apple') {
+        const users = loadUsersFromDisk()
+        let existingUser = users.find((u: any) => u.email === user.email)
+
         if (!existingUser) {
-          users.push({
+          existingUser = {
             id: user.id || crypto.randomUUID(),
             email: user.email,
-            name: user.name || user.email.split('@')[0],
-            image: user.image || undefined,
-            provider: account?.provider || 'unknown'
-          })
+            name: user.name || user.email?.split('@')[0],
+            image: user.image,
+            provider: account.provider,
+            isVerified: true, // OAuth emails are trusted/verified by provider
+            createdAt: new Date().toISOString()
+          }
+          users.push(existingUser)
+          saveUsersToDisk(users)
+        } else {
+          // Update existing user with provider info if missing
+          if (!existingUser.provider) {
+            existingUser.provider = account.provider
+            saveUsersToDisk(users)
+          }
         }
+
+        // Ensure the session gets the correct ID from our DB
+        user.id = existingUser.id
       }
       return true
     },
     async jwt({ token, user, account }) {
       if (user) {
+        token.id = user.id
         token.provider = account?.provider
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
+        // @ts-ignore
+        session.user.id = token.id as string
+        // @ts-ignore
         session.user.provider = token.provider as string
       }
       return session

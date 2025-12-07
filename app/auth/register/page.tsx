@@ -7,11 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, UserPlus, Eye, EyeOff, ArrowLeft, Check } from 'lucide-react'
-import { useAuth } from '@/hooks/use-auth-compat'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { login } = useAuth()
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -59,48 +57,27 @@ export default function RegisterPage() {
         throw new Error('Das Passwort muss mindestens 6 Zeichen lang sein.')
       }
 
-      // Check if email already exists (demo simulation)
-      const existingEmails = ['demo@rechnungsprofi.de', 'test@example.com', 'max@mustermann.de']
-      if (existingEmails.includes(formData.email)) {
-        throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte verwenden Sie eine andere.')
-      }
-
-      // 1. Registrierung simulieren (in Production würde hier die echte Registrierung stattfinden)
-      console.log('📝 Registering user:', {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        companyName: formData.companyName
-      })
-      
-      // Simulate registration delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // 2. E-Mail-Verifizierungscode senden
-      console.log('📧 Sending verification email...')
-      const verificationResponse = await fetch('/api/auth/email-verification/send', {
+      // Call real registration API
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          name: `${formData.firstName} ${formData.lastName}`.trim()
+          password: formData.password,
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          companyName: formData.companyName
         })
       })
-      
-      const verificationData = await verificationResponse.json()
-      
-      if (!verificationData.success) {
-        throw new Error(verificationData.error || 'E-Mail-Verifizierung konnte nicht gesendet werden.')
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registrierung fehlgeschlagen.')
       }
-      
-      console.log('✅ Verification email sent successfully')
-      
-      // 3. Zur Verifizierungsseite weiterleiten
-      const verifyUrl = `/auth/verify-email?email=${encodeURIComponent(formData.email)}`
-      router.push(verifyUrl)
-      
+
+      // Success! Redirect to login with success message
+      router.push('/auth/signin?verified=pending')
+
     } catch (error: any) {
       console.error('❌ Registration error:', error)
       setError(error.message || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.')
@@ -336,14 +313,13 @@ export default function RegisterPage() {
             <div className="mt-6 text-center">
               <p className="text-gray-600">
                 Bereits ein Konto?{' '}
-                <Link href="/auth/login" className="text-blue-600 hover:text-blue-500 font-medium">
+                <Link href="/auth/signin" className="text-blue-600 hover:text-blue-500 font-medium">
                   Jetzt anmelden
                 </Link>
               </p>
             </div>
           </CardContent>
         </Card>
-
 
         {/* Benefits */}
         <div className="mt-4 bg-white/60 backdrop-blur-sm rounded-lg p-4">
