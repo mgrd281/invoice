@@ -31,9 +31,9 @@ export async function GET(req: NextRequest) {
 
         const userEmail = organization.users[0]?.email || 'unknown@example.com';
 
-        // 2. Fetch invoices for this MAIN organization
+        // 2. Fetch ALL invoices (Single Tenant Mode - Absolute)
+        // We ignore organizationId to ensure we see everything in the DB
         const invoices = await prisma.invoice.findMany({
-            where: { organizationId: organization.id },
             orderBy: { issueDate: 'desc' },
             include: { customer: true }
         });

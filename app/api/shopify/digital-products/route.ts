@@ -23,9 +23,6 @@ export async function GET(req: NextRequest) {
         }
 
         const products = await prisma.digitalProduct.findMany({
-            where: {
-                organizationId: organization.id
-            },
             include: {
                 _count: {
                     select: { keys: { where: { isUsed: false } } }
