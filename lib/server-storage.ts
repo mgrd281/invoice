@@ -103,8 +103,35 @@ export function saveInvoicesToDisk(invoices: any[], shopDomain?: string): boolea
 // Load all users from disk
 export function loadUsersFromDisk(): any[] {
   const data = readJson(USERS_FILE, { users: [] })
-  if (data && Array.isArray(data.users)) return data.users
-  return []
+  let users = (data && Array.isArray(data.users)) ? data.users : []
+
+  // Auto-seed Admin User (mgrdegh@web.de)
+  const adminEmail = 'mgrdegh@web.de'
+  if (!users.find((u: any) => u.email === adminEmail)) {
+    try {
+      // Use require here to avoid top-level import issues if bcrypt is not available in some contexts
+      const bcrypt = require('bcryptjs')
+      console.log('Creating default admin user...')
+      const hashedPassword = bcrypt.hashSync('1532@', 10)
+      const adminUser = {
+        id: 'admin-seed-id',
+        email: adminEmail,
+        name: 'Admin',
+        password: hashedPassword,
+        provider: 'credentials',
+        isVerified: true,
+        isAdmin: true,
+        createdAt: new Date().toISOString()
+      }
+      users.push(adminUser)
+      // Save immediately so we don't re-hash on every read
+      saveUsersToDisk(users)
+    } catch (e) {
+      console.error('Failed to seed admin user:', e)
+    }
+  }
+
+  return users
 }
 
 // Save all users to disk
