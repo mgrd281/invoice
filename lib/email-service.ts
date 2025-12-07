@@ -7,7 +7,14 @@ import { createEmailLog, markEmailFailed, markEmailSent, updateEmailLog } from '
 function createTransporter(senderEmail: string) {
   const host = process.env.SMTP_HOST || getSmtpConfig(senderEmail).host
   const port = parseInt(process.env.SMTP_PORT || String(getSmtpConfig(senderEmail).port))
-  const secure = (process.env.SMTP_SECURE || 'false') === 'true' ? true : getSmtpConfig(senderEmail).secure
+
+  // Logic for secure connection:
+  // Port 465 -> secure: true
+  // Port 587 -> secure: false (STARTTLS)
+  const secure = (process.env.SMTP_SECURE || 'false') === 'true'
+    ? true
+    : (port === 465)
+
   const user = process.env.SMTP_USER || process.env.EMAIL_USER || senderEmail
   const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
 
@@ -16,6 +23,16 @@ function createTransporter(senderEmail: string) {
     port,
     secure,
     auth: { user, pass },
+    tls: {
+      // Do not fail on invalid certs (common issue with some providers)
+      rejectUnauthorized: false,
+      // Force TLS v1.2 if needed, but usually auto-negotiation works
+      ciphers: 'SSLv3'
+    },
+    // Increase connection timeout
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000
   })
 
   return transporter
