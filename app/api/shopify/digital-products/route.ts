@@ -13,19 +13,18 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // Find the organization for this shop
-        const connection = await prisma.shopifyConnection.findFirst({
-            where: { shopName: shop },
-            include: { organization: true }
+        // Force Single Tenant: Use Main Organization
+        const organization = await prisma.organization.findFirst({
+            orderBy: { createdAt: 'asc' }
         });
 
-        if (!connection || !connection.organization) {
+        if (!organization) {
             return NextResponse.json({ success: true, data: [] });
         }
 
         const products = await prisma.digitalProduct.findMany({
             where: {
-                organizationId: connection.organization.id
+                organizationId: organization.id
             },
             include: {
                 _count: {
@@ -58,21 +57,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Title and Shopify Product ID are required' }, { status: 400 });
         }
 
-        // Find the organization for this shop
-        const shopNameClean = shop.replace('.myshopify.com', '');
-        const connection = await prisma.shopifyConnection.findFirst({
-            where: {
-                OR: [
-                    { shopName: shop },
-                    { shopName: shopNameClean },
-                    { shopName: `${shopNameClean}.myshopify.com` }
-                ]
-            },
-            include: { organization: true }
+        // Force Single Tenant: Use Main Organization
+        const organization = await prisma.organization.findFirst({
+            orderBy: { createdAt: 'asc' }
         });
 
-        if (!connection || !connection.organization) {
-            return NextResponse.json({ error: 'Organization not found for this shop' }, { status: 404 });
+        if (!organization) {
+            return NextResponse.json({ error: 'Main organization not found' }, { status: 404 });
         }
 
         // Check if product already exists
@@ -88,7 +79,7 @@ export async function POST(req: NextRequest) {
             data: {
                 title,
                 shopifyProductId,
-                organizationId: connection.organization.id,
+                organizationId: organization.id,
                 emailTemplate: ''
             }
         });

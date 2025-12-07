@@ -13,40 +13,25 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // 1. Find the connection and organization
-        // Try to match exact shop name or without .myshopify.com
-        const shopNameClean = shop.replace('.myshopify.com', '');
-
-        const connection = await prisma.shopifyConnection.findFirst({
-            where: {
-                OR: [
-                    { shopName: shop },
-                    { shopName: shopNameClean },
-                    { shopName: `${shopNameClean}.myshopify.com` }
-                ]
-            },
+        // 1. Force Single Tenant Mode: Get the Main Organization
+        // This ensures we always show the data from the Desktop version
+        const organization = await prisma.organization.findFirst({
+            orderBy: { createdAt: 'asc' },
             include: {
-                organization: {
-                    include: {
-                        users: {
-                            take: 1,
-                            orderBy: { createdAt: 'asc' } // Get the first user (likely admin)
-                        }
-                    }
+                users: {
+                    take: 1,
+                    orderBy: { createdAt: 'asc' }
                 }
             }
         });
 
-        if (!connection || !connection.organization) {
-            // If no connection found, return empty list but don't error
+        if (!organization) {
             return NextResponse.json({ invoices: [], userEmail: null });
         }
 
-        const organization = connection.organization;
-        // Identify the user email associated with this shop
         const userEmail = organization.users[0]?.email || 'unknown@example.com';
 
-        // 2. Fetch invoices for this organization
+        // 2. Fetch invoices for this MAIN organization
         const invoices = await prisma.invoice.findMany({
             where: { organizationId: organization.id },
             orderBy: { issueDate: 'desc' },
