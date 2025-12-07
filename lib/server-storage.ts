@@ -27,7 +27,7 @@ function ensureDir(dir: string) {
   }
 }
 
-export function readJson(fileName: string, fallback: JsonValue = null): JsonValue {
+export function readJson(fileName: string, fallback: JsonValue = null, namespace?: string): JsonValue {
   try {
     // Only run on server
     if (typeof window !== 'undefined') return fallback
@@ -35,7 +35,11 @@ export function readJson(fileName: string, fallback: JsonValue = null): JsonValu
     const fs = require('fs')
     const { path, storageDir } = getPaths()
     ensureDir(storageDir)
-    const filePath = path.join(storageDir, fileName)
+
+    // If namespace is provided, prefix the filename
+    const finalFileName = namespace ? `${namespace}_${fileName}` : fileName
+
+    const filePath = path.join(storageDir, finalFileName)
     if (!fs.existsSync(filePath)) return fallback
 
     const raw = fs.readFileSync(filePath, 'utf-8')
@@ -46,14 +50,18 @@ export function readJson(fileName: string, fallback: JsonValue = null): JsonValu
   }
 }
 
-export function writeJson(fileName: string, data: JsonValue): boolean {
+export function writeJson(fileName: string, data: JsonValue, namespace?: string): boolean {
   try {
     if (typeof window !== 'undefined') return false
 
     const fs = require('fs')
     const { path, storageDir } = getPaths()
     ensureDir(storageDir)
-    const filePath = path.join(storageDir, fileName)
+
+    // If namespace is provided, prefix the filename
+    const finalFileName = namespace ? `${namespace}_${fileName}` : fileName
+
+    const filePath = path.join(storageDir, finalFileName)
 
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
     return true
@@ -68,25 +76,25 @@ const CUSTOMERS_FILE = 'customers.json'
 const INVOICES_FILE = 'invoices.json'
 
 // Load all customers from disk (persistent store)
-export function loadCustomersFromDisk(): any[] {
-  const data = readJson(CUSTOMERS_FILE, { customers: [] })
+export function loadCustomersFromDisk(shopDomain?: string): any[] {
+  const data = readJson(CUSTOMERS_FILE, { customers: [] }, shopDomain)
   if (data && Array.isArray(data.customers)) return data.customers
   return []
 }
 
 // Save all customers to disk
-export function saveCustomersToDisk(customers: any[]): boolean {
-  return writeJson(CUSTOMERS_FILE, { customers, updatedAt: new Date().toISOString() })
+export function saveCustomersToDisk(customers: any[], shopDomain?: string): boolean {
+  return writeJson(CUSTOMERS_FILE, { customers, updatedAt: new Date().toISOString() }, shopDomain)
 }
 
 // Load all invoices from disk (persistent store)
-export function loadInvoicesFromDisk(): any[] {
-  const data = readJson(INVOICES_FILE, { invoices: [] })
+export function loadInvoicesFromDisk(shopDomain?: string): any[] {
+  const data = readJson(INVOICES_FILE, { invoices: [] }, shopDomain)
   if (data && Array.isArray(data.invoices)) return data.invoices
   return []
 }
 
 // Save all invoices to disk
-export function saveInvoicesToDisk(invoices: any[]): boolean {
-  return writeJson(INVOICES_FILE, { invoices, updatedAt: new Date().toISOString() })
+export function saveInvoicesToDisk(invoices: any[], shopDomain?: string): boolean {
+  return writeJson(INVOICES_FILE, { invoices, updatedAt: new Date().toISOString() }, shopDomain)
 }
