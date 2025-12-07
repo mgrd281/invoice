@@ -17,8 +17,7 @@ async function main() {
                 address: 'Musterstraße 1',
                 zipCode: '12345',
                 city: 'Musterstadt',
-                country: 'Deutschland',
-                email: 'info@example.com'
+                country: 'Deutschland'
             }
         })
         console.log('Created organization:', org.id)
