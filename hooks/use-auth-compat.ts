@@ -10,16 +10,17 @@ export function useAuth() {
 
   const isAuthenticated = !!session
   const loading = status === 'loading'
-  
+
   // Mock user object that matches the old interface
   const user = session ? {
-    id: 1, // In real app, this would come from database
+    id: (session.user as any)?.id || 1,
     email: session.user?.email || '',
     name: session.user?.name || session.user?.email?.split('@')[0] || 'User',
     role: 'user',
     firstName: session.user?.name?.split(' ')[0] || '',
     lastName: session.user?.name?.split(' ')[1] || '',
-    isAdmin: false // Add isAdmin property for compatibility
+    // Check for admin email
+    isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes((session.user?.email || '').toLowerCase())
   } : null
 
   // Login function that redirects to NextAuth signin
@@ -31,7 +32,7 @@ export function useAuth() {
         password: credentials.password,
         redirect: false
       })
-      
+
       if (result?.ok) {
         router.push('/dashboard')
         return { success: true }
