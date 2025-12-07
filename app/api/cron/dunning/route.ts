@@ -27,7 +27,8 @@ export async function GET() {
                 include: {
                     customer: true,
                     dunningLogs: true,
-                    items: true
+                    items: true,
+                    order: true
                 }
             })
 
