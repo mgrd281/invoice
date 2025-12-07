@@ -40,14 +40,30 @@ let trackedProducts = [
 ]
 
 export async function GET() {
-    // On every GET request, we try to update prices for a few items to keep it fresh
-    // In production, this should be a background job (Cron)
+    // FAST RESPONSE STRATEGY:
+    // 1. Return current data immediately so UI loads fast.
+    // 2. Trigger background update (fire and forget).
 
+    // Trigger background update without awaiting
+    updatePricesInBackground().catch(err => console.error('Background update failed:', err));
+
+    return NextResponse.json({
+        success: true,
+        data: trackedProducts
+    })
+}
+
+// Background update function
+async function updatePricesInBackground() {
+    console.log('🔄 Starting background price update...');
     const updatePromises = trackedProducts.map(async (product) => {
         let hasUpdates = false
 
         const competitorPromises = product.competitors.map(async (comp) => {
             if (!comp.url) return
+
+            // Skip update if updated less than 1 hour ago (simple cache mechanism could be added here)
+            // For now, we update every time but since it's background, user won't feel it.
 
             let newPrice = 0
             try {
@@ -115,13 +131,8 @@ export async function GET() {
         }
     })
 
-    // Wait for updates (or maybe don't wait to be faster, but for demo we wait)
-    await Promise.all(updatePromises)
-
-    return NextResponse.json({
-        success: true,
-        data: trackedProducts
-    })
+    await Promise.all(updatePromises);
+    console.log('✅ Background price update finished.');
 }
 
 export async function POST(req: Request) {
