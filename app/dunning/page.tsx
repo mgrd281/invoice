@@ -93,10 +93,11 @@ export default function DunningPage() {
             if (res.ok) {
                 setMessage({ type: 'success', text: 'Einstellungen erfolgreich gespeichert.' })
             } else {
-                throw new Error('Failed to save')
+                const data = await res.json().catch(() => ({}))
+                throw new Error(data.error || 'Fehler beim Speichern der Einstellungen')
             }
-        } catch (error) {
-            setMessage({ type: 'error', text: 'Fehler beim Speichern der Einstellungen.' })
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Fehler beim Speichern der Einstellungen.' })
         } finally {
             setSaving(false)
         }
