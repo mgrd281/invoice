@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     log(`📨 Webhook received! Topic: ${topic}, Shop: ${shop}`)
 
     // 1. Verify Webhook
-    const webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET
+    const webhookSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_WEBHOOK_SECRET
     if (webhookSecret) {
       if (!verifyShopifyWebhook(body, hmac, webhookSecret)) {
         log('❌ Webhook signature verification FAILED')
