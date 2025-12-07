@@ -264,6 +264,12 @@ export default function AdminPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Link href="/digital-products">
+                            <Button variant="default" className="bg-blue-600 hover:bg-blue-700">
+                                <Key className="h-4 w-4 mr-2" />
+                                Digitale Produkte
+                            </Button>
+                        </Link>
                         <Button variant="outline" onClick={() => { fetchUsers(); fetchLogs(); fetchAnalytics(); }} disabled={loading || logsLoading || analyticsLoading}>
                             <RefreshCw className={`h-4 w-4 mr-2 ${loading || logsLoading || analyticsLoading ? 'animate-spin' : ''}`} />
                             Aktualisieren
