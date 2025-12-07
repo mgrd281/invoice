@@ -59,8 +59,15 @@ export async function POST(req: NextRequest) {
         }
 
         // Find the organization for this shop
+        const shopNameClean = shop.replace('.myshopify.com', '');
         const connection = await prisma.shopifyConnection.findFirst({
-            where: { shopName: shop },
+            where: {
+                OR: [
+                    { shopName: shop },
+                    { shopName: shopNameClean },
+                    { shopName: `${shopNameClean}.myshopify.com` }
+                ]
+            },
             include: { organization: true }
         });
 
