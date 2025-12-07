@@ -22,7 +22,8 @@ import {
   Bot,
   Key,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  Shield
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -442,8 +443,6 @@ export default function DashboardPage() {
                 </Card>
               </Link>
 
-
-
               <Link href="/dunning">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-white to-red-50">
                   <CardHeader>
@@ -476,6 +475,31 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+
+          {/* Admin Section */}
+          {user?.isAdmin && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-red-600" />
+                Administration
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Link href="/admin">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-red-100 bg-red-50">
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl flex items-center justify-center mb-4">
+                        <Users className="h-6 w-6 text-white" />
+                      </div>
+                      <CardTitle className="text-xl">Benutzerverwaltung</CardTitle>
+                      <CardDescription>
+                        Alle Benutzer und Berechtigungen verwalten
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity */}
           <Card>
