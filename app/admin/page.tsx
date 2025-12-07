@@ -41,6 +41,20 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    PieChart,
+    Pie,
+    Cell
+} from 'recharts'
 
 export default function AdminPage() {
     const { user, isAuthenticated, loading: authLoading } = useAuth()
@@ -48,8 +62,10 @@ export default function AdminPage() {
     const router = useRouter()
     const [users, setUsers] = useState<any[]>([])
     const [logs, setLogs] = useState<any[]>([])
+    const [analytics, setAnalytics] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [logsLoading, setLogsLoading] = useState(false)
+    const [analyticsLoading, setAnalyticsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [userToDelete, setUserToDelete] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -71,6 +87,7 @@ export default function AdminPage() {
         if (user?.isAdmin) {
             fetchUsers()
             fetchLogs()
+            fetchAnalytics()
         }
     }, [user, isAuthenticated, authLoading, router])
 
@@ -101,6 +118,21 @@ export default function AdminPage() {
             console.error('Failed to fetch logs', error)
         } finally {
             setLogsLoading(false)
+        }
+    }
+
+    const fetchAnalytics = async () => {
+        setAnalyticsLoading(true)
+        try {
+            const response = await authenticatedFetch('/api/admin/analytics')
+            if (response.ok) {
+                const data = await response.json()
+                setAnalytics(data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch analytics', error)
+        } finally {
+            setAnalyticsLoading(false)
         }
     }
 
@@ -232,18 +264,130 @@ export default function AdminPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => { fetchUsers(); fetchLogs(); }} disabled={loading || logsLoading}>
-                            <RefreshCw className={`h-4 w-4 mr-2 ${loading || logsLoading ? 'animate-spin' : ''}`} />
+                        <Button variant="outline" onClick={() => { fetchUsers(); fetchLogs(); fetchAnalytics(); }} disabled={loading || logsLoading || analyticsLoading}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${loading || logsLoading || analyticsLoading ? 'animate-spin' : ''}`} />
                             Aktualisieren
                         </Button>
                     </div>
                 </div>
 
-                <Tabs defaultValue="users" className="w-full">
+                <Tabs defaultValue="dashboard" className="w-full">
                     <TabsList className="mb-8">
+                        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                         <TabsTrigger value="users">Benutzerverwaltung</TabsTrigger>
                         <TabsTrigger value="logs">Systemprotokoll</TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="dashboard">
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <Card className="bg-white border-blue-100 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <CardTitle className="text-sm font-medium text-gray-500">Gesamtbenutzer</CardTitle>
+                                    <Users className="h-4 w-4 text-blue-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-gray-900">{analytics?.stats?.total || 0}</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-white border-green-100 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <CardTitle className="text-sm font-medium text-gray-500">Verifiziert</CardTitle>
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-gray-900">{analytics?.stats?.verified || 0}</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-white border-red-100 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <CardTitle className="text-sm font-medium text-gray-500">Gesperrt</CardTitle>
+                                    <XCircle className="h-4 w-4 text-red-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-gray-900">{analytics?.stats?.suspended || 0}</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-white border-orange-100 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <CardTitle className="text-sm font-medium text-gray-500">Ausstehend</CardTitle>
+                                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-gray-900">{analytics?.stats?.unverified || 0}</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <Card className="shadow-sm">
+                                <CardHeader>
+                                    <CardTitle>Benutzerwachstum (30 Tage)</CardTitle>
+                                    <CardDescription>Neue Registrierungen pro Tag</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={analytics?.growth || []}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    tickFormatter={(value) => new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                                                    fontSize={12}
+                                                />
+                                                <YAxis allowDecimals={false} fontSize={12} />
+                                                <Tooltip
+                                                    labelFormatter={(value) => new Date(value).toLocaleDateString('de-DE')}
+                                                />
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="count"
+                                                    stroke="#2563eb"
+                                                    strokeWidth={2}
+                                                    dot={false}
+                                                    activeDot={{ r: 6 }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="shadow-sm">
+                                <CardHeader>
+                                    <CardTitle>Benutzerstatus Verteilung</CardTitle>
+                                    <CardDescription>Übersicht der Account-Status</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={[
+                                                { name: 'Verifiziert', value: analytics?.stats?.verified || 0, fill: '#16a34a' },
+                                                { name: 'Ausstehend', value: analytics?.stats?.unverified || 0, fill: '#f97316' },
+                                                { name: 'Gesperrt', value: analytics?.stats?.suspended || 0, fill: '#dc2626' },
+                                            ]}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="name" fontSize={12} />
+                                                <YAxis allowDecimals={false} fontSize={12} />
+                                                <Tooltip />
+                                                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                                                    {
+                                                        [
+                                                            { name: 'Verifiziert', value: analytics?.stats?.verified || 0, fill: '#16a34a' },
+                                                            { name: 'Ausstehend', value: analytics?.stats?.unverified || 0, fill: '#f97316' },
+                                                            { name: 'Gesperrt', value: analytics?.stats?.suspended || 0, fill: '#dc2626' },
+                                                        ].map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                        ))
+                                                    }
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
 
                     <TabsContent value="users">
                         {/* Stats Cards */}
