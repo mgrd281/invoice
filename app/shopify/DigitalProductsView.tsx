@@ -7,6 +7,7 @@ import { Plus, Key, Trash2, BarChart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import DigitalProductDetailView from './DigitalProductDetailView';
 
 interface DigitalProduct {
     id: string;
@@ -27,6 +28,7 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [newProduct, setNewProduct] = useState({ title: '', shopifyProductId: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<DigitalProduct | null>(null);
 
     useEffect(() => {
         if (shop) {
@@ -97,6 +99,18 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
             console.error('Failed to delete product', error);
         }
     };
+
+    if (selectedProduct) {
+        return (
+            <DigitalProductDetailView
+                product={selectedProduct}
+                onBack={() => {
+                    setSelectedProduct(null);
+                    fetchProducts(); // Refresh list on back
+                }}
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -178,7 +192,11 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {products.map((product) => (
-                        <Card key={product.id} className="hover:shadow-lg transition-shadow cursor-pointer h-full relative group">
+                        <Card
+                            key={product.id}
+                            className="hover:shadow-lg transition-shadow cursor-pointer h-full relative group"
+                            onClick={() => setSelectedProduct(product)}
+                        >
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <span className="truncate pr-8">{product.title}</span>
