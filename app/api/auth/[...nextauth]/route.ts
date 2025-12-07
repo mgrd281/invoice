@@ -34,11 +34,18 @@ const authOptions: NextAuthOptions = {
           where: { email: credentials.email }
         })
 
-        if (!user || !user.passwordHash) {
+        console.log('Login attempt:', credentials.email)
+        if (!user) {
+          console.log('User not found in DB')
+          return null
+        }
+        if (!user.passwordHash) {
+          console.log('User has no password hash')
           return null
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.passwordHash)
+        console.log('Password valid:', isValid)
 
         if (!isValid) {
           return null

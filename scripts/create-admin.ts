@@ -28,6 +28,12 @@ async function main() {
             },
         })
         console.log(`User ${user.email} created/updated successfully with ADMIN role.`)
+
+        // Verify immediately
+        const verifyUser = await prisma.user.findUnique({ where: { email } })
+        const isMatch = await bcrypt.compare(password, verifyUser?.passwordHash || '')
+        console.log(`Immediate password verification: ${isMatch ? 'SUCCESS' : 'FAILED'}`)
+
     } catch (e) {
         console.error(e)
         process.exit(1)
