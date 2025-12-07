@@ -16,19 +16,28 @@ export async function GET() {
         const api = new ShopifyAPI(settings)
 
         // 1. Get existing invoices to know what we already have
-        // We only need the IDs to check existence
-        const existingInvoices = loadInvoicesFromDisk()
+        // We use Prisma to check for existing Shopify orders
+        const { prisma } = await import('@/lib/prisma')
+        const existingOrders = await prisma.order.findMany({
+            where: {
+                shopifyOrderId: { not: null }
+            },
+            select: {
+                shopifyOrderId: true
+            }
+        })
+
         const existingShopifyIds = new Set(
-            existingInvoices
-                .filter((inv: any) => inv.shopifyOrderId)
-                .map((inv: any) => inv.shopifyOrderId?.toString())
+            existingOrders
+                .map(o => o.shopifyOrderId)
+                .filter(id => id !== null) as string[]
         )
 
         // 2. Determine fetch strategy
         let fetchParams: any = { limit: 10, status: 'any' }
 
         // If we have NO invoices (or very few), assume we need a full history sync from Nov 1st
-        if (existingInvoices.length < 5) {
+        if (existingShopifyIds.size < 5) {
             console.log('🕳️ Invoice list empty or small. Triggering HISTORICAL SYNC from 2024-11-01...')
             fetchParams = {
                 limit: 250, // Fetch up to 250 orders (max per page)
