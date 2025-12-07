@@ -12,8 +12,10 @@ import {
   ExternalLink,
   RefreshCw,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Key
 } from 'lucide-react';
+import DigitalProductsView from './DigitalProductsView';
 
 // Types
 interface Invoice {
@@ -123,6 +125,17 @@ function ShopifyEmbeddedContent() {
             <Settings className="w-5 h-5 mr-3" />
             Einstellungen
           </button>
+
+          <button
+            onClick={() => setActiveTab('digital-products')}
+            className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'digital-products'
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-600 hover:bg-gray-50'
+              }`}
+          >
+            <Key className="w-5 h-5 mr-3" />
+            Digitale Produkte
+          </button>
         </nav>
 
         <div className="p-4 border-t border-gray-100">
@@ -144,6 +157,7 @@ function ShopifyEmbeddedContent() {
             {activeTab === 'dashboard' && 'Dashboard'}
             {activeTab === 'invoices' && 'Alle Rechnungen'}
             {activeTab === 'settings' && 'Einstellungen'}
+            {activeTab === 'digital-products' && 'Digitale Produkte'}
           </h2>
           <button
             onClick={fetchData}
@@ -155,6 +169,11 @@ function ShopifyEmbeddedContent() {
         </header>
 
         <main className="p-8">
+          {/* Digital Products View */}
+          {activeTab === 'digital-products' && shop && (
+            <DigitalProductsView shop={shop} />
+          )}
+
           {/* Dashboard View */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
