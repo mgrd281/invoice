@@ -509,6 +509,62 @@ export class ShopifyAPI {
 
     return this.getOrders(params)
   }
+  /**
+   * Fulfill an order using Fulfillment Orders API (modern approach)
+   */
+  async createFulfillment(orderId: number): Promise<any> {
+    try {
+      console.log(`📦 Fetching fulfillment orders for order ${orderId}...`)
+
+      // 1. Get Fulfillment Orders
+      const foResponse = await this.makeRequest(`/orders/${orderId}/fulfillment_orders.json`)
+      const foData = await foResponse.json()
+
+      if (!foData.fulfillment_orders || foData.fulfillment_orders.length === 0) {
+        throw new Error('No fulfillment orders found for this order')
+      }
+
+      // Filter for open fulfillment orders
+      const openFulfillmentOrders = foData.fulfillment_orders.filter(
+        (fo: any) => fo.status === 'open' || fo.status === 'in_progress'
+      )
+
+      if (openFulfillmentOrders.length === 0) {
+        console.log('⚠️ No open fulfillment orders found. Order might be already fulfilled.')
+        return { success: true, message: 'Order already fulfilled' }
+      }
+
+      // 2. Create Fulfillment for the first open fulfillment order
+      // We assume all items can be fulfilled at once for digital products
+      const fulfillmentOrder = openFulfillmentOrders[0]
+
+      const payload = {
+        fulfillment: {
+          line_items_by_fulfillment_order: [
+            {
+              fulfillment_order_id: fulfillmentOrder.id
+            }
+          ],
+          notify_customer: false // Don't send Shopify's shipping email since we sent the key
+        }
+      }
+
+      console.log(`🚀 Creating fulfillment for fulfillment_order_id: ${fulfillmentOrder.id}`)
+
+      const response = await this.makeRequest('/fulfillments.json', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+
+      const data = await response.json()
+      console.log('✅ Fulfillment created successfully:', data.fulfillment?.id)
+      return data
+    } catch (error) {
+      console.error(`Error fulfilling order ${orderId}:`, error)
+      // Don't throw, just log and return error object so we don't break the flow
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
 }
 
 // ========================================

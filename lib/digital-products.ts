@@ -120,6 +120,24 @@ export async function processDigitalProductOrder(
         html: convertToHtml(emailBody) // Simple conversion or use HTML template
     })
 
+    // Automatically fulfill order in Shopify
+    try {
+        console.log(`📦 Auto-fulfilling Shopify order: ${shopifyOrderId}`)
+        const { ShopifyAPI } = await import('@/lib/shopify-api')
+        const api = new ShopifyAPI()
+
+        // Ensure ID is a number
+        const numericOrderId = parseInt(shopifyOrderId.replace(/\D/g, ''))
+        if (!isNaN(numericOrderId)) {
+            await api.createFulfillment(numericOrderId)
+        } else {
+            console.error(`Invalid Shopify Order ID for fulfillment: ${shopifyOrderId}`)
+        }
+    } catch (fulfillError) {
+        console.error('Failed to auto-fulfill Shopify order:', fulfillError)
+        // We don't fail the whole process if fulfillment fails, as the key was already sent
+    }
+
     return { success: true, key: key.key }
 }
 
