@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
         const shopNameClean = shop.replace('.myshopify.com', '');
         const shopDomain = shop.includes('.') ? shop : `${shop}.myshopify.com`;
 
+        // 0. Get the Main Organization (the one used by Desktop)
+        const mainOrg = await prisma.organization.findFirst({
+            orderBy: { createdAt: 'asc' } // The oldest one is likely the main one
+        });
+
         // 1. Check if connection exists
         let connection = await prisma.shopifyConnection.findFirst({
             where: {
@@ -30,6 +35,17 @@ export async function POST(req: NextRequest) {
         });
 
         if (connection) {
+            // FIX: If connection exists but points to a different (likely empty/new) org, 
+            // update it to point to the Main Org.
+            if (mainOrg && connection.organizationId !== mainOrg.id) {
+                console.log(`Fixing connection for ${shop}: Moving from ${connection.organizationId} to ${mainOrg.id}`);
+                connection = await prisma.shopifyConnection.update({
+                    where: { id: connection.id },
+                    data: { organizationId: mainOrg.id },
+                    include: { organization: true }
+                });
+            }
+
             return NextResponse.json({
                 success: true,
                 organization: connection.organization,
