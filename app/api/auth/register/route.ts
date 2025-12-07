@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { sendVerificationEmail } from '@/lib/email';
 import crypto from 'crypto';
@@ -12,36 +12,36 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
         }
 
-        const users = loadUsersFromDisk();
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        });
 
-        if (users.find((u: any) => u.email === email)) {
+        if (existingUser) {
             return NextResponse.json({ error: 'User already exists' }, { status: 400 });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = crypto.randomBytes(32).toString('hex');
 
-        const newUser = {
-            id: crypto.randomUUID(), // UNIQUE ID ensures data isolation
-            email,
-            name: name || email.split('@')[0],
-            password: hashedPassword,
-            provider: 'credentials',
-            isVerified: false, // Enforce email verification
-            verificationToken,
-            createdAt: new Date().toISOString()
-        };
-
-        users.push(newUser);
-        saveUsersToDisk(users);
+        // Create user in database
+        const newUser = await prisma.user.create({
+            data: {
+                email,
+                name: name || email.split('@')[0],
+                passwordHash: hashedPassword,
+                verificationToken,
+                emailVerified: null, // Not verified yet
+                role: 'USER'
+            }
+        });
 
         // Send verification email
-        // We don't await this to speed up the response, but in production queues are better
         sendVerificationEmail(email, verificationToken).catch(console.error);
 
         return NextResponse.json({
             success: true,
-            message: 'Registration successful. Please check your email to verify your account.'
+            message: 'Registration successful. Please check your email to verify your account.',
+            userId: newUser.id
         });
 
     } catch (error) {

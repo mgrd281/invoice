@@ -3,15 +3,17 @@ import GoogleProvider from 'next-auth/providers/google'
 import AppleProvider from 'next-auth/providers/apple'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { NextAuthOptions } from 'next-auth'
-import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 
 const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true, // Allow linking if email matches
     }),
     AppleProvider({
       clientId: process.env.APPLE_ID || '',
@@ -28,86 +30,51 @@ const authOptions: NextAuthOptions = {
           return null
         }
 
-        const users = loadUsersFromDisk()
-        const user = users.find((u: any) => u.email === credentials.email)
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        })
 
-        if (!user) {
+        if (!user || !user.passwordHash) {
           return null
         }
 
-        // Check password
-        // If user has no password (e.g. Google auth only), this will fail, which is correct
-        if (!user.password) {
-          return null
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password)
+        const isValid = await bcrypt.compare(credentials.password, user.passwordHash)
 
         if (!isValid) {
           return null
         }
 
-        // Optional: Check verification status
-        // if (!user.isVerified) {
-        //   throw new Error('Please verify your email first')
-        // }
-
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.image
+          image: user.image,
+          role: user.role
         }
       }
     })
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // For OAuth providers (Google/Apple), we need to create/update the user in our DB
-      if (account?.provider === 'google' || account?.provider === 'apple') {
-        const users = loadUsersFromDisk()
-        let existingUser = users.find((u: any) => u.email === user.email)
-
-        if (!existingUser) {
-          existingUser = {
-            id: user.id || crypto.randomUUID(),
-            email: user.email,
-            name: user.name || user.email?.split('@')[0],
-            image: user.image,
-            provider: account.provider,
-            isVerified: true, // OAuth emails are trusted/verified by provider
-            createdAt: new Date().toISOString()
-          }
-          users.push(existingUser)
-          saveUsersToDisk(users)
-        } else {
-          // Update existing user with provider info if missing
-          if (!existingUser.provider) {
-            existingUser.provider = account.provider
-            saveUsersToDisk(users)
-          }
-        }
-
-        // Ensure the session gets the correct ID from our DB
-        user.id = existingUser.id
-      }
-      return true
-    },
-    async jwt({ token, user, account }) {
-      if (user) {
-        token.id = user.id
-        token.provider = account?.provider
-      }
-      return token
-    },
     async session({ session, token }) {
       if (session.user) {
         // @ts-ignore
         session.user.id = token.id as string
         // @ts-ignore
         session.user.provider = token.provider as string
+        // @ts-ignore
+        session.user.isAdmin = token.isAdmin as boolean
       }
       return session
+    },
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id
+        token.provider = account?.provider
+        // Check admin status
+        const isAdmin = ['mgrdegh@web.de', 'Mkarina321@'].includes((user.email || '').toLowerCase())
+        token.isAdmin = isAdmin
+      }
+      return token
     }
   },
   pages: {

@@ -36,10 +36,11 @@ enum UploadStatus {
 model User {
   id              String    @id @default(uuid())
   email           String    @unique
-  passwordHash    String
+  passwordHash    String?
   name            String?
   image           String?
   emailVerified   DateTime?
+  verificationToken String?
   role            UserRole  @default(USER)
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id])

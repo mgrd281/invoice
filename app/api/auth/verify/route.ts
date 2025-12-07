@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
     const token = req.nextUrl.searchParams.get('token');
@@ -8,18 +8,28 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Missing token' }, { status: 400 });
     }
 
-    const users = loadUsersFromDisk();
-    const user = users.find((u: any) => u.verificationToken === token);
+    try {
+        const user = await prisma.user.findFirst({
+            where: { verificationToken: token }
+        });
 
-    if (!user) {
-        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
+        if (!user) {
+            return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerified: new Date(),
+                verificationToken: null // Clear token
+            }
+        });
+
+        // Redirect to login with success message
+        return NextResponse.redirect(new URL('/auth/signin?verified=true', req.url));
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    user.isVerified = true;
-    user.verificationToken = undefined; // Clear token
-    saveUsersToDisk(users);
-
-    // Redirect to login with success message
-    // Assuming /auth/signin handles the 'verified' query param to show a success alert
-    return NextResponse.redirect(new URL('/auth/signin?verified=true', req.url));
 }

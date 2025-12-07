@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
-import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
     try {
@@ -14,17 +14,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }
 
-        const users = loadUsersFromDisk()
+        const users = await prisma.user.findMany({
+            orderBy: { createdAt: 'desc' }
+        })
 
         // Return safe user data (no passwords)
-        const safeUsers = users.map((u: any) => ({
+        const safeUsers = users.map((u) => ({
             id: u.id,
             email: u.email,
             name: u.name,
-            provider: u.provider,
+            provider: u.passwordHash ? 'credentials' : 'oauth', // Simple heuristic
             createdAt: u.createdAt,
-            isVerified: u.isVerified,
-            isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes(u.email?.toLowerCase())
+            isVerified: !!u.emailVerified,
+            isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes((u.email || '').toLowerCase())
         }))
 
         return NextResponse.json({ users: safeUsers })
@@ -51,20 +53,22 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         }
 
-        const users = loadUsersFromDisk()
-        const userIndex = users.findIndex((u: any) => u.id === userId)
+        const targetUser = await prisma.user.findUnique({
+            where: { id: userId }
+        })
 
-        if (userIndex === -1) {
+        if (!targetUser) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
         // Prevent deleting self
-        if (users[userIndex].email === user.email) {
+        if (targetUser.email === user.email) {
             return NextResponse.json({ error: 'Cannot delete your own admin account' }, { status: 400 })
         }
 
-        users.splice(userIndex, 1)
-        saveUsersToDisk(users)
+        await prisma.user.delete({
+            where: { id: userId }
+        })
 
         return NextResponse.json({ success: true, message: 'User deleted' })
     } catch (error) {
@@ -90,20 +94,24 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         }
 
-        const users = loadUsersFromDisk()
-        const userIndex = users.findIndex((u: any) => u.id === userId)
+        const targetUser = await prisma.user.findUnique({
+            where: { id: userId }
+        })
 
-        if (userIndex === -1) {
+        if (!targetUser) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
         if (typeof isVerified === 'boolean') {
-            users[userIndex].isVerified = isVerified
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    emailVerified: isVerified ? new Date() : null
+                }
+            })
         }
 
-        saveUsersToDisk(users)
-
-        return NextResponse.json({ success: true, message: 'User updated', user: users[userIndex] })
+        return NextResponse.json({ success: true, message: 'User updated' })
     } catch (error) {
         console.error('Error updating user:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
