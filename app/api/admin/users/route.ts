@@ -26,7 +26,11 @@ export async function GET(request: NextRequest) {
             provider: u.passwordHash ? 'credentials' : 'oauth', // Simple heuristic
             createdAt: u.createdAt,
             isVerified: !!u.emailVerified,
-            isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes((u.email || '').toLowerCase())
+            isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes((u.email || '').toLowerCase()),
+            isSuspended: u.isSuspended,
+            country: u.country,
+            lastIp: u.lastIp,
+            lastLoginAt: u.lastLoginAt
         }))
 
         return NextResponse.json({ users: safeUsers })
@@ -88,7 +92,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { userId, isVerified } = body
+        const { userId, isVerified, isSuspended } = body
 
         if (!userId) {
             return NextResponse.json({ error: 'User ID required' }, { status: 400 })
@@ -102,14 +106,23 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
-        if (typeof isVerified === 'boolean') {
-            await prisma.user.update({
-                where: { id: userId },
-                data: {
-                    emailVerified: isVerified ? new Date() : null
-                }
-            })
+        // Prevent suspending self
+        if (targetUser.email === user.email && isSuspended === true) {
+            return NextResponse.json({ error: 'Cannot suspend your own admin account' }, { status: 400 })
         }
+
+        const updateData: any = {}
+        if (typeof isVerified === 'boolean') {
+            updateData.emailVerified = isVerified ? new Date() : null
+        }
+        if (typeof isSuspended === 'boolean') {
+            updateData.isSuspended = isSuspended
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: updateData
+        })
 
         return NextResponse.json({ success: true, message: 'User updated' })
     } catch (error) {

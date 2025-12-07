@@ -119,6 +119,27 @@ export default function AdminPage() {
         }
     }
 
+    const toggleSuspension = async (userId: string, currentStatus: boolean) => {
+        try {
+            const response = await authenticatedFetch('/api/admin/users', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, isSuspended: !currentStatus })
+            })
+
+            if (response.ok) {
+                setUsers(users.map(u =>
+                    u.id === userId ? { ...u, isSuspended: !currentStatus } : u
+                ))
+            } else {
+                const data = await response.json()
+                alert(data.error || 'Fehler beim Aktualisieren des Status')
+            }
+        } catch (error) {
+            console.error('Failed to update user suspension', error)
+        }
+    }
+
     const filteredUsers = users.filter(u =>
         u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -231,6 +252,7 @@ export default function AdminPage() {
                                     <tr>
                                         <th className="px-6 py-4 font-semibold">Benutzer</th>
                                         <th className="px-6 py-4 font-semibold">Rolle & Status</th>
+                                        <th className="px-6 py-4 font-semibold">IP / Land</th>
                                         <th className="px-6 py-4 font-semibold">Anmeldung via</th>
                                         <th className="px-6 py-4 font-semibold">Mitglied seit</th>
                                         <th className="px-6 py-4 text-right">Aktionen</th>
@@ -239,7 +261,7 @@ export default function AdminPage() {
                                 <tbody className="divide-y divide-gray-100">
                                     {filteredUsers.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                            <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                                                 <div className="flex flex-col items-center justify-center">
                                                     <Users className="h-12 w-12 text-gray-200 mb-3" />
                                                     <p>Keine Benutzer gefunden</p>
@@ -275,6 +297,12 @@ export default function AdminPage() {
                                                             </span>
                                                         )}
 
+                                                        {u.isSuspended && (
+                                                            <span className="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-red-200 flex items-center gap-1">
+                                                                <XCircle className="w-3 h-3" /> Gesperrt
+                                                            </span>
+                                                        )}
+
                                                         {u.isVerified ? (
                                                             <span className="text-green-600 text-xs flex items-center gap-1 font-medium">
                                                                 <CheckCircle className="w-3 h-3" /> Verifiziert
@@ -285,6 +313,10 @@ export default function AdminPage() {
                                                             </span>
                                                         )}
                                                     </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm text-gray-900">{u.lastIp || '-'}</div>
+                                                    <div className="text-xs text-gray-500">{u.country || '-'}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="capitalize px-2 py-1 bg-gray-50 rounded text-gray-600 text-xs border border-gray-100">
@@ -316,6 +348,19 @@ export default function AdminPage() {
                                                                     <>
                                                                         <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                                                                         <span>Manuell verifizieren</span>
+                                                                    </>
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => toggleSuspension(u.id, !!u.isSuspended)}>
+                                                                {u.isSuspended ? (
+                                                                    <>
+                                                                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                                                                        <span>Benutzer entsperren</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <XCircle className="mr-2 h-4 w-4 text-red-500" />
+                                                                        <span>Benutzer sperren</span>
                                                                     </>
                                                                 )}
                                                             </DropdownMenuItem>

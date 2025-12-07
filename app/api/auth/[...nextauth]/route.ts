@@ -44,6 +44,12 @@ const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Check if suspended
+        // @ts-ignore - isSuspended is not yet in the generated type but will be
+        if (user.isSuspended) {
+          throw new Error('Account suspended')
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -55,6 +61,20 @@ const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
+    async signIn({ user }) {
+      if (!user.email) return false
+
+      // Check if user exists and is suspended
+      const dbUser = await prisma.user.findUnique({
+        where: { email: user.email }
+      })
+
+      if (dbUser && dbUser.isSuspended) {
+        return false // Deny sign in
+      }
+
+      return true
+    },
     async session({ session, token }) {
       if (session.user) {
         // @ts-ignore
