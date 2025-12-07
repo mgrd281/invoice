@@ -32,6 +32,7 @@ function ShopifyEmbeddedContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalRevenue: 0, openInvoices: 0, paidInvoices: 0 });
 
   useEffect(() => {
@@ -46,6 +47,10 @@ function ShopifyEmbeddedContent() {
       const res = await fetch(`/api/shopify/invoices?shop=${shop}`);
       const data = await res.json();
 
+      if (data.userEmail) {
+        setUserEmail(data.userEmail);
+      }
+
       if (data.invoices) {
         setInvoices(data.invoices);
         calculateStats(data.invoices);
@@ -59,8 +64,8 @@ function ShopifyEmbeddedContent() {
 
   const calculateStats = (invs: Invoice[]) => {
     const total = invs.reduce((acc, curr) => acc + (curr.total || 0), 0);
-    const open = invs.filter(i => i.status === 'Offen').length;
-    const paid = invs.filter(i => i.status === 'Bezahlt').length;
+    const open = invs.filter(i => i.status === 'Offen' || i.status === 'SENT' || i.status === 'DRAFT').length;
+    const paid = invs.filter(i => i.status === 'Bezahlt' || i.status === 'PAID').length;
     setStats({ totalRevenue: total, openInvoices: open, paidInvoices: paid });
   };
 
@@ -77,14 +82,20 @@ function ShopifyEmbeddedContent() {
             RechnungsProfi
           </h1>
           <p className="text-xs text-gray-500 mt-1">{shop}</p>
+          {userEmail && (
+            <div className="mt-2 flex items-center text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              {userEmail}
+            </div>
+          )}
         </div>
 
         <nav className="p-4 space-y-1 flex-1">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'dashboard'
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-600 hover:bg-gray-50'
               }`}
           >
             <LayoutDashboard className="w-5 h-5 mr-3" />
@@ -94,8 +105,8 @@ function ShopifyEmbeddedContent() {
           <button
             onClick={() => setActiveTab('invoices')}
             className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'invoices'
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-600 hover:bg-gray-50'
               }`}
           >
             <FileText className="w-5 h-5 mr-3" />
@@ -105,8 +116,8 @@ function ShopifyEmbeddedContent() {
           <button
             onClick={() => setActiveTab('settings')}
             className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'settings'
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-600 hover:bg-gray-50'
               }`}
           >
             <Settings className="w-5 h-5 mr-3" />
@@ -237,8 +248,8 @@ function ShopifyEmbeddedContent() {
                           <td className="px-6 py-4 font-medium text-gray-900">{formatCurrency(inv.total)}</td>
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${inv.status === 'Bezahlt' ? 'bg-green-100 text-green-800' :
-                                inv.status === 'Offen' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
+                              inv.status === 'Offen' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
                               }`}>
                               {inv.status}
                             </span>

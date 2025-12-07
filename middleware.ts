@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
       '/invoices',
       '/customers',
       '/settings',
-      '/shopify' // Shopify embedded app needs auth too
+      '/settings'
     ]
 
     if (protectedPageRoutes.some(route => pathname.startsWith(route))) {

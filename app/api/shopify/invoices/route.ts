@@ -1,5 +1,8 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { loadInvoicesFromDisk } from '@/lib/server-storage';
+import { prisma } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
@@ -10,13 +13,58 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // Load invoices specific to this shop
-        const invoices = loadInvoicesFromDisk(shop);
+        // 1. Find the connection and organization
+        const connection = await prisma.shopifyConnection.findFirst({
+            where: { shopName: shop },
+            include: {
+                organization: {
+                    include: {
+                        users: {
+                            take: 1,
+                            orderBy: { createdAt: 'asc' } // Get the first user (likely admin)
+                        }
+                    }
+                }
+            }
+        });
 
-        // Sort by date descending
-        invoices.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (!connection || !connection.organization) {
+            // If no connection found, return empty list but don't error
+            return NextResponse.json({ invoices: [], userEmail: null });
+        }
 
-        return NextResponse.json({ invoices });
+        const organization = connection.organization;
+        // Identify the user email associated with this shop
+        const userEmail = organization.users[0]?.email || 'unknown@example.com';
+
+        // 2. Fetch invoices for this organization
+        const invoices = await prisma.invoice.findMany({
+            where: { organizationId: organization.id },
+            orderBy: { issueDate: 'desc' },
+            include: { customer: true }
+        });
+
+        // 3. Map to frontend format
+        const mappedInvoices = invoices.map(inv => ({
+            id: inv.id,
+            number: inv.invoiceNumber,
+            date: inv.issueDate,
+            customerName: inv.customer.name,
+            total: Number(inv.totalGross),
+            status: inv.status,
+            // Simple status color mapping
+            statusColor: inv.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                inv.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                    inv.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+        }));
+
+        return NextResponse.json({
+            invoices: mappedInvoices,
+            userEmail: userEmail,
+            organizationName: organization.name
+        });
+
     } catch (error) {
         console.error('Error fetching shop invoices:', error);
         return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
