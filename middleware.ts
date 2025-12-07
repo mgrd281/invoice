@@ -1,55 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-// Geschützte Seiten, die eine Anmeldung erfordern
-const protectedRoutes = [
-  '/dashboard',
-  '/invoices',
-  '/customers',
-  '/organizations',
-  '/upload',
-  '/settings',
-  '/shopify'
-]
-
-// Öffentliche Seiten, die keine Anmeldung erfordern
-const publicRoutes = [
-  '/',
-  '/auth/login',
-  '/auth/register',
-  '/auth/forgot-password'
-]
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Zugriff auf statische Dateien und API erlauben
+  // Allow access to static files and auth API
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
+    pathname.startsWith('/api/auth') || // Allow auth endpoints (login, register, callback)
     pathname.includes('.') ||
     pathname === '/favicon.ico'
   ) {
     return NextResponse.next()
   }
 
-  // Note: Since we're using client-side authentication with localStorage,
-  // we can't check authentication status in middleware (server-side)
-  // The actual authentication check happens in the AuthProvider on the client
+  // Get the session token
+  // This works for both Google OAuth and Credentials
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET
+  })
 
-  // Allow all routes to pass through - authentication is handled by AuthProvider
-  return NextResponse.next()
+  const requestHeaders = new Headers(request.headers)
+
+  if (token) {
+    // User is authenticated
+    // Construct user info object matching what requireAuth expects
+    const userInfo = {
+      id: token.id, // This comes from our customized JWT callback
+      email: token.email,
+      name: token.name,
+      image: token.image,
+      provider: token.provider
+    }
+
+    // Set the header for API routes to read
+    requestHeaders.set('x-user-info', JSON.stringify(userInfo))
+  } else {
+    // User is NOT authenticated
+
+    // List of protected page routes
+    const protectedPageRoutes = [
+      '/dashboard',
+      '/invoices',
+      '/customers',
+      '/settings',
+      '/shopify' // Shopify embedded app needs auth too
+    ]
+
+    if (protectedPageRoutes.some(route => pathname.startsWith(route))) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/signin'
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url)
+    }
+  }
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
-  runtime: 'nodejs'
 }
