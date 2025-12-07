@@ -40,17 +40,22 @@ export async function POST(req: NextRequest) {
         // 2. If not, create Organization, User, and Connection
         console.log(`Creating new organization setup for shop: ${shop}`);
 
-        // Create Organization
-        const newOrg = await prisma.organization.create({
-            data: {
-                name: shopNameClean.charAt(0).toUpperCase() + shopNameClean.slice(1), // Capitalize
-                slug: `shopify-${shopNameClean}-${Date.now()}`,
-                address: 'Shopify Store Address', // Placeholder
-                zipCode: '00000',
-                city: 'Shopify City',
-                country: 'DE'
-            }
-        });
+        // Check if ANY organization exists (Single Tenant Logic)
+        let newOrg = await prisma.organization.findFirst();
+
+        if (!newOrg) {
+            // Create Organization only if none exists
+            newOrg = await prisma.organization.create({
+                data: {
+                    name: shopNameClean.charAt(0).toUpperCase() + shopNameClean.slice(1), // Capitalize
+                    slug: `shopify-${shopNameClean}-${Date.now()}`,
+                    address: 'Shopify Store Address', // Placeholder
+                    zipCode: '00000',
+                    city: 'Shopify City',
+                    country: 'DE'
+                }
+            });
+        }
 
         // Create Admin User for this shop
         // We use a generated email since we can't get the real one easily without OAuth
