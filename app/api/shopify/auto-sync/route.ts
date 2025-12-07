@@ -53,12 +53,12 @@ export async function GET() {
 
                 // Process it (Create Invoice + Send Email if configured)
                 // handleOrderCreate handles everything: invoice creation, PDF, Email
-                const invoiceId = await handleOrderCreate(order, settings.shopDomain)
+                const invoice = await handleOrderCreate(order, settings.shopDomain)
 
-                if (invoiceId) {
+                if (invoice && invoice.id) {
                     syncedCount++
-                    newInvoiceIds.push(invoiceId)
-                    console.log(`✅ Auto-Sync: Created invoice ${invoiceId} for order #${order.name}`)
+                    newInvoiceIds.push(invoice.id)
+                    console.log(`✅ Auto-Sync: Created invoice ${invoice.id} for order #${order.name}`)
                 }
             }
         }

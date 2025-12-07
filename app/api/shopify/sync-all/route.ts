@@ -28,19 +28,12 @@ export async function GET(req: Request) {
             try {
                 // 1. Create Invoice
                 // We pass the shop domain if available, or null
-                const invoiceResult = await handleOrderCreate(order, process.env.SHOPIFY_SHOP_DOMAIN || null)
+                // 1. Create Invoice
+                // We pass the shop domain if available, or null
+                const invoice = await handleOrderCreate(order, process.env.SHOPIFY_SHOP_DOMAIN || null)
 
-                // handleOrderCreate returns the invoice object directly or an object with status
-                // My previous implementation returned the invoice object directly if created, 
-                // or an object { status: 'skipped' } if skipped.
-                // Let's handle both cases safely.
-
-                let invoice = null
-                if (invoiceResult && 'id' in invoiceResult && !('status' in invoiceResult)) {
-                    invoice = invoiceResult
-                } else if (invoiceResult && 'invoice' in invoiceResult) {
-                    invoice = invoiceResult.invoice
-                }
+                // handleOrderCreate now always returns an invoice object (or throws)
+                // It handles deduplication internally by returning the existing invoice
 
                 if (invoice) {
                     // 2. Send Email
