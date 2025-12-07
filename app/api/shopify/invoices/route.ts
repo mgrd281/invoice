@@ -14,8 +14,17 @@ export async function GET(req: NextRequest) {
 
     try {
         // 1. Find the connection and organization
+        // Try to match exact shop name or without .myshopify.com
+        const shopNameClean = shop.replace('.myshopify.com', '');
+
         const connection = await prisma.shopifyConnection.findFirst({
-            where: { shopName: shop },
+            where: {
+                OR: [
+                    { shopName: shop },
+                    { shopName: shopNameClean },
+                    { shopName: `${shopNameClean}.myshopify.com` }
+                ]
+            },
             include: {
                 organization: {
                     include: {

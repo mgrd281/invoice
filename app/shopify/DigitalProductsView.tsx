@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Plus, Key, Trash2, BarChart } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface DigitalProduct {
     id: string;
@@ -21,6 +24,9 @@ interface DigitalProductsViewProps {
 export default function DigitalProductsView({ shop }: DigitalProductsViewProps) {
     const [products, setProducts] = useState<DigitalProduct[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [newProduct, setNewProduct] = useState({ title: '', shopifyProductId: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (shop) {
@@ -42,17 +48,41 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
         }
     };
 
+    const handleAddProduct = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        try {
+            const res = await fetch(`/api/shopify/digital-products?shop=${shop}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProduct)
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                setNewProduct({ title: '', shopifyProductId: '' });
+                setIsAddDialogOpen(false);
+                fetchProducts();
+            } else {
+                alert(data.error || 'Fehler beim Erstellen des Produkts');
+            }
+        } catch (error) {
+            console.error('Failed to create product', error);
+            alert('Ein Fehler ist aufgetreten');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleDeleteProduct = async (e: React.MouseEvent, productId: string) => {
+        // ... (existing delete logic)
         e.preventDefault();
         e.stopPropagation();
 
         if (!confirm('Möchten Sie dieses Produkt und alle zugehörigen Keys wirklich löschen?')) return;
 
-        // Note: This delete endpoint might need to be secured/updated for Shopify context too
-        // For now we assume the existing endpoint works if we don't need specific shopify auth for DELETE
-        // OR we should create a shopify-specific delete endpoint.
-        // Given the constraints, let's try to use the existing one but it might fail if it checks session.
-        // If it fails, we might need to add a shopify-specific delete route.
         try {
             const res = await fetch(`/api/digital-products/${productId}`, {
                 method: 'DELETE'
@@ -85,10 +115,49 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
                         <BarChart className="w-4 h-4 mr-2" />
                         Berichte
                     </Button>
-                    <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Neues Produkt
-                    </Button>
+
+                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Neues Produkt
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Neues digitales Produkt</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleAddProduct} className="space-y-4 mt-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Produkt Titel</Label>
+                                    <Input
+                                        id="title"
+                                        value={newProduct.title}
+                                        onChange={(e) => setNewProduct({ ...newProduct, title: e.target.value })}
+                                        placeholder="z.B. Windows 11 Pro"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="shopifyId">Shopify Produkt ID</Label>
+                                    <Input
+                                        id="shopifyId"
+                                        value={newProduct.shopifyProductId}
+                                        onChange={(e) => setNewProduct({ ...newProduct, shopifyProductId: e.target.value })}
+                                        placeholder="z.B. 832910..."
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500">Die ID finden Sie in der URL der Produktseite im Shopify Admin.</p>
+                                </div>
+                                <div className="flex justify-end gap-2 mt-6">
+                                    <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Abbrechen</Button>
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? 'Wird erstellt...' : 'Erstellen'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -100,7 +169,7 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
                     <h3 className="mt-2 text-sm font-semibold text-gray-900">Keine digitalen Produkte</h3>
                     <p className="mt-1 text-sm text-gray-500">Starten Sie mit dem Hinzufügen Ihres ersten Microsoft-Produkts.</p>
                     <div className="mt-6">
-                        <Button>
+                        <Button onClick={() => setIsAddDialogOpen(true)}>
                             <Plus className="w-4 h-4 mr-2" />
                             Produkt hinzufügen
                         </Button>
