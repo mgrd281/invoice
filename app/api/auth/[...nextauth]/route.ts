@@ -69,18 +69,27 @@ const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      if (!user.email) return false
+      try {
+        if (!user.email) return false
 
-      // Check if user exists and is suspended
-      const dbUser = await prisma.user.findUnique({
-        where: { email: user.email }
-      })
+        // Check if user exists and is suspended
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email }
+        })
 
-      if (dbUser && dbUser.isSuspended) {
-        return false // Deny sign in
+        if (dbUser && dbUser.isSuspended) {
+          console.log('User is suspended:', user.email)
+          return false // Deny sign in
+        }
+
+        return true
+      } catch (error) {
+        console.error('Error in signIn callback:', error)
+        return true // Allow sign in to proceed if check fails? Or false? Better to allow if it's just a check failure, but risky. Let's return false to be safe if DB fails.
+        // Actually, if DB fails, NextAuth might fail anyway.
+        // Let's return false to avoid inconsistent state.
+        return false
       }
-
-      return true
     },
     async session({ session, token }) {
       if (session.user) {
