@@ -101,7 +101,7 @@ export async function processDigitalProductOrder(
     }
 
     // Mark key as used
-    await markKeyAsUsed(key.id, '', orderNumber)
+    await markKeyAsUsed(key.id, '', shopifyOrderId)
 
     // Send Email
     const template = digitalProduct.emailTemplate || getDefaultTemplate()

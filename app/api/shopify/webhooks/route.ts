@@ -48,14 +48,18 @@ export async function POST(req: Request) {
           // Auto-send email if enabled
           const settings = getShopifySettings()
           if (settings.autoSendEmail) {
-            log('📧 Auto-send email is ENABLED. Attempting to send...')
-            const emailResult = await sendInvoiceEmail(
-              invoice.id,
-              invoice.customer.email,
-              invoice.number,
-              invoice.customer.name
-            )
-            log(`📬 Email sending result: ${JSON.stringify(emailResult)}`)
+            if ((invoice as any).isNew) {
+              log('📧 Auto-send email is ENABLED and Invoice is NEW. Attempting to send...')
+              const emailResult = await sendInvoiceEmail(
+                invoice.id,
+                invoice.customer.email,
+                invoice.number,
+                invoice.customer.name
+              )
+              log(`📬 Email sending result: ${JSON.stringify(emailResult)}`)
+            } else {
+              log('🔕 Invoice already exists. Skipping auto-email to prevent duplicates.')
+            }
           } else {
             log('🔕 Auto-send email is DISABLED.')
           }

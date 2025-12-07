@@ -147,7 +147,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
 
     if (existingInvoice) {
         log(`⚠️ Invoice for order ${order.name} already exists.`)
-        return mapPrismaInvoiceToData(existingInvoice)
+        return { ...mapPrismaInvoiceToData(existingInvoice), isNew: false }
     }
 
     // Get default template
@@ -244,7 +244,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     })
 
     log(`✅ Invoice created in DB: ${newInvoice.invoiceNumber}`)
-    return mapPrismaInvoiceToData(newInvoice)
+    return { ...mapPrismaInvoiceToData(newInvoice), isNew: true }
 }
 
 export async function handleOrderUpdate(order: any) {
