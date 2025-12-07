@@ -21,7 +21,8 @@ import {
   MessageSquare,
   Bot,
   Key,
-  DollarSign
+  DollarSign,
+  AlertCircle
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -453,6 +454,23 @@ export default function DashboardPage() {
                     </CardTitle>
                     <CardDescription>
                       Marktpreise überwachen & optimieren
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/dunning">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-white to-red-50">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-rose-600 rounded-xl flex items-center justify-center mb-4">
+                      <AlertCircle className="h-6 w-6 text-white" />
+                    </div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      Mahnwesen
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">AUTO</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Automatische Zahlungserinnerungen & Mahnungen
                     </CardDescription>
                   </CardHeader>
                 </Card>

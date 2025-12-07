@@ -78,6 +78,8 @@ model Organization {
   digitalProducts   DigitalProduct[]
   supportTickets    SupportTicket[]
   responseTemplates ResponseTemplate[]
+  dunningSettings DunningSettings?
+  dunningTemplates DunningTemplate[]
 }
 
 model Account {
@@ -190,6 +192,7 @@ model Invoice {
   updatedAt       DateTime      @updatedAt
   items           InvoiceItem[]
   payments        Payment[]
+  dunningLogs     DunningLog[]
 
   @@unique([organizationId, invoiceNumber])
 }
@@ -352,4 +355,47 @@ model ResponseTemplate {
   autoReplyKeywords String?   // Comma separated keywords to trigger auto-reply
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model DunningSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  enabled        Boolean      @default(false)
+  
+  // Intervals (days)
+  reminderDays      Int @default(7)
+  warning1Days      Int @default(3)
+  warning2Days      Int @default(7)
+  finalWarningDays  Int @default(7)
+
+  // Surcharges (percentages)
+  warning1Surcharge Decimal @default(5.0) @db.Decimal(5, 2)
+  warning2Surcharge Decimal @default(3.0) @db.Decimal(5, 2)
+  finalWarningSurcharge Decimal @default(3.0) @db.Decimal(5, 2)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model DunningTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  level          String       // REMINDER, WARNING1, WARNING2, FINAL
+  subject        String
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, level])
+}
+
+model DunningLog {
+  id             String    @id @default(uuid())
+  invoiceId      String
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
+  level          String    // REMINDER, WARNING1, WARNING2, FINAL
+  sentAt         DateTime  @default(now())
+  surchargeAdded Decimal   @default(0.0) @db.Decimal(10, 2)
 }
