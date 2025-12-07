@@ -8,6 +8,21 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // Additional settings to help with some providers
+  tls: {
+    rejectUnauthorized: false // Sometimes needed for self-signed certs or specific provider issues
+  },
+  debug: true, // Enable debug output
+  logger: true // Log information to console
+});
+
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error('❌ SMTP Connection Error:', error);
+  } else {
+    console.log('✅ SMTP Connection Ready');
+  }
 });
 
 export async function sendVerificationEmail(email: string, token: string) {
@@ -15,8 +30,10 @@ export async function sendVerificationEmail(email: string, token: string) {
   const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
   const verifyUrl = `${baseUrl}/auth/verify?token=${token}`;
 
+  console.log(`📧 Attempting to send email to ${email} using host: ${process.env.SMTP_HOST} port: ${process.env.SMTP_PORT}`);
+
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || '"RechnungsProfi" <noreply@rechnungsprofi.de>',
       to: email,
       subject: 'Bestätigen Sie Ihre E-Mail-Adresse',
@@ -32,10 +49,10 @@ export async function sendVerificationEmail(email: string, token: string) {
         </div>
       `,
     });
-    console.log(`Verification email sent to ${email}`);
+    console.log(`✅ Verification email sent to ${email}. Message ID: ${info.messageId}`);
     return true;
   } catch (error) {
-    console.error('Failed to send verification email:', error);
+    console.error('❌ Failed to send verification email:', error);
     return false;
   }
 }
