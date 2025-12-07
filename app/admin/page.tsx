@@ -18,7 +18,8 @@ import {
     Trash2,
     MoreVertical,
     AlertTriangle,
-    RefreshCw
+    RefreshCw,
+    Key
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -47,6 +48,9 @@ export default function AdminPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [userToDelete, setUserToDelete] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [passwordResetUser, setPasswordResetUser] = useState<string | null>(null)
+    const [newPassword, setNewPassword] = useState('')
+    const [isResettingPassword, setIsResettingPassword] = useState(false)
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -116,6 +120,36 @@ export default function AdminPage() {
             }
         } catch (error) {
             console.error('Failed to update user', error)
+        }
+    }
+
+    const handlePasswordReset = async () => {
+        if (!passwordResetUser || !newPassword) return
+        if (newPassword.length < 6) {
+            alert('Passwort muss mindestens 6 Zeichen lang sein')
+            return
+        }
+
+        setIsResettingPassword(true)
+        try {
+            const response = await authenticatedFetch('/api/admin/users', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: passwordResetUser, newPassword })
+            })
+
+            if (response.ok) {
+                alert('Passwort erfolgreich geändert')
+                setPasswordResetUser(null)
+                setNewPassword('')
+            } else {
+                const data = await response.json()
+                alert(data.error || 'Fehler beim Ändern des Passworts')
+            }
+        } catch (error) {
+            console.error('Failed to reset password', error)
+        } finally {
+            setIsResettingPassword(false)
         }
     }
 
@@ -364,6 +398,10 @@ export default function AdminPage() {
                                                                     </>
                                                                 )}
                                                             </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => setPasswordResetUser(u.id)}>
+                                                                <Key className="mr-2 h-4 w-4 text-blue-500" />
+                                                                <span>Passwort ändern</span>
+                                                            </DropdownMenuItem>
                                                             {!u.isAdmin && (
                                                                 <DropdownMenuItem
                                                                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -402,6 +440,39 @@ export default function AdminPage() {
                             className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             {isDeleting ? 'Lösche...' : 'Löschen bestätigen'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Password Reset Dialog */}
+            <AlertDialog open={!!passwordResetUser} onOpenChange={(open) => !open && setPasswordResetUser(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Passwort ändern</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Geben Sie ein neues Passwort für den Benutzer ein.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4">
+                        <Input
+                            type="password"
+                            placeholder="Neues Passwort (min. 6 Zeichen)"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault()
+                                handlePasswordReset()
+                            }}
+                            disabled={isResettingPassword || newPassword.length < 6}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            {isResettingPassword ? 'Speichere...' : 'Passwort speichern'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

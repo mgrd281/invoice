@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 export async function GET(request: NextRequest) {
     try {
         const auth = requireAuth(request)
+        // ... (rest of GET)
+
+        // ... (DELETE handler remains same)
+
+        // ... (GET handler content)
         if ('error' in auth) {
             return auth.error
         }
@@ -92,7 +98,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { userId, isVerified, isSuspended } = body
+        const { userId, isVerified, isSuspended, newPassword } = body
 
         if (!userId) {
             return NextResponse.json({ error: 'User ID required' }, { status: 400 })
@@ -117,6 +123,12 @@ export async function PUT(request: NextRequest) {
         }
         if (typeof isSuspended === 'boolean') {
             updateData.isSuspended = isSuspended
+        }
+        if (newPassword && typeof newPassword === 'string') {
+            if (newPassword.length < 6) {
+                return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+            }
+            updateData.passwordHash = await bcrypt.hash(newPassword, 10)
         }
 
         await prisma.user.update({
