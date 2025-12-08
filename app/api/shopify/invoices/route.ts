@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
 
         let plan = organization.plan;
 
-        // Hardcode Enterprise for the admin shop
-        if (shop === '45dv93-bk.myshopify.com') {
+        // Hardcode Enterprise for the admin shop (relaxed check)
+        if (shop && shop.toLowerCase().includes('45dv93-bk')) {
             plan = 'ENTERPRISE';
         }
 
