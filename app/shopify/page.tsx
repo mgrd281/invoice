@@ -233,7 +233,7 @@ function ShopifyEmbeddedContent() {
             className="flex items-center text-sm text-gray-500 hover:text-blue-600 transition-colors"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            In neuem Tab öffnen
+            In neuem Tab öffnen (v1.1)
           </a>
         </div>
       </div>
