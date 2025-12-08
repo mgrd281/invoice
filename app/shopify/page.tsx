@@ -39,6 +39,11 @@ function ShopifyEmbeddedContent() {
   const [currentPlan, setCurrentPlan] = useState<string>('FREE');
   const [stats, setStats] = useState({ totalRevenue: 0, openInvoices: 0, paidInvoices: 0 });
 
+  // New State for Filters & Actions
+  const [dateRange, setDateRange] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+
   useEffect(() => {
     if (shop) {
       // Frontend override for admin shop
@@ -48,6 +53,13 @@ function ShopifyEmbeddedContent() {
       initShop();
     }
   }, [shop]);
+
+  // Refetch when filters change
+  useEffect(() => {
+    if (shop) {
+      fetchData();
+    }
+  }, [dateRange, statusFilter]);
 
   const initShop = async () => {
     try {
@@ -68,7 +80,8 @@ function ShopifyEmbeddedContent() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/shopify/invoices?shop=${shop}`);
+      // Append filters to URL
+      const res = await fetch(`/api/shopify/invoices?shop=${shop}&range=${dateRange}&status=${statusFilter}`);
       const data = await res.json();
 
       if (data.userEmail) {
@@ -91,6 +104,19 @@ function ShopifyEmbeddedContent() {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBulkAction = async (action: 'download' | 'refund') => {
+    if (action === 'download') {
+      // Download all selected PDFs
+      selectedInvoices.forEach(id => {
+        window.open(`/api/invoices/${id}/pdf`, '_blank');
+      });
+    } else if (action === 'refund') {
+      if (!confirm(`${selectedInvoices.length} Rechnungen erstatten?`)) return;
+      // Implement refund logic here (call API)
+      alert('Funktion folgt in Kürze.');
     }
   };
 
@@ -239,6 +265,31 @@ function ShopifyEmbeddedContent() {
           {/* Dashboard View */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
+              {/* Filters */}
+              <div className="flex items-center space-x-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <select
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">Gesamter Zeitraum</option>
+                  <option value="7d">Letzte 7 Tage</option>
+                  <option value="14d">Letzte 14 Tage</option>
+                  <option value="30d">Letzte 30 Tage</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">Alle Status</option>
+                  <option value="paid">Bezahlt</option>
+                  <option value="open">Offen</option>
+                  <option value="cancelled">Storniert/Erstattet</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
@@ -307,10 +358,48 @@ function ShopifyEmbeddedContent() {
           {/* Invoices View */}
           {activeTab === 'invoices' && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Bulk Actions Bar */}
+              {selectedInvoices.length > 0 && (
+                <div className="bg-blue-50 px-6 py-3 flex items-center justify-between border-b border-blue-100">
+                  <span className="text-sm text-blue-800 font-medium">
+                    {selectedInvoices.length} ausgewählt
+                  </span>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => handleBulkAction('download')}
+                      className="text-xs bg-white border border-blue-200 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-50 font-medium flex items-center"
+                    >
+                      <Download className="w-3 h-3 mr-1.5" />
+                      Herunterladen
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction('refund')}
+                      className="text-xs bg-white border border-red-200 text-red-700 px-3 py-1.5 rounded hover:bg-red-50 font-medium"
+                    >
+                      Erstatten
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
+                      <th className="px-6 py-4 w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedInvoices(invoices.map(i => i.id));
+                            } else {
+                              setSelectedInvoices([]);
+                            }
+                          }}
+                          checked={invoices.length > 0 && selectedInvoices.length === invoices.length}
+                        />
+                      </th>
                       <th className="px-6 py-4 font-medium text-gray-500">Nummer</th>
                       <th className="px-6 py-4 font-medium text-gray-500">Kunde</th>
                       <th className="px-6 py-4 font-medium text-gray-500">Datum</th>
@@ -323,19 +412,41 @@ function ShopifyEmbeddedContent() {
                     {invoices.length > 0 ? (
                       invoices.map((inv) => (
                         <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              checked={selectedInvoices.includes(inv.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedInvoices([...selectedInvoices, inv.id]);
+                                } else {
+                                  setSelectedInvoices(selectedInvoices.filter(id => id !== inv.id));
+                                }
+                              }}
+                            />
+                          </td>
                           <td className="px-6 py-4 font-medium text-gray-900">{inv.number}</td>
                           <td className="px-6 py-4 text-gray-600">{inv.customerName}</td>
                           <td className="px-6 py-4 text-gray-600">{new Date(inv.date).toLocaleDateString('de-DE')}</td>
                           <td className="px-6 py-4 font-medium text-gray-900">{formatCurrency(inv.total)}</td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${inv.status === 'Bezahlt' ? 'bg-green-100 text-green-800' :
-                              inv.status === 'Offen' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${inv.status === 'Bezahlt' || inv.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                              inv.status === 'Offen' || inv.status === 'SENT' ? 'bg-yellow-100 text-yellow-800' :
+                                inv.status === 'CANCELLED' || inv.status === 'REFUNDED' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
                               }`}>
                               {inv.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 flex items-center space-x-3">
+                            <button
+                              onClick={() => window.open(`/api/invoices/${inv.id}/pdf`, '_blank')}
+                              className="text-gray-400 hover:text-blue-600 transition-colors"
+                              title="PDF herunterladen"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
                             <button className="text-blue-600 hover:text-blue-800 font-medium text-xs">
                               Ansehen
                             </button>
@@ -344,7 +455,7 @@ function ShopifyEmbeddedContent() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                           Keine Rechnungen gefunden.
                         </td>
                       </tr>

@@ -33,7 +33,39 @@ export async function GET(req: NextRequest) {
 
         // 2. Fetch ALL invoices (Single Tenant Mode - Absolute)
         // We ignore organizationId to ensure we see everything in the DB
+        const range = searchParams.get('range') || 'all';
+        const status = searchParams.get('status') || 'all';
+
+        let whereClause: any = {};
+
+        // Date Range Filter
+        if (range !== 'all') {
+            const now = new Date();
+            let pastDate = new Date();
+
+            if (range === '7d') pastDate.setDate(now.getDate() - 7);
+            if (range === '14d') pastDate.setDate(now.getDate() - 14);
+            if (range === '30d') pastDate.setDate(now.getDate() - 30);
+
+            whereClause.issueDate = {
+                gte: pastDate
+            };
+        }
+
+        // Status Filter
+        if (status !== 'all') {
+            if (status === 'paid') {
+                whereClause.status = { in: ['PAID', 'Bezahlt'] };
+            } else if (status === 'open') {
+                whereClause.status = { in: ['DRAFT', 'SENT', 'Offen'] };
+            } else if (status === 'cancelled') {
+                whereClause.status = { in: ['CANCELLED', 'REFUNDED', 'Storniert'] };
+            }
+        }
+
+        // 2. Fetch Filtered invoices
         const invoices = await prisma.invoice.findMany({
+            where: whereClause,
             orderBy: { issueDate: 'desc' },
             include: { customer: true }
         });
