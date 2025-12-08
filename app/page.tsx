@@ -336,6 +336,106 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* UStVA Section */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Side: Text */}
+            <div className="order-2 lg:order-1">
+              <h2 className="text-4xl md:text-5xl font-bold mb-8 text-gray-900 leading-tight">
+                Versende die automatisch erstellte UStVA direkt an dein Finanzamt
+              </h2>
+
+              <ul className="space-y-6 mb-8">
+                {[
+                  "Verpasse keine Fristen dank Erinnerungen",
+                  "Versende automatisch mit unserem Elster-Zertifikat",
+                  "Erfasse mit einem Klick den Steuerbeleg nach Versand"
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mr-4 mt-1">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    </div>
+                    <span className="text-xl text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-lg font-medium text-gray-500">
+                Fülle deine Umsatzsteuervoranmeldung:
+              </p>
+            </div>
+
+            {/* Right Side: Visual Mockup */}
+            <div className="relative order-1 lg:order-2">
+              {/* Decorative background blob */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl transform rotate-3 opacity-50 blur-lg"></div>
+
+              {/* Main Card Mockup */}
+              <Card className="relative border-0 shadow-2xl bg-white overflow-hidden transform hover:scale-[1.02] transition-transform duration-300">
+                <CardHeader className="bg-gray-50 border-b px-6 py-4 flex flex-row items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                  </div>
+                  <div className="text-xs text-gray-400 font-mono flex items-center">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Elster Secure
+                  </div>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b pb-4">
+                      <div>
+                        <div className="text-sm text-gray-500">Voranmeldungszeitraum</div>
+                        <div className="font-bold text-lg">Dezember 2025</div>
+                      </div>
+                      <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Bereit
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Umsatzsteuer (19%)</span>
+                        <span className="font-mono font-bold">1.245,50 €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Vorsteuer</span>
+                        <span className="font-mono font-bold text-red-500">- 450,20 €</span>
+                      </div>
+                      <div className="h-px bg-gray-200 my-2"></div>
+                      <div className="flex justify-between text-lg">
+                        <span className="font-bold text-gray-900">Zahllast</span>
+                        <span className="font-mono font-bold text-blue-600">795,30 €</span>
+                      </div>
+                    </div>
+
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 h-12 text-lg shadow-lg">
+                      <Zap className="w-5 h-5 mr-2 fill-current" />
+                      Jetzt an Finanzamt senden
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Floating Badge */}
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center animate-bounce">
+                <div className="bg-green-100 p-2 rounded-full mr-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Status</div>
+                  <div className="font-bold text-green-600">Erfolgreich übermittelt</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
