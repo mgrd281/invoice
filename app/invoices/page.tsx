@@ -35,6 +35,7 @@ export default function InvoicesPage() {
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [hiddenInvoices, setHiddenInvoices] = useState<Set<string>>(new Set())
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const { showToast, ToastContainer } = useToast()
 
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
@@ -274,8 +275,15 @@ export default function InvoicesPage() {
   const visibleInvoices = invoices.filter(invoice => !hiddenInvoices.has(invoice.id))
   const visibleSearchResults = searchResults.filter(invoice => !hiddenInvoices.has(invoice.id))
 
-  // Get displayed invoices (search results or all invoices, filtered by hidden)
-  const displayedInvoices = showSearchResults ? visibleSearchResults : visibleInvoices
+  // Get displayed invoices (search results or all invoices, filtered by hidden AND status)
+  let baseInvoices = showSearchResults ? visibleSearchResults : visibleInvoices
+
+  // Apply status filter if active
+  if (statusFilter) {
+    baseInvoices = baseInvoices.filter(invoice => invoice.status === statusFilter)
+  }
+
+  const displayedInvoices = baseInvoices
 
   // Function to handle PDF download - FIXED VERSION
   const handleDownloadPdf = async (invoiceId: string, invoiceNumber: string) => {
@@ -601,13 +609,15 @@ export default function InvoicesPage() {
     )
   }
 
-  // Calculate statistics (based on displayed invoices - search results or all)
-  const totalInvoices = displayedInvoices.length
-  const paidInvoices = displayedInvoices.filter((invoice: any) => invoice.status === 'Bezahlt').length
-  const openInvoices = displayedInvoices.filter((invoice: any) => invoice.status === 'Offen').length
-  const overdueInvoices = displayedInvoices.filter((invoice: any) => invoice.status === 'Überfällig').length
-  const cancelledInvoices = displayedInvoices.filter((invoice: any) => invoice.status === 'Storniert').length
-  const refundInvoices = displayedInvoices.filter((invoice: any) => invoice.status === 'Gutschrift').length
+  // Calculate statistics (based on ALL visible invoices, ignoring current filter for the counts themselves)
+  // We want the counts to remain static/global based on the search context, not the filter context
+  const statsBaseInvoices = showSearchResults ? visibleSearchResults : visibleInvoices
+  const totalInvoices = statsBaseInvoices.length
+  const paidInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Bezahlt').length
+  const openInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Offen').length
+  const overdueInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Überfällig').length
+  const cancelledInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Storniert').length
+  const refundInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Gutschrift').length
   const duplicateCount = duplicateNumbers.length
 
   // Helper function to get invoice type icon and color
@@ -752,7 +762,10 @@ export default function InvoicesPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter(null)}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Gesamt
@@ -764,7 +777,10 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Offen')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Offen
@@ -776,7 +792,10 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Überfällig')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Überfällig
@@ -788,7 +807,10 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Bezahlt')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Bezahlt
@@ -800,19 +822,25 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Storniert')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Storniert
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{cancelledInvoices}</div>
+              <div className="text-2xl font-bold text-gray-500">{cancelledInvoices}</div>
               <p className="text-xs text-gray-500">Stornos</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Gutschrift')}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Gutschriften
@@ -824,19 +852,15 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card className={duplicateCount > 0 ? 'border-orange-300 bg-orange-50' : ''}>
+          <Card className="bg-gray-50 opacity-70">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Duplikate
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${duplicateCount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
-                {duplicateCount}
-              </div>
-              {duplicateCount > 0 && (
-                <p className="text-xs text-orange-600 mt-1">Bereinigung erforderlich</p>
-              )}
+              <div className="text-2xl font-bold text-gray-500">{duplicateCount}</div>
+              <p className="text-xs text-gray-500">Potenziell</p>
             </CardContent>
           </Card>
         </div>
