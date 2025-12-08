@@ -103,13 +103,13 @@ export async function GET(request: NextRequest) {
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice), // This is gross in our logic
         total: Number(item.grossAmount),
-        ean: item.ean
+        ean: (item as any).ean
       })),
-      document_kind: inv.documentKind,
-      reference_number: inv.referenceNumber,
-      original_invoice_date: inv.originalDate?.toISOString().split('T')[0],
-      grund: inv.reason,
-      refund_amount: inv.refundAmount ? Number(inv.refundAmount) : undefined
+      document_kind: (inv as any).documentKind,
+      reference_number: (inv as any).referenceNumber,
+      original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
+      grund: (inv as any).reason,
+      refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined
     }))
 
     return NextResponse.json(mappedInvoices)
@@ -177,6 +177,7 @@ export async function POST(request: NextRequest) {
         refundAmount: refund_amount,
         items: {
           create: items.map((item: any) => {
+            // Frontend sends gross totals (unitPrice * quantity)
             const gross = item.total
             const net = gross / (1 + (taxRate || 19) / 100)
             const tax = gross - net
@@ -192,7 +193,7 @@ export async function POST(request: NextRequest) {
             }
           })
         }
-      }
+      } as any
     })
 
     console.log('✅ Invoice created in Prisma:', invoice.id)

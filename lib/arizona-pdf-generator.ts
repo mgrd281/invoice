@@ -305,22 +305,19 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     // Document title based on type
     let title = 'Rechnung'
     if (invoice.document_kind === DocumentKind.CANCELLATION) {
-      title = 'Storno-Rechnung'
+      title = 'Stornorechnung'
+      // Only append reference number if it exists and user wants it in title
+      // Based on user request, they want "Stornorechnung" as the main title
       if (invoice.reference_number) {
-        title = `Stornorechnung zu Rechnung Nr. ${invoice.reference_number}`
+        // Optional: title = `Stornorechnung zu Rechnung Nr. ${invoice.reference_number}`
+        // Keeping it simple as per request "Stornorechnung"
       }
     } else if (invoice.document_kind === DocumentKind.CREDIT_NOTE) {
       title = 'Gutschrift'
     } else if (invoice.document_kind === DocumentKind.REFUND_FULL) {
       title = 'Gutschrift'
-      if (invoice.reference_number) {
-        title = `Gutschrift zu Rechnung Nr. ${invoice.reference_number}`
-      }
     } else if (invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
       title = 'Teil-Gutschrift'
-      if (invoice.reference_number) {
-        title = `Teil-Gutschrift zu Rechnung Nr. ${invoice.reference_number}`
-      }
     }
 
     // Simple title

@@ -247,8 +247,8 @@ export default function NewInvoicePage() {
     alert('Vorlage erfolgreich gelöscht!')
   }
 
-  // Brutto-Berechnung - Preise inklusive Steuer
-  const grossTotal = items.reduce((sum, item) => sum + item.total, 0) // Gesamtsumme (inkl. Steuer)
+  // Brutto-Berechnung - Preise sind bereits Brutto (inkl. Steuer)
+  const grossTotal = items.reduce((sum, item) => sum + item.total, 0) // Gesamtsumme (Brutto)
   const netTotal = grossTotal / (1 + invoiceData.taxRate / 100) // Nettosumme = Brutto / 1.19
   const taxAmount = grossTotal - netTotal // Steuer = Brutto - Netto
 
