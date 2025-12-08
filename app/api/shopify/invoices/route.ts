@@ -33,54 +33,22 @@ export async function GET(req: NextRequest) {
 
         // 2. Fetch ALL invoices (Single Tenant Mode - Absolute)
         // We ignore organizationId to ensure we see everything in the DB
-        const range = searchParams.get('range') || 'all';
         const status = searchParams.get('status') || 'all';
+        const startStr = searchParams.get('start');
+        const endStr = searchParams.get('end');
 
         let whereClause: any = {};
 
-        // Date Range Filter
-        if (range !== 'all') {
-            const now = new Date();
-            // Reset time to end of day for consistency in comparisons if needed, 
-            // but usually we just want to set the start date correctly.
+        // Date Range Filter (Explicit dates only)
+        if (startStr) {
+            whereClause.issueDate = { ...whereClause.issueDate, gte: new Date(startStr) };
+        }
 
-            if (range === 'today') {
-                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                whereClause.issueDate = { gte: startOfToday };
-            } else if (range === '7d') {
-                const pastDate = new Date();
-                pastDate.setDate(now.getDate() - 7);
-                whereClause.issueDate = { gte: pastDate };
-            } else if (range === '14d') {
-                const pastDate = new Date();
-                pastDate.setDate(now.getDate() - 14);
-                whereClause.issueDate = { gte: pastDate };
-            } else if (range === '30d') {
-                const pastDate = new Date();
-                pastDate.setDate(now.getDate() - 30);
-                whereClause.issueDate = { gte: pastDate };
-            } else if (range === 'this_month') {
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                whereClause.issueDate = { gte: startOfMonth };
-            } else if (range === 'this_year') {
-                const startOfYear = new Date(now.getFullYear(), 0, 1);
-                whereClause.issueDate = { gte: startOfYear };
-            } else if (range === 'custom') {
-                const startStr = searchParams.get('start');
-                const endStr = searchParams.get('end');
-
-                if (startStr && endStr) {
-                    const startDate = new Date(startStr);
-                    const endDate = new Date(endStr);
-                    // Set end date to end of day to include the full day
-                    endDate.setHours(23, 59, 59, 999);
-
-                    whereClause.issueDate = {
-                        gte: startDate,
-                        lte: endDate
-                    };
-                }
-            }
+        if (endStr) {
+            const endDate = new Date(endStr);
+            // Set end date to end of day to include the full day
+            endDate.setHours(23, 59, 59, 999);
+            whereClause.issueDate = { ...whereClause.issueDate, lte: endDate };
         }
 
         // Status Filter

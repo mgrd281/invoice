@@ -83,14 +83,72 @@ function ShopifyEmbeddedContent() {
     }
   };
 
+  const calculateDateRange = (range: string) => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    if (range === 'today') {
+      return { start: today, end: today };
+    }
+
+    if (range === '7d') {
+      const past = new Date(now);
+      past.setDate(now.getDate() - 7);
+      return { start: past.toISOString().split('T')[0], end: today };
+    }
+
+    if (range === '14d') {
+      const past = new Date(now);
+      past.setDate(now.getDate() - 14);
+      return { start: past.toISOString().split('T')[0], end: today };
+    }
+
+    if (range === '30d') {
+      const past = new Date(now);
+      past.setDate(now.getDate() - 30);
+      return { start: past.toISOString().split('T')[0], end: today };
+    }
+
+    if (range === 'this_month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      // Adjust for timezone offset to ensure we get the correct local date string
+      const offset = start.getTimezoneOffset();
+      const localStart = new Date(start.getTime() - (offset * 60 * 1000));
+      return { start: localStart.toISOString().split('T')[0], end: today };
+    }
+
+    if (range === 'this_year') {
+      const start = new Date(now.getFullYear(), 0, 1);
+      const offset = start.getTimezoneOffset();
+      const localStart = new Date(start.getTime() - (offset * 60 * 1000));
+      return { start: localStart.toISOString().split('T')[0], end: today };
+    }
+
+    return { start: '', end: '' };
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Append filters to URL
-      let url = `/api/shopify/invoices?shop=${shop}&range=${dateRange}&status=${statusFilter}`;
-      if (dateRange === 'custom' && customStartDate && customEndDate) {
-        url += `&start=${customStartDate}&end=${customEndDate}`;
+      // Calculate dates based on range
+      let start = '';
+      let end = '';
+
+      if (dateRange === 'custom') {
+        start = customStartDate;
+        end = customEndDate;
+      } else if (dateRange !== 'all') {
+        const calculated = calculateDateRange(dateRange);
+        start = calculated.start;
+        end = calculated.end;
       }
+
+      // Build URL with explicit dates
+      let url = `/api/shopify/invoices?shop=${shop}&status=${statusFilter}`;
+
+      // Only append dates if we have them (implies not 'all')
+      if (start) url += `&start=${start}`;
+      if (end) url += `&end=${end}`;
 
       const res = await fetch(url);
       const data = await res.json();
