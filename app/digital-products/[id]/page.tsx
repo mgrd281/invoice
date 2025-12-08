@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Link from 'next/link'
 import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 export default function DigitalProductDetailPage({ params }: { params: { id: string } }) {
     const router = useRouter()
     const [product, setProduct] = useState<any>(null)
@@ -446,17 +447,17 @@ Viel Spaß!`
                                                 {'{{ product_title }}'} - Name des Produkts<br />
                                                 {'{{ license_key }}'} - Der zugewiesene Key<br />
                                                 <br />
-                                                <strong>HTML & Links:</strong><br />
-                                                Sie können HTML verwenden. Beispiel für einen Link:<br />
-                                                <code className="bg-blue-100 px-1 rounded">&lt;a href="LINK_URL"&gt;LINK_TEXT&lt;/a&gt;</code>
+                                                <strong>Formatierung:</strong><br />
+                                                Nutzen Sie die Toolbar, um Texte zu formatieren (Fett, Kursiv, Listen) oder Links einzufügen.
                                             </div>
 
                                             <div className="space-y-2">
                                                 <Label>Nachrichtentext</Label>
-                                                <Textarea
+                                                <RichTextEditor
                                                     value={template}
-                                                    onChange={e => setTemplate(e.target.value)}
-                                                    className="min-h-[300px] font-mono"
+                                                    onChange={setTemplate}
+                                                    placeholder="Schreiben Sie hier Ihre E-Mail..."
+                                                    className="min-h-[400px]"
                                                 />
                                             </div>
 
