@@ -73,7 +73,7 @@ export default function MarketingSettingsPage() {
         try {
             setSaving(true)
             const response = await fetch('/api/settings/marketing', {
-                method: 'PUT',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             })

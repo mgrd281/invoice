@@ -59,7 +59,7 @@ Ihr Kundenservice`
     }
 }
 
-export async function PUT(req: Request) {
+export async function POST(req: Request) {
     try {
         const org = await getDefaultOrganization()
         const body = await req.json()
