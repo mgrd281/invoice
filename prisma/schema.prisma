@@ -88,6 +88,7 @@ model Organization {
   responseTemplates ResponseTemplate[]
   dunningSettings DunningSettings?
   dunningTemplates DunningTemplate[]
+  marketingSettings MarketingSettings?
 }
 
 model Account {
@@ -143,6 +144,10 @@ model Customer {
   notes             CustomerNote[]
   emails            EmailMessage[]
   payments          Payment[]
+  
+  // Marketing / Automation
+  firstPurchaseDiscountSentAt DateTime?
+  firstPurchaseDiscountCode   String?
 
   @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
 }
@@ -472,4 +477,20 @@ model DunningLog {
   level          String    // REMINDER, WARNING1, WARNING2, FINAL
   sentAt         DateTime  @default(now())
   surchargeAdded Decimal   @default(0.0) @db.Decimal(10, 2)
+}
+
+model MarketingSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  // First Purchase Discount (FPD)
+  fpdEnabled       Boolean @default(false)
+  fpdPercentage    Int     @default(10)
+  fpdValidityDays  Int     @default(30)
+  fpdEmailSubject  String  @default("Ihr persönlicher 10%-Rabattcode als Dankeschön 🎁")
+  fpdEmailBody     String  @db.Text 
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }

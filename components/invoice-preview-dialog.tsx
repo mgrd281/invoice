@@ -234,7 +234,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                         <tbody className="divide-y divide-gray-50">
                                             {items.map((item: any, index: number) => (
                                                 <tr key={item.id || index}>
-                                                    {showSettings.articleNumber && <td className="py-3 text-gray-500">A-{index + 100}</td>}
+                                                    {showSettings.articleNumber && <td className="py-3 text-gray-500">{item.ean}</td>}
                                                     <td className="py-3 text-gray-500">{index + 1}</td>
                                                     <td className="py-3">
                                                         <div className="font-medium text-gray-900">{item.description}</div>

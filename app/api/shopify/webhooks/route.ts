@@ -87,6 +87,75 @@ export async function POST(req: Request) {
           }
           // }
 
+          // ---------------------------------------------------------
+          // NEW: First Purchase Discount Automation
+          // ---------------------------------------------------------
+          if (payload.financial_status === 'paid') {
+            log('🎁 Checking First Purchase Discount automation...')
+            try {
+              const { prisma } = await import('@/lib/prisma')
+              const { createCustomerDiscount } = await import('@/lib/shopify-discounts')
+              const { sendFirstPurchaseDiscountEmail } = await import('@/lib/marketing-email')
+
+              const customerEmail = payload.email || payload.customer?.email
+              const shopifyCustomerId = String(payload.customer?.id)
+
+              if (customerEmail && shopifyCustomerId) {
+                // Find customer in our DB
+                const customer = await prisma.customer.findFirst({
+                  where: {
+                    OR: [
+                      { shopifyCustomerId: shopifyCustomerId },
+                      { email: customerEmail }
+                    ]
+                  },
+                  include: { organization: { include: { marketingSettings: true } } }
+                })
+
+                if (customer && customer.organization?.marketingSettings?.fpdEnabled) {
+                  if (!customer.firstPurchaseDiscountSentAt) {
+                    log(`✨ Generating discount for new customer: ${customer.name}`)
+                    const settings = customer.organization.marketingSettings
+
+                    const code = await createCustomerDiscount(
+                      shopifyCustomerId,
+                      settings.fpdPercentage,
+                      settings.fpdValidityDays
+                    )
+
+                    if (code) {
+                      await sendFirstPurchaseDiscountEmail(
+                        customer.email!,
+                        customer.name,
+                        code,
+                        settings.fpdEmailSubject,
+                        settings.fpdEmailBody
+                      )
+
+                      await prisma.customer.update({
+                        where: { id: customer.id },
+                        data: {
+                          firstPurchaseDiscountSentAt: new Date(),
+                          firstPurchaseDiscountCode: code
+                        }
+                      })
+                      log(`✅ Discount code ${code} sent to ${customer.email}`)
+                    } else {
+                      log('❌ Failed to generate discount code')
+                    }
+                  } else {
+                    log('ℹ️ Customer already received a discount.')
+                  }
+                } else {
+                  log('ℹ️ Discount automation disabled or customer not found.')
+                }
+              }
+            } catch (err) {
+              log('❌ Error processing discount automation:', err)
+              console.error(err)
+            }
+          }
+
         } catch (err) {
           log('❌ Error during invoice creation/sending:', err)
           console.error(err)

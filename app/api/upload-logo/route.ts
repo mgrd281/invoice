@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { existsSync } from 'fs'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('logo') as File
-    
+
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
@@ -19,16 +20,16 @@ export async function POST(request: NextRequest) {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only images are allowed.' },
+        { error: `Invalid file type: ${file.type}. Only images are allowed.` },
         { status: 400 }
       )
     }
 
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB.' },
+        { error: 'File too large. Maximum size is 10MB.' },
         { status: 400 }
       )
     }
@@ -50,16 +51,41 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await writeFile(filepath, buffer)
 
+    const logoUrl = `logos/${filename}`
+
+    // Update Organization in Database
+    // We assume there's at least one organization or we find the first one
+    const org = await prisma.organization.findFirst()
+    if (org) {
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { logoUrl: logoUrl }
+      })
+    } else {
+      // Create default if not exists (though unlikely if app is running)
+      await prisma.organization.create({
+        data: {
+          name: 'Meine Firma',
+          slug: 'default-org',
+          logoUrl: logoUrl,
+          address: '',
+          zipCode: '',
+          city: '',
+          country: 'DE'
+        }
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      filename: `logos/${filename}`,
-      message: 'Logo uploaded successfully'
+      filename: logoUrl,
+      message: 'Logo uploaded and saved successfully'
     })
 
   } catch (error) {
     console.error('Error uploading logo:', error)
     return NextResponse.json(
-      { error: 'Failed to upload logo' },
+      { error: error instanceof Error ? error.message : 'Failed to upload logo' },
       { status: 500 }
     )
   }

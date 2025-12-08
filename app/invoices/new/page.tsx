@@ -669,6 +669,7 @@ export default function NewInvoicePage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">#</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produkt oder Service</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">EAN</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Menge</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Einheit</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Preis (Netto)</th>
@@ -692,6 +693,14 @@ export default function NewInvoicePage() {
                             className="pl-9 border-gray-200 focus:border-blue-500"
                           />
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          value={item.ean || ''}
+                          onChange={(e) => updateItem(item.id, 'ean', e.target.value)}
+                          placeholder="EAN"
+                          className="border-gray-200 focus:border-blue-500"
+                        />
                       </td>
                       <td className="px-4 py-3">
                         <Input
