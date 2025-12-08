@@ -85,7 +85,15 @@ function ShopifyEmbeddedContent() {
 
   const calculateDateRange = (range: string) => {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    // Helper to get YYYY-MM-DD in local time
+    const toLocalYMD = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const today = toLocalYMD(now);
 
     if (range === 'today') {
       return { start: today, end: today };
@@ -94,34 +102,29 @@ function ShopifyEmbeddedContent() {
     if (range === '7d') {
       const past = new Date(now);
       past.setDate(now.getDate() - 7);
-      return { start: past.toISOString().split('T')[0], end: today };
+      return { start: toLocalYMD(past), end: today };
     }
 
     if (range === '14d') {
       const past = new Date(now);
       past.setDate(now.getDate() - 14);
-      return { start: past.toISOString().split('T')[0], end: today };
+      return { start: toLocalYMD(past), end: today };
     }
 
     if (range === '30d') {
       const past = new Date(now);
       past.setDate(now.getDate() - 30);
-      return { start: past.toISOString().split('T')[0], end: today };
+      return { start: toLocalYMD(past), end: today };
     }
 
     if (range === 'this_month') {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      // Adjust for timezone offset to ensure we get the correct local date string
-      const offset = start.getTimezoneOffset();
-      const localStart = new Date(start.getTime() - (offset * 60 * 1000));
-      return { start: localStart.toISOString().split('T')[0], end: today };
+      return { start: toLocalYMD(start), end: today };
     }
 
     if (range === 'this_year') {
       const start = new Date(now.getFullYear(), 0, 1);
-      const offset = start.getTimezoneOffset();
-      const localStart = new Date(start.getTime() - (offset * 60 * 1000));
-      return { start: localStart.toISOString().split('T')[0], end: today };
+      return { start: toLocalYMD(start), end: today };
     }
 
     return { start: '', end: '' };
@@ -342,7 +345,7 @@ function ShopifyEmbeddedContent() {
                     onChange={(e) => setDateRange(e.target.value)}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="all">Gesamter Zeitraum</option>
+                    <option value="all">Alle Zeiträume (Gesamt)</option>
                     <option value="today">Heute</option>
                     <option value="7d">Letzte 7 Tage</option>
                     <option value="14d">Letzte 14 Tage</option>
