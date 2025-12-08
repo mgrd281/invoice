@@ -696,22 +696,30 @@ Viel Spaß!`
                                                             E-Mail Vorschau
                                                         </Button>
                                                     </DialogTrigger>
-                                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                                    <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle>E-Mail Vorschau</DialogTitle>
                                                             <DialogDescription>
                                                                 So sieht die E-Mail für den Kunden aus (mit Beispieldaten).
                                                             </DialogDescription>
                                                         </DialogHeader>
-                                                        <div className="border p-4 rounded-md bg-white min-h-[300px]">
-                                                            <div dangerouslySetInnerHTML={{
+                                                        <div className="border rounded-md bg-gray-50 p-6 min-h-[400px] shadow-sm">
+                                                            <div className="bg-white border rounded p-8 max-w-[600px] mx-auto shadow-sm" dangerouslySetInnerHTML={{
                                                                 __html: (() => {
-                                                                    let html = template
+                                                                    // 1. Get template
+                                                                    let html = template || '';
+
+                                                                    // 2. Convert newlines to BR (MATCHING BACKEND LOGIC)
+                                                                    // The backend blindly replaces \n with <br/>, so we must do the same to show accurate preview
+                                                                    html = html.replace(/\n/g, '<br/>');
+
+                                                                    // 3. Replace variables
+                                                                    html = html
                                                                         .replace(/{{ customer_name }}/g, 'Max Mustermann')
                                                                         .replace(/{{ product_title }}/g, product?.title || 'Beispiel Produkt')
                                                                         .replace(/{{ license_key }}/g, 'XXXX-YYYY-ZZZZ-AAAA');
 
-                                                                    // Generate button HTML
+                                                                    // 4. Generate button HTML
                                                                     let buttonsHtml = '';
                                                                     if (buttons.length > 0) {
                                                                         const btns = buttons.map(btn => `
@@ -726,12 +734,8 @@ Viel Spaß!`
                                                                         buttonsHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${btns}</div>`;
                                                                     }
 
+                                                                    // 5. Inject buttons
                                                                     html = html.replace(/{{ download_button }}/g, buttonsHtml);
-
-                                                                    // Convert newlines to BR if not already HTML (simple check)
-                                                                    if (!html.includes('<p>') && !html.includes('<div>') && !html.includes('<br')) {
-                                                                        html = html.replace(/\n/g, '<br/>');
-                                                                    }
 
                                                                     return html;
                                                                 })()
