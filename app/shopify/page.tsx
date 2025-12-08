@@ -322,43 +322,134 @@ function ShopifyEmbeddedContent() {
 
           {/* Settings View */}
           {activeTab === 'settings' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 max-w-2xl">
-              <h3 className="text-lg font-semibold mb-6">App Einstellungen</h3>
+            <div className="space-y-8 max-w-4xl mx-auto">
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              {/* Subscription Section */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                   <div>
-                    <h4 className="font-medium text-gray-900">Automatische E-Mails</h4>
-                    <p className="text-sm text-gray-500">Rechnungen automatisch an Kunden senden</p>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                      <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                      Abonnement & Pläne
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">Wählen Sie den passenden Plan für Ihr Geschäft</p>
                   </div>
-                  <div className="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full bg-green-500 cursor-pointer">
-                    <span className="absolute left-6 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out shadow-sm"></span>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wide">
+                    Aktueller Plan: Free
+                  </span>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Free Plan */}
+                  <div className="border border-gray-200 rounded-xl p-6 relative hover:shadow-md transition-shadow">
+                    <h4 className="text-lg font-bold text-gray-900">Starter</h4>
+                    <p className="text-3xl font-bold text-gray-900 mt-4">0€ <span className="text-sm font-normal text-gray-500">/Monat</span></p>
+                    <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> 50 Rechnungen/Monat</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Standard Support</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> PDF Export</li>
+                    </ul>
+                    <button className="w-full mt-8 py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 cursor-not-allowed" disabled>
+                      Aktiver Plan
+                    </button>
+                  </div>
+
+                  {/* Pro Plan */}
+                  <div className="border-2 border-blue-600 rounded-xl p-6 relative shadow-lg transform scale-105 bg-white">
+                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                      BELIEBT
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900">Professional</h4>
+                    <p className="text-3xl font-bold text-gray-900 mt-4">29€ <span className="text-sm font-normal text-gray-500">/Monat</span></p>
+                    <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Unbegrenzte Rechnungen</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Premium Support</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Eigenes Branding</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Digitale Produkte</li>
+                    </ul>
+                    <button className="w-full mt-8 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md">
+                      Jetzt upgraden
+                    </button>
+                  </div>
+
+                  {/* Enterprise Plan */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                    <h4 className="text-lg font-bold text-gray-900">Enterprise</h4>
+                    <p className="text-3xl font-bold text-gray-900 mt-4">99€ <span className="text-sm font-normal text-gray-500">/Monat</span></p>
+                    <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Alles aus Professional</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> API Zugriff</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Dedicated Manager</li>
+                    </ul>
+                    <button className="w-full mt-8 py-2 px-4 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors">
+                      Kontaktieren
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* General Settings */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Settings className="w-5 h-5 mr-2 text-gray-500" />
+                    Allgemeine Einstellungen
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900 text-sm">Automatische E-Mails</h4>
+                        <p className="text-xs text-gray-500">Rechnungen automatisch senden</p>
+                      </div>
+                      <div className="relative inline-block w-10 h-5 transition duration-200 ease-in-out rounded-full bg-green-500 cursor-pointer">
+                        <span className="absolute left-5 top-0.5 bg-white w-4 h-4 rounded-full shadow-sm"></span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900 text-sm">Bestell-Synchronisation</h4>
+                        <p className="text-xs text-gray-500">Auto-Import von Shopify</p>
+                      </div>
+                      <div className="relative inline-block w-10 h-5 transition duration-200 ease-in-out rounded-full bg-green-500 cursor-pointer">
+                        <span className="absolute left-5 top-0.5 bg-white w-4 h-4 rounded-full shadow-sm"></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Synchronisation</h4>
-                    <p className="text-sm text-gray-500">Bestellungen automatisch importieren</p>
-                  </div>
-                  <div className="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full bg-green-500 cursor-pointer">
-                    <span className="absolute left-6 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out shadow-sm"></span>
+                {/* Invoice Settings */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <FileText className="w-5 h-5 mr-2 text-gray-500" />
+                    Rechnungseinstellungen
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors">
+                      <h4 className="font-medium text-gray-900 text-sm mb-1">Rechnungsvorlage</h4>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Standard (Modern)</span>
+                        <span className="text-xs text-blue-600 font-medium">Ändern</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors">
+                      <h4 className="font-medium text-gray-900 text-sm mb-1">Nummernkreis</h4>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">RE-{'{JAHR}'}-...</span>
+                        <span className="text-xs text-blue-600 font-medium">Bearbeiten</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-6 border-t border-gray-100">
-                  <p className="text-sm text-gray-500 mb-4">
-                    Für erweiterte Einstellungen besuchen Sie bitte das vollständige Dashboard.
-                  </p>
-                  <a
-                    href="/"
-                    target="_blank"
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Vollständiges Dashboard öffnen
-                  </a>
-                </div>
+              <div className="text-center pt-4">
+                <a
+                  href="/"
+                  target="_blank"
+                  className="inline-flex items-center text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Zum vollständigen Dashboard wechseln
+                </a>
               </div>
             </div>
           )}
