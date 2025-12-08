@@ -113,16 +113,14 @@ export async function processDigitalProductOrder(
         const btnColor = digitalProduct.buttonColor || '#000000';
         const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
 
-        downloadButtonHtml = `
-        <div style="margin: 20px 0;">
-            <a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
-                ${btnText}
-            </a>
-        </div>
-        `;
+        downloadButtonHtml = `<div style="margin: 20px 0;"><a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">${btnText}</a></div>`;
     }
 
-    const emailBody = replaceVariables(template, {
+    // Convert newlines to HTML breaks in the template BEFORE injecting variables
+    // This ensures we don't break the HTML structure of injected variables (like the button)
+    const htmlTemplate = convertToHtml(template);
+
+    const emailBody = replaceVariables(htmlTemplate, {
         customer_name: customerName,
         product_title: productTitle,
         license_key: key.key,
@@ -134,7 +132,7 @@ export async function processDigitalProductOrder(
     await sendEmail({
         to: customerEmail,
         subject,
-        html: convertToHtml(emailBody) // Simple conversion or use HTML template
+        html: emailBody
     })
 
     // Automatically fulfill order in Shopify
@@ -185,13 +183,7 @@ function replaceVariables(template: string, variables: Record<string, string>) {
 }
 
 function convertToHtml(text: string) {
-    // Check if text looks like HTML (contains tags)
-    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(text);
-
-    if (hasHtmlTags) {
-        return text;
-    }
-
-    // Replace newlines with <br/> for plain text
+    // Always replace newlines with <br/> to ensure proper formatting in email clients
+    // especially when content comes from contentEditable which might use newlines for breaks
     return text.replace(/\n/g, '<br/>');
 }
