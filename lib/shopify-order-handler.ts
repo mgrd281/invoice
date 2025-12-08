@@ -191,6 +191,27 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         }
     })
 
+    // Add shipping as a line item
+    if (order.shipping_lines && order.shipping_lines.length > 0) {
+        order.shipping_lines.forEach((shipping: any) => {
+            const price = parseFloat(shipping.price)
+            if (price > 0) {
+                const taxRate = 19 // Default
+                const net = price / 1.19
+                const tax = price - net
+                items.push({
+                    description: `Versand: ${shipping.title}`,
+                    quantity: 1,
+                    unitPrice: price,
+                    grossAmount: price,
+                    netAmount: net,
+                    taxAmount: tax,
+                    taxRateId: 'default'
+                })
+            }
+        })
+    }
+
     const totalGross = items.reduce((sum: number, item: any) => sum + item.grossAmount, 0)
     const totalNet = items.reduce((sum: number, item: any) => sum + item.netAmount, 0)
     const totalTax = items.reduce((sum: number, item: any) => sum + item.taxAmount, 0)
