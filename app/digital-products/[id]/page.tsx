@@ -35,6 +35,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     // Edit product state
     const [isEditingProduct, setIsEditingProduct] = useState(false)
     const [editProductData, setEditProductData] = useState({ title: '' })
+    const [showSourceCode, setShowSourceCode] = useState(false)
 
 
     useEffect(() => {
@@ -493,13 +494,43 @@ Viel Spaß!`
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <Label>Nachrichtentext</Label>
-                                                    <RichTextEditor
-                                                        value={template}
-                                                        onChange={setTemplate}
-                                                        placeholder="Schreiben Sie hier Ihre E-Mail..."
-                                                        className="min-h-[400px]"
-                                                    />
+                                                    <div className="flex justify-between items-center">
+                                                        <Label>Nachrichtentext</Label>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setShowSourceCode(!showSourceCode)}
+                                                            className="text-xs text-gray-500 hover:text-gray-900"
+                                                        >
+                                                            {showSourceCode ? (
+                                                                <>
+                                                                    <RefreshCw className="w-3 h-3 mr-1" />
+                                                                    Visueller Editor
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="font-mono text-xs mr-1">{'<>'}</span>
+                                                                    HTML-Code bearbeiten
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
+
+                                                    {showSourceCode ? (
+                                                        <Textarea
+                                                            value={template}
+                                                            onChange={e => setTemplate(e.target.value)}
+                                                            className="min-h-[400px] font-mono text-sm"
+                                                            placeholder="<html>...</html>"
+                                                        />
+                                                    ) : (
+                                                        <RichTextEditor
+                                                            value={template}
+                                                            onChange={setTemplate}
+                                                            placeholder="Schreiben Sie hier Ihre E-Mail..."
+                                                            className="min-h-[400px]"
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
 
