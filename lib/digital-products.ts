@@ -108,13 +108,26 @@ export async function processDigitalProductOrder(
 
     // Generate Download Button HTML
     let downloadButtonHtml = '';
-    if (digitalProduct.downloadUrl) {
+    const btnAlignment = digitalProduct.buttonAlignment || 'left';
+    const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
+
+    // Check for multiple buttons (new schema)
+    const buttons = digitalProduct.downloadButtons as any[]; // Cast to any since it's Json type
+
+    if (buttons && Array.isArray(buttons) && buttons.length > 0) {
+        // Generate HTML for multiple buttons
+        const buttonsHtml = buttons.map(btn => `
+                <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin: 5px;">
+                    ${btn.text || 'Download'}
+                </a>
+            `).join('');
+
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
+    } else if (digitalProduct.downloadUrl) {
+        // Fallback to legacy single button
         const btnText = digitalProduct.buttonText || 'Download';
         const btnColor = digitalProduct.buttonColor || '#000000';
         const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
-        const btnAlignment = digitalProduct.buttonAlignment || 'left';
-
-        const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
 
         downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">${btnText}</a></div>`;
     }

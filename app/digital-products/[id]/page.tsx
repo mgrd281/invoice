@@ -30,6 +30,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const [buttonColor, setButtonColor] = useState('#000000')
     const [buttonTextColor, setButtonTextColor] = useState('#ffffff')
     const [buttonAlignment, setButtonAlignment] = useState('left')
+    const [buttons, setButtons] = useState<{ url: string, text: string, color: string, textColor: string }[]>([])
     const [savingSettings, setSavingSettings] = useState(false)
     // Edit product state
     const [isEditingProduct, setIsEditingProduct] = useState(false)
@@ -59,6 +60,21 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                 setButtonColor(prodData.data.buttonColor || '#000000')
                 setButtonTextColor(prodData.data.buttonTextColor || '#ffffff')
                 setButtonAlignment(prodData.data.buttonAlignment || 'left')
+
+                // Initialize buttons from new JSON field or legacy fields
+                if (prodData.data.downloadButtons && Array.isArray(prodData.data.downloadButtons) && prodData.data.downloadButtons.length > 0) {
+                    setButtons(prodData.data.downloadButtons)
+                } else if (prodData.data.downloadUrl) {
+                    // Migration: Create first button from legacy fields
+                    setButtons([{
+                        url: prodData.data.downloadUrl,
+                        text: prodData.data.buttonText || 'Download',
+                        color: prodData.data.buttonColor || '#000000',
+                        textColor: prodData.data.buttonTextColor || '#ffffff'
+                    }])
+                } else {
+                    setButtons([])
+                }
             }
             if (keysData.success) {
                 setKeys(keysData.data)
@@ -128,11 +144,12 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     emailTemplate: template,
-                    downloadUrl,
+                    downloadUrl, // Keep sending legacy for now, or maybe just send empty? Let's keep it synced with first button if exists
                     buttonText,
                     buttonColor,
                     buttonTextColor,
-                    buttonAlignment
+                    buttonAlignment,
+                    downloadButtons: buttons
                 })
             })
 
@@ -456,9 +473,9 @@ Viel Spaß!`
                             <TabsContent value="template">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>E-Mail Vorlage & Download-Button</CardTitle>
+                                        <CardTitle>E-Mail Vorlage & Download-Buttons</CardTitle>
                                         <CardDescription>
-                                            Passen Sie die Nachricht an und konfigurieren Sie optional einen Download-Button.
+                                            Passen Sie die Nachricht an und konfigurieren Sie optional Download-Buttons.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>
@@ -469,7 +486,7 @@ Viel Spaß!`
                                                     {'{{ customer_name }}'} - Name des Kunden<br />
                                                     {'{{ product_title }}'} - Name des Produkts<br />
                                                     {'{{ license_key }}'} - Der zugewiesene Key<br />
-                                                    {'{{ download_button }}'} - Der Download-Button (wird durch die Konfiguration unten erstellt)<br />
+                                                    {'{{ download_button }}'} - Die Download-Buttons (wird durch die Konfiguration unten erstellt)<br />
                                                     <br />
                                                     <strong>Formatierung:</strong><br />
                                                     Nutzen Sie die Toolbar, um Texte zu formatieren (Fett, Kursiv, Listen) oder Links einzufügen.
@@ -487,94 +504,156 @@ Viel Spaß!`
                                             </div>
 
                                             <div className="border-t pt-6">
-                                                <h3 className="text-lg font-semibold mb-4">Download-Button Konfiguration</h3>
+                                                <h3 className="text-lg font-semibold mb-4">Download-Buttons Konfiguration</h3>
                                                 <p className="text-sm text-gray-500 mb-4">
-                                                    Füllen Sie diese Felder aus, um einen Download-Button zu erstellen.
-                                                    Der Button erscheint an der Stelle, an der Sie <code>{'{{ download_button }}'}</code> im Text oben platzieren.
+                                                    Erstellen Sie hier einen oder mehrere Buttons. Diese erscheinen an der Stelle von <code>{'{{ download_button }}'}</code>.
                                                 </p>
 
-                                                <div className="space-y-4">
-                                                    <div className="space-y-2">
-                                                        <Label>Download URL (Optional)</Label>
-                                                        <Input
-                                                            placeholder="https://example.com/download.zip"
-                                                            value={downloadUrl}
-                                                            onChange={e => setDownloadUrl(e.target.value)}
-                                                        />
+                                                <div className="space-y-6">
+                                                    {/* Global Alignment Setting */}
+                                                    <div className="max-w-xs">
+                                                        <Label>Ausrichtung aller Buttons</Label>
+                                                        <select
+                                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
+                                                            value={buttonAlignment}
+                                                            onChange={e => setButtonAlignment(e.target.value)}
+                                                        >
+                                                            <option value="left">Links</option>
+                                                            <option value="center">Zentriert</option>
+                                                            <option value="right">Rechts</option>
+                                                        </select>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label>Button Text</Label>
-                                                            <Input
-                                                                value={buttonText}
-                                                                onChange={e => setButtonText(e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Hintergrundfarbe</Label>
-                                                            <div className="flex gap-2">
-                                                                <Input
-                                                                    type="color"
-                                                                    className="w-12 p-1 h-10"
-                                                                    value={buttonColor}
-                                                                    onChange={e => setButtonColor(e.target.value)}
-                                                                />
-                                                                <Input
-                                                                    value={buttonColor}
-                                                                    onChange={e => setButtonColor(e.target.value)}
-                                                                />
+                                                    {/* Button List */}
+                                                    {buttons.map((btn, index) => (
+                                                        <div key={index} className="p-4 border rounded-lg bg-gray-50 relative">
+                                                            <div className="absolute top-2 right-2">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                    onClick={() => {
+                                                                        const newButtons = [...buttons];
+                                                                        newButtons.splice(index, 1);
+                                                                        setButtons(newButtons);
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
                                                             </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Textfarbe</Label>
-                                                            <div className="flex gap-2">
-                                                                <Input
-                                                                    type="color"
-                                                                    className="w-12 p-1 h-10"
-                                                                    value={buttonTextColor}
-                                                                    onChange={e => setButtonTextColor(e.target.value)}
-                                                                />
-                                                                <Input
-                                                                    value={buttonTextColor}
-                                                                    onChange={e => setButtonTextColor(e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Ausrichtung</Label>
-                                                            <select
-                                                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                value={buttonAlignment}
-                                                                onChange={e => setButtonAlignment(e.target.value)}
-                                                            >
-                                                                <option value="left">Links</option>
-                                                                <option value="center">Zentriert</option>
-                                                                <option value="right">Rechts</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
 
-                                                    <div className="p-4 border rounded-lg bg-gray-50 mt-4">
-                                                        <Label className="mb-2 block text-gray-500">Vorschau:</Label>
-                                                        <div className="flex justify-center">
-                                                            <a
-                                                                href="#"
-                                                                style={{
-                                                                    backgroundColor: buttonColor,
-                                                                    color: buttonTextColor,
-                                                                    padding: '12px 24px',
-                                                                    borderRadius: '6px',
-                                                                    textDecoration: 'none',
-                                                                    fontWeight: 'bold',
-                                                                    display: 'inline-block'
-                                                                }}
-                                                                onClick={e => e.preventDefault()}
-                                                            >
-                                                                {buttonText}
-                                                            </a>
+                                                            <h4 className="text-sm font-medium mb-3">Button {index + 1}</h4>
+
+                                                            <div className="space-y-4">
+                                                                <div className="space-y-2">
+                                                                    <Label>Download URL</Label>
+                                                                    <Input
+                                                                        placeholder="https://example.com/download.zip"
+                                                                        value={btn.url}
+                                                                        onChange={e => {
+                                                                            const newButtons = [...buttons];
+                                                                            newButtons[index].url = e.target.value;
+                                                                            setButtons(newButtons);
+                                                                        }}
+                                                                    />
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label>Button Text</Label>
+                                                                        <Input
+                                                                            value={btn.text}
+                                                                            onChange={e => {
+                                                                                const newButtons = [...buttons];
+                                                                                newButtons[index].text = e.target.value;
+                                                                                setButtons(newButtons);
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label>Hintergrundfarbe</Label>
+                                                                        <div className="flex gap-2">
+                                                                            <Input
+                                                                                type="color"
+                                                                                className="w-12 p-1 h-10"
+                                                                                value={btn.color}
+                                                                                onChange={e => {
+                                                                                    const newButtons = [...buttons];
+                                                                                    newButtons[index].color = e.target.value;
+                                                                                    setButtons(newButtons);
+                                                                                }}
+                                                                            />
+                                                                            <Input
+                                                                                value={btn.color}
+                                                                                onChange={e => {
+                                                                                    const newButtons = [...buttons];
+                                                                                    newButtons[index].color = e.target.value;
+                                                                                    setButtons(newButtons);
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label>Textfarbe</Label>
+                                                                        <div className="flex gap-2">
+                                                                            <Input
+                                                                                type="color"
+                                                                                className="w-12 p-1 h-10"
+                                                                                value={btn.textColor}
+                                                                                onChange={e => {
+                                                                                    const newButtons = [...buttons];
+                                                                                    newButtons[index].textColor = e.target.value;
+                                                                                    setButtons(newButtons);
+                                                                                }}
+                                                                            />
+                                                                            <Input
+                                                                                value={btn.textColor}
+                                                                                onChange={e => {
+                                                                                    const newButtons = [...buttons];
+                                                                                    newButtons[index].textColor = e.target.value;
+                                                                                    setButtons(newButtons);
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    ))}
+
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setButtons([...buttons, { url: '', text: 'Download', color: '#000000', textColor: '#ffffff' }])}
+                                                    >
+                                                        <Plus className="w-4 h-4 mr-2" />
+                                                        Weiteren Button hinzufügen
+                                                    </Button>
+
+                                                    {buttons.length > 0 && (
+                                                        <div className="p-4 border rounded-lg bg-gray-50 mt-4">
+                                                            <Label className="mb-2 block text-gray-500">Vorschau:</Label>
+                                                            <div className={`flex flex-wrap gap-2 ${buttonAlignment === 'center' ? 'justify-center' : (buttonAlignment === 'right' ? 'justify-end' : 'justify-start')}`}>
+                                                                {buttons.map((btn, i) => (
+                                                                    <a
+                                                                        key={i}
+                                                                        href="#"
+                                                                        style={{
+                                                                            backgroundColor: btn.color,
+                                                                            color: btn.textColor,
+                                                                            padding: '12px 24px',
+                                                                            borderRadius: '6px',
+                                                                            textDecoration: 'none',
+                                                                            fontWeight: 'bold',
+                                                                            display: 'inline-block'
+                                                                        }}
+                                                                        onClick={e => e.preventDefault()}
+                                                                    >
+                                                                        {btn.text}
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 

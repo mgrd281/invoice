@@ -318,6 +318,7 @@ model DigitalProduct {
   buttonColor     String?  @default("#000000")
   buttonTextColor String?  @default("#ffffff")
   buttonAlignment String?  @default("left") // "left", "center", "right"
+  downloadButtons Json?    // Array of { text, url, color, textColor }
   keys           LicenseKey[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
