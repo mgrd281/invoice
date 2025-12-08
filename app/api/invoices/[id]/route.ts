@@ -44,7 +44,8 @@ export async function GET(
       where: { id: invoiceId },
       include: {
         customer: true,
-        items: true
+        items: true,
+        order: true // Include order to get shopifyOrderId
       }
     })
 
@@ -95,7 +96,12 @@ export async function GET(
       grund: (invoice as any).reason,
       refund_amount: (invoice as any).refundAmount ? Number((invoice as any).refundAmount) : undefined,
       // QR Code settings - not in schema yet, return null or default
-      qrCodeSettings: null
+      qrCodeSettings: null,
+      // Order details
+      order: invoice.order ? {
+        id: invoice.order.id,
+        shopifyOrderId: invoice.order.shopifyOrderId
+      } : undefined
     }
 
     return NextResponse.json(formattedInvoice)

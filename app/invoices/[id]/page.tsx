@@ -57,6 +57,10 @@ interface Invoice {
   customer: Customer
   organization: Organization
   items: InvoiceItem[]
+  order?: {
+    id: string
+    shopifyOrderId?: string
+  }
 }
 
 export default function InvoiceViewPage({ params }: { params: { id: string } }) {
@@ -246,6 +250,44 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
     } finally {
       setSendingReminder(false)
     }
+  }
+
+  const handleCancel = async () => {
+    if (!invoice) return
+
+    // Check if connected to Shopify
+    if (invoice.order?.shopifyOrderId) {
+      const confirmShopify = window.confirm(
+        'Diese Rechnung ist mit einer Shopify-Bestellung verknüpft.\n\nMöchten Sie die Bestellung auch im Shopify-System stornieren?'
+      )
+
+      if (confirmShopify) {
+        try {
+          showToast('Storniere Bestellung in Shopify...', 'success')
+          const response = await fetch('/api/shopify/cancel-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ invoiceId: invoice.id }),
+          })
+
+          const result = await response.json()
+
+          if (result.success) {
+            showToast('Shopify-Bestellung erfolgreich storniert', 'success')
+          } else {
+            showToast(`Fehler bei Shopify-Stornierung: ${result.error}`, 'error')
+          }
+        } catch (error) {
+          console.error('Error cancelling Shopify order:', error)
+          showToast('Verbindungsfehler zu Shopify', 'error')
+        }
+      }
+    }
+
+    // Navigate to cancellation page
+    window.location.href = `/invoices/${invoice.id}/cancel`
   }
 
   const handleEditInvoice = () => {
@@ -980,15 +1022,14 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
 
                       {/* Storno Button - Only show for non-cancelled invoices */}
                       {invoice.status !== 'Storniert' && (
-                        <Link href={`/invoices/${invoice.id}/cancel`} className="mt-6">
-                          <Button
-                            variant="outline"
-                            className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Storno erstellen
-                          </Button>
-                        </Link>
+                        <Button
+                          variant="outline"
+                          className="w-full mt-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                          onClick={handleCancel}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Storno erstellen
+                        </Button>
                       )}
                     </>
                   )}
@@ -1002,8 +1043,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
       {/* Toast Notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${toastMessage.type === 'success'
-            ? 'bg-green-500 text-white'
-            : 'bg-red-500 text-white'
+          ? 'bg-green-500 text-white'
+          : 'bg-red-500 text-white'
           }`}>
           <div className="flex items-center">
             {toastMessage.type === 'success' ? (

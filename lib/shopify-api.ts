@@ -565,6 +565,26 @@ export class ShopifyAPI {
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   }
+
+  /**
+   * Cancel an order in Shopify
+   */
+  async cancelOrder(orderId: number): Promise<any> {
+    try {
+      console.log(`🚫 Cancelling order ${orderId}...`)
+      const response = await this.makeRequest(`/orders/${orderId}/cancel.json`, {
+        method: 'POST',
+        body: JSON.stringify({}) // Empty body or optional reason
+      })
+
+      const data = await response.json()
+      console.log('✅ Order cancelled successfully')
+      return data
+    } catch (error) {
+      console.error(`Error cancelling order ${orderId}:`, error)
+      throw error
+    }
+  }
 }
 
 // ========================================
