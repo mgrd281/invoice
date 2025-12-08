@@ -35,7 +35,10 @@ export async function middleware(request: NextRequest) {
     }
 
     // Set the header for API routes to read
-    requestHeaders.set('x-user-info', JSON.stringify(userInfo))
+    // Base64 encode to handle special characters (umlauts, emojis, etc.)
+    const userInfoStr = JSON.stringify(userInfo)
+    const userInfoBase64 = Buffer.from(userInfoStr).toString('base64')
+    requestHeaders.set('x-user-info', userInfoBase64)
   } else {
     // User is NOT authenticated
 

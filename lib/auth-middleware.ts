@@ -19,14 +19,27 @@ export function getUserFromRequest(request: NextRequest): AuthenticatedUser | nu
   try {
     // Get user info from headers (sent by client)
     const userHeader = request.headers.get('x-user-info')
-    
+
     if (!userHeader) {
       console.log('❌ No user info in headers')
       return null
     }
 
-    const userData = JSON.parse(userHeader)
-    
+    let userData
+    try {
+      // Try to parse as JSON first (backward compatibility)
+      userData = JSON.parse(userHeader)
+    } catch (e) {
+      // If failed, try to decode from Base64
+      try {
+        const jsonStr = Buffer.from(userHeader, 'base64').toString('utf-8')
+        userData = JSON.parse(jsonStr)
+      } catch (err) {
+        console.error('❌ Failed to decode user info header:', err)
+        return null
+      }
+    }
+
     // Validate user data
     if (!userData || !userData.id || !userData.email) {
       console.log('❌ Invalid user data in headers')
@@ -36,7 +49,7 @@ export function getUserFromRequest(request: NextRequest): AuthenticatedUser | nu
     // Check if user is admin
     const isAdmin = ADMIN_EMAILS.includes(userData.email.toLowerCase())
     const userWithAdmin = { ...userData, isAdmin }
-    
+
     console.log('✅ User authenticated:', userData.email, isAdmin ? '(ADMIN)' : '(USER)')
     return userWithAdmin
   } catch (error) {
@@ -47,16 +60,16 @@ export function getUserFromRequest(request: NextRequest): AuthenticatedUser | nu
 
 export function requireAuth(request: NextRequest): { user: AuthenticatedUser } | { error: Response } {
   const user = getUserFromRequest(request)
-  
+
   if (!user) {
     return {
       error: new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: 'Authentication required',
           message: 'Sie müssen angemeldet sein, um diese Aktion auszuführen.'
         }),
-        { 
+        {
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         }
