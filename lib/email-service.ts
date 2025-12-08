@@ -323,14 +323,13 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
     </head>
     <body>
       <div class="header">
-        <h1>Rechnung ${invoiceNumber}</h1>
-        <p>von ${companyName}</p>
+        <h1>Rechnung karinex</h1>
       </div>
       
       <div class="content">
         <p>Sehr geehrte/r ${customerName},</p>
         
-        <p>anbei erhalten Sie Ihre Rechnung <strong>${invoiceNumber}</strong>.</p>
+        <p>anbei erhalten Sie Ihre Rechnung karinex.</p>
         
         <p>Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.</p>
         
@@ -339,7 +338,7 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
         
         <p>Mit freundlichen Grüßen<br>
-        <strong>${companyName}</strong></p>
+        <strong>Ihr Team von karinex</strong></p>
       </div>
       
       <div class="footer">
@@ -358,11 +357,11 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
 // Generate plain text email
 function generateEmailText(customerName: string, invoiceNumber: string, companyName: string): string {
   return `
-Rechnung ${invoiceNumber}
+Rechnung karinex
 
 Sehr geehrte/r ${customerName},
 
-anbei erhalten Sie Ihre Rechnung ${invoiceNumber}.
+anbei erhalten Sie Ihre Rechnung karinex.
 
 Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.
 
@@ -371,7 +370,7 @@ Bitte überweisen Sie den Rechnungsbetrag innerhalb der angegebenen Zahlungsfris
 Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 
 Mit freundlichen Grüßen
-${companyName}
+Ihr Team von karinex
 
 ---
 Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht auf diese E-Mail.
@@ -410,8 +409,7 @@ function generateCustomEmailHTML(
     </head>
     <body>
       <div class="header">
-        <h1>Rechnung ${invoiceNumber}</h1>
-        <p>von ${companyName}</p>
+        <h1>Rechnung karinex</h1>
       </div>
       
       <div class="content">
@@ -426,6 +424,8 @@ function generateCustomEmailHTML(
           <p><strong>Fälligkeitsdatum:</strong> ${formattedDueDate}</p>
         </div>
         
+        <p>anbei erhalten Sie Ihre Rechnung karinex.</p>
+        
         <p>Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.</p>
         
         <p>Bitte überweisen Sie den Rechnungsbetrag bis zum angegebenen Fälligkeitsdatum.</p>
@@ -433,7 +433,7 @@ function generateCustomEmailHTML(
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
         
         <p>Mit freundlichen Grüßen<br>
-        <strong>${companyName}</strong></p>
+        <strong>Ihr Team von karinex</strong></p>
       </div>
       
       <div class="footer">
@@ -461,13 +461,15 @@ function generateCustomEmailText(
   const formattedDueDate = dueDate ? new Date(dueDate).toLocaleDateString('de-DE') : 'Bei Erhalt'
 
   return `
-Rechnung ${invoiceNumber}
+Rechnung karinex
 
 Sehr geehrte/r ${customerName},
 
 ${customMessage ? `${customMessage}\n\n` : ''}Rechnungsdetails:
 • Rechnungsnummer: ${invoiceNumber}
 ${invoiceAmount ? `• Rechnungsbetrag: ${invoiceAmount}\n` : ''}• Fälligkeitsdatum: ${formattedDueDate}
+
+anbei erhalten Sie Ihre Rechnung karinex.
 
 Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.
 
@@ -476,7 +478,7 @@ Bitte überweisen Sie den Rechnungsbetrag bis zum angegebenen Fälligkeitsdatum.
 Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 
 Mit freundlichen Grüßen
-${companyName}
+Ihr Team von karinex
 
 ---
 Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht auf diese E-Mail.
