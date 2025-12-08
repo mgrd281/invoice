@@ -657,7 +657,58 @@ Viel Spaß!`
                                                 </div>
                                             </div>
 
-                                            <div className="flex justify-end pt-4 border-t">
+                                            <div className="flex justify-end pt-4 border-t gap-2">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="outline">
+                                                            <RefreshCw className="w-4 h-4 mr-2" />
+                                                            E-Mail Vorschau
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                                        <DialogHeader>
+                                                            <DialogTitle>E-Mail Vorschau</DialogTitle>
+                                                            <DialogDescription>
+                                                                So sieht die E-Mail für den Kunden aus (mit Beispieldaten).
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <div className="border p-4 rounded-md bg-white min-h-[300px]">
+                                                            <div dangerouslySetInnerHTML={{
+                                                                __html: (() => {
+                                                                    let html = template
+                                                                        .replace(/{{ customer_name }}/g, 'Max Mustermann')
+                                                                        .replace(/{{ product_title }}/g, product?.title || 'Beispiel Produkt')
+                                                                        .replace(/{{ license_key }}/g, 'XXXX-YYYY-ZZZZ-AAAA');
+
+                                                                    // Generate button HTML
+                                                                    let buttonsHtml = '';
+                                                                    if (buttons.length > 0) {
+                                                                        const btns = buttons.map(btn => `
+                                                                            <div style="margin-bottom: 12px;">
+                                                                                <a href="#" style="background-color: ${btn.color}; color: ${btn.textColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+                                                                                    ${btn.text}
+                                                                                </a>
+                                                                            </div>
+                                                                        `).join('');
+
+                                                                        const textAlign = buttonAlignment === 'center' ? 'center' : (buttonAlignment === 'right' ? 'right' : 'left');
+                                                                        buttonsHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${btns}</div>`;
+                                                                    }
+
+                                                                    html = html.replace(/{{ download_button }}/g, buttonsHtml);
+
+                                                                    // Convert newlines to BR if not already HTML (simple check)
+                                                                    if (!html.includes('<p>') && !html.includes('<div>') && !html.includes('<br')) {
+                                                                        html = html.replace(/\n/g, '<br/>');
+                                                                    }
+
+                                                                    return html;
+                                                                })()
+                                                            }} />
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+
                                                 <Button onClick={handleSaveTemplate} disabled={savingTemplate}>
                                                     <Save className="w-4 h-4 mr-2" />
                                                     {savingTemplate ? 'Speichert...' : 'Alles speichern'}
