@@ -265,150 +265,157 @@ Viel Spaß!`;
                 </TabsList>
 
                 <TabsContent value="keys">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-slate-800">Lizenzschlüssel Liste</h3>
-                        <div className="flex gap-2">
-                            <div className="flex bg-slate-100 p-1 rounded-lg">
-                                <button
-                                    onClick={() => setActiveKeyTab('history')}
-                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'history' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                                >
-                                    Verkaufshistorie
-                                </button>
-                                <button
-                                    onClick={() => setActiveKeyTab('inventory')}
-                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'inventory' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
-                                >
-                                    Verfügbare Keys
-                                </button>
-                            </div>
-                            <Dialog open={isAddKeysDialogOpen} onOpenChange={setIsAddKeysDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Keys hinzufügen
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Neue Keys hinzufügen</DialogTitle>
-                                    </DialogHeader>
-                                    <form onSubmit={handleAddKeys} className="space-y-4 mt-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="keys">Keys (einer pro Zeile)</Label>
-                                            <Textarea
-                                                id="keys"
-                                                value={newKeysInput}
-                                                onChange={(e) => setNewKeysInput(e.target.value)}
-                                                placeholder="XXXXX-XXXXX-XXXXX-XXXXX&#10;YYYYY-YYYYY-YYYYY-YYYYY"
-                                                rows={10}
-                                                className="font-mono border-slate-200 focus:border-blue-500"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="flex justify-end gap-2 mt-6">
-                                            <Button type="button" variant="outline" onClick={() => setIsAddKeysDialogOpen(false)}>Abbrechen</Button>
-                                            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                                {isSubmitting ? 'Speichern...' : 'Speichern'}
+                    <Card className="border-slate-200 shadow-sm">
+                        <CardHeader>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <CardTitle>Produktschlüssel Verwaltung</CardTitle>
+                                    <CardDescription>
+                                        Verwalten Sie Ihre Keys und sehen Sie die Verkaufshistorie ein.
+                                    </CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                                        <button
+                                            onClick={() => setActiveKeyTab('history')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'history' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                                        >
+                                            Verkaufshistorie
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveKeyTab('inventory')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'inventory' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-900'}`}
+                                        >
+                                            Verfügbare Keys
+                                        </button>
+                                    </div>
+                                    <Dialog open={isAddKeysDialogOpen} onOpenChange={setIsAddKeysDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button size="icon" className="bg-blue-600 hover:bg-blue-700 text-white h-9 w-9">
+                                                <Plus className="w-5 h-5" />
                                             </Button>
-                                        </div>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-                    </div>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Neue Keys hinzufügen</DialogTitle>
+                                            </DialogHeader>
+                                            <form onSubmit={handleAddKeys} className="space-y-4 mt-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="keys">Keys (einer pro Zeile)</Label>
+                                                    <Textarea
+                                                        id="keys"
+                                                        value={newKeysInput}
+                                                        onChange={(e) => setNewKeysInput(e.target.value)}
+                                                        placeholder="XXXXX-XXXXX-XXXXX-XXXXX&#10;YYYYY-YYYYY-YYYYY-YYYYY"
+                                                        rows={10}
+                                                        className="font-mono border-slate-200 focus:border-blue-500"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="flex justify-end gap-2 mt-6">
+                                                    <Button type="button" variant="outline" onClick={() => setIsAddKeysDialogOpen(false)}>Abbrechen</Button>
+                                                    <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                                        {isSubmitting ? 'Speichern...' : 'Speichern'}
+                                                    </Button>
+                                                </div>
+                                            </form>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto -mx-6 md:mx-0">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-4 font-medium text-slate-500">Key</th>
+                                            <th className="px-6 py-4 font-medium text-slate-500">Status</th>
+                                            {activeKeyTab === 'history' && (
+                                                <>
+                                                    <th className="px-6 py-4 font-medium text-slate-500">Bestellung</th>
+                                                    <th className="px-6 py-4 font-medium text-slate-500">Genutzt am</th>
+                                                </>
+                                            )}
+                                            <th className="px-6 py-4 font-medium text-slate-500 text-right">Aktion</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {(() => {
+                                            const displayedKeys = activeKeyTab === 'history'
+                                                ? keys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt || 0).getTime() - new Date(a.usedAt || 0).getTime())
+                                                : keys.filter(k => !k.isUsed);
 
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-slate-50 border-b border-slate-200">
-                                    <tr>
-                                        <th className="px-6 py-4 font-medium text-slate-500">Key</th>
-                                        <th className="px-6 py-4 font-medium text-slate-500">Status</th>
-                                        {activeKeyTab === 'history' && (
-                                            <>
-                                                <th className="px-6 py-4 font-medium text-slate-500">Bestellung</th>
-                                                <th className="px-6 py-4 font-medium text-slate-500">Genutzt am</th>
-                                            </>
-                                        )}
-                                        <th className="px-6 py-4 font-medium text-slate-500 text-right">Aktion</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {(() => {
-                                        const displayedKeys = activeKeyTab === 'history'
-                                            ? keys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt || 0).getTime() - new Date(a.usedAt || 0).getTime())
-                                            : keys.filter(k => !k.isUsed);
+                                            if (loading) {
+                                                return <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">Laden...</td></tr>;
+                                            }
 
-                                        if (loading) {
-                                            return <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">Laden...</td></tr>;
-                                        }
+                                            if (displayedKeys.length === 0) {
+                                                return (
+                                                    <tr>
+                                                        <td colSpan={activeKeyTab === 'history' ? 5 : 3} className="px-6 py-8 text-center text-slate-500">
+                                                            {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
 
-                                        if (displayedKeys.length === 0) {
-                                            return (
-                                                <tr>
-                                                    <td colSpan={activeKeyTab === 'history' ? 5 : 3} className="px-6 py-8 text-center text-slate-500">
-                                                        {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
+                                            return displayedKeys.map((key) => (
+                                                <tr key={key.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4 font-mono text-slate-700">
+                                                        <div className="flex items-center gap-2">
+                                                            {key.key}
+                                                            <button onClick={() => copyToClipboard(key.key)} className="text-slate-400 hover:text-blue-600" title="Kopieren">
+                                                                <Copy className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {key.isUsed ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                                Verbraucht
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100">
+                                                                Verfügbar
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    {activeKeyTab === 'history' && (
+                                                        <>
+                                                            <td className="px-6 py-4 text-slate-600">
+                                                                {key.orderId ? (
+                                                                    <span className="font-medium text-slate-900">{key.orderId}</span>
+                                                                ) : (
+                                                                    key.shopifyOrderId ? (
+                                                                        key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
+                                                                            ? key.shopifyOrderId
+                                                                            : `#${key.shopifyOrderId}`
+                                                                    ) : '-'
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-slate-600">
+                                                                {key.usedAt ? new Date(key.usedAt).toLocaleDateString('de-DE') + ' ' + new Date(key.usedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button
+                                                            onClick={() => handleDeleteKey(key.id)}
+                                                            className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                                                            title="Löschen"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
                                                     </td>
                                                 </tr>
-                                            );
-                                        }
-
-                                        return displayedKeys.map((key) => (
-                                            <tr key={key.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-6 py-4 font-mono text-slate-700">
-                                                    <div className="flex items-center gap-2">
-                                                        {key.key}
-                                                        <button onClick={() => copyToClipboard(key.key)} className="text-slate-400 hover:text-blue-600" title="Kopieren">
-                                                            <Copy className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {key.isUsed ? (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                                            Verbraucht
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100">
-                                                            Verfügbar
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                {activeKeyTab === 'history' && (
-                                                    <>
-                                                        <td className="px-6 py-4 text-slate-600">
-                                                            {key.orderId ? (
-                                                                <span className="font-medium text-slate-900">{key.orderId}</span>
-                                                            ) : (
-                                                                key.shopifyOrderId ? (
-                                                                    key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
-                                                                        ? key.shopifyOrderId
-                                                                        : `#${key.shopifyOrderId}`
-                                                                ) : '-'
-                                                            )}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-slate-600">
-                                                            {key.usedAt ? new Date(key.usedAt).toLocaleDateString('de-DE') + ' ' + new Date(key.usedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                                                        </td>
-                                                    </>
-                                                )}
-                                                <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => handleDeleteKey(key.id)}
-                                                        className="text-slate-400 hover:text-red-600 transition-colors p-1"
-                                                        title="Löschen"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ));
-                                    })()}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                            ));
+                                        })()}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="template">
