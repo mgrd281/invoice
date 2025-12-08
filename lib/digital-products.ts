@@ -117,9 +117,11 @@ export async function processDigitalProductOrder(
     if (buttons && Array.isArray(buttons) && buttons.length > 0) {
         // Generate HTML for multiple buttons
         const buttonsHtml = buttons.map(btn => `
-                <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin: 5px;">
-                    ${btn.text || 'Download'}
-                </a>
+                <div style="margin-bottom: 12px;">
+                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+                        ${btn.text || 'Download'}
+                    </a>
+                </div>
             `).join('');
 
         downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
