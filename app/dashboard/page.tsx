@@ -24,7 +24,8 @@ import {
   DollarSign,
   AlertCircle,
   Shield,
-  Package
+  Package,
+  Gift
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -477,6 +478,23 @@ export default function DashboardPage() {
                     </CardTitle>
                     <CardDescription>
                       Umsatzsteuervoranmeldung direkt an Finanzamt
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/settings/marketing">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-pink-300 bg-gradient-to-br from-white to-pink-50">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mb-4">
+                      <Gift className="h-6 w-6 text-white" />
+                    </div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      Marketing
+                      <span className="text-xs bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">AUTO</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Automatische Rabatte und Kundenbindung
                     </CardDescription>
                   </CardHeader>
                 </Card>

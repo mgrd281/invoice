@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
-import { 
-  AccountingInvoice, 
-  Expense, 
-  AccountingSummary, 
+import {
+  AccountingInvoice,
+  Expense,
+  AccountingSummary,
   ExportFormat,
   DATEVExport,
   DATEVBooking,
@@ -17,15 +17,15 @@ export async function POST(request: NextRequest) {
       return authResult.error
     }
 
-    const { format, filter, invoices, expenses, summary } = await request.json()
+    const { format, filter, invoices, expenses, additionalIncomes, summary } = await request.json()
 
     switch (format as ExportFormat) {
       case 'csv':
-        return generateCSVExport(invoices, expenses, summary, filter)
+        return generateCSVExport(invoices, expenses, additionalIncomes || [], summary, filter)
       case 'excel':
-        return generateExcelExport(invoices, expenses, summary, filter)
+        return generateExcelExport(invoices, expenses, additionalIncomes || [], summary, filter)
       case 'pdf':
-        return generatePDFReport(invoices, expenses, summary, filter)
+        return generatePDFReport(invoices, expenses, additionalIncomes || [], summary, filter)
       case 'datev':
         return generateDATEVExport(invoices, expenses, filter)
       default:
@@ -42,18 +42,19 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateCSVExport(
-  invoices: AccountingInvoice[], 
-  expenses: Expense[], 
+  invoices: AccountingInvoice[],
+  expenses: Expense[],
+  additionalIncomes: any[],
   summary: AccountingSummary,
   filter: any
 ) {
   const csvLines: string[] = []
-  
+
   // Header
   csvLines.push('BUCHHALTUNGSEXPORT')
   csvLines.push(`Zeitraum: ${filter.startDate} bis ${filter.endDate}`)
   csvLines.push('')
-  
+
   // Summary
   csvLines.push('ZUSAMMENFASSUNG')
   csvLines.push('Kategorie,Betrag (EUR)')
@@ -62,11 +63,11 @@ async function generateCSVExport(
   csvLines.push(`Nettoeinkommen,${summary.netIncome.toFixed(2)}`)
   csvLines.push(`Umsatzsteuer,${summary.totalTax.toFixed(2)}`)
   csvLines.push('')
-  
+
   // Invoices
   csvLines.push('RECHNUNGEN')
   csvLines.push('Rechnungsnr.,Kunde,Datum,Fälligkeitsdatum,Status,Netto,MwSt-Satz,MwSt-Betrag,Brutto,Beschreibung')
-  
+
   invoices.forEach(invoice => {
     csvLines.push([
       invoice.invoiceNumber,
@@ -81,13 +82,13 @@ async function generateCSVExport(
       `"${invoice.description}"`
     ].join(','))
   })
-  
+
   csvLines.push('')
-  
+
   // Expenses
   csvLines.push('AUSGABEN')
   csvLines.push('Ausgaben-Nr.,Datum,Lieferant,Kategorie,Beschreibung,Netto,MwSt-Satz,MwSt-Betrag,Brutto')
-  
+
   expenses.forEach(expense => {
     csvLines.push([
       expense.expenseNumber,
@@ -101,9 +102,23 @@ async function generateCSVExport(
       expense.totalAmount.toFixed(2)
     ].join(','))
   })
-  
+
+  csvLines.push('')
+
+  // Additional Incomes
+  csvLines.push('ZUSÄTZLICHE EINKÜNFTE')
+  csvLines.push('Datum,Beschreibung,Betrag')
+
+  additionalIncomes.forEach(income => {
+    csvLines.push([
+      income.date,
+      `"${income.description}"`,
+      Number(income.amount).toFixed(2)
+    ].join(','))
+  })
+
   const csvContent = csvLines.join('\n')
-  
+
   return new NextResponse(csvContent, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
@@ -113,15 +128,16 @@ async function generateCSVExport(
 }
 
 async function generateExcelExport(
-  invoices: AccountingInvoice[], 
-  expenses: Expense[], 
+  invoices: AccountingInvoice[],
+  expenses: Expense[],
+  additionalIncomes: any[],
   summary: AccountingSummary,
   filter: any
 ) {
   // For now, return CSV format with Excel MIME type
   // In production, use a library like xlsx to generate proper Excel files
-  const csvContent = await generateCSVExport(invoices, expenses, summary, filter)
-  
+  const csvContent = await generateCSVExport(invoices, expenses, additionalIncomes, summary, filter)
+
   return new NextResponse(await csvContent.text(), {
     headers: {
       'Content-Type': 'application/vnd.ms-excel',
@@ -131,8 +147,9 @@ async function generateExcelExport(
 }
 
 async function generatePDFReport(
-  invoices: AccountingInvoice[], 
-  expenses: Expense[], 
+  invoices: AccountingInvoice[],
+  expenses: Expense[],
+  additionalIncomes: any[],
   summary: AccountingSummary,
   filter: any
 ) {
@@ -225,11 +242,32 @@ async function generatePDFReport(
             </tr>
           `).join('')}
         </tbody>
+        </tbody>
+      </table>
+
+      <h2>Zusätzliche Einkünfte (${additionalIncomes.length})</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Beschreibung</th>
+            <th>Betrag</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${additionalIncomes.map(income => `
+            <tr>
+              <td>${new Date(income.date).toLocaleDateString('de-DE')}</td>
+              <td>${income.description}</td>
+              <td class="amount">€${Number(income.amount).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
       </table>
     </body>
     </html>
   `
-  
+
   // For now, return HTML. In production, use puppeteer or similar to generate PDF
   return new NextResponse(htmlContent, {
     headers: {
@@ -240,12 +278,12 @@ async function generatePDFReport(
 }
 
 async function generateDATEVExport(
-  invoices: AccountingInvoice[], 
-  expenses: Expense[], 
+  invoices: AccountingInvoice[],
+  expenses: Expense[],
   filter: any
 ) {
   const bookings: DATEVBooking[] = []
-  
+
   // Process invoices
   invoices.forEach(invoice => {
     if (invoice.status === 'bezahlt') {
@@ -264,12 +302,12 @@ async function generateDATEVExport(
       })
     }
   })
-  
+
   // Process expenses
   expenses.forEach(expense => {
     // Expense booking
     const expenseAccount = getExpenseAccount(expense.category)
-    
+
     bookings.push({
       amount: expense.totalAmount,
       debitAccount: expenseAccount,
@@ -283,7 +321,7 @@ async function generateDATEVExport(
       currency: 'EUR'
     })
   })
-  
+
   const datevExport: DATEVExport = {
     header: {
       version: 'EXTF',
@@ -306,10 +344,10 @@ async function generateDATEVExport(
     },
     bookings
   }
-  
+
   // Generate DATEV CSV format
   const csvLines: string[] = []
-  
+
   // Header line
   csvLines.push([
     datevExport.header.version,
@@ -331,7 +369,7 @@ async function generateDATEVExport(
     datevExport.header.reserved,
     datevExport.header.applicationInfo
   ].join(';'))
-  
+
   // Column headers
   csvLines.push([
     'Umsatz (ohne Soll/Haben-Kz)',
@@ -349,7 +387,7 @@ async function generateDATEVExport(
     'Skonto',
     'Buchungstext'
   ].join(';'))
-  
+
   // Booking lines
   datevExport.bookings.forEach(booking => {
     csvLines.push([
@@ -369,9 +407,9 @@ async function generateDATEVExport(
       `"${booking.bookingText}"`
     ].join(';'))
   })
-  
+
   const csvContent = csvLines.join('\n')
-  
+
   return new NextResponse(csvContent, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
@@ -389,6 +427,6 @@ function getExpenseAccount(category: string): string {
     'utilities': DATEV_ACCOUNTS.UTILITIES,
     'professional_services': DATEV_ACCOUNTS.PROFESSIONAL_SERVICES
   }
-  
+
   return accountMap[category] || DATEV_ACCOUNTS.OFFICE_SUPPLIES
 }

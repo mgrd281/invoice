@@ -11,26 +11,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Calculator, 
-  Download, 
-  FileText, 
-  TrendingUp, 
-  TrendingDown, 
-  Euro, 
+import {
+  Calculator,
+  Download,
+  FileText,
+  TrendingUp,
+  TrendingDown,
+  Euro,
   Calendar,
   Filter,
   RefreshCw,
   Plus,
   Eye,
   BarChart3,
-  ArrowLeft
+  ArrowLeft,
+  Upload,
+  Trash2,
+  Save
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
-import { 
-  AccountingFilter, 
-  AccountingSummary, 
-  AccountingInvoice, 
+import {
+  AccountingFilter,
+  AccountingSummary,
+  AccountingInvoice,
   Expense,
   AccountingPeriod,
   InvoiceStatus,
@@ -39,6 +42,23 @@ import {
   getInvoiceStatusLabel,
   calculateAccountingSummary
 } from '@/lib/accounting-types'
+
+interface AdditionalIncome {
+  id: string
+  date: string
+  description: string
+  amount: number
+  type: string
+}
+
+interface Receipt {
+  id: string
+  date: string
+  filename: string
+  description: string
+  category: string
+  url: string
+}
 
 export default function BuchhaltungPage() {
   const authenticatedFetch = useAuthenticatedFetch()
@@ -49,7 +69,14 @@ export default function BuchhaltungPage() {
   // Data states
   const [invoices, setInvoices] = useState<AccountingInvoice[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [additionalIncomes, setAdditionalIncomes] = useState<AdditionalIncome[]>([])
+  const [receipts, setReceipts] = useState<Receipt[]>([])
   const [summary, setSummary] = useState<AccountingSummary | null>(null)
+
+  // New states for Voranmeldung
+  const [newIncome, setNewIncome] = useState({ description: '', amount: '', date: new Date().toISOString().split('T')[0] })
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadMeta, setUploadMeta] = useState({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
 
   // Filter states
   const [filter, setFilter] = useState<AccountingFilter>({
@@ -69,34 +96,53 @@ export default function BuchhaltungPage() {
   const loadAccountingData = async () => {
     try {
       setLoading(true)
-      
+
+      const queryParams = new URLSearchParams({
+        startDate: filter.startDate || '',
+        endDate: filter.endDate || ''
+      })
+
       // Load invoices with filter
       const invoicesResponse = await authenticatedFetch('/api/accounting/invoices?' + new URLSearchParams({
-        startDate: filter.startDate || '',
-        endDate: filter.endDate || '',
+        ...Object.fromEntries(queryParams),
         status: filter.status?.join(',') || '',
         minAmount: filter.minAmount?.toString() || '',
         maxAmount: filter.maxAmount?.toString() || ''
       }))
 
-      // Load expenses with filter
-      const expensesResponse = await authenticatedFetch('/api/accounting/expenses?' + new URLSearchParams({
-        startDate: filter.startDate || '',
-        endDate: filter.endDate || ''
-      }))
+      // Load expenses
+      const expensesResponse = await authenticatedFetch('/api/accounting/expenses?' + queryParams)
+
+      // Load additional income
+      const incomeResponse = await authenticatedFetch('/api/accounting/additional-income?' + queryParams)
+
+      // Load receipts
+      const receiptsResponse = await authenticatedFetch('/api/accounting/receipts?' + queryParams)
 
       if (invoicesResponse.ok && expensesResponse.ok) {
         const invoicesData = await invoicesResponse.json()
         const expensesData = await expensesResponse.json()
-        
+        const incomeData = incomeResponse.ok ? await incomeResponse.json() : []
+        const receiptsData = receiptsResponse.ok ? await receiptsResponse.json() : []
+
         setInvoices(invoicesData.invoices || [])
         setExpenses(expensesData.expenses || [])
-        
+        setAdditionalIncomes(incomeData || [])
+        setReceipts(receiptsData || [])
+
         // Calculate summary
         const calculatedSummary = calculateAccountingSummary(
-          invoicesData.invoices || [], 
+          invoicesData.invoices || [],
           expensesData.expenses || []
         )
+
+        // Adjust summary with additional income
+        if (incomeData && incomeData.length > 0) {
+          const additionalTotal = incomeData.reduce((sum: number, inc: AdditionalIncome) => sum + Number(inc.amount), 0)
+          calculatedSummary.totalRevenue += additionalTotal
+          calculatedSummary.netIncome += additionalTotal
+        }
+
         setSummary(calculatedSummary)
       } else {
         console.error('Failed to load accounting data')
@@ -105,6 +151,55 @@ export default function BuchhaltungPage() {
       console.error('Error loading accounting data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAddIncome = async () => {
+    try {
+      if (!newIncome.description || !newIncome.amount) return
+
+      const response = await authenticatedFetch('/api/accounting/additional-income', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newIncome)
+      })
+
+      if (response.ok) {
+        setNewIncome({ description: '', amount: '', date: new Date().toISOString().split('T')[0] })
+        loadAccountingData()
+      }
+    } catch (error) {
+      console.error('Error adding income:', error)
+    }
+  }
+
+  const handleUploadReceipt = async () => {
+    try {
+      if (!uploadFile) return
+
+      // In a real app, use FormData and upload to a storage service
+      // Here we simulate it or use a simple base64/text approach if small
+      // For now, we'll just store metadata and a fake URL
+
+      const response = await authenticatedFetch('/api/accounting/receipts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: uploadFile.name,
+          url: `/uploads/${uploadFile.name}`, // Mock URL
+          size: uploadFile.size,
+          mimeType: uploadFile.type,
+          ...uploadMeta
+        })
+      })
+
+      if (response.ok) {
+        setUploadFile(null)
+        setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+        loadAccountingData()
+      }
+    } catch (error) {
+      console.error('Error uploading receipt:', error)
     }
   }
 
@@ -139,7 +234,7 @@ export default function BuchhaltungPage() {
   const handleExport = async (format: ExportFormat) => {
     try {
       setExporting(true)
-      
+
       const response = await authenticatedFetch('/api/accounting/export', {
         method: 'POST',
         headers: {
@@ -150,6 +245,7 @@ export default function BuchhaltungPage() {
           filter,
           invoices,
           expenses,
+          additionalIncomes,
           summary
         })
       })
@@ -246,330 +342,561 @@ export default function BuchhaltungPage() {
           </p>
         </div>
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="w-5 h-5" />
-            <span>Filter & Zeitraum</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label htmlFor="period">Zeitraum</Label>
-              <Select
-                value={filter.period}
-                onValueChange={(value: AccountingPeriod) => handlePeriodChange(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Aktueller Monat</SelectItem>
-                  <SelectItem value="quarter">Aktuelles Quartal</SelectItem>
-                  <SelectItem value="year">Aktuelles Jahr</SelectItem>
-                  <SelectItem value="custom">Benutzerdefiniert</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="startDate">Von</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={filter.startDate}
-                onChange={(e) => setFilter(prev => ({ ...prev, startDate: e.target.value }))}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="endDate">Bis</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={filter.endDate}
-                onChange={(e) => setFilter(prev => ({ ...prev, endDate: e.target.value }))}
-              />
-            </div>
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Filter className="w-5 h-5" />
+              <span>Filter & Zeitraum</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="period">Zeitraum</Label>
+                <Select
+                  value={filter.period}
+                  onValueChange={(value: AccountingPeriod) => handlePeriodChange(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">Aktueller Monat</SelectItem>
+                    <SelectItem value="quarter">Aktuelles Quartal</SelectItem>
+                    <SelectItem value="year">Aktuelles Jahr</SelectItem>
+                    <SelectItem value="custom">Benutzerdefiniert</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={filter.status?.join(',') || 'all'}
-                onValueChange={(value) => setFilter(prev => ({ 
-                  ...prev, 
-                  status: value === 'all' ? [] : value.split(',') as InvoiceStatus[]
-                }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Status</SelectItem>
-                  <SelectItem value="offen">Offen</SelectItem>
-                  <SelectItem value="bezahlt">Bezahlt</SelectItem>
-                  <SelectItem value="erstattet">Erstattet</SelectItem>
-                  <SelectItem value="storniert">Storniert</SelectItem>
-                  <SelectItem value="überfällig">Überfällig</SelectItem>
-                </SelectContent>
-              </Select>
+              <div>
+                <Label htmlFor="startDate">Von</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={filter.startDate}
+                  onChange={(e) => setFilter(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="endDate">Bis</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={filter.endDate}
+                  onChange={(e) => setFilter(prev => ({ ...prev, endDate: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={filter.status?.join(',') || 'all'}
+                  onValueChange={(value) => setFilter(prev => ({
+                    ...prev,
+                    status: value === 'all' ? [] : value.split(',') as InvoiceStatus[]
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Alle Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Status</SelectItem>
+                    <SelectItem value="offen">Offen</SelectItem>
+                    <SelectItem value="bezahlt">Bezahlt</SelectItem>
+                    <SelectItem value="erstattet">Erstattet</SelectItem>
+                    <SelectItem value="storniert">Storniert</SelectItem>
+                    <SelectItem value="überfällig">Überfällig</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Summary Cards */}
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Einnahmen</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  €{summary.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-gray-600">
+                  {summary.paidInvoices.count} bezahlte Rechnungen
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Ausgaben</CardTitle>
+                <TrendingDown className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  €{summary.totalExpenses.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Betriebsausgaben
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Nettoeinkommen</CardTitle>
+                <Euro className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${summary.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  €{summary.netIncome.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Einnahmen - Ausgaben
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Umsatzsteuer</CardTitle>
+                <FileText className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  €{summary.totalTax.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Vereinnahmt - Vorsteuer
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Einnahmen</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                €{summary.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-gray-600">
-                {summary.paidInvoices.count} bezahlte Rechnungen
-              </p>
-            </CardContent>
-          </Card>
+        {/* Export Buttons */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Download className="w-5 h-5" />
+              <span>Export für Steuerberater</span>
+            </CardTitle>
+            <CardDescription>
+              Exportieren Sie alle Daten in verschiedenen Formaten für Ihren Steuerberater
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+                className="flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>CSV Export</span>
+              </Button>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ausgaben</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                €{summary.totalExpenses.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-gray-600">
-                Betriebsausgaben
-              </p>
-            </CardContent>
-          </Card>
+              <Button
+                onClick={() => handleExport('excel')}
+                disabled={exporting}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Excel Export</span>
+              </Button>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Nettoeinkommen</CardTitle>
-              <Euro className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${summary.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{summary.netIncome.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-gray-600">
-                Einnahmen - Ausgaben
-              </p>
-            </CardContent>
-          </Card>
+              <Button
+                onClick={() => handleExport('pdf')}
+                disabled={exporting}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>PDF Bericht</span>
+              </Button>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Umsatzsteuer</CardTitle>
-              <FileText className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                €{summary.totalTax.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-              </div>
-              <p className="text-xs text-gray-600">
-                Vereinnahmt - Vorsteuer
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Export Buttons */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Download className="w-5 h-5" />
-            <span>Export für Steuerberater</span>
-          </CardTitle>
-          <CardDescription>
-            Exportieren Sie alle Daten in verschiedenen Formaten für Ihren Steuerberater
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => handleExport('csv')}
-              disabled={exporting}
-              className="flex items-center space-x-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>CSV Export</span>
-            </Button>
-            
-            <Button
-              onClick={() => handleExport('excel')}
-              disabled={exporting}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Excel Export</span>
-            </Button>
-            
-            <Button
-              onClick={() => handleExport('pdf')}
-              disabled={exporting}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <FileText className="w-4 h-4" />
-              <span>PDF Bericht</span>
-            </Button>
-            
-            <Button
-              onClick={() => handleExport('datev')}
-              disabled={exporting}
-              variant="outline"
-              className="flex items-center space-x-2 bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
-            >
-              <Calculator className="w-4 h-4" />
-              <span>DATEV Export</span>
-            </Button>
-          </div>
-          
-          {exporting && (
-            <div className="mt-4 flex items-center space-x-2 text-blue-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-sm">Export wird vorbereitet...</span>
+              <Button
+                onClick={() => handleExport('datev')}
+                disabled={exporting}
+                variant="outline"
+                className="flex items-center space-x-2 bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+              >
+                <Calculator className="w-4 h-4" />
+                <span>DATEV Export</span>
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Data Tables */}
-      <Tabs defaultValue="invoices" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="invoices">Rechnungen ({invoices.length})</TabsTrigger>
-          <TabsTrigger value="expenses">Ausgaben ({expenses.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="invoices">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rechnungen</CardTitle>
-              <CardDescription>
-                Alle Rechnungen im gewählten Zeitraum
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Rechnungsnr.</TableHead>
-                    <TableHead>Kunde</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Fällig</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
-                    <TableHead className="text-right">MwSt</TableHead>
-                    <TableHead className="text-right">Brutto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                      <TableCell>{invoice.customerName}</TableCell>
-                      <TableCell>{new Date(invoice.date).toLocaleDateString('de-DE')}</TableCell>
-                      <TableCell>{new Date(invoice.dueDate).toLocaleDateString('de-DE')}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(invoice.status)}>
-                          {getInvoiceStatusLabel(invoice.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">€{invoice.subtotal.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">€{invoice.taxAmount.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">€{invoice.totalAmount.toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              {invoices.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  Keine Rechnungen im gewählten Zeitraum gefunden
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="expenses">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Ausgaben</CardTitle>
-                  <CardDescription>
-                    Alle Betriebsausgaben im gewählten Zeitraum
-                  </CardDescription>
-                </div>
-                <Link href="/buchhaltung/ausgaben/new">
-                  <Button className="flex items-center space-x-2">
-                    <Plus className="w-4 h-4" />
-                    <span>Ausgabe hinzufügen</span>
-                  </Button>
-                </Link>
+            {exporting && (
+              <div className="mt-4 flex items-center space-x-2 text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm">Export wird vorbereitet...</span>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Beschreibung</TableHead>
-                    <TableHead>Lieferant</TableHead>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
-                    <TableHead className="text-right">MwSt</TableHead>
-                    <TableHead className="text-right">Brutto</TableHead>
-                    <TableHead>Beleg</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell>{new Date(expense.date).toLocaleDateString('de-DE')}</TableCell>
-                      <TableCell>{expense.description}</TableCell>
-                      <TableCell>{expense.supplier}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{expense.category}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">€{expense.netAmount.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">€{expense.taxAmount.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">€{expense.totalAmount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        {expense.receiptUrl && (
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </TableCell>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Data Tables */}
+        <Tabs defaultValue="invoices" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="invoices">Rechnungen ({invoices.length})</TabsTrigger>
+            <TabsTrigger value="expenses">Ausgaben ({expenses.length})</TabsTrigger>
+            <TabsTrigger value="voranmeldung">Voranmeldung</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="invoices">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rechnungen</CardTitle>
+                <CardDescription>
+                  Alle Rechnungen im gewählten Zeitraum
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rechnungsnr.</TableHead>
+                      <TableHead>Kunde</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Fällig</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Netto</TableHead>
+                      <TableHead className="text-right">MwSt</TableHead>
+                      <TableHead className="text-right">Brutto</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              {expenses.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  Keine Ausgaben im gewählten Zeitraum gefunden
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                        <TableCell>{invoice.customerName}</TableCell>
+                        <TableCell>{new Date(invoice.date).toLocaleDateString('de-DE')}</TableCell>
+                        <TableCell>{new Date(invoice.dueDate).toLocaleDateString('de-DE')}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(invoice.status)}>
+                            {getInvoiceStatusLabel(invoice.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">€{invoice.subtotal.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">€{invoice.taxAmount.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-medium">€{invoice.totalAmount.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {invoices.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Keine Rechnungen im gewählten Zeitraum gefunden
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="expenses">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Ausgaben</CardTitle>
+                    <CardDescription>
+                      Alle Betriebsausgaben im gewählten Zeitraum
+                    </CardDescription>
+                  </div>
+                  <Link href="/buchhaltung/ausgaben/new">
+                    <Button className="flex items-center space-x-2">
+                      <Plus className="w-4 h-4" />
+                      <span>Ausgabe hinzufügen</span>
+                    </Button>
+                  </Link>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Beschreibung</TableHead>
+                      <TableHead>Lieferant</TableHead>
+                      <TableHead>Kategorie</TableHead>
+                      <TableHead className="text-right">Netto</TableHead>
+                      <TableHead className="text-right">MwSt</TableHead>
+                      <TableHead className="text-right">Brutto</TableHead>
+                      <TableHead>Beleg</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {expenses.map((expense) => (
+                      <TableRow key={expense.id}>
+                        <TableCell>{new Date(expense.date).toLocaleDateString('de-DE')}</TableCell>
+                        <TableCell>{expense.description}</TableCell>
+                        <TableCell>{expense.supplier}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{expense.category}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">€{Number(expense.netAmount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">€{Number(expense.taxAmount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-medium">€{Number(expense.totalAmount).toFixed(2)}</TableCell>
+                        <TableCell>
+                          {expense.receiptUrl && (
+                            <Button variant="outline" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {expenses.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Keine Ausgaben im gewählten Zeitraum gefunden
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="voranmeldung">
+            <div className="space-y-6">
+              {/* 1. KPIs */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Einnahmen</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      €{summary?.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Ausgaben</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      €{summary?.totalExpenses.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Steuerpflichtiger Gewinn/Verlust</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${summary && summary.netIncome >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                      €{summary?.netIncome.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* 2. Additional Income */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Zusätzliche Einkünfte</CardTitle>
+                  <CardDescription>Erfassen Sie hier weitere einkommensteuerrelevante Beträge.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4 items-end mb-6">
+                    <div className="grid w-full max-w-sm items-center gap-1.5">
+                      <Label htmlFor="income-desc">Beschreibung</Label>
+                      <Input
+                        id="income-desc"
+                        value={newIncome.description}
+                        onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })}
+                        placeholder="z.B. Mieteinnahmen"
+                      />
+                    </div>
+                    <div className="grid w-full max-w-xs items-center gap-1.5">
+                      <Label htmlFor="income-amount">Betrag (€)</Label>
+                      <Input
+                        id="income-amount"
+                        type="number"
+                        value={newIncome.amount}
+                        onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="grid w-full max-w-xs items-center gap-1.5">
+                      <Label htmlFor="income-date">Datum</Label>
+                      <Input
+                        id="income-date"
+                        type="date"
+                        value={newIncome.date}
+                        onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
+                      />
+                    </div>
+                    <Button onClick={handleAddIncome}>
+                      <Plus className="w-4 h-4 mr-2" /> Hinzufügen
+                    </Button>
+                  </div>
+
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Datum</TableHead>
+                        <TableHead>Beschreibung</TableHead>
+                        <TableHead className="text-right">Betrag</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {additionalIncomes.map((inc) => (
+                        <TableRow key={inc.id}>
+                          <TableCell>{new Date(inc.date).toLocaleDateString('de-DE')}</TableCell>
+                          <TableCell>{inc.description}</TableCell>
+                          <TableCell className="text-right">€{Number(inc.amount).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {additionalIncomes.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-gray-500">Keine Einträge vorhanden</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* 3. Receipt Upload */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Beleg-Upload</CardTitle>
+                  <CardDescription>Laden Sie Rechnungen und Belege für die Voranmeldung hoch.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                    <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
+                      <h3 className="font-medium">Neuer Upload</h3>
+                      <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="file">Datei (PDF, JPG, PNG, DOCX, XLSX)</Label>
+                        <Input
+                          id="file"
+                          type="file"
+                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                        />
+                      </div>
+                      <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="upload-desc">Beschreibung / Notiz</Label>
+                        <Input
+                          id="upload-desc"
+                          value={uploadMeta.description}
+                          onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
+                          placeholder="Kurze Beschreibung"
+                        />
+                      </div>
+                      <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="upload-cat">Zuordnung</Label>
+                        <Select
+                          value={uploadMeta.category}
+                          onValueChange={(val) => setUploadMeta({ ...uploadMeta, category: val })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="EXPENSE">Ausgabe</SelectItem>
+                            <SelectItem value="INCOME">Einnahme</SelectItem>
+                            <SelectItem value="OTHER">Sonstiges</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button onClick={handleUploadReceipt} disabled={!uploadFile} className="w-full">
+                        <Upload className="w-4 h-4 mr-2" /> Hochladen
+                      </Button>
+                    </div>
+
+                    <div>
+                      <h3 className="font-medium mb-4">Hochgeladene Belege</h3>
+                      <div className="border rounded-md">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Datei</TableHead>
+                              <TableHead>Datum</TableHead>
+                              <TableHead>Typ</TableHead>
+                              <TableHead>Notiz</TableHead>
+                              <TableHead></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {receipts.map((receipt) => (
+                              <TableRow key={receipt.id}>
+                                <TableCell className="font-medium truncate max-w-[150px]" title={receipt.filename}>
+                                  {receipt.filename}
+                                </TableCell>
+                                <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{receipt.category}</Badge>
+                                </TableCell>
+                                <TableCell className="truncate max-w-[150px]" title={receipt.description}>
+                                  {receipt.description}
+                                </TableCell>
+                                <TableCell>
+                                  <a href={receipt.url} target="_blank" rel="noopener noreferrer">
+                                    <Button variant="ghost" size="sm">
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                  </a>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {receipts.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center text-gray-500 py-4">Keine Belege hochgeladen</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 4. Import / Export */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Daten Import & Export</CardTitle>
+                  <CardDescription>Exportieren Sie Daten für Ihren Steuerberater oder importieren Sie externe Daten.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => handleExport('csv')}>
+                        <FileText className="w-4 h-4 mr-2" /> CSV Export
+                      </Button>
+                      <Button variant="outline" onClick={() => handleExport('excel')}>
+                        <BarChart3 className="w-4 h-4 mr-2" /> Excel Export
+                      </Button>
+                      <Button variant="outline" onClick={() => handleExport('pdf')}>
+                        <FileText className="w-4 h-4 mr-2" /> PDF Bericht
+                      </Button>
+                    </div>
+                    <Separator orientation="vertical" className="h-10" />
+                    <div className="flex gap-2 items-center">
+                      <Button variant="secondary">
+                        <Upload className="w-4 h-4 mr-2" /> Importieren (CSV/Excel)
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

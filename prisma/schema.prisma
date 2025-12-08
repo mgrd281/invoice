@@ -89,6 +89,9 @@ model Organization {
   dunningSettings DunningSettings?
   dunningTemplates DunningTemplate[]
   marketingSettings MarketingSettings?
+  expenses          Expense[]
+  additionalIncomes AdditionalIncome[]
+  receipts          Receipt[]
 }
 
 model Account {
@@ -491,6 +494,56 @@ model MarketingSettings {
   fpdEmailSubject  String  @default("Ihr persönlicher 10%-Rabattcode als Dankeschön 🎁")
   fpdEmailBody     String  @db.Text 
   
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Expense {
+  id                String       @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  expenseNumber     String
+  date              DateTime
+  category          String
+  description       String
+  supplier          String
+  supplierTaxId     String?
+  netAmount         Decimal      @db.Decimal(10, 2)
+  taxRate           Decimal      @db.Decimal(5, 2)
+  taxAmount         Decimal      @db.Decimal(10, 2)
+  totalAmount       Decimal      @db.Decimal(10, 2)
+  receiptUrl        String?
+  receiptFileName   String?
+  accountingAccount String?
+  costCenter        String?
+  bookingText       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model AdditionalIncome {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  date           DateTime
+  description    String
+  amount         Decimal      @db.Decimal(10, 2)
+  type           String       // "INCOME" or "OTHER"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Receipt {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  filename       String
+  url            String
+  mimeType       String?
+  size           Int?
+  date           DateTime
+  description    String?
+  category       String?      // "INCOME", "EXPENSE", "OTHER"
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }

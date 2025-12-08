@@ -78,12 +78,15 @@ export default function MarketingSettingsPage() {
                 body: JSON.stringify(settings)
             })
 
-            if (!response.ok) throw new Error('Failed to save')
+            if (!response.ok) {
+                const data = await response.json()
+                throw new Error(data.error || 'Failed to save')
+            }
 
             showToast('Einstellungen erfolgreich gespeichert', 'success')
         } catch (error) {
             console.error('Error saving settings:', error)
-            showToast('Fehler beim Speichern', 'error')
+            showToast(error instanceof Error ? error.message : 'Fehler beim Speichern', 'error')
         } finally {
             setSaving(false)
         }

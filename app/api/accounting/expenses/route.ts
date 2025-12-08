@@ -1,83 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth-middleware'
-import { Expense, ExpenseCategory } from '@/lib/accounting-types'
-
-// Global storage for expenses (in production, use database)
-declare global {
-  var expenses: Expense[] | undefined
-}
-
-// Initialize global storage with some sample data
-if (!global.expenses) {
-  global.expenses = [
-    {
-      id: 'exp-1',
-      expenseNumber: 'EXP-2025-001',
-      date: '2025-01-15',
-      category: 'office' as ExpenseCategory,
-      description: 'Büromaterial und Schreibwaren',
-      supplier: 'Office Depot GmbH',
-      supplierTaxId: 'DE123456789',
-      netAmount: 84.03,
-      taxRate: 19,
-      taxAmount: 15.97,
-      totalAmount: 100.00,
-      receiptUrl: '/receipts/office-depot-001.pdf',
-      receiptFileName: 'office-depot-001.pdf',
-      accountingAccount: '6815',
-      costCenter: 'ADMIN',
-      bookingText: 'Büromaterial Office Depot',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'exp-2',
-      expenseNumber: 'EXP-2025-002',
-      date: '2025-01-10',
-      category: 'utilities' as ExpenseCategory,
-      description: 'Büro-Internet und Telefon',
-      supplier: 'Telekom Deutschland GmbH',
-      supplierTaxId: 'DE987654321',
-      netAmount: 42.02,
-      taxRate: 19,
-      taxAmount: 7.98,
-      totalAmount: 50.00,
-      receiptUrl: '/receipts/telekom-001.pdf',
-      receiptFileName: 'telekom-001.pdf',
-      accountingAccount: '6400',
-      costCenter: 'ADMIN',
-      bookingText: 'Internet/Telefon Telekom',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'exp-3',
-      expenseNumber: 'EXP-2025-003',
-      date: '2025-01-08',
-      category: 'professional_services' as ExpenseCategory,
-      description: 'Steuerberatung Q4 2024',
-      supplier: 'Steuerberatung Müller & Partner',
-      supplierTaxId: 'DE456789123',
-      netAmount: 420.17,
-      taxRate: 19,
-      taxAmount: 79.83,
-      totalAmount: 500.00,
-      receiptUrl: '/receipts/steuerberater-001.pdf',
-      receiptFileName: 'steuerberater-001.pdf',
-      accountingAccount: '6420',
-      costCenter: 'ADMIN',
-      bookingText: 'Steuerberatung Q4/2024',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ]
-}
+import { prisma } from '@/lib/prisma'
+import { getServerAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
+    const auth = await getServerAuth()
+    if (!auth.isAuthenticated || !auth.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -85,31 +14,37 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const category = searchParams.get('category')
 
-    let expenses = global.expenses || []
+    const organization = await prisma.organization.findFirst({
+      where: { users: { some: { id: String(auth.user.id) } } }
+    }) || await prisma.organization.findFirst()
 
-    // Apply filters
-    let filteredExpenses = expenses
+    if (!organization) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
 
-    // Date filter
+    const where: any = {
+      organizationId: organization.id
+    }
+
     if (startDate) {
-      filteredExpenses = filteredExpenses.filter(exp => exp.date >= startDate)
+      where.date = { ...where.date, gte: new Date(startDate) }
     }
     if (endDate) {
-      filteredExpenses = filteredExpenses.filter(exp => exp.date <= endDate)
+      where.date = { ...where.date, lte: new Date(endDate) }
+    }
+    if (category) {
+      where.category = category
     }
 
-    // Category filter
-    if (category && category !== '') {
-      filteredExpenses = filteredExpenses.filter(exp => exp.category === category)
-    }
-
-    // Sort by date (newest first)
-    filteredExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const expenses = await prisma.expense.findMany({
+      where,
+      orderBy: { date: 'desc' }
+    })
 
     return NextResponse.json({
       success: true,
-      expenses: filteredExpenses,
-      total: filteredExpenses.length
+      expenses,
+      total: expenses.length
     })
 
   } catch (error) {
@@ -123,9 +58,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
+    const auth = await getServerAuth()
+    if (!auth.isAuthenticated || !auth.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const expenseData = await request.json()
@@ -138,33 +73,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique ID and expense number
-    const newId = `exp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const expenseNumber = `EXP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+    const organization = await prisma.organization.findFirst({
+      where: { users: { some: { id: String(auth.user.id) } } }
+    }) || await prisma.organization.findFirst()
 
-    const newExpense: Expense = {
-      id: newId,
-      expenseNumber,
-      date: expenseData.date || new Date().toISOString().split('T')[0],
-      category: expenseData.category || 'other',
-      description: expenseData.description,
-      supplier: expenseData.supplier,
-      supplierTaxId: expenseData.supplierTaxId || '',
-      netAmount: expenseData.netAmount || 0,
-      taxRate: expenseData.taxRate || 19,
-      taxAmount: expenseData.taxAmount || 0,
-      totalAmount: expenseData.totalAmount,
-      receiptUrl: expenseData.receiptUrl,
-      receiptFileName: expenseData.receiptFileName,
-      accountingAccount: expenseData.accountingAccount || '6815',
-      costCenter: expenseData.costCenter || 'ADMIN',
-      bookingText: expenseData.bookingText || expenseData.description,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    if (!organization) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Add to global storage
-    global.expenses = [...(global.expenses || []), newExpense]
+    // Generate expense number
+    const expenseNumber = `EXP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+
+    const newExpense = await prisma.expense.create({
+      data: {
+        organizationId: organization.id,
+        expenseNumber,
+        date: new Date(expenseData.date || new Date()),
+        category: expenseData.category || 'other',
+        description: expenseData.description,
+        supplier: expenseData.supplier,
+        supplierTaxId: expenseData.supplierTaxId || '',
+        netAmount: parseFloat(expenseData.netAmount || 0),
+        taxRate: parseFloat(expenseData.taxRate || 19),
+        taxAmount: parseFloat(expenseData.taxAmount || 0),
+        totalAmount: parseFloat(expenseData.totalAmount),
+        receiptUrl: expenseData.receiptUrl,
+        receiptFileName: expenseData.receiptFileName,
+        accountingAccount: expenseData.accountingAccount || '6815',
+        costCenter: expenseData.costCenter || 'ADMIN',
+        bookingText: expenseData.bookingText || expenseData.description,
+      }
+    })
 
     return NextResponse.json({
       success: true,

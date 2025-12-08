@@ -63,30 +63,42 @@ export async function PUT(req: Request) {
     try {
         const org = await getDefaultOrganization()
         const body = await req.json()
+        console.log('Received marketing settings update:', body)
+
         const { fpdEnabled, fpdPercentage, fpdValidityDays, fpdEmailSubject, fpdEmailBody } = body
+
+        // Validate and cast types
+        const percentage = parseInt(String(fpdPercentage), 10)
+        const validity = parseInt(String(fpdValidityDays), 10)
+
+        if (isNaN(percentage) || isNaN(validity)) {
+            return NextResponse.json({ error: 'Invalid number format' }, { status: 400 })
+        }
 
         const settings = await prisma.marketingSettings.upsert({
             where: { organizationId: org.id },
             update: {
-                fpdEnabled,
-                fpdPercentage,
-                fpdValidityDays,
-                fpdEmailSubject,
-                fpdEmailBody
+                fpdEnabled: Boolean(fpdEnabled),
+                fpdPercentage: percentage,
+                fpdValidityDays: validity,
+                fpdEmailSubject: String(fpdEmailSubject || ''),
+                fpdEmailBody: String(fpdEmailBody || '')
             },
             create: {
                 organizationId: org.id,
-                fpdEnabled,
-                fpdPercentage,
-                fpdValidityDays,
-                fpdEmailSubject,
-                fpdEmailBody
+                fpdEnabled: Boolean(fpdEnabled),
+                fpdPercentage: percentage,
+                fpdValidityDays: validity,
+                fpdEmailSubject: String(fpdEmailSubject || ''),
+                fpdEmailBody: String(fpdEmailBody || '')
             }
         })
 
         return NextResponse.json(settings)
     } catch (error) {
         console.error('Error updating marketing settings:', error)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({
+            error: error instanceof Error ? error.message : 'Unknown error occurred'
+        }, { status: 500 })
     }
 }
