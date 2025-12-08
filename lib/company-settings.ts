@@ -1,8 +1,8 @@
 // Default company settings
 export const DEFAULT_COMPANY_SETTINGS = {
   id: 'default-org',
-  companyName: 'Karina Khrystych', // Renamed from 'name' to match settings page
-  name: 'Karina Khrystych', // Keep for backward compatibility
+  companyName: 'KARINEX', // Renamed from 'name' to match settings page
+  name: 'KARINEX', // Keep for backward compatibility
   taxNumber: 'DE452578048', // Renamed from 'taxId' to match settings page
   taxId: 'DE452578048', // Keep for backward compatibility
   address: 'Havighorster Redder 51',
@@ -68,12 +68,12 @@ export function updateCompanySettings(settings: Partial<typeof DEFAULT_COMPANY_S
   if (!global.companySettings) {
     global.companySettings = { ...DEFAULT_COMPANY_SETTINGS }
   }
-  
+
   global.companySettings = {
     ...global.companySettings,
     ...settings
   }
-  
+
   return global.companySettings
 }
 

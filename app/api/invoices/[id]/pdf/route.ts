@@ -64,7 +64,8 @@ export async function GET(
                 description: item.description,
                 quantity: Number(item.quantity),
                 unitPrice: Number(item.unitPrice),
-                total: Number(item.netAmount) // Use netAmount for item total in the PDF generator logic
+                total: Number(item.netAmount), // Use netAmount for item total in the PDF generator logic
+                ean: item.ean || undefined
             }))
         }
 
