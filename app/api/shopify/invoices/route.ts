@@ -53,12 +53,19 @@ export async function GET(req: NextRequest) {
                         'bg-yellow-100 text-yellow-800'
         }));
 
+        let plan = organization.plan;
+
+        // Hardcode Enterprise for the admin shop
+        if (shop === '45dv93-bk.myshopify.com') {
+            plan = 'ENTERPRISE';
+        }
+
         return NextResponse.json({
             invoices: mappedInvoices,
             userEmail: userEmail,
             organizationName: organization.name,
             logoUrl: organization.logoUrl,
-            plan: organization.plan
+            plan: plan
         });
 
     } catch (error) {
