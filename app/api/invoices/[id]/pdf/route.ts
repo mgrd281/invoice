@@ -1,79 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { prisma } from '@/lib/prisma'
+
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: { id: string } }
 ) {
-  try {
-    const invoiceId = params.id
+    try {
+        const invoiceId = params.id
 
-    // Generate HTML content for the invoice that can be converted to PDF on the client side
-    
-    // Mock invoice data - in real app, fetch from database
-    const invoiceData = {
-      id: invoiceId,
-      number: 'RE-2024-001',
-      date: '2024-01-15',
-      dueDate: '2024-01-29',
-      subtotal: 100.00,
-      taxRate: 19,
-      taxAmount: 19.00,
-      total: 119.00,
-      status: 'Bezahlt',
-      customer: {
-        name: 'Max Mustermann',
-        email: 'max.mustermann@email.com',
-        address: 'Musterstraße 123',
-        zipCode: '12345',
-        city: 'Berlin',
-        country: 'Deutschland'
-      },
-      organization: {
-        name: 'Muster GmbH',
-        address: 'Geschäftsstraße 456',
-        zipCode: '54321',
-        city: 'Hamburg',
-        country: 'Deutschland',
-        taxId: 'DE123456789',
-        bankName: 'Deutsche Bank',
-        iban: 'DE89 3704 0044 0532 0130 00',
-        bic: 'COBADEFFXXX'
-      },
-      items: [
-        {
-          description: 'Webentwicklung - Monat Januar',
-          quantity: 1,
-          unitPrice: 100.00,
-          total: 100.00
+        // Fetch real invoice data
+        const invoice = await prisma.invoice.findUnique({
+            where: { id: invoiceId },
+            include: {
+                customer: true,
+                items: true,
+                organization: true
+            }
+        })
+
+        if (!invoice) {
+            return NextResponse.json(
+                { error: 'Invoice not found' },
+                { status: 404 }
+            )
         }
-      ]
+
+        // Map database data to the format expected by the template
+        const invoiceData = {
+            id: invoice.id,
+            number: invoice.invoiceNumber,
+            date: invoice.issueDate,
+            dueDate: invoice.dueDate,
+            subtotal: Number(invoice.totalNet),
+            taxRate: 19, // Default to 19% if not stored, or calculate
+            taxAmount: Number(invoice.totalTax),
+            total: Number(invoice.totalGross),
+            status: invoice.status,
+            customer: {
+                name: invoice.customer.name,
+                email: invoice.customer.email,
+                address: invoice.customer.addressLine1 || '',
+                zipCode: invoice.customer.postalCode || '',
+                city: invoice.customer.city || '',
+                country: invoice.customer.country || 'Deutschland'
+            },
+            organization: {
+                name: invoice.organization.name,
+                address: invoice.organization.street || '',
+                zipCode: invoice.organization.postalCode || '',
+                city: invoice.organization.city || '',
+                country: invoice.organization.country || 'Deutschland',
+                taxId: invoice.organization.taxId || '',
+                bankName: invoice.organization.bankName || '',
+                iban: invoice.organization.iban || '',
+                bic: invoice.organization.bic || ''
+            },
+            items: invoice.items.map(item => ({
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: Number(item.unitPrice),
+                total: Number(item.totalPrice)
+            }))
+        }
+
+        // Generate HTML content for the invoice
+        const htmlContent = generateInvoiceHTML(invoiceData)
+
+        // Return HTML with inline disposition for viewing
+        const response = new NextResponse(htmlContent, {
+            headers: {
+                'Content-Type': 'text/html; charset=utf-8',
+                'Content-Disposition': `inline; filename="${invoiceData.number}.html"`,
+            },
+        })
+
+        return response
+
+    } catch (error) {
+        console.error('Error generating PDF:', error)
+        return NextResponse.json(
+            { error: 'Failed to generate PDF' },
+            { status: 500 }
+        )
     }
-
-    // Generate HTML content for the invoice
-    const htmlContent = generateInvoiceHTML(invoiceData)
-
-    // For now, we'll return the HTML as a simple text response
-    // In a real application, you'd convert this to PDF using a library
-    const response = new NextResponse(htmlContent, {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${invoiceData.number}.html"`,
-      },
-    })
-
-    return response
-
-  } catch (error) {
-    console.error('Error generating PDF:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate PDF' },
-      { status: 500 }
-    )
-  }
 }
 
 function generateInvoiceHTML(invoice: any): string {
-  return `
+    return `
 <!DOCTYPE html>
 <html lang="de">
 <head>
