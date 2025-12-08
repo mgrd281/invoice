@@ -140,23 +140,58 @@ export async function POST(request: NextRequest) {
       invoiceNumber,
       date,
       dueDate,
-      taxRate,
+      deliveryDate,
       customer,
       items,
-      subtotal,
-      taxAmount,
-      total,
+      settings,
       status,
-      document_kind,
-      reference_number,
-      original_invoice_date,
-      grund,
-      refund_amount
+      // Support both camelCase and snake_case
+      documentKind, document_kind,
+      referenceNumber, reference_number,
+      originalInvoiceDate, original_invoice_date,
+      reason, grund,
+      refundAmount, refund_amount
     } = body
+
+    // Calculate totals if not provided
+    // We assume items have total (gross) and we know tax rate from settings or default
+    const taxRate = settings?.vatRegulation === 'In Deutschland' ? 19 : 0 // Simplified logic
+
+    let totalGross = 0
+    let totalNet = 0
+    let totalTax = 0
+
+    const processedItems = items.map((item: any) => {
+      const quantity = Number(item.quantity)
+      const unitPrice = Number(item.unitPrice) // Net or Gross? Frontend says Net in table header, but logic was mixed.
+      // In the new frontend, we calculate item.total = quantity * unitPrice * (1-discount)
+      // And we sum up totals to get Net Total, then add VAT.
+      // So item.total is Net.
+
+      const net = Number(item.total)
+      const vatPercent = Number(item.vat || taxRate)
+      const tax = net * (vatPercent / 100)
+      const gross = net + tax
+
+      totalNet += net
+      totalTax += tax
+      totalGross += gross
+
+      return {
+        description: item.description,
+        quantity: quantity,
+        unitPrice: unitPrice,
+        taxRateId: null, // Will be set later
+        netAmount: net,
+        grossAmount: gross,
+        taxAmount: tax,
+        ean: item.ean
+      }
+    })
 
     // Ensure dependencies exist
     const org = await ensureOrganization()
-    const taxRateObj = await ensureTaxRate(org.id, taxRate || 19)
+    const taxRateObj = await ensureTaxRate(org.id, taxRate)
     const templateObj = await ensureDefaultTemplate(org.id)
     const customerObj = await ensureCustomer(org.id, customer)
 
@@ -169,32 +204,34 @@ export async function POST(request: NextRequest) {
         invoiceNumber: invoiceNumber,
         issueDate: new Date(date),
         dueDate: new Date(dueDate),
-        totalNet: subtotal,
-        totalGross: total,
-        totalTax: taxAmount,
-        status: mapFrontendStatusToPrisma(status),
-        documentKind: document_kind || 'INVOICE',
-        referenceNumber: reference_number,
-        originalDate: original_invoice_date ? new Date(original_invoice_date) : null,
-        reason: grund,
-        refundAmount: refund_amount,
+        serviceDate: deliveryDate ? new Date(deliveryDate) : undefined,
+        totalNet: totalNet,
+        totalGross: totalGross,
+        totalTax: totalTax,
+        status: mapFrontendStatusToPrisma(status || 'Offen'),
+        documentKind: documentKind || document_kind || 'INVOICE',
+        referenceNumber: referenceNumber || reference_number,
+        originalDate: (originalInvoiceDate || original_invoice_date) ? new Date(originalInvoiceDate || original_invoice_date) : null,
+        reason: reason || grund,
+        refundAmount: (refundAmount || refund_amount) ? Number(refundAmount || refund_amount) : null,
+
+        // New fields
+        headerSubject: settings?.headerSubject,
+        headerText: settings?.headerText,
+        footerText: settings?.footerText,
+        settings: settings || Prisma.JsonNull,
+
         items: {
-          create: items.map((item: any) => {
-            // Frontend sends gross totals (unitPrice * quantity)
-            const gross = item.total
-            const net = gross / (1 + (taxRate || 19) / 100)
-            const tax = gross - net
-            return {
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice, // Storing gross unit price
-              taxRateId: taxRateObj.id,
-              netAmount: net,
-              grossAmount: gross,
-              taxAmount: tax,
-              ean: item.ean
-            }
-          })
+          create: processedItems.map((item: any) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            taxRateId: taxRateObj.id,
+            netAmount: item.netAmount,
+            grossAmount: item.grossAmount,
+            taxAmount: item.taxAmount,
+            ean: item.ean
+          }))
         }
       } as any
     })

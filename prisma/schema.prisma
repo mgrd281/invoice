@@ -126,6 +126,7 @@ model Customer {
   organization      Organization @relation(fields: [organizationId], references: [id])
   name              String
   email             String?
+  phone             String?
   address           String
   zipCode           String
   city              String
@@ -215,6 +216,12 @@ model Invoice {
   originalDate    DateTime?
   reason          String?
   refundAmount    Decimal?      @db.Decimal(10, 2)
+  
+  // New fields for custom invoice text and settings
+  headerSubject   String?
+  headerText      String?       @db.Text
+  footerText      String?       @db.Text
+  settings        Json?         // Stores currency, skonto, internalContact, etc.
 
   @@unique([organizationId, invoiceNumber])
 }

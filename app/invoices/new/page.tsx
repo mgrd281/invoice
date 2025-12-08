@@ -9,7 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { FileText, ArrowLeft, Plus, Trash2, Save, Calculator, Bookmark, Download, QrCode } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  FileText, ArrowLeft, Plus, Trash2, Save, Calculator, Bookmark, Download, QrCode,
+  MoreHorizontal, Calendar, Search, Settings
+} from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { useAuth } from '@/hooks/use-auth-compat'
@@ -21,12 +25,16 @@ interface InvoiceItem {
   id: string
   description: string
   quantity: number
+  unit: string
   unitPrice: number
+  vat: number
+  discount: number
   total: number
   ean?: string
 }
 
 interface Customer {
+  type: 'organization' | 'person'
   name: string
   companyName: string
   email: string
@@ -47,8 +55,10 @@ interface ItemTemplate {
 export default function NewInvoicePage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
+  const { showToast } = useToast()
 
   const [customer, setCustomer] = useState<Customer>({
+    type: 'organization',
     name: '',
     companyName: '',
     email: '',
@@ -59,15 +69,28 @@ export default function NewInvoicePage() {
   })
 
   const [items, setItems] = useState<InvoiceItem[]>([
-    { id: '1', description: '', quantity: 1, unitPrice: 0, total: 0, ean: '' }
+    { id: '1', description: '', quantity: 1, unit: 'Stk', unitPrice: 0, vat: 19, discount: 0, total: 0, ean: '' }
   ])
 
-  // Invoice number generation removed - now manual input only
+  // Invoice settings
+  const [isERechnung, setIsERechnung] = useState(false)
+  const [currency, setCurrency] = useState('EUR')
+  const [skonto, setSkonto] = useState({ days: 0, percent: 0 })
+  const [internalContact, setInternalContact] = useState('')
+  const [revenueAccount, setRevenueAccount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('Kein Standard')
+  const [costCenter, setCostCenter] = useState('')
+  const [vatRegulation, setVatRegulation] = useState('In Deutschland')
 
   const [invoiceData, setInvoiceData] = useState({
-    invoiceNumber: '',
+    invoiceNumber: 'RE-1000',
     date: new Date().toISOString().split('T')[0],
+    deliveryDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    referenceNumber: '',
+    headerSubject: 'Rechnung Nr. RE-1000',
+    headerText: 'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
+    footerText: 'Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto.\nDer Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]',
     taxRate: 19,
     status: 'Offen'
   })
@@ -84,21 +107,8 @@ export default function NewInvoicePage() {
   const [invoiceTemplates, setInvoiceTemplates] = useState<RechnungsTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<RechnungsTemplate | null>(null)
 
-  // QR-Code payment settings
-  const [qrCodeSettings, setQrCodeSettings] = useState({
-    enabled: false,
-    paymentMethod: 'sepa', // 'sepa', 'paypal', 'custom'
-    iban: '',
-    bic: '',
-    paypalEmail: '',
-    customText: '',
-    recipientName: '',
-    placement: 'flex-beside-thanks' // 'flex-beside-thanks', 'left-below-table', 'top-right-outside-info', 'top-right-summary', 'bottom-right-footer'
-  })
-
   // Document Type Management
   const [documentKind, setDocumentKind] = useState<DocumentKind>(DocumentKind.INVOICE)
-  const [referenceNumber, setReferenceNumber] = useState('')
   const [originalInvoiceDate, setOriginalInvoiceDate] = useState('')
   const [reason, setReason] = useState('')
   const [refundAmount, setRefundAmount] = useState<string>('')
@@ -135,15 +145,23 @@ export default function NewInvoicePage() {
     }
   }
 
-  // Invoice number will be entered manually by user
-  // useEffect removed to disable automatic generation
+  // Update header subject when invoice number changes
+  useEffect(() => {
+    setInvoiceData(prev => ({
+      ...prev,
+      headerSubject: `Rechnung Nr. ${prev.invoiceNumber}`
+    }))
+  }, [invoiceData.invoiceNumber])
 
   const updateItem = (id: string, field: keyof InvoiceItem, value: string | number) => {
     setItems(items.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value }
-        if (field === 'quantity' || field === 'unitPrice') {
-          updatedItem.total = updatedItem.quantity * updatedItem.unitPrice
+
+        if (field === 'quantity' || field === 'unitPrice' || field === 'vat' || field === 'discount') {
+          const basePrice = updatedItem.quantity * updatedItem.unitPrice
+          const discountedPrice = basePrice * (1 - updatedItem.discount / 100)
+          updatedItem.total = discountedPrice
         }
         return updatedItem
       }
@@ -156,7 +174,10 @@ export default function NewInvoicePage() {
       id: Date.now().toString(),
       description: '',
       quantity: 1,
+      unit: 'Stk',
       unitPrice: 0,
+      vat: 19,
+      discount: 0,
       total: 0,
       ean: ''
     }
@@ -167,35 +188,6 @@ export default function NewInvoicePage() {
     setItems(items.filter(item => item.id !== id))
   }
 
-  // EAN validation function
-  const validateEAN = (ean: string): boolean => {
-    if (!ean || ean.trim() === '') return true // Empty EAN is valid (optional field)
-    const cleanEAN = ean.replace(/\D/g, '') // Remove non-digits
-    return [8, 12, 13, 14].includes(cleanEAN.length)
-  }
-
-  const getEANValidationMessage = (ean: string): string => {
-    if (!ean || ean.trim() === '') return ''
-    const cleanEAN = ean.replace(/\D/g, '')
-    if (![8, 12, 13, 14].includes(cleanEAN.length)) {
-      return 'EAN muss 8, 12, 13 oder 14 Ziffern haben'
-    }
-    return ''
-  }
-
-  // Status color function
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'Bezahlt': return 'bg-green-100 text-green-800'
-      case 'Erstattet': return 'bg-blue-100 text-blue-800'
-      case 'Storniert': return 'bg-gray-100 text-gray-800'
-      case 'Offen': return 'bg-gray-100 text-gray-600'
-      case 'Mahnung': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-600'
-    }
-  }
-
-  // Item Template functions
   const saveItemTemplate = () => {
     if (!templateName.trim()) {
       alert('Bitte geben Sie einen Namen für die Vorlage ein')
@@ -226,47 +218,40 @@ export default function NewInvoicePage() {
   }
 
   const applyItemTemplate = (template: ItemTemplate) => {
-    // Apply template items
     setItems(template.items.map(item => ({
       ...item,
       id: `item-${Math.random().toString(36).substr(2, 9)}`
     })))
-
-    // Apply tax rate
     setInvoiceData(prev => ({ ...prev, taxRate: template.taxRate }))
-
     setShowApplyTemplateDialog(false)
   }
 
   const deleteItemTemplate = (templateId: string) => {
     if (!confirm('Möchten Sie diese Vorlage wirklich löschen?')) return
-
     const updatedTemplates = itemTemplates.filter((t: ItemTemplate) => t.id !== templateId)
     setItemTemplates(updatedTemplates)
     localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates))
     alert('Vorlage erfolgreich gelöscht!')
   }
 
-  // Brutto-Berechnung - Preise sind bereits Brutto (inkl. Steuer)
-  const grossTotal = items.reduce((sum, item) => sum + item.total, 0) // Gesamtsumme (Brutto)
-  const netTotal = grossTotal / (1 + invoiceData.taxRate / 100) // Nettosumme = Brutto / 1.19
-  const taxAmount = grossTotal - netTotal // Steuer = Brutto - Netto
+  // Brutto-Berechnung
+  const netTotal = items.reduce((sum, item) => sum + item.total, 0)
+
+  const totalVat = items.reduce((sum, item) => {
+    return sum + (item.total * (item.vat / 100))
+  }, 0)
+
+  const grossTotal = netTotal + totalVat
 
   // For display purposes
-  const subtotal = netTotal // Zwischensumme (Netto)
-  const total = grossTotal // Gesamtsumme (Brutto)
+  const subtotal = netTotal
+  const total = grossTotal
 
   const handleSave = async () => {
-    // Prevent multiple submissions
-    if (saving) {
-      console.log('Save already in progress, ignoring duplicate request')
-      return
-    }
-
+    if (saving) return
     setSaving(true)
 
     try {
-      // Validate required fields
       if (!invoiceData.invoiceNumber.trim()) {
         alert('Bitte geben Sie eine Rechnungsnummer ein')
         setSaving(false)
@@ -279,12 +264,6 @@ export default function NewInvoicePage() {
         return
       }
 
-      if (!customer.email.trim()) {
-        alert('Bitte geben Sie eine E-Mail-Adresse ein')
-        setSaving(false)
-        return
-      }
-
       const validItems = items.filter(item => item.description.trim() !== '')
       if (validItems.length === 0) {
         alert('Bitte fügen Sie mindestens eine Rechnungsposition hinzu')
@@ -292,846 +271,639 @@ export default function NewInvoicePage() {
         return
       }
 
-      // Use the manually entered invoice number
-      console.log('Creating invoice with data:', {
+      // Prepare data for API
+      const apiData = {
         invoiceNumber: invoiceData.invoiceNumber,
-        customer: customer.name,
-        itemCount: validItems.length,
-        total: total,
-        qrCodeSettings: qrCodeSettings
-      })
-
-      const invoicePayload = {
-        ...invoiceData,
-        // invoiceNumber already included in invoiceData
-        customer,
-        items: validItems,
-        subtotal,
-        taxAmount,
-        total,
-        status: invoiceData.status,
-        statusColor: getStatusColor(invoiceData.status),
-        // Include selected template information
-        templateId: selectedTemplate?.id,
-        templateName: selectedTemplate?.name,
-        templateType: selectedTemplate?.type,
-        // Include QR-Code payment settings
-        qrCodeSettings: qrCodeSettings.enabled ? qrCodeSettings : null,
-        // Document Type specific fields
-        document_kind: documentKind,
-        reference_number: referenceNumber,
-        original_invoice_date: originalInvoiceDate,
-        grund: reason,
-        refund_amount: refundAmount ? parseFloat(refundAmount) : undefined
+        date: invoiceData.date,
+        dueDate: invoiceData.dueDate,
+        deliveryDate: invoiceData.deliveryDate,
+        customer: {
+          name: customer.name,
+          companyName: customer.companyName,
+          email: customer.email,
+          address: customer.address,
+          zipCode: customer.zipCode,
+          city: customer.city,
+          country: customer.country,
+          type: customer.type
+        },
+        items: validItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          vat: item.vat,
+          discount: item.discount,
+          total: item.total
+        })),
+        settings: {
+          currency,
+          skonto,
+          internalContact,
+          revenueAccount,
+          paymentMethod,
+          costCenter,
+          vatRegulation,
+          headerSubject: invoiceData.headerSubject,
+          headerText: invoiceData.headerText,
+          footerText: invoiceData.footerText,
+          isERechnung
+        },
+        referenceNumber: invoiceData.referenceNumber,
+        documentKind: documentKind,
+        originalInvoiceDate: originalInvoiceDate,
+        reason: reason,
+        refundAmount: refundAmount
       }
 
       const response = await authenticatedFetch('/api/invoices', {
         method: 'POST',
-        body: JSON.stringify(invoicePayload),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(apiData)
       })
 
-      console.log('API Response status:', response.status)
+      const result = await response.json()
 
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Invoice created successfully:', result.id)
-
-        // Trigger dashboard update
-        DashboardUpdater.dispatchInvoiceCreated(result)
-
-        // Prevent further submissions by keeping saving state true
-        alert('Rechnung erfolgreich erstellt!')
-
-        // Disable the form completely to prevent any further submissions
-        const form = document.querySelector('form')
-        if (form) {
-          const inputs = form.querySelectorAll('input, button, select, textarea')
-          inputs.forEach(input => (input as HTMLElement).setAttribute('disabled', 'true'))
-        }
-
-        // Also disable the entire page to prevent any interaction
-        const overlay = document.createElement('div')
-        overlay.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.1);
-          z-index: 9999;
-          cursor: not-allowed;
-        `
-        document.body.appendChild(overlay)
-
-        // Use a longer timeout to ensure no race conditions
-        setTimeout(() => {
-          window.location.href = '/invoices'
-        }, 1500)
+      if (result.success) {
+        DashboardUpdater.triggerUpdate()
+        showToast('Rechnung erfolgreich erstellt', 'success')
+        window.location.href = '/invoices'
       } else {
-        const error = await response.json()
-        console.error('API Error:', error)
-        alert('Fehler beim Erstellen der Rechnung: ' + (error.error || 'Unbekannter Fehler'))
-        setSaving(false) // Re-enable button only on error
+        throw new Error(result.error || 'Fehler beim Erstellen der Rechnung')
       }
-
     } catch (error) {
-      console.error('Network error:', error)
-      alert('Netzwerkfehler beim Speichern der Rechnung')
-      setSaving(false) // Re-enable button only on error
+      console.error('Error creating invoice:', error)
+      showToast(
+        `Fehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        'error'
+      )
+      setSaving(false)
     }
-    // Note: We don't set setSaving(false) on success to prevent double submissions
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
               <Link href="/invoices">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück zu Rechnungen
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
               </Link>
-              <FileText className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">
-                Neue Rechnung erstellen
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
+              <div className="flex items-center gap-2 ml-4">
+                <Switch
+                  checked={isERechnung}
+                  onCheckedChange={setIsERechnung}
+                  id="e-rechnung"
+                />
+                <Label htmlFor="e-rechnung" className="text-sm font-medium text-gray-700">E-Rechnung</Label>
+              </div>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Speichern...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Rechnung speichern
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline">Vorschau</Button>
+              <Button variant="outline" onClick={handleSave} disabled={saving}>
+                {saving ? 'Speichern...' : 'Speichern'}
+              </Button>
+              <Button className="bg-slate-900 text-white hover:bg-slate-800">
+                Versenden / Drucken / Herunterladen
+              </Button>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Invoice Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Rechnungsdetails</CardTitle>
-                <CardDescription>
-                  Grundlegende Informationen zur Rechnung
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rechnungsnummer
-                  </label>
-                  <Input
-                    value={invoiceData.invoiceNumber}
-                    onChange={(e) => setInvoiceData({ ...invoiceData, invoiceNumber: e.target.value })}
-                    placeholder="z.B. RE-2025-001"
-                  />
-                </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-                <div className="md:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Dokument-Typ
-                  </label>
-                  <Select
-                    value={documentKind}
-                    onValueChange={(value) => setDocumentKind(value as DocumentKind)}
+        {/* Top Section: Recipient & Invoice Info */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+          {/* Empfänger */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Empfänger</h2>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <Label className="text-blue-600 font-medium">Kontakt *</Label>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${customer.type === 'organization' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
+                    onClick={() => setCustomer({ ...customer, type: 'organization' })}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Typ auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={DocumentKind.INVOICE}>Rechnung</SelectItem>
-                      <SelectItem value={DocumentKind.REFUND_FULL}>Gutschrift (Voll)</SelectItem>
-                      <SelectItem value={DocumentKind.REFUND_PARTIAL}>Gutschrift (Teilweise)</SelectItem>
-                      <SelectItem value={DocumentKind.CANCELLATION}>Stornorechnung</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    Organisation
+                  </button>
+                  <button
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${customer.type === 'person' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
+                    onClick={() => setCustomer({ ...customer, type: 'person' })}
+                  >
+                    Person
+                  </button>
                 </div>
+              </div>
 
-                {documentKind !== DocumentKind.INVOICE && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Original Rechnungs-Nr.
-                      </label>
-                      <Input
-                        value={referenceNumber}
-                        onChange={(e) => setReferenceNumber(e.target.value)}
-                        placeholder="z.B. RE-2025-001"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Original Datum
-                      </label>
-                      <Input
-                        type="date"
-                        value={originalInvoiceDate}
-                        onChange={(e) => setOriginalInvoiceDate(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Grund
-                      </label>
-                      <Input
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="z.B. Rücksendung, Fehler"
-                      />
-                    </div>
-                  </>
-                )}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rechnungsvorlage & Status
-                  </label>
+              <div className="relative">
+                <Input
+                  placeholder="Name"
+                  value={customer.name}
+                  onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                  className="pr-10"
+                />
+                <Button size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8 text-blue-600">
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <Label className="text-blue-600 font-medium">Anschrift *</Label>
+                <button className="text-xs text-gray-500 hover:text-gray-900 font-medium">Adresszusatz +</button>
+              </div>
+
+              <Input
+                placeholder="Straße und Hausnummer"
+                value={customer.address}
+                onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+              />
+
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  placeholder="Postleitzahl"
+                  value={customer.zipCode}
+                  onChange={(e) => setCustomer({ ...customer, zipCode: e.target.value })}
+                  className="col-span-1"
+                />
+                <Input
+                  placeholder="Ort"
+                  value={customer.city}
+                  onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
+                  className="col-span-2"
+                />
+              </div>
+
+              <Select
+                value={customer.country}
+                onValueChange={(value) => setCustomer({ ...customer, country: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Land" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DE">Deutschland</SelectItem>
+                  <SelectItem value="AT">Österreich</SelectItem>
+                  <SelectItem value="CH">Schweiz</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Rechnungsinformationen */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Rechnungsinformationen</h2>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-blue-600 font-medium">Rechnungsdatum *</Label>
                   <div className="relative">
-                    <Select
-                      value={selectedTemplate?.id || ''}
-                      onValueChange={(value) => {
-                        const template = invoiceTemplates.find(t => t.id === value)
-                        if (template) {
-                          setSelectedTemplate(template)
-
-                          // Auto-fill invoice data based on template defaults (with fallbacks for old templates)
-                          const defaults = template.defaults || {
-                            status: 'Offen',
-                            dueDays: 14,
-                            taxRate: 19,
-                            showBankDetails: true,
-                            showPaymentInstructions: true
-                          }
-
-                          setInvoiceData(prev => ({
-                            ...prev,
-                            status: defaults.status,
-                            taxRate: defaults.taxRate,
-                            dueDate: new Date(Date.now() + defaults.dueDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                          }))
-
-                          console.log(`✅ Template applied: ${template.name}`)
-                          console.log(`📋 Auto-filled: Status=${defaults.status}, Tax=${defaults.taxRate}%, Due=${defaults.dueDays} days`)
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-10 border border-gray-300 hover:border-gray-400 focus:border-blue-500 flex items-center">
-                        <SelectValue placeholder="Vorlage auswählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {invoiceTemplates.map((template) => {
-                          const defaults = template.defaults || { status: 'Offen' }
-                          const statusColor =
-                            defaults.status === 'Bezahlt' ? 'text-green-600' :
-                              defaults.status === 'Storniert' ? 'text-red-600' :
-                                defaults.status === 'Erstattet' ? 'text-purple-600' :
-                                  defaults.status === 'Mahnung' ? 'text-orange-600' :
-                                    'text-blue-600'
-
-                          // Remove status icons - clean text only
-
-                          return (
-                            <SelectItem key={template.id} value={template.id} className="py-2">
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center flex-1">
-                                  <div className={`w-2 h-2 rounded-full mr-3 ${defaults.status === 'Bezahlt' ? 'bg-green-500' :
-                                    defaults.status === 'Storniert' ? 'bg-red-500' :
-                                      defaults.status === 'Erstattet' ? 'bg-purple-500' :
-                                        defaults.status === 'Mahnung' ? 'bg-orange-500' :
-                                          'bg-blue-500'
-                                    }`}></div>
-                                  <div className="flex items-center">
-                                    <span className="font-medium text-sm">{template.name}</span>
-                                    {template.isDefault && (
-                                      <span className="ml-2 text-xs text-blue-600 font-medium">Standard</span>
-                                    )}
-                                  </div>
-                                </div>
-                                <span className={`ml-3 text-xs font-medium px-2 py-1 rounded ${defaults.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                                  defaults.status === 'Storniert' ? 'bg-red-100 text-red-700' :
-                                    defaults.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                                      defaults.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                                        'bg-blue-100 text-blue-700'
-                                  }`}>
-                                  {defaults.status}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                    {selectedTemplate && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Ausgewählt: <span className="font-medium">{selectedTemplate.name}</span></span>
-                          <span className={`text-xs px-2 py-1 rounded ${invoiceData.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                            invoiceData.status === 'Storniert' ? 'bg-red-100 text-red-700' :
-                              invoiceData.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                                invoiceData.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                                  'bg-blue-100 text-blue-700'
-                            }`}>
-                            {invoiceData.status}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <Input
+                      type="date"
+                      value={invoiceData.date}
+                      onChange={(e) => setInvoiceData({ ...invoiceData, date: e.target.value })}
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Steuersatz (%)
-                  </label>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label className="text-blue-600 font-medium">Lieferdatum *</Label>
+                    <button className="text-xs text-blue-600 hover:underline">Zeitraum</button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={invoiceData.deliveryDate}
+                      onChange={(e) => setInvoiceData({ ...invoiceData, deliveryDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-blue-600 font-medium">Rechnungsnummer *</Label>
+                  <div className="relative">
+                    <Input
+                      value={invoiceData.invoiceNumber}
+                      onChange={(e) => setInvoiceData({ ...invoiceData, invoiceNumber: e.target.value })}
+                    />
+                    <Settings className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 cursor-pointer" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Referenznummer</Label>
                   <Input
-                    type="number"
-                    value={invoiceData.taxRate}
-                    onChange={(e) => setInvoiceData({ ...invoiceData, taxRate: Number(e.target.value) })}
+                    value={invoiceData.referenceNumber}
+                    onChange={(e) => setInvoiceData({ ...invoiceData, referenceNumber: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rechnungsdatum
-                  </label>
-                  <Input
-                    type="date"
-                    value={invoiceData.date}
-                    onChange={(e) => setInvoiceData({ ...invoiceData, date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fälligkeitsdatum
-                  </label>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-600 font-medium">Zahlungsziel</Label>
+                <div className="flex items-center gap-2">
                   <Input
                     type="date"
                     value={invoiceData.dueDate}
                     onChange={(e) => setInvoiceData({ ...invoiceData, dueDate: e.target.value })}
+                    className="w-full"
                   />
+                  <span className="text-gray-600 whitespace-nowrap">in</span>
+                  <div className="bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-900 w-16 text-center">
+                    {Math.ceil((new Date(invoiceData.dueDate).getTime() - new Date(invoiceData.date).getTime()) / (1000 * 60 * 60 * 24))}
+                  </div>
+                  <span className="text-gray-600">Tagen</span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Customer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Kundeninformationen</CardTitle>
-                <CardDescription>
-                  Rechnungsempfänger Details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name
-                  </label>
-                  <Input
-                    value={customer.name}
-                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                    placeholder="z.B. Max Mustermann"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Firmenname
-                  </label>
-                  <Input
-                    value={customer.companyName}
-                    onChange={(e) => setCustomer({ ...customer, companyName: e.target.value })}
-                    placeholder="z.B. Mustermann GmbH"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    E-Mail-Adresse
-                  </label>
-                  <Input
-                    type="email"
-                    value={customer.email}
-                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-                    placeholder="kunde@beispiel.de"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Straße und Hausnummer
-                  </label>
-                  <Input
-                    value={customer.address}
-                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                    placeholder="Musterstraße 123"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    PLZ
-                  </label>
-                  <Input
-                    value={customer.zipCode}
-                    onChange={(e) => setCustomer({ ...customer, zipCode: e.target.value })}
-                    placeholder="12345"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Stadt
-                  </label>
-                  <Input
-                    value={customer.city}
-                    onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
-                    placeholder="Berlin"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Land
-                  </label>
-                  <Select
-                    value={customer.country}
-                    onValueChange={(value) => setCustomer({ ...customer, country: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Land auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DE">Deutschland</SelectItem>
-                      <SelectItem value="AT">Österreich</SelectItem>
-                      <SelectItem value="CH">Schweiz</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Kopftext */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Kopftext</h2>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-gray-600 font-medium">Betreff</Label>
+              <Input
+                value={invoiceData.headerSubject}
+                onChange={(e) => setInvoiceData({ ...invoiceData, headerSubject: e.target.value })}
+              />
+            </div>
+            <Textarea
+              value={invoiceData.headerText}
+              onChange={(e) => setInvoiceData({ ...invoiceData, headerText: e.target.value })}
+              className="min-h-[120px]"
+            />
+          </div>
+        </div>
 
-            {/* Invoice Items */}
-            <Card>
-              <CardHeader>
-                <div>
-                  <CardTitle>Rechnungspositionen</CardTitle>
-                  <CardDescription>
-                    Produkte und Dienstleistungen
-                  </CardDescription>
-                </div>
+        {/* Positionen */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900">Positionen</h2>
+            <div className="flex bg-white border border-gray-200 rounded-lg p-1">
+              <button className="px-3 py-1 text-sm font-medium text-gray-500 hover:text-gray-900">Brutto</button>
+              <button className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-900 rounded-md shadow-sm">Netto</button>
+            </div>
+          </div>
 
-                {/* Action Buttons Bar */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4">
-                  <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                        <Bookmark className="h-4 w-4 mr-2" />
-                        Vorlage speichern
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Vorlage speichern</DialogTitle>
-                        <DialogDescription>
-                          Speichern Sie die aktuellen Positionen als Vorlage für zukünftige Rechnungen.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="templateName">Name der Vorlage</Label>
-                          <Input
-                            id="templateName"
-                            value={templateName}
-                            onChange={(e) => setTemplateName(e.target.value)}
-                            placeholder="z.B. Standard Beratung"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>
-                            Abbrechen
-                          </Button>
-                          <Button onClick={saveItemTemplate}>
-                            Speichern
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Dialog open={showApplyTemplateDialog} onOpenChange={setShowApplyTemplateDialog}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                        <Download className="h-4 w-4 mr-2" />
-                        Vorlage anwenden
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Vorlage anwenden</DialogTitle>
-                        <DialogDescription>
-                          Wählen Sie eine gespeicherte Vorlage aus, um die Positionen zu übernehmen.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        {itemTemplates.length === 0 ? (
-                          <p className="text-gray-500 text-center py-4">
-                            Keine Vorlagen gespeichert
-                          </p>
-                        ) : (
-                          <div className="space-y-2">
-                            {itemTemplates.map((template: ItemTemplate) => (
-                              <div key={template.id} className="flex items-center justify-between p-3 border rounded">
-                                <div>
-                                  <h4 className="font-medium">{template.name}</h4>
-                                  <p className="text-sm text-gray-500">
-                                    {template.items.length} Position(en) • {template.taxRate}% MwSt.
-                                  </p>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => applyItemTemplate(template)}
-                                  >
-                                    Anwenden
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => deleteItemTemplate(template.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex justify-end">
-                          <Button variant="outline" onClick={() => setShowApplyTemplateDialog(false)}>
-                            Schließen
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Button onClick={addItem} variant="outline" size="sm" className="w-full sm:w-auto">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Position hinzufügen
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produkt oder Service</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Menge</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Einheit</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Preis (Netto)</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">USt.</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Rabatt</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Betrag</th>
+                    <th className="px-4 py-3 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
                   {items.map((item, index) => (
-                    <div key={item.id} className="border rounded-lg p-4 bg-gray-50">
-                      {/* First row: Description and EAN */}
-                      <div className="grid grid-cols-12 gap-4 mb-4">
-                        <div className="col-span-8">
-                          {index === 0 && (
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Beschreibung
-                            </label>
-                          )}
+                    <tr key={item.id} className="group hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-500">{index + 1}.</td>
+                      <td className="px-4 py-3">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                           <Input
                             value={item.description}
                             onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                            placeholder="Produktbeschreibung"
+                            placeholder="Produkt suchen"
+                            className="pl-9 border-gray-200 focus:border-blue-500"
                           />
                         </div>
-                        <div className="col-span-4">
-                          {index === 0 && (
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              EAN <span className="text-xs text-gray-500">(optional)</span>
-                            </label>
-                          )}
-                          <Input
-                            value={item.ean || ''}
-                            onChange={(e) => updateItem(item.id, 'ean', e.target.value)}
-                            placeholder="z.B. 1234567890123"
-                            className={!validateEAN(item.ean || '') ? 'border-yellow-300 bg-yellow-50' : ''}
-                          />
-                          {!validateEAN(item.ean || '') && (
-                            <p className="text-xs text-yellow-600 mt-1">
-                              {getEANValidationMessage(item.ean || '')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Second row: Quantity, Price, Total, Delete */}
-                      <div className="grid grid-cols-12 gap-4 items-end">
-                        <div className="col-span-2">
-                          {index === 0 && (
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Menge
-                            </label>
-                          )}
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          {index === 0 && (
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Einzelpreis (€) <span className="text-xs text-blue-600">inkl. 19% MwSt</span>
-                            </label>
-                          )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                          className="text-right"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Select
+                          value={item.unit || 'Stk'}
+                          onValueChange={(value) => updateItem(item.id, 'unit', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Stk">Stk</SelectItem>
+                            <SelectItem value="Std">Std</SelectItem>
+                            <SelectItem value="Tag">Tag</SelectItem>
+                            <SelectItem value="Psch">Psch</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="relative">
                           <Input
                             type="number"
-                            step="0.01"
-                            min="0"
                             value={item.unitPrice}
-                            onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
+                            onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className="text-right pr-8"
                           />
+                          <span className="absolute right-3 top-2.5 text-gray-500 text-sm">€</span>
                         </div>
-                        <div className="col-span-3">
-                          {index === 0 && (
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Gesamt (€)
-                            </label>
-                          )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="relative">
                           <Input
-                            value={item.total.toFixed(2)}
-                            readOnly
-                            className="bg-gray-100"
+                            type="number"
+                            value={item.vat}
+                            onChange={(e) => updateItem(item.id, 'vat', parseFloat(e.target.value) || 0)}
+                            className="text-right pr-6"
                           />
+                          <span className="absolute right-3 top-2.5 text-gray-500 text-sm">%</span>
                         </div>
-                        <div className="col-span-4 flex justify-end">
-                          {index === 0 && (
-                            <div className="h-5 mb-1"></div>
-                          )}
-                          <Button
-                            onClick={() => removeItem(item.id)}
-                            variant="outline"
-                            size="sm"
-                            disabled={items.length === 1}
-                            className="w-auto"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Entfernen
-                          </Button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            value={item.discount}
+                            onChange={(e) => updateItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                            className="text-right pr-6"
+                          />
+                          <span className="absolute right-3 top-2.5 text-gray-500 text-sm">%</span>
                         </div>
-                      </div>
-                    </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                        {item.total.toFixed(2)} EUR
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeItem(item.id)}
+                          className="text-gray-400 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </tbody>
+              </table>
+            </div>
 
-          {/* Right Column - Preview */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calculator className="h-5 w-5 mr-2" />
-                  Rechnungssumme
-                </CardTitle>
-                <CardDescription className="text-xs text-blue-600">
-                  ℹ️ Einzelpreise sind bereits inkl. 19% MwSt eingegeben
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Zwischensumme:</span>
-                  <span className="font-medium">€{subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">MwSt. ({invoiceData.taxRate}%):</span>
-                  <span className="font-medium">€{taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Gesamtsumme:</span>
-                    <span>€{total.toFixed(2)}</span>
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex flex-wrap gap-4">
+              <button onClick={addItem} className="text-blue-600 text-sm font-medium hover:underline flex items-center">
+                + Position hinzufügen
+              </button>
+              <button className="text-blue-600 text-sm font-medium hover:underline flex items-center">
+                + Zeiterfassung auswählen
+              </button>
+              <button className="text-blue-600 text-sm font-medium hover:underline flex items-center">
+                + Gesamtrabatt hinzufügen
+              </button>
+            </div>
+
+            <div className="p-6 border-t border-gray-200">
+              <div className="flex justify-end">
+                <div className="w-full max-w-xs space-y-2">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Gesamtsumme Netto (inkl. Rabatte / Aufschläge)</span>
+                    <span>{netTotal.toFixed(2)} EUR</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Umsatzsteuer 19%</span>
+                    <span>{(grossTotal - netTotal).toFixed(2)} EUR</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                    <span>Gesamt</span>
+                    <span>{grossTotal.toFixed(2)} EUR</span>
                   </div>
                 </div>
-
-                {/* Invoice Preview Info */}
-                <div className="border-t pt-4 space-y-2">
-                  <div className="text-sm text-gray-600">
-                    <strong>Rechnungsnummer:</strong><br />
-                    {invoiceData.invoiceNumber}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <strong>Status:</strong><br />
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoiceData.status)}`}>
-                      {invoiceData.status}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <strong>Datum:</strong><br />
-                    {new Date(invoiceData.date).toLocaleDateString('de-DE')}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <strong>Fällig am:</strong><br />
-                    {new Date(invoiceData.dueDate).toLocaleDateString('de-DE')}
-                  </div>
-                </div>
-
-                {/* QR-Code Payment Settings */}
-                <div className="border-t pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <QrCode className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium">QR-Code für Zahlung</span>
-                    </div>
-                    <Switch
-                      checked={qrCodeSettings.enabled}
-                      onCheckedChange={(checked) =>
-                        setQrCodeSettings(prev => ({ ...prev, enabled: checked }))
-                      }
-                    />
-                  </div>
-
-                  {qrCodeSettings.enabled && (
-                    <div className="space-y-3 pl-6 border-l-2 border-blue-100">
-                      <div>
-                        <Label htmlFor="paymentMethod" className="text-xs">Zahlungsmethode</Label>
-                        <Select
-                          value={qrCodeSettings.paymentMethod}
-                          onValueChange={(value) =>
-                            setQrCodeSettings(prev => ({ ...prev, paymentMethod: value }))
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sepa">SEPA-Überweisung</SelectItem>
-                            <SelectItem value="paypal">PayPal</SelectItem>
-                            <SelectItem value="custom">Benutzerdefiniert</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="qrPlacement" className="text-xs">QR-Code Position</Label>
-                        <Select
-                          value={qrCodeSettings.placement}
-                          onValueChange={(value) =>
-                            setQrCodeSettings(prev => ({ ...prev, placement: value }))
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="flex-beside-thanks">Flex: Neben Dankes-Text</SelectItem>
-                            <SelectItem value="left-below-table">Links unterhalb Tabelle</SelectItem>
-                            <SelectItem value="top-right-outside-info">Oben rechts (außerhalb Info-Box)</SelectItem>
-                            <SelectItem value="top-right-summary">Oben rechts (bei Gesamt)</SelectItem>
-                            <SelectItem value="bottom-right-footer">Unten rechts (über Fußzeile)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {qrCodeSettings.paymentMethod === 'sepa' && (
-                        <>
-                          <div>
-                            <Label htmlFor="recipientName" className="text-xs">Empfängername</Label>
-                            <Input
-                              id="recipientName"
-                              value={qrCodeSettings.recipientName}
-                              onChange={(e) =>
-                                setQrCodeSettings(prev => ({ ...prev, recipientName: e.target.value }))
-                              }
-                              placeholder="Firmenname"
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="iban" className="text-xs">IBAN</Label>
-                            <Input
-                              id="iban"
-                              value={qrCodeSettings.iban}
-                              onChange={(e) =>
-                                setQrCodeSettings(prev => ({ ...prev, iban: e.target.value }))
-                              }
-                              placeholder="DE89 3704 0044 0532 0130 00"
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="bic" className="text-xs">BIC (optional)</Label>
-                            <Input
-                              id="bic"
-                              value={qrCodeSettings.bic}
-                              onChange={(e) =>
-                                setQrCodeSettings(prev => ({ ...prev, bic: e.target.value }))
-                              }
-                              placeholder="COBADEFFXXX"
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {qrCodeSettings.paymentMethod === 'paypal' && (
-                        <div>
-                          <Label htmlFor="paypalEmail" className="text-xs">PayPal E-Mail</Label>
-                          <Input
-                            id="paypalEmail"
-                            value={qrCodeSettings.paypalEmail}
-                            onChange={(e) =>
-                              setQrCodeSettings(prev => ({ ...prev, paypalEmail: e.target.value }))
-                            }
-                            placeholder="payment@company.com"
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      )}
-
-                      {qrCodeSettings.paymentMethod === 'custom' && (
-                        <div>
-                          <Label htmlFor="customText" className="text-xs">Benutzerdefinierter Text</Label>
-                          <Input
-                            id="customText"
-                            value={qrCodeSettings.customText}
-                            onChange={(e) =>
-                              setQrCodeSettings(prev => ({ ...prev, customText: e.target.value }))
-                            }
-                            placeholder="Zahlungslink oder Anweisungen"
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      )}
-
-                      <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                        💡 Der QR-Code wird automatisch auf der Rechnung generiert und enthält alle Zahlungsinformationen.
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <Button onClick={handleSave} className="w-full" disabled={saving}>
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Speichern...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Rechnung erstellen
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Fußtext */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Fußtext</h2>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <Textarea
+              value={invoiceData.footerText}
+              onChange={(e) => setInvoiceData({ ...invoiceData, footerText: e.target.value })}
+              className="min-h-[120px]"
+            />
+          </div>
+        </div>
+
+        {/* Weitere Optionen & Umsatzsteuerregelung */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+          {/* Weitere Optionen */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900">Weitere Optionen</h2>
+              <button className="text-gray-400 hover:text-gray-600">
+                <ArrowLeft className="h-5 w-5 rotate-90" />
+              </button>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Währung</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Skonto</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type="number"
+                        value={skonto.days}
+                        onChange={(e) => setSkonto({ ...skonto, days: parseInt(e.target.value) || 0 })}
+                        className="pr-12"
+                      />
+                      <span className="absolute right-3 top-2.5 text-gray-500 text-sm">Tage</span>
+                    </div>
+                    <div className="relative flex-1">
+                      <Input
+                        type="number"
+                        value={skonto.percent}
+                        onChange={(e) => setSkonto({ ...skonto, percent: parseFloat(e.target.value) || 0 })}
+                        className="pr-8"
+                      />
+                      <span className="absolute right-3 top-2.5 text-gray-500 text-sm">%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Interne Kontaktperson</Label>
+                  <Input
+                    value={internalContact}
+                    onChange={(e) => setInternalContact(e.target.value)}
+                    placeholder="xxxxx 22e7ffdb3f@webxio.p"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Abweichendes Erlöskonto</Label>
+                  <Input
+                    value={revenueAccount}
+                    onChange={(e) => setRevenueAccount(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Zahlungsmethode</Label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Kein Standard">Kein Standard</SelectItem>
+                      <SelectItem value="Überweisung">Überweisung</SelectItem>
+                      <SelectItem value="PayPal">PayPal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-600 font-medium">Kostenstelle</Label>
+                  <Select value={costCenter} onValueChange={setCostCenter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bitte auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Kostenstelle 1">Kostenstelle 1</SelectItem>
+                      <SelectItem value="Kostenstelle 2">Kostenstelle 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Umsatzsteuerregelung */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Umsatzsteuerregelung</h2>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+              <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center cursor-pointer">
+                <span className="font-medium text-gray-900">In Deutschland</span>
+                <ArrowLeft className="h-4 w-4 rotate-90 text-gray-500" />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="r1"
+                    name="vatRegulation"
+                    value="In Deutschland"
+                    checked={vatRegulation === 'In Deutschland'}
+                    onChange={(e) => setVatRegulation(e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <Label htmlFor="r1" className="font-medium text-gray-900">Umsatzsteuerpflichtige Umsätze</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="r2"
+                    name="vatRegulation"
+                    value="Steuerfrei"
+                    checked={vatRegulation === 'Steuerfrei'}
+                    onChange={(e) => setVatRegulation(e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <Label htmlFor="r2" className="text-gray-700">Steuerfreie Umsätze §4 UStG</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="r3"
+                    name="vatRegulation"
+                    value="Reverse Charge"
+                    checked={vatRegulation === 'Reverse Charge'}
+                    onChange={(e) => setVatRegulation(e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <Label htmlFor="r3" className="text-gray-700">Reverse Charge gem. §13b UStG</Label>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center cursor-pointer mt-4">
+                <span className="font-medium text-gray-900">Im EU-Ausland</span>
+                <ArrowLeft className="h-4 w-4 -rotate-90 text-gray-500" />
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center cursor-pointer">
+                <span className="font-medium text-gray-900">Außerhalb der EU</span>
+                <ArrowLeft className="h-4 w-4 -rotate-90 text-gray-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+
       </main>
+      <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Als Vorlage speichern</DialogTitle>
+            <DialogDescription>
+              Geben Sie einen Namen für die Vorlage ein.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={saveItemTemplate}>Speichern</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
