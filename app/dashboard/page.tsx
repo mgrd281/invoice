@@ -461,6 +461,27 @@ export default function DashboardPage() {
                 </Card>
               </Link>
 
+              <Link href="/ustva">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center mb-4 relative">
+                      <Shield className="h-6 w-6 text-white" />
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                      </span>
+                    </div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      UStVA Elster
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">NEU</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Umsatzsteuervoranmeldung direkt an Finanzamt
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
               <Link href="/settings">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
