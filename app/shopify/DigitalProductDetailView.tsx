@@ -9,17 +9,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
-
-// ... (existing imports)
+import { Input } from '@/components/ui/input';
 
 interface DigitalProduct {
     id: string;
     title: string;
     shopifyProductId: string;
     emailTemplate?: string;
+    downloadUrl?: string;
+    buttonText?: string;
+    buttonColor?: string;
+    buttonTextColor?: string;
 }
-
-// ... (existing interfaces)
 
 interface LicenseKey {
     id: string;
@@ -45,6 +46,13 @@ export default function DigitalProductDetailView({ product, onBack }: DigitalPro
     const [template, setTemplate] = useState(product.emailTemplate || '');
     const [savingTemplate, setSavingTemplate] = useState(false);
 
+    // Download Settings State
+    const [downloadUrl, setDownloadUrl] = useState(product.downloadUrl || '');
+    const [buttonText, setButtonText] = useState(product.buttonText || 'Download');
+    const [buttonColor, setButtonColor] = useState(product.buttonColor || '#000000');
+    const [buttonTextColor, setButtonTextColor] = useState(product.buttonTextColor || '#ffffff');
+    const [savingSettings, setSavingSettings] = useState(false);
+
     useEffect(() => {
         fetchKeys();
         // Also fetch fresh product data to get the template if it wasn't passed or is stale
@@ -57,6 +65,10 @@ export default function DigitalProductDetailView({ product, onBack }: DigitalPro
             const data = await res.json();
             if (data.success && data.data) {
                 setTemplate(data.data.emailTemplate || getDefaultTemplate());
+                setDownloadUrl(data.data.downloadUrl || '');
+                setButtonText(data.data.buttonText || 'Download');
+                setButtonColor(data.data.buttonColor || '#000000');
+                setButtonTextColor(data.data.buttonTextColor || '#ffffff');
             }
         } catch (error) {
             console.error('Failed to fetch product details', error);
@@ -64,7 +76,6 @@ export default function DigitalProductDetailView({ product, onBack }: DigitalPro
     };
 
     const fetchKeys = async () => {
-        // ... (existing fetchKeys implementation)
         try {
             const res = await fetch(`/api/digital-products/${product.id}/keys`);
             const data = await res.json();
@@ -115,7 +126,34 @@ Viel Spaß!`;
         }
     };
 
-    // ... (existing handlers: handleAddKeys, handleDeleteKey, copyToClipboard)
+    const handleSaveSettings = async () => {
+        setSavingSettings(true);
+        try {
+            const res = await fetch(`/api/digital-products/${product.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    emailTemplate: template, // Send template too to avoid overwriting with old state if mixed
+                    downloadUrl,
+                    buttonText,
+                    buttonColor,
+                    buttonTextColor
+                })
+            });
+
+            if (res.ok) {
+                alert('Einstellungen gespeichert');
+            } else {
+                alert('Fehler beim Speichern');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Ein Fehler ist aufgetreten');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
+
     const handleAddKeys = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -220,6 +258,7 @@ Viel Spaß!`;
                 <TabsList className="mb-4">
                     <TabsTrigger value="keys">Lizenzschlüssel</TabsTrigger>
                     <TabsTrigger value="template">E-Mail Nachricht</TabsTrigger>
+                    <TabsTrigger value="settings">Einstellungen</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="keys">
@@ -323,8 +362,6 @@ Viel Spaß!`;
                     </div>
                 </TabsContent>
 
-
-
                 <TabsContent value="template">
                     <Card>
                         <CardHeader>
@@ -340,6 +377,7 @@ Viel Spaß!`;
                                     {'{{ customer_name }}'} - Name des Kunden<br />
                                     {'{{ product_title }}'} - Name des Produkts<br />
                                     {'{{ license_key }}'} - Der zugewiesene Key<br />
+                                    {'{{ download_button }}'} - Der Download-Button (falls konfiguriert)<br />
                                     <br />
                                     <strong>Formatierung:</strong><br />
                                     Nutzen Sie die Toolbar, um Texte zu formatieren (Fett, Kursiv, Listen) oder Links einzufügen.
@@ -359,6 +397,100 @@ Viel Spaß!`;
                                     <Button onClick={handleSaveTemplate} disabled={savingTemplate}>
                                         <Save className="w-4 h-4 mr-2" />
                                         {savingTemplate ? 'Speichert...' : 'Vorlage speichern'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="settings">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Download-Button Konfiguration</CardTitle>
+                            <CardDescription>
+                                Fügen Sie optional einen Download-Button zur E-Mail hinzu.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Download URL (Optional)</Label>
+                                    <Input
+                                        placeholder="https://example.com/download.zip"
+                                        value={downloadUrl}
+                                        onChange={e => setDownloadUrl(e.target.value)}
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                        Wenn ausgefüllt, wird der Button in der E-Mail angezeigt.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Button Text</Label>
+                                        <Input
+                                            value={buttonText}
+                                            onChange={e => setButtonText(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hintergrundfarbe</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="color"
+                                                className="w-12 p-1 h-10"
+                                                value={buttonColor}
+                                                onChange={e => setButtonColor(e.target.value)}
+                                            />
+                                            <Input
+                                                value={buttonColor}
+                                                onChange={e => setButtonColor(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Textfarbe</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="color"
+                                                className="w-12 p-1 h-10"
+                                                value={buttonTextColor}
+                                                onChange={e => setButtonTextColor(e.target.value)}
+                                            />
+                                            <Input
+                                                value={buttonTextColor}
+                                                onChange={e => setButtonTextColor(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border rounded-lg bg-gray-50 mt-4">
+                                    <Label className="mb-2 block text-gray-500">Vorschau:</Label>
+                                    <div className="flex justify-center">
+                                        <a
+                                            href="#"
+                                            style={{
+                                                backgroundColor: buttonColor,
+                                                color: buttonTextColor,
+                                                padding: '12px 24px',
+                                                borderRadius: '6px',
+                                                textDecoration: 'none',
+                                                fontWeight: 'bold',
+                                                display: 'inline-block'
+                                            }}
+                                            onClick={e => e.preventDefault()}
+                                        >
+                                            {buttonText}
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end mt-4">
+                                    <Button onClick={handleSaveSettings} disabled={savingSettings}>
+                                        <Save className="w-4 h-4 mr-2" />
+                                        {savingSettings ? 'Speichert...' : 'Einstellungen speichern'}
                                     </Button>
                                 </div>
                             </div>

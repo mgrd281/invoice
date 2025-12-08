@@ -26,12 +26,17 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     try {
         const body = await req.json()
-        const { emailTemplate } = body
+        const { emailTemplate, title, downloadUrl, buttonText, buttonColor, buttonTextColor } = body
 
         const product = await prisma.digitalProduct.update({
             where: { id: params.id },
             data: {
-                emailTemplate
+                emailTemplate,
+                title,
+                downloadUrl,
+                buttonText,
+                buttonColor,
+                buttonTextColor
             }
         })
 

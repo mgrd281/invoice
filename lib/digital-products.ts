@@ -106,10 +106,27 @@ export async function processDigitalProductOrder(
     // Send Email
     const template = digitalProduct.emailTemplate || getDefaultTemplate()
 
+    // Generate Download Button HTML
+    let downloadButtonHtml = '';
+    if (digitalProduct.downloadUrl) {
+        const btnText = digitalProduct.buttonText || 'Download';
+        const btnColor = digitalProduct.buttonColor || '#000000';
+        const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
+
+        downloadButtonHtml = `
+        <div style="margin: 20px 0;">
+            <a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+                ${btnText}
+            </a>
+        </div>
+        `;
+    }
+
     const emailBody = replaceVariables(template, {
         customer_name: customerName,
         product_title: productTitle,
-        license_key: key.key
+        license_key: key.key,
+        download_button: downloadButtonHtml
     })
 
     const subject = `Ihr Produktschlüssel für ${productTitle}`

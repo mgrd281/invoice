@@ -23,6 +23,13 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const [savingTemplate, setSavingTemplate] = useState(false)
     const [addingKeys, setAddingKeys] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(0)
+
+    // Download Settings State
+    const [downloadUrl, setDownloadUrl] = useState('')
+    const [buttonText, setButtonText] = useState('Download')
+    const [buttonColor, setButtonColor] = useState('#000000')
+    const [buttonTextColor, setButtonTextColor] = useState('#ffffff')
+    const [savingSettings, setSavingSettings] = useState(false)
     // Edit product state
     const [isEditingProduct, setIsEditingProduct] = useState(false)
     const [editProductData, setEditProductData] = useState({ title: '' })
@@ -46,6 +53,10 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
             if (prodData.success) {
                 setProduct(prodData.data)
                 setTemplate(prodData.data.emailTemplate || getDefaultTemplate())
+                setDownloadUrl(prodData.data.downloadUrl || '')
+                setButtonText(prodData.data.buttonText || 'Download')
+                setButtonColor(prodData.data.buttonColor || '#000000')
+                setButtonTextColor(prodData.data.buttonTextColor || '#ffffff')
             }
             if (keysData.success) {
                 setKeys(keysData.data)
@@ -125,6 +136,34 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
             console.error(error)
         } finally {
             setSavingTemplate(false)
+        }
+    }
+
+    const handleSaveSettings = async () => {
+        setSavingSettings(true)
+        try {
+            const res = await fetch(`/api/digital-products/${params.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    emailTemplate: template,
+                    downloadUrl,
+                    buttonText,
+                    buttonColor,
+                    buttonTextColor
+                })
+            })
+
+            if (res.ok) {
+                alert('Einstellungen gespeichert')
+            } else {
+                alert('Fehler beim Speichern')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('Ein Fehler ist aufgetreten')
+        } finally {
+            setSavingSettings(false)
         }
     }
 
@@ -364,6 +403,7 @@ Viel Spaß!`
                             <TabsList className="mb-4">
                                 <TabsTrigger value="keys">Produktschlüssel Liste</TabsTrigger>
                                 <TabsTrigger value="template">E-Mail Nachricht</TabsTrigger>
+                                <TabsTrigger value="settings">Einstellungen</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="keys">
@@ -446,6 +486,7 @@ Viel Spaß!`
                                                 {'{{ customer_name }}'} - Name des Kunden<br />
                                                 {'{{ product_title }}'} - Name des Produkts<br />
                                                 {'{{ license_key }}'} - Der zugewiesene Key<br />
+                                                {'{{ download_button }}'} - Der Download-Button (falls konfiguriert)<br />
                                                 <br />
                                                 <strong>Formatierung:</strong><br />
                                                 Nutzen Sie die Toolbar, um Texte zu formatieren (Fett, Kursiv, Listen) oder Links einzufügen.
@@ -465,6 +506,100 @@ Viel Spaß!`
                                                 <Button onClick={handleSaveTemplate} disabled={savingTemplate}>
                                                     <Save className="w-4 h-4 mr-2" />
                                                     {savingTemplate ? 'Speichert...' : 'Vorlage speichern'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="settings">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Download-Button Konfiguration</CardTitle>
+                                        <CardDescription>
+                                            Fügen Sie optional einen Download-Button zur E-Mail hinzu.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Download URL (Optional)</Label>
+                                                <Input
+                                                    placeholder="https://example.com/download.zip"
+                                                    value={downloadUrl}
+                                                    onChange={e => setDownloadUrl(e.target.value)}
+                                                />
+                                                <p className="text-xs text-gray-500">
+                                                    Wenn ausgefüllt, wird der Button in der E-Mail angezeigt.
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label>Button Text</Label>
+                                                    <Input
+                                                        value={buttonText}
+                                                        onChange={e => setButtonText(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Hintergrundfarbe</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            type="color"
+                                                            className="w-12 p-1 h-10"
+                                                            value={buttonColor}
+                                                            onChange={e => setButtonColor(e.target.value)}
+                                                        />
+                                                        <Input
+                                                            value={buttonColor}
+                                                            onChange={e => setButtonColor(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Textfarbe</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            type="color"
+                                                            className="w-12 p-1 h-10"
+                                                            value={buttonTextColor}
+                                                            onChange={e => setButtonTextColor(e.target.value)}
+                                                        />
+                                                        <Input
+                                                            value={buttonTextColor}
+                                                            onChange={e => setButtonTextColor(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 border rounded-lg bg-gray-50 mt-4">
+                                                <Label className="mb-2 block text-gray-500">Vorschau:</Label>
+                                                <div className="flex justify-center">
+                                                    <a
+                                                        href="#"
+                                                        style={{
+                                                            backgroundColor: buttonColor,
+                                                            color: buttonTextColor,
+                                                            padding: '12px 24px',
+                                                            borderRadius: '6px',
+                                                            textDecoration: 'none',
+                                                            fontWeight: 'bold',
+                                                            display: 'inline-block'
+                                                        }}
+                                                        onClick={e => e.preventDefault()}
+                                                    >
+                                                        {buttonText}
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-end mt-4">
+                                                <Button onClick={handleSaveSettings} disabled={savingSettings}>
+                                                    <Save className="w-4 h-4 mr-2" />
+                                                    {savingSettings ? 'Speichert...' : 'Einstellungen speichern'}
                                                 </Button>
                                             </div>
                                         </div>
