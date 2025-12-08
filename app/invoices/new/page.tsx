@@ -157,6 +157,60 @@ export default function NewInvoicePage() {
     }))
   }, [invoiceData.invoiceNumber])
 
+  // Update texts based on document kind
+  useEffect(() => {
+    switch (documentKind) {
+      case DocumentKind.INVOICE:
+        setInvoiceData(prev => ({
+          ...prev,
+          headerSubject: `Rechnung Nr. ${prev.invoiceNumber}`,
+          headerText: 'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
+          footerText: 'Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto.\nDer Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.\n\nMit freundlichen Grüßen\n[%KONTAKTPERSON%]'
+        }))
+        break
+      case DocumentKind.CANCELLATION:
+        setInvoiceData(prev => ({
+          ...prev,
+          headerSubject: `Stornorechnung Nr. ${prev.invoiceNumber}`,
+          headerText: 'Sehr geehrte Damen und Herren,\n\nhiermit stornieren wir die Rechnung Nr. [ORIGINAL_RECHNUNGSNUMMER] vom [DATUM].',
+          footerText: 'Der Betrag wird Ihrem Konto gutgeschrieben.'
+        }))
+        break
+      case DocumentKind.CREDIT_NOTE:
+        setInvoiceData(prev => ({
+          ...prev,
+          headerSubject: `Gutschrift Nr. ${prev.invoiceNumber}`,
+          headerText: 'Sehr geehrte Damen und Herren,\n\nwir erstatten Ihnen hiermit folgenden Betrag:',
+          footerText: 'Der Betrag wird in den nächsten Tagen auf Ihr Konto überwiesen.'
+        }))
+        break
+      case DocumentKind.DUNNING_1:
+        setInvoiceData(prev => ({
+          ...prev,
+          headerSubject: `Zahlungserinnerung Nr. ${prev.invoiceNumber}`,
+          headerText: 'Sehr geehrte Damen und Herren,\n\nleider konnten wir bis heute keinen Zahlungseingang für die Rechnung Nr. [RECHNUNGSNUMMER] feststellen.\nWir bitten Sie, den offenen Betrag bis zum [NEUES_ZAHLUNGSZIEL] zu begleichen.',
+          footerText: 'Sollten Sie die Zahlung bereits geleistet haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.'
+        }))
+        break
+      case DocumentKind.DUNNING_2:
+        setInvoiceData(prev => ({
+          ...prev,
+          headerSubject: `2. Mahnung Nr. ${prev.invoiceNumber}`,
+          headerText: 'Sehr geehrte Damen und Herren,\n\ntrotz unserer Zahlungserinnerung konnten wir bisher keinen Zahlungseingang feststellen.\nBitte überweisen Sie den fälligen Betrag inklusive Mahngebühren umgehend.',
+          footerText: 'Bei weiteren Verzögerungen müssen wir leider rechtliche Schritte einleiten.'
+        }))
+        break
+      case DocumentKind.DUNNING_3:
+        setInvoiceData(prev => ({
+          ...prev,
+          headerSubject: `3. Mahnung Nr. ${prev.invoiceNumber}`,
+          headerText: 'Sehr geehrte Damen und Herren,\n\ndies ist unsere letzte Aufforderung zur Zahlung der offenen Rechnung Nr. [RECHNUNGSNUMMER].\nSollte der Betrag nicht bis zum [FRIST] eingehen, werden wir das Verfahren an ein Inkassobüro übergeben.',
+          footerText: 'Dies ist die letzte Mahnung vor Einleitung gerichtlicher Schritte.'
+        }))
+        break
+    }
+  }, [documentKind])
+
   const updateItem = (id: string, field: keyof InvoiceItem, value: string | number) => {
     setItems(items.map(item => {
       if (item.id === id) {
@@ -472,6 +526,26 @@ export default function NewInvoicePage() {
             <h2 className="text-lg font-semibold text-gray-900">Rechnungsinformationen</h2>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-blue-600 font-medium">Dokumententyp</Label>
+                <Select
+                  value={documentKind}
+                  onValueChange={(value) => setDocumentKind(value as DocumentKind)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Dokumententyp auswählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={DocumentKind.INVOICE}>Rechnung</SelectItem>
+                    <SelectItem value={DocumentKind.CANCELLATION}>Stornorechnung</SelectItem>
+                    <SelectItem value={DocumentKind.CREDIT_NOTE}>Gutschrift / Erstattung</SelectItem>
+                    <SelectItem value={DocumentKind.DUNNING_1}>Mahnung 1</SelectItem>
+                    <SelectItem value={DocumentKind.DUNNING_2}>Mahnung 2</SelectItem>
+                    <SelectItem value={DocumentKind.DUNNING_3}>Mahnung 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-blue-600 font-medium">Rechnungsdatum *</Label>

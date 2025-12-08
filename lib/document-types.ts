@@ -4,7 +4,10 @@ export enum DocumentKind {
   CANCELLATION = 'CANCELLATION', // Stornorechnung  
   CREDIT_NOTE = 'CREDIT_NOTE',   // Gutschrift (Legacy/Generic)
   REFUND_FULL = 'REFUND_FULL',   // Gutschrift für volle Rückerstattung
-  REFUND_PARTIAL = 'REFUND_PARTIAL' // Gutschrift für teilweise Rückerstattung
+  REFUND_PARTIAL = 'REFUND_PARTIAL', // Gutschrift für teilweise Rückerstattung
+  DUNNING_1 = 'DUNNING_1',       // Mahnung 1
+  DUNNING_2 = 'DUNNING_2',       // Mahnung 2
+  DUNNING_3 = 'DUNNING_3'        // Mahnung 3
 }
 
 export enum DocumentStatus {
