@@ -52,10 +52,14 @@ interface ItemTemplate {
   createdAt: string
 }
 
+import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
+
 export default function NewInvoicePage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
   const { showToast } = useToast()
+
+  const [showPreview, setShowPreview] = useState(false)
 
   const [customer, setCustomer] = useState<Customer>({
     type: 'organization',
@@ -366,7 +370,7 @@ export default function NewInvoicePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline">Vorschau</Button>
+              <Button variant="outline" onClick={() => setShowPreview(true)}>Vorschau</Button>
               <Button variant="outline" onClick={handleSave} disabled={saving}>
                 {saving ? 'Speichern...' : 'Speichern'}
               </Button>
@@ -878,6 +882,30 @@ export default function NewInvoicePage() {
         </div>
 
       </main>
+
+      <InvoicePreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        data={{
+          customer,
+          invoiceData,
+          items,
+          settings: {
+            currency,
+            skonto,
+            internalContact,
+            revenueAccount,
+            paymentMethod,
+            costCenter,
+            vatRegulation,
+            headerSubject: invoiceData.headerSubject,
+            headerText: invoiceData.headerText,
+            footerText: invoiceData.footerText,
+            isERechnung
+          }
+        }}
+      />
+
       <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
         <DialogContent>
           <DialogHeader>
