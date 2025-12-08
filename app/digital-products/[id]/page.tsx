@@ -124,27 +124,6 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
             const res = await fetch(`/api/digital-products/${params.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emailTemplate: template })
-            })
-
-            if (res.ok) {
-                alert('Template gespeichert')
-            } else {
-                alert('Fehler beim Speichern')
-            }
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setSavingTemplate(false)
-        }
-    }
-
-    const handleSaveSettings = async () => {
-        setSavingSettings(true)
-        try {
-            const res = await fetch(`/api/digital-products/${params.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     emailTemplate: template,
                     downloadUrl,
@@ -161,11 +140,12 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
             }
         } catch (error) {
             console.error(error)
-            alert('Ein Fehler ist aufgetreten')
         } finally {
-            setSavingSettings(false)
+            setSavingTemplate(false)
         }
     }
+
+
 
 
 
@@ -403,7 +383,6 @@ Viel Spaß!`
                             <TabsList className="mb-4">
                                 <TabsTrigger value="keys">Produktschlüssel Liste</TabsTrigger>
                                 <TabsTrigger value="template">E-Mail Nachricht</TabsTrigger>
-                                <TabsTrigger value="settings">Einstellungen</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="keys">
@@ -474,132 +453,120 @@ Viel Spaß!`
                             <TabsContent value="template">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>E-Mail Vorlage</CardTitle>
+                                        <CardTitle>E-Mail Vorlage & Download-Button</CardTitle>
                                         <CardDescription>
-                                            Passen Sie die Nachricht an, die der Kunde erhält.
+                                            Passen Sie die Nachricht an und konfigurieren Sie optional einen Download-Button.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="space-y-4">
-                                            <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
-                                                <strong>Verfügbare Variablen:</strong><br />
-                                                {'{{ customer_name }}'} - Name des Kunden<br />
-                                                {'{{ product_title }}'} - Name des Produkts<br />
-                                                {'{{ license_key }}'} - Der zugewiesene Key<br />
-                                                {'{{ download_button }}'} - Der Download-Button (falls konfiguriert)<br />
-                                                <br />
-                                                <strong>Formatierung:</strong><br />
-                                                Nutzen Sie die Toolbar, um Texte zu formatieren (Fett, Kursiv, Listen) oder Links einzufügen.
-                                            </div>
+                                        <div className="space-y-8">
+                                            <div className="space-y-4">
+                                                <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
+                                                    <strong>Verfügbare Variablen:</strong><br />
+                                                    {'{{ customer_name }}'} - Name des Kunden<br />
+                                                    {'{{ product_title }}'} - Name des Produkts<br />
+                                                    {'{{ license_key }}'} - Der zugewiesene Key<br />
+                                                    {'{{ download_button }}'} - Der Download-Button (wird durch die Konfiguration unten erstellt)<br />
+                                                    <br />
+                                                    <strong>Formatierung:</strong><br />
+                                                    Nutzen Sie die Toolbar, um Texte zu formatieren (Fett, Kursiv, Listen) oder Links einzufügen.
+                                                </div>
 
-                                            <div className="space-y-2">
-                                                <Label>Nachrichtentext</Label>
-                                                <RichTextEditor
-                                                    value={template}
-                                                    onChange={setTemplate}
-                                                    placeholder="Schreiben Sie hier Ihre E-Mail..."
-                                                    className="min-h-[400px]"
-                                                />
-                                            </div>
-
-                                            <div className="flex justify-end">
-                                                <Button onClick={handleSaveTemplate} disabled={savingTemplate}>
-                                                    <Save className="w-4 h-4 mr-2" />
-                                                    {savingTemplate ? 'Speichert...' : 'Vorlage speichern'}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
-
-                            <TabsContent value="settings">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Download-Button Konfiguration</CardTitle>
-                                        <CardDescription>
-                                            Fügen Sie optional einen Download-Button zur E-Mail hinzu.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <Label>Download URL (Optional)</Label>
-                                                <Input
-                                                    placeholder="https://example.com/download.zip"
-                                                    value={downloadUrl}
-                                                    onChange={e => setDownloadUrl(e.target.value)}
-                                                />
-                                                <p className="text-xs text-gray-500">
-                                                    Wenn ausgefüllt, wird der Button in der E-Mail angezeigt.
-                                                </p>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label>Button Text</Label>
-                                                    <Input
-                                                        value={buttonText}
-                                                        onChange={e => setButtonText(e.target.value)}
+                                                    <Label>Nachrichtentext</Label>
+                                                    <RichTextEditor
+                                                        value={template}
+                                                        onChange={setTemplate}
+                                                        placeholder="Schreiben Sie hier Ihre E-Mail..."
+                                                        className="min-h-[400px]"
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label>Hintergrundfarbe</Label>
-                                                    <div className="flex gap-2">
+                                            </div>
+
+                                            <div className="border-t pt-6">
+                                                <h3 className="text-lg font-semibold mb-4">Download-Button Konfiguration</h3>
+                                                <p className="text-sm text-gray-500 mb-4">
+                                                    Füllen Sie diese Felder aus, um einen Download-Button zu erstellen.
+                                                    Der Button erscheint an der Stelle, an der Sie <code>{'{{ download_button }}'}</code> im Text oben platzieren.
+                                                </p>
+
+                                                <div className="space-y-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Download URL (Optional)</Label>
                                                         <Input
-                                                            type="color"
-                                                            className="w-12 p-1 h-10"
-                                                            value={buttonColor}
-                                                            onChange={e => setButtonColor(e.target.value)}
-                                                        />
-                                                        <Input
-                                                            value={buttonColor}
-                                                            onChange={e => setButtonColor(e.target.value)}
+                                                            placeholder="https://example.com/download.zip"
+                                                            value={downloadUrl}
+                                                            onChange={e => setDownloadUrl(e.target.value)}
                                                         />
                                                     </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Textfarbe</Label>
-                                                    <div className="flex gap-2">
-                                                        <Input
-                                                            type="color"
-                                                            className="w-12 p-1 h-10"
-                                                            value={buttonTextColor}
-                                                            onChange={e => setButtonTextColor(e.target.value)}
-                                                        />
-                                                        <Input
-                                                            value={buttonTextColor}
-                                                            onChange={e => setButtonTextColor(e.target.value)}
-                                                        />
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>Button Text</Label>
+                                                            <Input
+                                                                value={buttonText}
+                                                                onChange={e => setButtonText(e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Hintergrundfarbe</Label>
+                                                            <div className="flex gap-2">
+                                                                <Input
+                                                                    type="color"
+                                                                    className="w-12 p-1 h-10"
+                                                                    value={buttonColor}
+                                                                    onChange={e => setButtonColor(e.target.value)}
+                                                                />
+                                                                <Input
+                                                                    value={buttonColor}
+                                                                    onChange={e => setButtonColor(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Textfarbe</Label>
+                                                            <div className="flex gap-2">
+                                                                <Input
+                                                                    type="color"
+                                                                    className="w-12 p-1 h-10"
+                                                                    value={buttonTextColor}
+                                                                    onChange={e => setButtonTextColor(e.target.value)}
+                                                                />
+                                                                <Input
+                                                                    value={buttonTextColor}
+                                                                    onChange={e => setButtonTextColor(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-4 border rounded-lg bg-gray-50 mt-4">
+                                                        <Label className="mb-2 block text-gray-500">Vorschau:</Label>
+                                                        <div className="flex justify-center">
+                                                            <a
+                                                                href="#"
+                                                                style={{
+                                                                    backgroundColor: buttonColor,
+                                                                    color: buttonTextColor,
+                                                                    padding: '12px 24px',
+                                                                    borderRadius: '6px',
+                                                                    textDecoration: 'none',
+                                                                    fontWeight: 'bold',
+                                                                    display: 'inline-block'
+                                                                }}
+                                                                onClick={e => e.preventDefault()}
+                                                            >
+                                                                {buttonText}
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="p-4 border rounded-lg bg-gray-50 mt-4">
-                                                <Label className="mb-2 block text-gray-500">Vorschau:</Label>
-                                                <div className="flex justify-center">
-                                                    <a
-                                                        href="#"
-                                                        style={{
-                                                            backgroundColor: buttonColor,
-                                                            color: buttonTextColor,
-                                                            padding: '12px 24px',
-                                                            borderRadius: '6px',
-                                                            textDecoration: 'none',
-                                                            fontWeight: 'bold',
-                                                            display: 'inline-block'
-                                                        }}
-                                                        onClick={e => e.preventDefault()}
-                                                    >
-                                                        {buttonText}
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-end mt-4">
-                                                <Button onClick={handleSaveSettings} disabled={savingSettings}>
+                                            <div className="flex justify-end pt-4 border-t">
+                                                <Button onClick={handleSaveTemplate} disabled={savingTemplate}>
                                                     <Save className="w-4 h-4 mr-2" />
-                                                    {savingSettings ? 'Speichert...' : 'Einstellungen speichern'}
+                                                    {savingTemplate ? 'Speichert...' : 'Alles speichern'}
                                                 </Button>
                                             </div>
                                         </div>
