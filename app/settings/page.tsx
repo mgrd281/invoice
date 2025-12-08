@@ -612,34 +612,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Marketing Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Gift className="h-5 w-5 mr-2 text-pink-600" />
-              Marketing & Automatisierung
-            </CardTitle>
-            <CardDescription>
-              Verwalten Sie automatische Rabatte und Kundenbindung
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Erstkauf-Rabatt</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatische 10% Rabattcodes für Neukunden
-                </p>
-              </div>
-              <Link href="/settings/marketing">
-                <Button variant="outline" size="sm">
-                  <Gift className="h-4 w-4 mr-2" />
-                  Konfigurieren
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Security Settings */}
         <Card>
