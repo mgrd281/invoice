@@ -175,6 +175,9 @@ export default function UStVAPage() {
                                             <p className="text-xs text-center text-gray-500">
                                                 Durch Klicken bestätigen Sie die Richtigkeit der Angaben gemäß § 18 UStG.
                                             </p>
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800 text-center">
+                                                <strong>Hinweis:</strong> Dies ist eine Demo-Version. Es werden keine echten Daten an das Finanzamt übermittelt.
+                                            </div>
                                         </div>
                                     </div>
                                 )}
