@@ -112,11 +112,12 @@ export async function processDigitalProductOrder(
     const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
 
     // Check for multiple buttons (new schema)
-    const buttons = digitalProduct.downloadButtons as any[]; // Cast to any since it's Json type
+    const buttons = digitalProduct.downloadButtons;
 
-    if (buttons && Array.isArray(buttons) && buttons.length > 0) {
+    if (Array.isArray(buttons) && buttons.length > 0) {
         // Generate HTML for multiple buttons
-        const buttonsHtml = buttons.map(btn => `
+        // This generates a SINGLE block containing ALL buttons
+        const buttonsHtml = buttons.map((btn: any) => `
                 <div style="margin-bottom: 12px;">
                     <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
                         ${btn.text || 'Download'}
