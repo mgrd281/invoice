@@ -37,13 +37,13 @@ export default function LoginPage() {
         throw new Error('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
       }
 
-      if (formData.password.length < 6) {
-        throw new Error('Das Passwort muss mindestens 6 Zeichen lang sein.')
+      if (formData.password.length < 4) {
+        throw new Error('Das Passwort muss mindestens 4 Zeichen lang sein.')
       }
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       // Demo credentials for testing - ONLY THESE WILL WORK
       const validCredentials = [
         { email: 'demo@rechnungsprofi.de', password: 'demo123' },
@@ -74,28 +74,28 @@ export default function LoginPage() {
       }
 
       console.log('✅ Valid credentials, proceeding with login')
-      
+
       // Check if email is verified (skip for demo accounts)
       const demoEmails = ['demo@rechnungsprofi.de', 'test@example.com', 'max@mustermann.de', 'mgrdegh@web.de', 'mkarina321@']
       const isDemoAccount = demoEmails.includes(formData.email.toLowerCase())
-      
+
       if (!isDemoAccount) {
         console.log('🔍 Checking email verification status...')
         try {
           const verificationResponse = await fetch(`/api/auth/email-verification/status?email=${encodeURIComponent(formData.email)}`)
           const verificationData = await verificationResponse.json()
-          
+
           if (verificationData.success && !verificationData.isVerified) {
             console.log('❌ Email not verified, redirecting to verification page')
             setError('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.')
-            
+
             // Redirect to verification page after 2 seconds
             setTimeout(() => {
               router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
             }, 2000)
             return
           }
-          
+
           console.log('✅ Email verification status:', verificationData.isVerified ? 'VERIFIED' : 'NOT_REQUIRED')
         } catch (verificationError) {
           console.warn('⚠️ Could not check email verification status:', verificationError)
@@ -104,39 +104,39 @@ export default function LoginPage() {
       } else {
         console.log('🎭 Demo account - skipping email verification check')
       }
-      
+
       // Check if user is admin (case-insensitive)
       const adminEmails = ['mgrdegh@web.de', 'mkarina321@']
       const isAdmin = adminEmails.includes(formData.email.toLowerCase())
-      
+
       // Simulate user data based on email
       const userData = {
         id: '1',
         email: formData.email,
-        firstName: formData.email.includes('demo') ? 'Demo' : 
-                   formData.email.includes('max') ? 'Max' : 
-                   formData.email.includes('mgrdegh') ? 'Admin' :
-                   formData.email.includes('Mkarina') ? 'Karina' : 'Test',
-        lastName: formData.email.includes('demo') ? 'User' : 
-                  formData.email.includes('max') ? 'Mustermann' : 
-                  formData.email.includes('mgrdegh') ? 'Manager' :
-                  formData.email.includes('Mkarina') ? 'Admin' : 'User',
-        companyName: formData.email.includes('max') ? 'Mustermann GmbH' : 
-                     isAdmin ? 'Admin Company' : 'Demo Company',
+        firstName: formData.email.includes('demo') ? 'Demo' :
+          formData.email.includes('max') ? 'Max' :
+            formData.email.includes('mgrdegh') ? 'Admin' :
+              formData.email.includes('Mkarina') ? 'Karina' : 'Test',
+        lastName: formData.email.includes('demo') ? 'User' :
+          formData.email.includes('max') ? 'Mustermann' :
+            formData.email.includes('mgrdegh') ? 'Manager' :
+              formData.email.includes('Mkarina') ? 'Admin' : 'User',
+        companyName: formData.email.includes('max') ? 'Mustermann GmbH' :
+          isAdmin ? 'Admin Company' : 'Demo Company',
         isAdmin: isAdmin
       }
-      
+
       // Login with NextAuth
       const result = await login({
         email: formData.email,
         password: formData.password
       })
-      
+
       if (!result.success) {
         setError('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.')
         return
       }
-      
+
       // Nach erfolgreicher Anmeldung zur Dashboard weiterleiten
       router.push('/dashboard')
     } catch (error: any) {

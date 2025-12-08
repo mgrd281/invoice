@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Plus, Key, Trash2, BarChart } from 'lucide-react';
+import { Plus, Package, Trash2, BarChart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -107,8 +107,6 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
     const totalAvailableKeys = products.reduce((acc, p) => acc + (p.keys?.length || 0), 0);
     const totalUsedKeys = totalKeys - totalAvailableKeys;
 
-    // ... (existing handlers)
-
     if (selectedProduct) {
         return (
             <DigitalProductDetailView
@@ -126,7 +124,7 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
             <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex items-center gap-4">
                     <div className="bg-blue-600 p-2 rounded-lg">
-                        <Key className="h-6 w-6 text-white" />
+                        <Package className="h-6 w-6 text-white" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-900">Digitale Produkte</h2>
@@ -261,7 +259,7 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
                 <div className="text-center py-12">Laden...</div>
             ) : products.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-lg shadow border border-dashed border-gray-300">
-                    <Key className="mx-auto h-12 w-12 text-gray-400" />
+                    <Package className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-semibold text-gray-900">Keine digitalen Produkte</h3>
                     <p className="mt-1 text-sm text-gray-500">Starten Sie mit dem Hinzufügen Ihres ersten Microsoft-Produkts.</p>
                     <div className="mt-6">

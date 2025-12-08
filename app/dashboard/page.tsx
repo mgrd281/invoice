@@ -24,7 +24,7 @@ import {
   DollarSign,
   AlertCircle,
   Shield,
-  Sparkles
+  Package
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -396,7 +396,7 @@ export default function DashboardPage() {
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-                      <Sparkles className="h-6 w-6 text-white" />
+                      <Package className="h-6 w-6 text-white" />
                     </div>
                     <CardTitle className="text-xl">Digitale Produkte</CardTitle>
                     <CardDescription>

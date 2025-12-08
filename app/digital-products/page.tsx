@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Plus, Key, ShoppingBag, CheckCircle, XCircle, Trash2, BarChart, ArrowLeft } from 'lucide-react'
+import { Plus, Package, ShoppingBag, CheckCircle, XCircle, Trash2, BarChart, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface DigitalProduct {
@@ -73,7 +73,7 @@ export default function DigitalProductsPage() {
                         </Link>
                         <div className="flex items-center gap-2">
                             <div className="bg-blue-600 p-2 rounded-lg">
-                                <Key className="h-6 w-6 text-white" />
+                                <Package className="h-6 w-6 text-white" />
                             </div>
                             <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                         </div>
@@ -96,7 +96,7 @@ export default function DigitalProductsPage() {
                     <div className="text-center py-12">Laden...</div>
                 ) : products.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-lg shadow border border-dashed border-gray-300">
-                        <Key className="mx-auto h-12 w-12 text-gray-400" />
+                        <Package className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-sm font-semibold text-gray-900">Keine digitalen Produkte</h3>
                         <p className="mt-1 text-sm text-gray-500">Starten Sie mit dem Hinzufügen Ihres ersten Microsoft-Produkts.</p>
                         <div className="mt-6">
@@ -130,7 +130,7 @@ export default function DigitalProductsPage() {
                                         <div className="flex items-center justify-between mt-4">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-3 h-3 rounded-full ${product._count.keys === 0 ? 'bg-red-500' :
-                                                        product._count.keys < 10 ? 'bg-yellow-500' : 'bg-green-500'
+                                                    product._count.keys < 10 ? 'bg-yellow-500' : 'bg-green-500'
                                                     }`} />
                                                 <span className={`text-sm font-medium ${product._count.keys < 10 ? 'text-yellow-700' : 'text-gray-700'
                                                     }`}>

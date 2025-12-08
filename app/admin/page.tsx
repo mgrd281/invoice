@@ -20,7 +20,7 @@ import {
     AlertTriangle,
     RefreshCw,
     Key,
-    Sparkles
+    Package
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -267,7 +267,7 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2">
                         <Link href="/digital-products">
                             <Button variant="default" className="bg-blue-600 hover:bg-blue-700">
-                                <Sparkles className="h-4 w-4 mr-2" />
+                                <Package className="h-4 w-4 mr-2" />
                                 Digitale Produkte
                             </Button>
                         </Link>
