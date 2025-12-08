@@ -132,10 +132,16 @@ model Customer {
   country           String    @default("DE")
   taxId             String?
   shopifyCustomerId String?   @unique(map: "Customer_shopifyCustomerId_key") // Add a unique constraint for this field
+  vatId             String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   orders            Order[]
   invoices          Invoice[]
+  licenseKeys       LicenseKey[]
+  supportTickets    SupportTicket[]
+  notes             CustomerNote[]
+  emails            EmailMessage[]
+  payments          Payment[]
 
   @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
 }
@@ -200,8 +206,9 @@ model Invoice {
   updatedAt       DateTime      @updatedAt
   items           InvoiceItem[]
   payments        Payment[]
+  // ... existing fields
   dunningLogs     DunningLog[]
-
+  
   // New fields for document types
   documentKind    String        @default("INVOICE")
   referenceNumber String?
@@ -245,12 +252,15 @@ model TaxRate {
 
 model Payment {
   id            String    @id @default(uuid())
-  invoiceId     String
-  invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId     String?
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
   amount        Decimal   @db.Decimal(10, 2)
   paymentDate   DateTime
   method        String
   transactionId String?
+  status        String    @default("COMPLETED") // PENDING, COMPLETED, FAILED
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -337,6 +347,8 @@ model LicenseKey {
   id               String         @id @default(uuid())
   digitalProductId String
   digitalProduct   DigitalProduct @relation(fields: [digitalProductId], references: [id])
+  customerId       String?
+  customer         Customer?      @relation(fields: [customerId], references: [id])
   key              String
   isUsed           Boolean        @default(false)
   orderId          String?
@@ -350,14 +362,18 @@ model SupportTicket {
   id             String   @id @default(uuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id])
   customerEmail  String
   customerName   String?
   orderNumber    String?
   subject        String?
-  status         String   @default("OPEN") // OPEN, CLOSED
+  status         String   @default("OPEN") // OPEN, IN_PROGRESS, CLOSED
+  priority       String   @default("MEDIUM") // LOW, MEDIUM, HIGH
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   messages       TicketMessage[]
+  emails         EmailMessage[]
 }
 
 model TicketMessage {
@@ -367,6 +383,33 @@ model TicketMessage {
   sender          String        // "AGENT" or "CUSTOMER" or "SYSTEM"
   content         String        @db.Text
   createdAt       DateTime      @default(now())
+}
+
+model CustomerNote {
+  id             String    @id @default(uuid())
+  customerId     String
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  content        String    @db.Text
+  author         String    // Name of the user who created it
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model EmailMessage {
+  id             String    @id @default(uuid())
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  ticketId       String?
+  ticket         SupportTicket? @relation(fields: [ticketId], references: [id])
+  gmailId        String?   @unique
+  subject        String?
+  content        String    @db.Text
+  snippet        String?
+  from           String
+  to             String
+  receivedAt     DateTime  @default(now())
+  isInternal     Boolean   @default(false) // To distinguish between customer emails and internal/sent emails
+  createdAt      DateTime  @default(now())
 }
 
 model ResponseTemplate {

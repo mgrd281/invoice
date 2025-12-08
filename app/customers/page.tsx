@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Plus, ArrowLeft, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square } from 'lucide-react'
+import { Users, Plus, ArrowLeft, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square, User } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -66,7 +66,7 @@ export default function CustomersPage() {
 
     try {
       console.log('Deleting customer:', customer.id, 'for user:', user.email)
-      
+
       const response = await authenticatedFetch(`/api/customers?id=${customer.id}`, {
         method: 'DELETE'
       })
@@ -75,15 +75,15 @@ export default function CustomersPage() {
 
       if (data.success) {
         showToast(`Kunde "${customer.name}" wurde erfolgreich gelöscht`, 'success')
-        
+
         // Update customers list by removing the deleted customer
         setCustomers(prev => prev.filter(c => c.id !== customer.id))
-        
+
         // Also update search results if showing
         if (showSearchResults) {
           setSearchResults(prev => prev.filter(c => c.id !== customer.id))
         }
-        
+
         // Close confirmation dialog
         setDeleteConfirmation({
           isOpen: false,
@@ -168,7 +168,7 @@ export default function CustomersPage() {
             method: 'DELETE'
           })
           const data = await response.json()
-          
+
           if (data.success) {
             successCount++
           } else {
@@ -184,7 +184,7 @@ export default function CustomersPage() {
       // Update customers list by removing deleted customers
       if (successCount > 0) {
         setCustomers(prev => prev.filter(c => !selectedCustomers.has(c.id)))
-        
+
         // Also update search results if showing
         if (showSearchResults) {
           setSearchResults(prev => prev.filter(c => !selectedCustomers.has(c.id)))
@@ -250,11 +250,11 @@ export default function CustomersPage() {
 
     try {
       console.log('Loading customers from API for user:', user.email)
-      
+
       // Use authenticated fetch to load customers for this user only
       const response = await authenticatedFetch('/api/customers')
       const data = await response.json()
-      
+
       if (data.success) {
         console.log(`Loaded ${data.customers.length} customers for user ${user.email}`)
         setCustomers(data.customers)
@@ -277,23 +277,23 @@ export default function CustomersPage() {
     }
 
     setIsSearching(true)
-    
+
     // Split query by common separators for multiple search terms
     const searchTerms = query
       .split(/[,;|\n\r\t]+/)
       .map(term => term.trim())
       .filter(term => term.length > 0)
-    
+
     console.log(`Searching customers with ${searchTerms.length} terms:`, searchTerms)
-    
+
     try {
       // Search for each term and combine results
       const allResults = new Map()
-      
+
       for (const term of searchTerms) {
         const response = await fetch(`/api/customers/search?q=${encodeURIComponent(term)}`)
         const data = await response.json()
-        
+
         if (data.success && data.customers) {
           data.customers.forEach((customer: any) => {
             // Use email as unique key to avoid duplicates
@@ -304,10 +304,10 @@ export default function CustomersPage() {
           })
         }
       }
-      
+
       const combinedResults = Array.from(allResults.values())
       console.log(`Found ${combinedResults.length} unique customers from ${searchTerms.length} search terms`)
-      
+
       setSearchResults(combinedResults)
       setShowSearchResults(true)
     } catch (error) {
@@ -411,11 +411,11 @@ export default function CustomersPage() {
                 </button>
               )}
             </div>
-            
+
             {isSearching && (
               <div className="text-sm text-gray-500">Suche läuft...</div>
             )}
-            
+
             {showSearchResults && (
               <div className="text-sm text-gray-600">
                 {searchResults.length} Kunde(n) gefunden
@@ -449,7 +449,7 @@ export default function CustomersPage() {
               <div className="text-2xl font-bold text-gray-900">{displayedCustomers.length}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -460,7 +460,7 @@ export default function CustomersPage() {
               <div className="text-2xl font-bold text-green-600">{displayedCustomers.length}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -469,11 +469,11 @@ export default function CustomersPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {displayedCustomers.length > 0 
+                {displayedCustomers.length > 0
                   ? `€${(displayedCustomers.reduce((sum, customer) => {
-                      const amount = parseFloat(customer.totalAmount?.replace('€', '') || '0')
-                      return sum + amount
-                    }, 0) / displayedCustomers.length).toFixed(2)}`
+                    const amount = parseFloat(customer.totalAmount?.replace('€', '') || '0')
+                    return sum + amount
+                  }, 0) / displayedCustomers.length).toFixed(2)}`
                   : '€0.00'
                 }
               </div>
@@ -488,7 +488,7 @@ export default function CustomersPage() {
               {showSearchResults ? `Suchergebnisse (${searchResults.length})` : 'Alle Kunden'}
             </CardTitle>
             <CardDescription>
-              {showSearchResults 
+              {showSearchResults
                 ? `Ergebnisse für "${searchQuery}"`
                 : 'Übersicht über alle registrierten Kunden'
               }
@@ -502,7 +502,7 @@ export default function CustomersPage() {
                   {showSearchResults ? 'Keine Kunden gefunden' : 'Noch keine Kunden registriert'}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  {showSearchResults 
+                  {showSearchResults
                     ? `Keine Kunden entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
                     : 'Fügen Sie Ihren ersten Kunden hinzu oder laden Sie CSV-Daten hoch.'
                   }
@@ -566,7 +566,9 @@ export default function CustomersPage() {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{customer.name}</div>
+                        <Link href={`/customers/${customer.id}`} className="font-medium text-blue-600 hover:underline">
+                          {customer.name}
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -597,23 +599,17 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditCustomer(customer.id)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Bearbeiten
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleViewInvoices(customer.id)}
-                          >
-                            Rechnungen
-                          </Button>
-                          <Button 
-                            variant="outline" 
+                          <Link href={`/customers/${customer.id}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                            >
+                              <User className="h-4 w-4 mr-1" />
+                              Profil
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleDeleteCustomer(customer)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
@@ -646,7 +642,7 @@ export default function CustomersPage() {
                 </h3>
               </div>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-sm text-gray-600">
                 Sind Sie sicher, dass Sie den Kunden{' '}
@@ -664,7 +660,7 @@ export default function CustomersPage() {
                 </p>
               )}
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
@@ -709,7 +705,7 @@ export default function CustomersPage() {
                 </h3>
               </div>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-sm text-gray-600">
                 Sind Sie sicher, dass Sie{' '}
@@ -725,7 +721,7 @@ export default function CustomersPage() {
                 📋 Hinweis: Alle zugehörigen Daten werden ebenfalls gelöscht.
               </p>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
