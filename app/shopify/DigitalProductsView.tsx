@@ -110,7 +110,15 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
     // ... (existing handlers)
 
     if (selectedProduct) {
-        // ... (existing detail view return)
+        return (
+            <DigitalProductDetailView
+                product={selectedProduct}
+                onBack={() => {
+                    setSelectedProduct(null);
+                    fetchProducts();
+                }}
+            />
+        );
     }
 
     return (
