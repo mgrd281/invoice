@@ -25,7 +25,13 @@ export async function GET(req: NextRequest) {
         const products = await prisma.digitalProduct.findMany({
             include: {
                 _count: {
-                    select: { keys: { where: { isUsed: false } } }
+                    select: {
+                        keys: true // This will return the total count of keys
+                    }
+                },
+                keys: {
+                    where: { isUsed: false },
+                    select: { id: true }
                 }
             },
             orderBy: { createdAt: 'desc' }

@@ -28,6 +28,7 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [newProduct, setNewProduct] = useState({ title: '', shopifyProductId: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isReportsOpen, setIsReportsOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<DigitalProduct | null>(null);
 
     useEffect(() => {
@@ -79,7 +80,6 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
     };
 
     const handleDeleteProduct = async (e: React.MouseEvent, productId: string) => {
-        // ... (existing delete logic)
         e.preventDefault();
         e.stopPropagation();
 
@@ -100,16 +100,17 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
         }
     };
 
+    // Calculate stats
+    const totalProducts = products.length;
+    const totalKeys = products.reduce((acc, p) => acc + (p._count?.keys || 0), 0);
+    // @ts-ignore - keys is included in the API response now
+    const totalAvailableKeys = products.reduce((acc, p) => acc + (p.keys?.length || 0), 0);
+    const totalUsedKeys = totalKeys - totalAvailableKeys;
+
+    // ... (existing handlers)
+
     if (selectedProduct) {
-        return (
-            <DigitalProductDetailView
-                product={selectedProduct}
-                onBack={() => {
-                    setSelectedProduct(null);
-                    fetchProducts(); // Refresh list on back
-                }}
-            />
-        );
+        // ... (existing detail view return)
     }
 
     return (
@@ -125,10 +126,83 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">
-                        <BarChart className="w-4 h-4 mr-2" />
-                        Berichte
-                    </Button>
+                    <Dialog open={isReportsOpen} onOpenChange={setIsReportsOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <BarChart className="w-4 h-4 mr-2" />
+                                Berichte
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                            <DialogHeader>
+                                <DialogTitle>Berichte & Statistiken</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium text-gray-500">Gesamt Produkte</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-gray-900">{totalProducts}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium text-gray-500">Verkaufte Keys</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-blue-600">{totalUsedKeys}</div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {totalKeys > 0 ? Math.round((totalUsedKeys / totalKeys) * 100) : 0}% aller Keys
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium text-gray-500">Verfügbare Keys</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-green-600">{totalAvailableKeys}</div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Bereit zum Verkauf
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="mt-8">
+                                <h3 className="text-lg font-semibold mb-4">Bestandsübersicht</h3>
+                                <div className="border rounded-lg overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-50 border-b">
+                                            <tr>
+                                                <th className="px-4 py-3 font-medium text-gray-500">Produkt</th>
+                                                <th className="px-4 py-3 font-medium text-gray-500 text-right">Verfügbar</th>
+                                                <th className="px-4 py-3 font-medium text-gray-500 text-right">Verkauft</th>
+                                                <th className="px-4 py-3 font-medium text-gray-500 text-right">Gesamt</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {products.map(p => {
+                                                // @ts-ignore
+                                                const available = p.keys?.length || 0;
+                                                const total = p._count?.keys || 0;
+                                                const used = total - available;
+                                                return (
+                                                    <tr key={p.id}>
+                                                        <td className="px-4 py-3 font-medium text-gray-900">{p.title}</td>
+                                                        <td className="px-4 py-3 text-right text-green-600 font-medium">{available}</td>
+                                                        <td className="px-4 py-3 text-right text-blue-600">{used}</td>
+                                                        <td className="px-4 py-3 text-right text-gray-500">{total}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
 
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                         <DialogTrigger asChild>
@@ -191,48 +265,52 @@ export default function DigitalProductsView({ shop }: DigitalProductsViewProps) 
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map((product) => (
-                        <Card
-                            key={product.id}
-                            className="hover:shadow-lg transition-shadow cursor-pointer h-full relative group"
-                            onClick={() => setSelectedProduct(product)}
-                        >
-                            <CardHeader>
-                                <CardTitle className="flex justify-between items-start">
-                                    <span className="truncate pr-8">{product.title}</span>
-                                    <div className="absolute top-4 right-4 flex gap-2">
-                                        <button
-                                            onClick={(e) => handleDeleteProduct(e, product.id)}
-                                            className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50"
-                                            title="Produkt löschen"
-                                        >
-                                            <Trash2 className="h-5 w-5" />
-                                        </button>
+                    {products.map((product) => {
+                        // @ts-ignore
+                        const availableCount = product.keys?.length || 0;
+                        return (
+                            <Card
+                                key={product.id}
+                                className="hover:shadow-lg transition-shadow cursor-pointer h-full relative group"
+                                onClick={() => setSelectedProduct(product)}
+                            >
+                                <CardHeader>
+                                    <CardTitle className="flex justify-between items-start">
+                                        <span className="truncate pr-8">{product.title}</span>
+                                        <div className="absolute top-4 right-4 flex gap-2">
+                                            <button
+                                                onClick={(e) => handleDeleteProduct(e, product.id)}
+                                                className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50"
+                                                title="Produkt löschen"
+                                            >
+                                                <Trash2 className="h-5 w-5" />
+                                            </button>
+                                        </div>
+                                    </CardTitle>
+                                    <CardDescription>ID: {product.shopifyProductId}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center justify-between mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-3 h-3 rounded-full ${availableCount === 0 ? 'bg-red-500' :
+                                                availableCount < 10 ? 'bg-yellow-500' : 'bg-green-500'
+                                                }`} />
+                                            <span className={`text-sm font-medium ${availableCount < 10 ? 'text-yellow-700' : 'text-gray-700'
+                                                }`}>
+                                                {availableCount} Keys verfügbar
+                                                {availableCount < 10 && (
+                                                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                                                        Niedriger Bestand
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <Button variant="ghost" size="sm">Verwalten &rarr;</Button>
                                     </div>
-                                </CardTitle>
-                                <CardDescription>ID: {product.shopifyProductId}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between mt-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-3 h-3 rounded-full ${product._count.keys === 0 ? 'bg-red-500' :
-                                            product._count.keys < 10 ? 'bg-yellow-500' : 'bg-green-500'
-                                            }`} />
-                                        <span className={`text-sm font-medium ${product._count.keys < 10 ? 'text-yellow-700' : 'text-gray-700'
-                                            }`}>
-                                            {product._count.keys} Keys verfügbar
-                                            {product._count.keys < 10 && (
-                                                <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
-                                                    Niedriger Bestand
-                                                </span>
-                                            )}
-                                        </span>
-                                    </div>
-                                    <Button variant="ghost" size="sm">Verwalten &rarr;</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
                 </div>
             )}
         </div>
