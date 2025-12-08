@@ -44,13 +44,13 @@ export async function getAvailableKey(digitalProductId: string) {
     })
 }
 
-export async function markKeyAsUsed(keyId: string, orderId: string, shopifyOrderId: string) {
+export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string) {
     return prisma.licenseKey.update({
         where: { id: keyId },
         data: {
             isUsed: true,
             usedAt: new Date(),
-            // orderId: orderId, // We might not have a local order ID yet if this runs before local order creation
+            orderId: orderNumber, // Storing the visible order number (e.g. #1001) here for display
             shopifyOrderId: shopifyOrderId
         }
     })
@@ -101,7 +101,7 @@ export async function processDigitalProductOrder(
     }
 
     // Mark key as used
-    await markKeyAsUsed(key.id, '', shopifyOrderId)
+    await markKeyAsUsed(key.id, orderNumber, shopifyOrderId)
 
     // Send Email
     const template = digitalProduct.emailTemplate || getDefaultTemplate()

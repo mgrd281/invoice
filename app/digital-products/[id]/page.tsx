@@ -478,11 +478,15 @@ Viel Spaß!`
                                                                             {key.usedAt ? new Date(key.usedAt).toLocaleDateString() + ' ' + new Date(key.usedAt).toLocaleTimeString() : '-'}
                                                                         </td>
                                                                         <td className="px-4 py-3">
-                                                                            {key.shopifyOrderId ? (
-                                                                                key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
-                                                                                    ? key.shopifyOrderId
-                                                                                    : `#${key.shopifyOrderId}`
-                                                                            ) : '-'}
+                                                                            {key.orderId ? (
+                                                                                key.orderId
+                                                                            ) : (
+                                                                                key.shopifyOrderId ? (
+                                                                                    key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
+                                                                                        ? key.shopifyOrderId
+                                                                                        : `#${key.shopifyOrderId}`
+                                                                                ) : '-'
+                                                                            )}
                                                                         </td>
                                                                     </>
                                                                 )}
