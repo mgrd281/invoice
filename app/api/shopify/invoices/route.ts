@@ -56,7 +56,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             invoices: mappedInvoices,
             userEmail: userEmail,
-            organizationName: organization.name
+            organizationName: organization.name,
+            logoUrl: organization.logoUrl
         });
 
     } catch (error) {

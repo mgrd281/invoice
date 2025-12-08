@@ -35,6 +35,7 @@ function ShopifyEmbeddedContent() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalRevenue: 0, openInvoices: 0, paidInvoices: 0 });
 
   useEffect(() => {
@@ -69,6 +70,10 @@ function ShopifyEmbeddedContent() {
         setUserEmail(data.userEmail);
       }
 
+      if (data.logoUrl) {
+        setLogoUrl(data.logoUrl);
+      }
+
       if (data.invoices) {
         setInvoices(data.invoices);
         calculateStats(data.invoices);
@@ -96,9 +101,15 @@ function ShopifyEmbeddedContent() {
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col">
         <div className="p-6 border-b border-gray-100">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            RechnungsProfi
-          </h1>
+          {logoUrl ? (
+            <div className="mb-3">
+              <img src={logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
+            </div>
+          ) : (
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              RechnungsProfi
+            </h1>
+          )}
           <p className="text-xs text-gray-500 mt-1">{shop}</p>
           {userEmail && (
             <div className="mt-2 flex items-center text-xs text-green-600 bg-green-50 px-2 py-1 rounded">

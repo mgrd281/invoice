@@ -1,7 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Copy, Save } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save } from 'lucide-react';
 
 // ... (existing imports)
 
@@ -13,6 +19,19 @@ interface DigitalProduct {
 }
 
 // ... (existing interfaces)
+
+interface LicenseKey {
+    id: string;
+    key: string;
+    isUsed: boolean;
+    usedAt?: string;
+    shopifyOrderId?: string;
+}
+
+interface DigitalProductDetailViewProps {
+    product: DigitalProduct;
+    onBack: () => void;
+}
 
 export default function DigitalProductDetailView({ product, onBack }: DigitalProductDetailViewProps) {
     const [keys, setKeys] = useState<LicenseKey[]>([]);
