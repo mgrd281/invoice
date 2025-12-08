@@ -168,6 +168,13 @@ function replaceVariables(template: string, variables: Record<string, string>) {
 }
 
 function convertToHtml(text: string) {
-    // Replace newlines with <br/> to preserve line breaks while allowing HTML tags
-    return text.replace(/\n/g, '<br/>')
+    // Check if text looks like HTML (contains tags)
+    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(text);
+
+    if (hasHtmlTags) {
+        return text;
+    }
+
+    // Replace newlines with <br/> for plain text
+    return text.replace(/\n/g, '<br/>');
 }
