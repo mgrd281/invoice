@@ -41,15 +41,20 @@ export async function GET(req: NextRequest) {
 
         // Date Range Filter (Explicit dates only)
         if (startStr) {
-            whereClause.issueDate = { ...whereClause.issueDate, gte: new Date(startStr) };
+            const startDate = new Date(startStr);
+            console.log('📅 Date Filter Start:', startStr, '->', startDate.toISOString());
+            whereClause.issueDate = { ...whereClause.issueDate, gte: startDate };
         }
 
         if (endStr) {
             const endDate = new Date(endStr);
             // Set end date to end of day to include the full day
             endDate.setHours(23, 59, 59, 999);
+            console.log('📅 Date Filter End:', endStr, '->', endDate.toISOString());
             whereClause.issueDate = { ...whereClause.issueDate, lte: endDate };
         }
+
+        console.log('🔍 Final WhereClause:', JSON.stringify(whereClause, null, 2));
 
         // Status Filter
         if (status !== 'all') {
