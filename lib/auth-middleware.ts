@@ -30,9 +30,11 @@ export function getUserFromRequest(request: NextRequest): AuthenticatedUser | nu
       // Try to parse as JSON first (backward compatibility)
       userData = JSON.parse(userHeader)
     } catch (e) {
-      // If failed, try to decode from Base64
+      // If failed, try to decode from Base64 (Safe decode)
       try {
-        const jsonStr = Buffer.from(userHeader, 'base64').toString('utf-8')
+        const jsonStr = decodeURIComponent(Array.prototype.map.call(atob(userHeader), function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        }).join(''))
         userData = JSON.parse(jsonStr)
       } catch (err) {
         console.error('❌ Failed to decode user info header:', err)

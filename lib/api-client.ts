@@ -2,10 +2,17 @@ import { useAuth } from '@/hooks/use-auth-compat'
 
 // Helper function to create authenticated API requests
 export function createAuthenticatedRequest(user: any) {
+  // Safe Base64 encode to handle special characters (umlauts, emojis, etc.)
+  const userInfoStr = JSON.stringify(user)
+  const userInfoBase64 = btoa(encodeURIComponent(userInfoStr).replace(/%([0-9A-F]{2})/g,
+    function toSolidBytes(match, p1) {
+      return String.fromCharCode(parseInt(p1, 16));
+    }))
+
   return {
     headers: {
       'Content-Type': 'application/json',
-      'x-user-info': JSON.stringify(user)
+      'x-user-info': userInfoBase64
     }
   }
 }
@@ -22,7 +29,7 @@ export function useAuthenticatedFetch() {
     }
 
     const authHeaders = createAuthenticatedRequest(user)
-    
+
     const mergedOptions: RequestInit = {
       ...options,
       headers: {
@@ -44,7 +51,7 @@ export function createAuthenticatedFetchOptions(user: any, options: RequestInit 
   }
 
   const authHeaders = createAuthenticatedRequest(user)
-  
+
   return {
     ...options,
     headers: {
