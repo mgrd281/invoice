@@ -41,6 +41,10 @@ function ShopifyEmbeddedContent() {
 
   useEffect(() => {
     if (shop) {
+      // Frontend override for admin shop
+      if (shop.toLowerCase().includes('45dv93-bk')) {
+        setCurrentPlan('ENTERPRISE');
+      }
       initShop();
     }
   }, [shop]);
