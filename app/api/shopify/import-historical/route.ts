@@ -37,30 +37,22 @@ export async function GET(req: Request) {
             throw new Error('Organization not found');
         }
 
-        for (const order of orders) {
-            try {
-                // Check if invoice already exists by Shopify Order ID
-                // We do this check here to avoid unnecessary processing if we want to be fast,
-                // but handleOrderCreate also does checks. 
-                // However, handleOrderCreate might update existing ones, which is good.
-
-                const result = await handleOrderCreate(order, shop || process.env.SHOPIFY_SHOP_DOMAIN || null);
-
-                if (result) {
-                    // We don't easily know if it was created or updated without checking timestamps or return values
-                    // but for now we count it as processed.
-                    createdCount++;
-                } else {
-                    skippedCount++;
+        // Process in batches to avoid overwhelming the DB but speed up execution
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < orders.length; i += BATCH_SIZE) {
+            const batch = orders.slice(i, i + BATCH_SIZE);
+            await Promise.all(batch.map(async (order) => {
+                try {
+                    const result = await handleOrderCreate(order, shop || process.env.SHOPIFY_SHOP_DOMAIN || null);
+                    if (result) createdCount++;
+                    else skippedCount++;
+                } catch (err: any) {
+                    console.error(`❌ Failed to import order ${order.name}:`, err);
+                    errors.push({ order: order.name, error: err.message });
                 }
-
-            } catch (err: any) {
-                console.error(`❌ Failed to import order ${order.name}:`, err);
-                errors.push({ order: order.name, error: err.message });
-            }
-
-            // Small delay to prevent database congestion
-            await new Promise(r => setTimeout(r, 50));
+            }));
+            // Minimal delay between batches to allow GC and prevent complete resource exhaustion
+            await new Promise(r => setTimeout(r, 10));
         }
 
         console.log(`✅ Historical import finished. Processed: ${createdCount}, Skipped: ${skippedCount}, Errors: ${errors.length}`);
