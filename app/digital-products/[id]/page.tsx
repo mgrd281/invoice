@@ -29,6 +29,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const [buttonText, setButtonText] = useState('Download')
     const [buttonColor, setButtonColor] = useState('#000000')
     const [buttonTextColor, setButtonTextColor] = useState('#ffffff')
+    const [buttonAlignment, setButtonAlignment] = useState('left')
     const [savingSettings, setSavingSettings] = useState(false)
     // Edit product state
     const [isEditingProduct, setIsEditingProduct] = useState(false)
@@ -57,6 +58,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                 setButtonText(prodData.data.buttonText || 'Download')
                 setButtonColor(prodData.data.buttonColor || '#000000')
                 setButtonTextColor(prodData.data.buttonTextColor || '#ffffff')
+                setButtonAlignment(prodData.data.buttonAlignment || 'left')
             }
             if (keysData.success) {
                 setKeys(keysData.data)
@@ -129,7 +131,8 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                     downloadUrl,
                     buttonText,
                     buttonColor,
-                    buttonTextColor
+                    buttonTextColor,
+                    buttonAlignment
                 })
             })
 
@@ -537,6 +540,18 @@ Viel Spaß!`
                                                                     onChange={e => setButtonTextColor(e.target.value)}
                                                                 />
                                                             </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Ausrichtung</Label>
+                                                            <select
+                                                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                value={buttonAlignment}
+                                                                onChange={e => setButtonAlignment(e.target.value)}
+                                                            >
+                                                                <option value="left">Links</option>
+                                                                <option value="center">Zentriert</option>
+                                                                <option value="right">Rechts</option>
+                                                            </select>
                                                         </div>
                                                     </div>
 

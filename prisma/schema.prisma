@@ -317,6 +317,7 @@ model DigitalProduct {
   buttonText      String?  @default("Download")
   buttonColor     String?  @default("#000000")
   buttonTextColor String?  @default("#ffffff")
+  buttonAlignment String?  @default("left") // "left", "center", "right"
   keys           LicenseKey[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
