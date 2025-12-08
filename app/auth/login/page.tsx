@@ -53,7 +53,8 @@ export default function LoginPage() {
         { email: 'mgrdegh@web.de', password: 'admin123' },
         { email: 'mgrdegh@web.de', password: 'Mkarina321@' },
         { email: 'Mkarina321@', password: 'admin123' },
-        { email: 'Mkarina321@', password: 'Mkarina321@' }
+        { email: 'Mkarina321@', password: 'Mkarina321@' },
+        { email: 'mgrdegh@web.de', password: '1532@' }
       ]
 
       // Additional security check - ensure no bypass

@@ -15,6 +15,7 @@ import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { InvoiceTemplate as RechnungsTemplate, getDefaultTemplate } from '@/lib/invoice-templates'
+import { DocumentKind } from '@/lib/document-types'
 
 interface InvoiceItem {
   id: string
@@ -94,6 +95,13 @@ export default function NewInvoicePage() {
     recipientName: '',
     placement: 'flex-beside-thanks' // 'flex-beside-thanks', 'left-below-table', 'top-right-outside-info', 'top-right-summary', 'bottom-right-footer'
   })
+
+  // Document Type Management
+  const [documentKind, setDocumentKind] = useState<DocumentKind>(DocumentKind.INVOICE)
+  const [referenceNumber, setReferenceNumber] = useState('')
+  const [originalInvoiceDate, setOriginalInvoiceDate] = useState('')
+  const [reason, setReason] = useState('')
+  const [refundAmount, setRefundAmount] = useState<string>('')
 
   // Load item templates from localStorage and invoice templates from API
   useEffect(() => {
@@ -308,7 +316,13 @@ export default function NewInvoicePage() {
         templateName: selectedTemplate?.name,
         templateType: selectedTemplate?.type,
         // Include QR-Code payment settings
-        qrCodeSettings: qrCodeSettings.enabled ? qrCodeSettings : null
+        qrCodeSettings: qrCodeSettings.enabled ? qrCodeSettings : null,
+        // Document Type specific fields
+        document_kind: documentKind,
+        reference_number: referenceNumber,
+        original_invoice_date: originalInvoiceDate,
+        grund: reason,
+        refund_amount: refundAmount ? parseFloat(refundAmount) : undefined
       }
 
       const response = await authenticatedFetch('/api/invoices', {
@@ -427,6 +441,61 @@ export default function NewInvoicePage() {
                     placeholder="z.B. RE-2025-001"
                   />
                 </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Dokument-Typ
+                  </label>
+                  <Select
+                    value={documentKind}
+                    onValueChange={(value) => setDocumentKind(value as DocumentKind)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Typ auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={DocumentKind.INVOICE}>Rechnung</SelectItem>
+                      <SelectItem value={DocumentKind.REFUND_FULL}>Gutschrift (Voll)</SelectItem>
+                      <SelectItem value={DocumentKind.REFUND_PARTIAL}>Gutschrift (Teilweise)</SelectItem>
+                      <SelectItem value={DocumentKind.CANCELLATION}>Stornorechnung</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {documentKind !== DocumentKind.INVOICE && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Original Rechnungs-Nr.
+                      </label>
+                      <Input
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                        placeholder="z.B. RE-2025-001"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Original Datum
+                      </label>
+                      <Input
+                        type="date"
+                        value={originalInvoiceDate}
+                        onChange={(e) => setOriginalInvoiceDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Grund
+                      </label>
+                      <Input
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="z.B. Rücksendung, Fehler"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Rechnungsvorlage & Status
@@ -480,10 +549,10 @@ export default function NewInvoicePage() {
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center flex-1">
                                   <div className={`w-2 h-2 rounded-full mr-3 ${defaults.status === 'Bezahlt' ? 'bg-green-500' :
-                                      defaults.status === 'Storniert' ? 'bg-red-500' :
-                                        defaults.status === 'Erstattet' ? 'bg-purple-500' :
-                                          defaults.status === 'Mahnung' ? 'bg-orange-500' :
-                                            'bg-blue-500'
+                                    defaults.status === 'Storniert' ? 'bg-red-500' :
+                                      defaults.status === 'Erstattet' ? 'bg-purple-500' :
+                                        defaults.status === 'Mahnung' ? 'bg-orange-500' :
+                                          'bg-blue-500'
                                     }`}></div>
                                   <div className="flex items-center">
                                     <span className="font-medium text-sm">{template.name}</span>
@@ -493,10 +562,10 @@ export default function NewInvoicePage() {
                                   </div>
                                 </div>
                                 <span className={`ml-3 text-xs font-medium px-2 py-1 rounded ${defaults.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                                    defaults.status === 'Storniert' ? 'bg-red-100 text-red-700' :
-                                      defaults.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                                        defaults.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                                          'bg-blue-100 text-blue-700'
+                                  defaults.status === 'Storniert' ? 'bg-red-100 text-red-700' :
+                                    defaults.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
+                                      defaults.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
+                                        'bg-blue-100 text-blue-700'
                                   }`}>
                                   {defaults.status}
                                 </span>
@@ -511,10 +580,10 @@ export default function NewInvoicePage() {
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Ausgewählt: <span className="font-medium">{selectedTemplate.name}</span></span>
                           <span className={`text-xs px-2 py-1 rounded ${invoiceData.status === 'Bezahlt' ? 'bg-green-100 text-green-700' :
-                              invoiceData.status === 'Storniert' ? 'bg-red-100 text-red-700' :
-                                invoiceData.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
-                                  invoiceData.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-blue-100 text-blue-700'
+                            invoiceData.status === 'Storniert' ? 'bg-red-100 text-red-700' :
+                              invoiceData.status === 'Erstattet' ? 'bg-purple-100 text-purple-700' :
+                                invoiceData.status === 'Mahnung' ? 'bg-orange-100 text-orange-700' :
+                                  'bg-blue-100 text-blue-700'
                             }`}>
                             {invoiceData.status}
                           </span>

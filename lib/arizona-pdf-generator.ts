@@ -24,6 +24,10 @@ interface InvoiceData {
   document_kind?: DocumentKind
   reference_number?: string
   grund?: string
+  // Refund specific fields
+  original_invoice_date?: string
+  refund_amount?: number
+  remaining_amount?: number
   // Template information
   templateId?: string
   templateName?: string
@@ -173,7 +177,7 @@ function addDocumentStamps(doc: jsPDF, documentKind?: DocumentKind) {
     addRectangularStamp(doc, 'STORNO', 85, 130, 40, 20, [220, 38, 38], 14)
     addDiagonalText(doc, 'STORNO', [200, 200, 200], 80)
 
-  } else if (documentKind === DocumentKind.CREDIT_NOTE) {
+  } else if (documentKind === DocumentKind.CREDIT_NOTE || documentKind === DocumentKind.REFUND_FULL || documentKind === DocumentKind.REFUND_PARTIAL) {
     // ERSTATTUNG: Blue stamp + light blue watermark
     addRectangularStamp(doc, 'ERSTATTUNG', 75, 130, 60, 20, [37, 99, 235], 12)
     addDiagonalText(doc, 'ERSTATTUNG', [180, 200, 230], 70)
@@ -301,8 +305,21 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     let title = 'Rechnung'
     if (invoice.document_kind === DocumentKind.CANCELLATION) {
       title = 'Storno-Rechnung'
+      if (invoice.reference_number) {
+        title = `Stornorechnung zu Rechnung Nr. ${invoice.reference_number}`
+      }
     } else if (invoice.document_kind === DocumentKind.CREDIT_NOTE) {
       title = 'Gutschrift'
+    } else if (invoice.document_kind === DocumentKind.REFUND_FULL) {
+      title = 'Gutschrift'
+      if (invoice.reference_number) {
+        title = `Gutschrift zu Rechnung Nr. ${invoice.reference_number}`
+      }
+    } else if (invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
+      title = 'Teil-Gutschrift'
+      if (invoice.reference_number) {
+        title = `Teil-Gutschrift zu Rechnung Nr. ${invoice.reference_number}`
+      }
     }
 
     // Simple title
@@ -312,7 +329,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.setFontSize(9)
 
     yPos = boxY + 16
-    doc.text(`Rechnungs-Nr.`, boxX + 5, yPos)
+    doc.text(`Beleg-Nr.`, boxX + 5, yPos)
     doc.text(invoice.number.replace(/^#/, ''), boxX + 40, yPos)
 
     yPos += 5
@@ -320,7 +337,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text(invoice.id.substring(0, 6), boxX + 40, yPos)
 
     yPos += 5
-    doc.text(`Rechnungsdatum`, boxX + 5, yPos)
+    doc.text(`Datum`, boxX + 5, yPos)
     doc.text(new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }), boxX + 40, yPos)
 
     yPos += 5
@@ -338,6 +355,9 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     if (invoice.document_kind === DocumentKind.INVOICE && invoice.dueDate) {
       doc.text(`Lieferdatum`, boxX + 5, yPos)
       doc.text(new Date(invoice.dueDate).toLocaleDateString('de-DE'), boxX + 40, yPos)
+    } else if (invoice.original_invoice_date) {
+      doc.text(`Orig. Datum`, boxX + 5, yPos)
+      doc.text(new Date(invoice.original_invoice_date).toLocaleDateString('de-DE'), boxX + 40, yPos)
     } else if (invoice.reference_number) {
       doc.text(`Referenz`, boxX + 5, yPos)
       doc.text(invoice.reference_number, boxX + 40, yPos)
@@ -416,8 +436,10 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     let thankYouMessage = 'Vielen Dank für Ihren Auftrag. Wir berechnen Ihnen folgende Lieferung bzw. Leistung:'
     if (invoice.document_kind === DocumentKind.CANCELLATION) {
       thankYouMessage = 'Hiermit stornieren wir folgende Rechnung:'
-    } else if (invoice.document_kind === DocumentKind.CREDIT_NOTE) {
+    } else if (invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL) {
       thankYouMessage = 'Hiermit erstatten wir Ihnen folgende Beträge:'
+    } else if (invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
+      thankYouMessage = 'Hiermit erstatten wir Ihnen anteilig folgende Beträge:'
     }
 
     // Left-align for German
@@ -511,7 +533,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
       const unitPrice = Math.abs(item.unitPrice)
       const total = Math.abs(item.total)
 
-      if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE) {
+      if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
         doc.text(`-${unitPrice.toFixed(2)}`, 165, yPos)
         doc.text(`-${total.toFixed(2)}`, 182, yPos)
       } else {
@@ -534,7 +556,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.setFontSize(9)
     doc.text('Summe netto', 140, yPos)
     const subtotal = Math.abs(invoice.subtotal)
-    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE) {
+    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
       doc.text(`-${subtotal.toFixed(2)}`, 180, yPos)
     } else {
       doc.text(`${subtotal.toFixed(2)}`, 180, yPos)
@@ -544,7 +566,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     const finalTaxRate = invoice.taxRate || 19
     doc.text(`MwSt. ${finalTaxRate}%`, 140, yPos)
     const taxAmount = Math.abs(invoice.taxAmount)
-    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE) {
+    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
       doc.text(`-${taxAmount.toFixed(2)}`, 180, yPos)
     } else {
       doc.text(`${taxAmount.toFixed(2)}`, 180, yPos)
@@ -557,7 +579,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text('Gesamt', 140, yPos)
 
     const total = Math.abs(invoice.total)
-    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE) {
+    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
       doc.text(`-${total.toFixed(2)}`, 180, yPos)
     } else {
       doc.text(`${total.toFixed(2)}`, 180, yPos)

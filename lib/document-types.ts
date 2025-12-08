@@ -2,7 +2,9 @@
 export enum DocumentKind {
   INVOICE = 'INVOICE',           // Rechnung
   CANCELLATION = 'CANCELLATION', // Stornorechnung  
-  CREDIT_NOTE = 'CREDIT_NOTE'    // Gutschrift
+  CREDIT_NOTE = 'CREDIT_NOTE',   // Gutschrift (Legacy/Generic)
+  REFUND_FULL = 'REFUND_FULL',   // Gutschrift für volle Rückerstattung
+  REFUND_PARTIAL = 'REFUND_PARTIAL' // Gutschrift für teilweise Rückerstattung
 }
 
 export enum DocumentStatus {
@@ -16,12 +18,12 @@ export enum DocumentStatus {
 
 export interface DocumentData {
   id: string
-  
+
   // Document identification
   document_kind: DocumentKind
   document_number: string        // RE-2024-001, ST-2024-001, GS-2024-001
   reference_number?: string      // Original invoice number for Storno/Gutschrift
-  
+
   // Customer information
   customerId: string
   customerName: string
@@ -30,11 +32,11 @@ export interface DocumentData {
   customerCity: string
   customerZip: string
   customerCountry: string
-  
+
   // Document dates
   date: string
   dueDate?: string              // Only for INVOICE
-  
+
   // Financial data with correct signs
   items: DocumentItem[]
   subtotal: number              // Signed value (negative for Storno/Gutschrift)
@@ -42,11 +44,11 @@ export interface DocumentData {
   taxAmount: number             // Signed value
   total: number                 // Signed value
   totals_signed: boolean        // Flag indicating if totals have correct signs
-  
+
   // Status (separate from document kind)
   status: DocumentStatus
   statusColor: string
-  
+
   // Additional fields
   grund?: string                // Reason for Storno/Gutschrift
   amount: string                // Formatted amount string
@@ -70,6 +72,8 @@ export function getDocumentPrefix(kind: DocumentKind): string {
     case DocumentKind.CANCELLATION:
       return 'ST'
     case DocumentKind.CREDIT_NOTE:
+    case DocumentKind.REFUND_FULL:
+    case DocumentKind.REFUND_PARTIAL:
       return 'GS'
     default:
       return 'RE'
@@ -83,6 +87,8 @@ export function getDocumentTitle(kind: DocumentKind): string {
     case DocumentKind.CANCELLATION:
       return 'STORNO-RECHNUNG'
     case DocumentKind.CREDIT_NOTE:
+    case DocumentKind.REFUND_FULL:
+    case DocumentKind.REFUND_PARTIAL:
       return 'GUTSCHRIFT'
     default:
       return 'RECHNUNG'
@@ -96,7 +102,9 @@ export function getDocumentColor(kind: DocumentKind): { r: number, g: number, b:
     case DocumentKind.CANCELLATION:
       return { r: 220, g: 38, b: 38 }    // Red
     case DocumentKind.CREDIT_NOTE:
-      return { r: 37, g: 99, b: 235 }    // Blue
+    case DocumentKind.REFUND_FULL:
+    case DocumentKind.REFUND_PARTIAL:
+      return { r: 37, g: 99, b: 235 }    // Blue (Refunds are usually blue or green, keeping blue for consistency)
     default:
       return { r: 37, g: 99, b: 235 }
   }
@@ -125,7 +133,7 @@ export function determineDocumentKind(csvData: any): DocumentKind {
   const rechnungstyp = csvData.rechnungstyp?.toLowerCase() || ''
   const orderNumber = csvData.orderNumber || ''
   const total = parseFloat(csvData.total || '0')
-  
+
   // Check explicit type column
   if (rechnungstyp === 'storno') {
     return DocumentKind.CANCELLATION
@@ -133,7 +141,7 @@ export function determineDocumentKind(csvData: any): DocumentKind {
   if (rechnungstyp === 'gutschrift') {
     return DocumentKind.CREDIT_NOTE
   }
-  
+
   // Check by order number prefix
   if (orderNumber.startsWith('ST-')) {
     return DocumentKind.CANCELLATION
@@ -141,20 +149,20 @@ export function determineDocumentKind(csvData: any): DocumentKind {
   if (orderNumber.startsWith('GS-')) {
     return DocumentKind.CREDIT_NOTE
   }
-  
+
   // Check by negative amount (fallback)
   if (total < 0) {
     // If negative but no explicit type, assume credit note
     return DocumentKind.CREDIT_NOTE
   }
-  
+
   return DocumentKind.INVOICE
 }
 
 export function determineDocumentStatus(csvData: any, kind: DocumentKind): DocumentStatus {
   const statusDeutsch = csvData.statusDeutsch || ''
   const financialStatus = csvData.financialStatus?.toLowerCase() || ''
-  
+
   // Use explicit German status if available
   if (statusDeutsch) {
     switch (statusDeutsch.toLowerCase()) {
@@ -172,7 +180,7 @@ export function determineDocumentStatus(csvData: any, kind: DocumentKind): Docum
         return DocumentStatus.GUTSCHRIFT
     }
   }
-  
+
   // Map from financial status
   switch (financialStatus) {
     case 'paid':
