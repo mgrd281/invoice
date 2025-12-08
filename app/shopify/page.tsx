@@ -571,6 +571,64 @@ function ShopifyEmbeddedContent() {
           {activeTab === 'settings' && (
             <div className="space-y-8 max-w-4xl mx-auto">
 
+              {/* Data Import Section */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <RefreshCw className="w-5 h-5 mr-2 text-gray-600" />
+                    Daten-Import (Historisch)
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">Importieren Sie Ihre historischen Bestellungen aus Shopify</p>
+                </div>
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">Alle Bestellungen importieren</h4>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Dies importiert alle vergangenen Bestellungen aus Ihrem Shopify-Shop und erstellt Rechnungen dafür.
+                        <br />
+                        <span className="text-xs text-orange-600 font-medium">Hinweis: Es werden KEINE E-Mails an Kunden gesendet.</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Möchten Sie wirklich ALLE historischen Bestellungen importieren? Dies kann einige Minuten dauern.')) return;
+
+                        const btn = document.getElementById('import-btn');
+                        if (btn) {
+                          btn.innerText = 'Import läuft...';
+                          (btn as HTMLButtonElement).disabled = true;
+                        }
+
+                        try {
+                          const res = await fetch(`/api/shopify/import-historical?shop=${shop}`);
+                          const data = await res.json();
+
+                          if (data.success) {
+                            alert(data.message);
+                            fetchData(); // Refresh data
+                          } else {
+                            alert('Fehler beim Import: ' + (data.error || 'Unbekannter Fehler'));
+                          }
+                        } catch (e) {
+                          alert('Verbindungsfehler beim Import.');
+                          console.error(e);
+                        } finally {
+                          if (btn) {
+                            btn.innerText = 'Jetzt importieren';
+                            (btn as HTMLButtonElement).disabled = false;
+                          }
+                        }
+                      }}
+                      id="import-btn"
+                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Jetzt importieren
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Subscription Section */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -647,64 +705,6 @@ function ShopifyEmbeddedContent() {
                       disabled={currentPlan === 'ENTERPRISE'}
                     >
                       {currentPlan === 'ENTERPRISE' ? 'Aktiver Plan' : 'Kontaktieren'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Data Import Section */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                    <RefreshCw className="w-5 h-5 mr-2 text-gray-600" />
-                    Daten-Import
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">Importieren Sie Ihre historischen Bestellungen aus Shopify</p>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Alle Bestellungen importieren</h4>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Dies importiert alle vergangenen Bestellungen aus Ihrem Shopify-Shop und erstellt Rechnungen dafür.
-                        <br />
-                        <span className="text-xs text-orange-600 font-medium">Hinweis: Es werden KEINE E-Mails an Kunden gesendet.</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (!confirm('Möchten Sie wirklich ALLE historischen Bestellungen importieren? Dies kann einige Minuten dauern.')) return;
-
-                        const btn = document.getElementById('import-btn');
-                        if (btn) {
-                          btn.innerText = 'Import läuft...';
-                          (btn as HTMLButtonElement).disabled = true;
-                        }
-
-                        try {
-                          const res = await fetch(`/api/shopify/import-historical?shop=${shop}`);
-                          const data = await res.json();
-
-                          if (data.success) {
-                            alert(data.message);
-                            fetchData(); // Refresh data
-                          } else {
-                            alert('Fehler beim Import: ' + (data.error || 'Unbekannter Fehler'));
-                          }
-                        } catch (e) {
-                          alert('Verbindungsfehler beim Import.');
-                          console.error(e);
-                        } finally {
-                          if (btn) {
-                            btn.innerText = 'Jetzt importieren';
-                            (btn as HTMLButtonElement).disabled = false;
-                          }
-                        }
-                      }}
-                      id="import-btn"
-                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
-                    >
-                      Jetzt importieren
                     </button>
                   </div>
                 </div>
