@@ -327,7 +327,7 @@ export default function NewInvoicePage() {
       const result = await response.json()
 
       if (result.success) {
-        DashboardUpdater.triggerUpdate()
+        DashboardUpdater.dispatchInvoiceCreated()
         showToast('Rechnung erfolgreich erstellt', 'success')
         window.location.href = '/invoices'
       } else {
