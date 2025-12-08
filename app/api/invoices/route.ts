@@ -43,10 +43,13 @@ export async function GET(request: NextRequest) {
     const org = await ensureOrganization()
 
     // Fetch invoices from Prisma
-    // Admin sees all, User sees own
-    const whereClause: Prisma.InvoiceWhereInput = {
-      organizationId: org.id
+    const whereClause: Prisma.InvoiceWhereInput = {}
+
+    // If not admin, restrict to specific organization
+    if (!shouldShowAllData(user)) {
+      whereClause.organizationId = org.id
     }
+    // If admin, we show all invoices (empty whereClause for organizationId)
 
     if (!shouldShowAllData(user)) {
       // Filter by customer email matching user email? 
