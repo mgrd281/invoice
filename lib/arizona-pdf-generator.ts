@@ -177,11 +177,12 @@ function addDocumentStamps(doc: jsPDF, documentKind?: DocumentKind) {
     addRectangularStamp(doc, 'STORNO', 85, 130, 40, 20, [220, 38, 38], 14)
     addDiagonalText(doc, 'STORNO', [200, 200, 200], 80)
 
-  } else if (documentKind === DocumentKind.CREDIT_NOTE || documentKind === DocumentKind.REFUND_FULL || documentKind === DocumentKind.REFUND_PARTIAL) {
-    // ERSTATTUNG: Blue stamp + light blue watermark
-    addRectangularStamp(doc, 'ERSTATTUNG', 75, 130, 60, 20, [37, 99, 235], 12)
-    addDiagonalText(doc, 'ERSTATTUNG', [180, 200, 230], 70)
   }
+  // ERSTATTUNG stamp removed as per user request
+  // else if (documentKind === DocumentKind.CREDIT_NOTE || documentKind === DocumentKind.REFUND_FULL || documentKind === DocumentKind.REFUND_PARTIAL) {
+  //   addRectangularStamp(doc, 'ERSTATTUNG', 75, 130, 60, 20, [37, 99, 235], 12)
+  //   addDiagonalText(doc, 'ERSTATTUNG', [180, 200, 230], 70)
+  // }
 }
 
 // ========================================
