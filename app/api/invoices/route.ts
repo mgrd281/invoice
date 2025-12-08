@@ -35,6 +35,8 @@ import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 import { handleOrderCreate } from '@/lib/shopify-order-handler'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const fs = require('fs');
   const path = require('path');

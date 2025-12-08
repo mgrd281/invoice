@@ -202,6 +202,13 @@ model Invoice {
   payments        Payment[]
   dunningLogs     DunningLog[]
 
+  // New fields for document types
+  documentKind    String        @default("INVOICE")
+  referenceNumber String?
+  originalDate    DateTime?
+  reason          String?
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+
   @@unique([organizationId, invoiceNumber])
 }
 
