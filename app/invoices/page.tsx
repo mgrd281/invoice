@@ -688,20 +688,7 @@ export default function InvoicesPage() {
                 selectedCount={selectedInvoices.size}
                 className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
               />
-              <Button
-                variant="outline"
-                onClick={handleCleanupDuplicates}
-                disabled={cleaningUp}
-                className="text-orange-600 hover:text-orange-700 hover:border-orange-300"
-                title="Doppelte Rechnungen entfernen"
-              >
-                {cleaningUp ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                {cleaningUp ? 'Bereinige...' : 'Duplikate bereinigen'}
-              </Button>
+
               <Link href="/invoices/new">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
