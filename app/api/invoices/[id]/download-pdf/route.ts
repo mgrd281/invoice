@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
-import { loadInvoicesFromDisk } from '@/lib/server-storage'
-import { generateArizonaPDFBuffer } from '@/lib/arizona-pdf-generator'
+import { prisma } from '@/lib/prisma'
+import { generateArizonaPDF } from '@/lib/arizona-pdf-generator'
+import { getCompanySettings } from '@/lib/company-settings'
+import { DocumentKind } from '@/lib/document-types'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
@@ -17,9 +21,14 @@ export async function GET(
     const invoiceId = params.id
     console.log('📄 Generating PDF download for invoice:', invoiceId)
 
-    // Load invoice data
-    const invoices = loadInvoicesFromDisk()
-    const invoice = invoices.find((inv: any) => inv.id === invoiceId)
+    // Fetch invoice from Prisma
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        customer: true,
+        items: true
+      }
+    })
 
     if (!invoice) {
       return NextResponse.json(
@@ -28,22 +37,65 @@ export async function GET(
       )
     }
 
-    // Generate PDF buffer
-    const pdfBuffer = await generateArizonaPDFBuffer(invoiceId)
-    
-    if (!pdfBuffer) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to generate PDF' },
-        { status: 500 }
-      )
+    // Map Prisma invoice to InvoiceData for PDF generator
+    const companySettings = getCompanySettings()
+
+    const invoiceData = {
+      id: invoice.id,
+      number: invoice.invoiceNumber,
+      date: invoice.issueDate.toISOString(),
+      dueDate: invoice.dueDate.toISOString(),
+      subtotal: Number(invoice.totalNet),
+      taxRate: 19, // Default or fetch from items if needed
+      taxAmount: Number(invoice.totalTax),
+      total: Number(invoice.totalGross),
+      status: invoice.status,
+      document_kind: invoice.documentKind as DocumentKind,
+      reference_number: invoice.referenceNumber || undefined,
+      grund: invoice.reason || undefined,
+      original_invoice_date: invoice.originalDate?.toISOString(),
+      refund_amount: invoice.refundAmount ? Number(invoice.refundAmount) : undefined,
+      customer: {
+        name: invoice.customer.name,
+        companyName: '', // Add to schema if needed
+        email: invoice.customer.email || '',
+        address: invoice.customer.address,
+        zipCode: invoice.customer.zipCode,
+        city: invoice.customer.city,
+        country: invoice.customer.country
+      },
+      organization: {
+        name: companySettings.companyName || companySettings.name,
+        address: companySettings.address,
+        zipCode: companySettings.zip || companySettings.zipCode,
+        city: companySettings.city,
+        country: companySettings.country,
+        taxId: companySettings.taxId || companySettings.taxNumber,
+        bankName: companySettings.bankName,
+        iban: companySettings.iban,
+        bic: companySettings.bic
+      },
+      items: invoice.items.map(item => ({
+        description: item.description,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        total: Number(item.grossAmount),
+        ean: item.ean || undefined
+      })),
+      qrCodeSettings: null // Or fetch if stored
     }
 
+    // Generate PDF
+    const doc = await generateArizonaPDF(invoiceData as any)
+    const pdfArrayBuffer = doc.output('arraybuffer')
+    const pdfBuffer = Buffer.from(pdfArrayBuffer)
+
     // Create filename
-    const customerName = invoice.customerName?.replace(/[^a-zA-Z0-9]/g, '-') || 'customer'
-    const filename = `${invoice.number}-${customerName}.pdf`
+    const customerName = invoice.customer.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'customer'
+    const filename = `${invoice.invoiceNumber}-${customerName}.pdf`
 
     // Return PDF as download
-    return new NextResponse(pdfBuffer as any, {
+    return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
@@ -54,8 +106,8 @@ export async function GET(
   } catch (error) {
     console.error('❌ PDF download error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'PDF generation failed',
         message: 'Fehler beim Erstellen der PDF-Datei. Bitte versuchen Sie es erneut.'
       },
