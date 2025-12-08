@@ -72,6 +72,27 @@ export default function NewInvoicePage() {
     country: 'DE'
   })
 
+  const [companySettings, setCompanySettings] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/company-settings')
+        if (response.ok) {
+          const data = await response.json()
+          setCompanySettings(data)
+          // Set default internal contact if available
+          if (data.companyName) {
+            setInternalContact(data.companyName)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching company settings:', error)
+      }
+    }
+    fetchSettings()
+  }, [])
+
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: '1', description: '', quantity: 1, unit: 'Stk', unitPrice: 0, vat: 19, discount: 0, total: 0, ean: '' }
   ])
@@ -972,6 +993,7 @@ export default function NewInvoicePage() {
             paymentMethod,
             costCenter,
             vatRegulation,
+            companySettings,
             headerSubject: invoiceData.headerSubject,
             headerText: invoiceData.headerText,
             footerText: invoiceData.footerText,

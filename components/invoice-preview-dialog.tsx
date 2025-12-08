@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ZoomIn, ZoomOut, X, Upload, ChevronDown, ChevronRight, Check } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface InvoicePreviewDialogProps {
     open: boolean
@@ -34,6 +35,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
         articleNumber: false,
         foldMarks: true
     })
+    const [selectedLayout, setSelectedLayout] = useState(1)
+    const [localCompanySettings, setLocalCompanySettings] = useState<any>(null)
 
     // Mock colors
     const colors = [
@@ -50,10 +53,59 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
 
     const { customer, invoiceData, items, settings } = data
 
+    // Initialize local settings from props
+    useEffect(() => {
+        if (settings.companySettings) {
+            setLocalCompanySettings(settings.companySettings)
+        }
+    }, [settings.companySettings])
+
+    const cs = localCompanySettings || {}
+
     // Calculate totals
     const netTotal = items.reduce((sum: number, item: any) => sum + item.total, 0)
     const vatTotal = items.reduce((sum: number, item: any) => sum + (item.total * (item.vat / 100)), 0)
     const grossTotal = netTotal + vatTotal
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Die Datei ist zu groß. Maximale Größe: 10MB')
+            return
+        }
+
+        const formData = new FormData()
+        formData.append('logo', file)
+
+        try {
+            const response = await fetch('/api/upload-logo', {
+                method: 'POST',
+                body: formData
+            })
+
+            if (response.ok) {
+                const result = await response.json()
+                // Update local state to show new logo immediately
+                setLocalCompanySettings((prev: any) => ({
+                    ...prev,
+                    logoPath: result.filename
+                }))
+            } else {
+                alert('Fehler beim Hochladen des Logos')
+            }
+        } catch (error) {
+            console.error('Error uploading logo:', error)
+            alert('Fehler beim Hochladen des Logos')
+        }
+    }
+
+    // Generate EPC QR Code content (GiroCode)
+    const generateGiroCode = () => {
+        if (!cs.iban || !cs.bic) return ''
+        return `BCD\n002\n1\nSCT\n${cs.bic}\n${cs.companyName}\n${cs.iban}\n${grossTotal.toFixed(2)}\nEUR\n\n${invoiceData.invoiceNumber}\n`
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,29 +143,37 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                     <>
                                         <div className="absolute left-0 top-[105mm] w-[5mm] border-t border-black"></div>
                                         <div className="absolute left-0 top-[210mm] w-[5mm] border-t border-black"></div>
-                                        <div className="absolute left-[10mm] top-[50%] h-[5mm] border-l border-black hidden"></div> {/* Punch mark example */}
+                                        <div className="absolute left-[10mm] top-[50%] h-[5mm] border-l border-black hidden"></div>
                                     </>
                                 )}
 
                                 {/* Header / Logo */}
-                                <div className="flex justify-between items-start mb-12">
-                                    <div className="text-xs text-gray-400 underline decoration-gray-300 underline-offset-4 mb-2">
+                                <div className={`flex justify-between items-start mb-12 ${selectedLayout === 2 ? 'flex-row-reverse' : ''} ${selectedLayout === 3 ? 'flex-col items-center text-center' : ''}`}>
+                                    <div className={`text-xs text-gray-400 underline decoration-gray-300 underline-offset-4 mb-2 ${selectedLayout === 3 ? 'order-2 mt-4' : ''}`}>
                                         {/* Sender line above address */}
-                                        Ihr Unternehmen • Musterstraße 1 • 12345 Musterstadt
+                                        {cs.companyName} • {cs.address} • {cs.postalCode} {cs.city}
                                     </div>
-                                    <div className="w-1/3 flex justify-end">
-                                        {/* Logo Placeholder */}
-                                        <div
-                                            className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs"
-                                            style={{ width: `${logoSize * 2}px`, height: `${logoSize}px` }}
-                                        >
-                                            Logo
-                                        </div>
+                                    <div className={`w-1/3 flex ${selectedLayout === 2 ? 'justify-start' : selectedLayout === 3 ? 'justify-center w-full' : 'justify-end'}`}>
+                                        {/* Logo Placeholder or Image */}
+                                        {cs.logoPath ? (
+                                            <img
+                                                src={cs.logoPath.startsWith('http') ? cs.logoPath : `/uploads/${cs.logoPath}`}
+                                                alt="Company Logo"
+                                                style={{ width: `${logoSize * 2}px`, maxHeight: `${logoSize}px`, objectFit: 'contain' }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs"
+                                                style={{ width: `${logoSize * 2}px`, height: `${logoSize}px` }}
+                                            >
+                                                Logo
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
                                 {/* Address Block */}
-                                <div className="mb-16 text-sm leading-relaxed">
+                                <div className={`mb-16 text-sm leading-relaxed ${selectedLayout === 3 ? 'text-center' : ''}`}>
                                     <div className="font-bold">{customer.companyName}</div>
                                     {customer.type === 'person' && <div>{customer.name}</div>}
                                     <div>{customer.address}</div>
@@ -172,7 +232,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
-                                            {items.map((item, index) => (
+                                            {items.map((item: any, index: number) => (
                                                 <tr key={item.id || index}>
                                                     {showSettings.articleNumber && <td className="py-3 text-gray-500">A-{index + 100}</td>}
                                                     <td className="py-3 text-gray-500">{index + 1}</td>
@@ -207,6 +267,24 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                     </div>
                                 </div>
 
+                                {/* QR Codes Area */}
+                                {(showSettings.qrCode || showSettings.epcQrCode) && (
+                                    <div className="flex gap-8 mb-8 justify-end">
+                                        {showSettings.qrCode && (
+                                            <div className="text-center">
+                                                <QRCodeSVG value={`https://example.com/pay/${invoiceData.invoiceNumber}`} size={80} />
+                                                <div className="text-[10px] text-gray-500 mt-1">Bezahlen</div>
+                                            </div>
+                                        )}
+                                        {showSettings.epcQrCode && cs.iban && (
+                                            <div className="text-center">
+                                                <QRCodeSVG value={generateGiroCode()} size={80} />
+                                                <div className="text-[10px] text-gray-500 mt-1">GiroCode</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Footer Text */}
                                 <div className="mt-auto text-sm text-gray-600 whitespace-pre-wrap">
                                     {invoiceData.footerText}
@@ -216,21 +294,20 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                 <div className="mt-8 pt-8 border-t border-gray-200 grid grid-cols-3 gap-4 text-[10px] text-gray-500">
                                     <div>
                                         <div className="font-bold text-gray-700 mb-1">Anschrift</div>
-                                        Ihr Unternehmen<br />
-                                        Musterstraße 1<br />
-                                        12345 Musterstadt
+                                        {cs.companyName}<br />
+                                        {cs.address}<br />
+                                        {cs.postalCode} {cs.city}
                                     </div>
                                     <div>
                                         <div className="font-bold text-gray-700 mb-1">Kontakt</div>
-                                        Telefon: 0123 456789<br />
-                                        Email: info@example.com<br />
-                                        Web: www.example.com
+                                        {cs.phone && <>Telefon: {cs.phone}<br /></>}
+                                        {cs.email && <>Email: {cs.email}<br /></>}
                                     </div>
                                     <div>
                                         <div className="font-bold text-gray-700 mb-1">Bankverbindung</div>
-                                        IBAN: DE12 3456 7890 1234 56<br />
-                                        BIC: GENODED1DEF<br />
-                                        Bank: Musterbank
+                                        IBAN: {cs.iban}<br />
+                                        BIC: {cs.bic}<br />
+                                        Bank: {cs.bankName}
                                     </div>
                                 </div>
 
@@ -256,11 +333,19 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                 <Label className="font-medium">Dein Firmenlogo</Label>
                                 <ChevronDown className="h-4 w-4 text-gray-400" />
                             </div>
-                            <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-gray-100 transition-colors cursor-pointer">
-                                <Button variant="outline" className="mb-2 bg-white">
+                            <div
+                                className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-gray-100 transition-colors cursor-pointer relative"
+                            >
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    onChange={handleLogoUpload}
+                                />
+                                <Button variant="outline" className="mb-2 bg-white pointer-events-none">
                                     Logo hochladen
                                 </Button>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 pointer-events-none">
                                     oder hier hineinziehen<br />
                                     .jpg, .jpeg, .png (max. 10MB)
                                 </p>
@@ -302,7 +387,11 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 {[1, 2, 3, 4, 5, 6].map(i => (
-                                    <div key={i} className="aspect-[3/4] border rounded-lg p-2 hover:border-blue-500 cursor-pointer transition-colors bg-gray-50 flex flex-col gap-1">
+                                    <div
+                                        key={i}
+                                        className={`aspect-[3/4] border rounded-lg p-2 cursor-pointer transition-all bg-gray-50 flex flex-col gap-1 ${selectedLayout === i ? 'border-blue-500 ring-2 ring-blue-200' : 'hover:border-blue-300'}`}
+                                        onClick={() => setSelectedLayout(i)}
+                                    >
                                         <div className="h-2 w-full bg-gray-200 rounded-sm" />
                                         <div className="h-1 w-2/3 bg-gray-200 rounded-sm" />
                                         <div className="mt-2 space-y-1">
@@ -310,10 +399,14 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                             <div className="h-0.5 w-full bg-gray-200" />
                                             <div className="h-0.5 w-full bg-gray-200" />
                                         </div>
+                                        {selectedLayout === i && (
+                                            <div className="mt-auto self-end text-blue-500">
+                                                <Check className="h-3 w-3" />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="link" className="text-blue-600 p-0 h-auto">Alle anzeigen</Button>
                         </div>
 
                         {/* Further Settings */}
@@ -332,7 +425,6 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="de">Deutsch</SelectItem>
-                                            <SelectItem value="en">Englisch</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

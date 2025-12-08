@@ -1,26 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCompanySettings, updateCompanySettings } from '@/lib/company-settings'
+import { prisma } from '@/lib/prisma'
+
+// Helper to get the default organization
+async function getDefaultOrganization() {
+  const org = await prisma.organization.findFirst()
+  if (!org) {
+    // Create a default one if none exists
+    return await prisma.organization.create({
+      data: {
+        name: 'Meine Firma',
+        slug: 'default-org',
+        address: '',
+        zipCode: '',
+        city: '',
+        country: 'DE'
+      }
+    })
+  }
+  return org
+}
 
 export async function GET() {
   try {
-    const settings = getCompanySettings()
-    
-    // Map backend field names to frontend field names
+    const org = await getDefaultOrganization()
+
+    // Map DB fields to frontend fields
     const mappedSettings = {
-      companyName: settings.companyName || settings.name,
-      taxNumber: settings.taxNumber || settings.taxId,
-      address: settings.address,
-      postalCode: settings.zip || settings.zipCode,
-      city: settings.city,
-      country: settings.country,
-      bankName: settings.bankName,
-      iban: settings.iban,
-      bic: settings.bic,
-      logoPath: settings.logoUrl || settings.logo,
-      phone: settings.phone,
-      email: settings.email
+      companyName: org.name,
+      taxNumber: org.taxId || '',
+      address: org.address,
+      postalCode: org.zipCode,
+      city: org.city,
+      country: org.country,
+      bankName: org.bankName || '',
+      iban: org.iban || '',
+      bic: org.bic || '',
+      logoPath: org.logoUrl || '',
+      // Add other fields if needed, e.g. phone/email if added to schema or stored in JSON
     }
-    
+
     return NextResponse.json(mappedSettings)
   } catch (error) {
     console.error('Error fetching company settings:', error)
@@ -34,37 +52,40 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    
-    // Map frontend field names to backend field names
-    const mappedSettings = {
-      // New field names (primary)
-      companyName: body.companyName || body.name,
-      taxNumber: body.taxNumber || body.taxId,
-      zip: body.postalCode || body.zipCode,
-      logoUrl: body.logoPath || body.logo,
-      // Keep backward compatibility
-      name: body.companyName || body.name,
-      taxId: body.taxNumber || body.taxId,
-      zipCode: body.postalCode || body.zipCode,
-      logo: body.logoPath || body.logo,
-      // Common fields
-      address: body.address,
-      city: body.city,
-      country: body.country,
-      bankName: body.bankName,
-      iban: body.iban,
-      bic: body.bic,
-      phone: body.phone,
-      email: body.email
-    }
-    
-    const updatedSettings = updateCompanySettings(mappedSettings)
-    
-    console.log('Company settings updated:', updatedSettings)
-    
+    const org = await getDefaultOrganization()
+
+    const updatedOrg = await prisma.organization.update({
+      where: { id: org.id },
+      data: {
+        name: body.companyName,
+        taxId: body.taxNumber,
+        address: body.address,
+        zipCode: body.postalCode,
+        city: body.city,
+        country: body.country,
+        bankName: body.bankName,
+        iban: body.iban,
+        bic: body.bic,
+        logoUrl: body.logoPath
+      }
+    })
+
+    console.log('Company settings updated in DB:', updatedOrg)
+
     return NextResponse.json({
       message: 'Company settings updated successfully',
-      settings: updatedSettings
+      settings: {
+        companyName: updatedOrg.name,
+        taxNumber: updatedOrg.taxId,
+        address: updatedOrg.address,
+        postalCode: updatedOrg.zipCode,
+        city: updatedOrg.city,
+        country: updatedOrg.country,
+        bankName: updatedOrg.bankName,
+        iban: updatedOrg.iban,
+        bic: updatedOrg.bic,
+        logoPath: updatedOrg.logoUrl
+      }
     })
   } catch (error) {
     console.error('Error updating company settings:', error)
