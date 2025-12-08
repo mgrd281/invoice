@@ -43,13 +43,19 @@ export async function GET(req: NextRequest) {
             const now = new Date();
             let pastDate = new Date();
 
-            if (range === '7d') pastDate.setDate(now.getDate() - 7);
-            if (range === '14d') pastDate.setDate(now.getDate() - 14);
-            if (range === '30d') pastDate.setDate(now.getDate() - 30);
-
-            whereClause.issueDate = {
-                gte: pastDate
-            };
+            if (range === '7d') {
+                pastDate.setDate(now.getDate() - 7);
+                whereClause.issueDate = { gte: pastDate };
+            } else if (range === '14d') {
+                pastDate.setDate(now.getDate() - 14);
+                whereClause.issueDate = { gte: pastDate };
+            } else if (range === '30d') {
+                pastDate.setDate(now.getDate() - 30);
+                whereClause.issueDate = { gte: pastDate };
+            } else if (range === 'this_year') {
+                const startOfYear = new Date(now.getFullYear(), 0, 1);
+                whereClause.issueDate = { gte: startOfYear };
+            }
         }
 
         // Status Filter

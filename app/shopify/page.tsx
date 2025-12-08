@@ -276,6 +276,7 @@ function ShopifyEmbeddedContent() {
                   <option value="7d">Letzte 7 Tage</option>
                   <option value="14d">Letzte 14 Tage</option>
                   <option value="30d">Letzte 30 Tage</option>
+                  <option value="this_year">Dieses Jahr</option>
                 </select>
 
                 <select
@@ -447,7 +448,10 @@ function ShopifyEmbeddedContent() {
                             >
                               <Download className="w-4 h-4" />
                             </button>
-                            <button className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+                            <button
+                              onClick={() => window.open(`/api/invoices/${inv.id}/pdf`, '_blank')}
+                              className="text-blue-600 hover:text-blue-800 font-medium text-xs"
+                            >
                               Ansehen
                             </button>
                           </td>
