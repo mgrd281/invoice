@@ -183,7 +183,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         return {
             description: item.title,
             quantity,
-            unitPrice: price,
+            unitPrice: net / quantity, // Store Net Unit Price so UI adds tax correctly
             grossAmount: total,
             netAmount: net,
             taxAmount: tax,
@@ -202,7 +202,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
                 items.push({
                     description: `Versand: ${shipping.title}`,
                     quantity: 1,
-                    unitPrice: price,
+                    unitPrice: net, // Store Net Price
                     grossAmount: price,
                     netAmount: net,
                     taxAmount: tax,
