@@ -43,6 +43,8 @@ function ShopifyEmbeddedContent() {
   const [dateRange, setDateRange] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   useEffect(() => {
     if (shop) {
@@ -57,9 +59,13 @@ function ShopifyEmbeddedContent() {
   // Refetch when filters change
   useEffect(() => {
     if (shop) {
+      // For custom range, only fetch if both dates are set or if we switched away from custom
+      if (dateRange === 'custom' && (!customStartDate || !customEndDate)) {
+        return;
+      }
       fetchData();
     }
-  }, [dateRange, statusFilter]);
+  }, [dateRange, statusFilter, customStartDate, customEndDate]);
 
   const initShop = async () => {
     try {
@@ -81,7 +87,12 @@ function ShopifyEmbeddedContent() {
     setLoading(true);
     try {
       // Append filters to URL
-      const res = await fetch(`/api/shopify/invoices?shop=${shop}&range=${dateRange}&status=${statusFilter}`);
+      let url = `/api/shopify/invoices?shop=${shop}&range=${dateRange}&status=${statusFilter}`;
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        url += `&start=${customStartDate}&end=${customEndDate}`;
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
 
       if (data.userEmail) {
@@ -267,17 +278,42 @@ function ShopifyEmbeddedContent() {
             <div className="space-y-6">
               {/* Filters */}
               <div className="flex items-center space-x-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Gesamter Zeitraum</option>
-                  <option value="7d">Letzte 7 Tage</option>
-                  <option value="14d">Letzte 14 Tage</option>
-                  <option value="30d">Letzte 30 Tage</option>
-                  <option value="this_year">Dieses Jahr</option>
-                </select>
+                <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4">
+                  <select
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Gesamter Zeitraum</option>
+                    <option value="today">Heute</option>
+                    <option value="7d">Letzte 7 Tage</option>
+                    <option value="14d">Letzte 14 Tage</option>
+                    <option value="30d">Letzte 30 Tage</option>
+                    <option value="this_month">Dieser Monat</option>
+                    <option value="this_year">Dieses Jahr</option>
+                    <option value="custom">Benutzerdefiniert</option>
+                  </select>
+
+                  {dateRange === 'custom' && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Von"
+                      />
+                      <span className="text-gray-400">-</span>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Bis"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <select
                   value={statusFilter}
