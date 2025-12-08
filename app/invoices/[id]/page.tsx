@@ -7,7 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Eye, Download, Edit, Save, X, Mail, ArrowLeft, FileText, Plus, Trash2, Calculator, Bell } from 'lucide-react'
+import { Eye, Download, Edit, Save, X, Mail, ArrowLeft, FileText, Plus, Trash2, Calculator, Bell, AlertTriangle, AlertOctagon, AlertCircle } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { renderRecipientBlock } from '@/lib/recipient-renderer'
 
@@ -221,7 +229,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleSendReminder = async () => {
+  const handleSendReminder = async (level: string = 'reminder') => {
     if (!invoice) return
 
     setSendingReminder(true)
@@ -233,7 +241,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
         },
         body: JSON.stringify({
           invoiceId: invoice.id,
-          reminderLevel: 'reminder'
+          reminderLevel: level
         }),
       })
 
@@ -1000,24 +1008,47 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
 
                       {/* Reminder Button - Only show for unpaid invoices */}
                       {invoice.status !== 'Bezahlt' && invoice.status !== 'Storniert' && (
-                        <Button
-                          variant="outline"
-                          className="w-full mt-3 border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
-                          onClick={handleSendReminder}
-                          disabled={sendingReminder}
-                        >
-                          {sendingReminder ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
-                              Sende Erinnerung...
-                            </>
-                          ) : (
-                            <>
-                              <Bell className="h-4 w-4 mr-2" />
-                              Erinnerung senden
-                            </>
-                          )}
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full mt-3 border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
+                              disabled={sendingReminder}
+                            >
+                              {sendingReminder ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                                  Sende...
+                                </>
+                              ) : (
+                                <>
+                                  <Bell className="h-4 w-4 mr-2" />
+                                  Erinnerung / Mahnung
+                                </>
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56">
+                            <DropdownMenuLabel>Mahnwesen</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleSendReminder('reminder')}>
+                              <Bell className="mr-2 h-4 w-4" />
+                              <span>Erinnerung senden</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSendReminder('first_notice')}>
+                              <AlertTriangle className="mr-2 h-4 w-4 text-orange-500" />
+                              <span>1. Mahnung</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSendReminder('second_notice')}>
+                              <AlertOctagon className="mr-2 h-4 w-4 text-red-500" />
+                              <span>2. Mahnung</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSendReminder('final_notice')}>
+                              <AlertCircle className="mr-2 h-4 w-4 text-red-700 font-bold" />
+                              <span className="text-red-700 font-bold">3. Mahnung (Letzte)</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
 
                       {/* Storno Button - Only show for non-cancelled invoices */}
