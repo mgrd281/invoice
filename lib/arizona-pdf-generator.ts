@@ -313,15 +313,15 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     yPos = boxY + 16
     doc.text(`Rechnungs-Nr.`, boxX + 5, yPos)
-    doc.text(invoice.number, boxX + 40, yPos)
+    doc.text(invoice.number.replace(/^#/, ''), boxX + 40, yPos)
 
     yPos += 5
     doc.text(`Kunden-Nr.`, boxX + 5, yPos)
-    doc.text(invoice.id.substring(0, 8), boxX + 40, yPos)
+    doc.text(invoice.id.substring(0, 6), boxX + 40, yPos)
 
     yPos += 5
     doc.text(`Rechnungsdatum`, boxX + 5, yPos)
-    doc.text(new Date(invoice.date).toLocaleDateString('de-DE'), boxX + 40, yPos)
+    doc.text(new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }), boxX + 40, yPos)
 
     yPos += 5
     doc.text(`E-Mail`, boxX + 5, yPos)
