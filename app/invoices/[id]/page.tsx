@@ -68,8 +68,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
   const [isEditing, setIsEditing] = useState(false)
   const [editableInvoice, setEditableInvoice] = useState<Invoice | null>(null)
   const [saving, setSaving] = useState(false)
-  const [toastMessage, setToastMessage] = useState<{message: string, type: 'success' | 'error'} | null>(null)
-  
+  const [toastMessage, setToastMessage] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
+
   const showToast = (message: string, type: 'success' | 'error') => {
     console.log(`${type.toUpperCase()}: ${message}`)
     setToastMessage({ message, type })
@@ -86,16 +86,16 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
   const fetchInvoice = async () => {
     try {
       console.log('Fetching invoice with ID:', params.id)
-      
+
       const response = await fetch(`/api/invoices/${params.id}`)
-      
+
       if (!response.ok) {
         throw new Error('Invoice not found')
       }
-      
+
       const invoiceData = await response.json()
       console.log('Received invoice data:', invoiceData)
-      
+
       setInvoice(invoiceData)
     } catch (error) {
       console.error('Error fetching invoice:', error)
@@ -108,7 +108,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
     try {
       console.log('🔄 Starting PDF download for invoice:', invoiceId, invoiceNumber)
       showToast('PDF wird generiert...', 'success')
-      
+
       // Use new download endpoint with authentication
       const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
         method: 'GET',
@@ -123,13 +123,13 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
           'Cache-Control': 'no-cache'
         }
       })
-      
+
       console.log('📥 PDF API Response:', response.status, response.statusText)
-      
+
       if (response.ok) {
         const blob = await response.blob()
         console.log('📄 PDF Blob size:', blob.size)
-        
+
         if (blob.size > 100) {
           // Create download
           const url = window.URL.createObjectURL(blob)
@@ -141,7 +141,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
           a.click()
           document.body.removeChild(a)
           window.URL.revokeObjectURL(url)
-          
+
           console.log(`✅ PDF für Rechnung ${invoiceNumber} erfolgreich heruntergeladen`)
           showToast(`PDF für Rechnung ${invoiceNumber} erfolgreich heruntergeladen!`, 'success')
         } else {
@@ -155,7 +155,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
       console.error('❌ PDF Download Error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
       showToast(`Fehler beim PDF Download: ${errorMessage}`, 'error')
-      
+
       // Fallback: Open direct link in new tab
       try {
         const directUrl = `/api/invoices/${invoiceId}/download-pdf`
@@ -169,7 +169,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
 
   const handleDownloadPdf = async () => {
     if (!invoice) return
-    
+
     setDownloadingPdf(true)
     try {
       await downloadInvoicePDF(invoice.id, invoice.number)
@@ -182,7 +182,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
 
   const handleSendEmail = async () => {
     if (!invoice) return
-    
+
     setSendingEmail(true)
     try {
       const response = await fetch('/api/send-invoice-email', {
@@ -219,7 +219,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
 
   const handleSendReminder = async () => {
     if (!invoice) return
-    
+
     setSendingReminder(true)
     try {
       const response = await fetch('/api/reminders/send-manual', {
@@ -250,38 +250,38 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
 
   const handleEditInvoice = () => {
     if (!invoice) return
-    
+
     console.log('Editing invoice:', invoice.id)
     showToast('Bearbeitungsmodus wird geöffnet...', 'success')
-    
+
     // Create editable copy of invoice
     setEditableInvoice({
       ...invoice,
       items: [...invoice.items] // Deep copy of items array
     })
-    
+
     setIsEditing(true)
   }
 
   const handleSaveEdit = async () => {
     if (!editableInvoice) return
-    
+
     setSaving(true)
     try {
       showToast('Änderungen werden gespeichert...', 'success')
-      
+
       // Calculate totals
       const subtotal = editableInvoice.items.reduce((sum, item) => sum + item.total, 0)
       const taxAmount = subtotal * (editableInvoice.taxRate / 100)
       const total = subtotal + taxAmount
-      
+
       const updatedInvoice = {
         ...editableInvoice,
         subtotal,
         taxAmount,
         total
       }
-      
+
       // Save to server
       const response = await fetch(`/api/invoices/${editableInvoice.id}`, {
         method: 'PUT',
@@ -290,28 +290,31 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
         },
         body: JSON.stringify(updatedInvoice),
       })
-      
+
       if (response.ok) {
         // Check if status changed for dashboard update
         const statusChanged = invoice?.status !== updatedInvoice.status
-        
+
         // Update the main invoice state
         setInvoice(updatedInvoice)
         setEditableInvoice(null)
         setIsEditing(false)
-        
+
         // Trigger dashboard update if status changed
         if (statusChanged && invoice) {
           DashboardUpdater.dispatchInvoiceStatusChanged(
-            invoice.id, 
-            invoice.status, 
+            invoice.id,
+            invoice.status,
             updatedInvoice.status
           )
         } else {
           // General invoice update
           DashboardUpdater.dispatchInvoiceUpdated(updatedInvoice)
         }
-        
+
+        // Dispatch legacy event for list view refresh
+        window.dispatchEvent(new CustomEvent('invoicesUpdated'))
+
         showToast('Rechnung erfolgreich aktualisiert!', 'success')
       } else {
         const error = await response.json()
@@ -328,7 +331,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
   const handleCancelEdit = () => {
     // Check if there are unsaved changes
     const hasChanges = editableInvoice && JSON.stringify(editableInvoice) !== JSON.stringify(invoice)
-    
+
     if (hasChanges) {
       const confirmCancel = window.confirm(
         'Sie haben ungespeicherte Änderungen. Möchten Sie wirklich abbrechen? Alle Änderungen gehen verloren.'
@@ -337,7 +340,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
         return
       }
     }
-    
+
     setEditableInvoice(null)
     setIsEditing(false)
     showToast('Bearbeitung abgebrochen', 'success')
@@ -361,12 +364,12 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
     if (!editableInvoice) return
     const newItems = [...editableInvoice.items]
     newItems[index] = { ...newItems[index], [field]: value }
-    
+
     // Recalculate item total if quantity or unitPrice changed
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index].total = newItems[index].quantity * newItems[index].unitPrice
     }
-    
+
     setEditableInvoice({ ...editableInvoice, items: newItems })
   }
 
@@ -485,11 +488,11 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                   </>
                 )}
               </Button>
-              
+
               {isEditing ? (
                 <>
-                  <Button 
-                    onClick={handleSaveEdit} 
+                  <Button
+                    onClick={handleSaveEdit}
                     disabled={saving}
                     className="bg-green-600 hover:bg-green-700"
                   >
@@ -505,8 +508,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                       </>
                     )}
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleCancelEdit}
                     disabled={saving}
                   >
@@ -842,7 +845,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                   const subtotal = currentInvoice.items.reduce((sum, item) => sum + item.total, 0)
                   const taxAmount = subtotal * (currentInvoice.taxRate / 100)
                   const total = subtotal + taxAmount
-                  
+
                   return (
                     <>
                       <div className="flex justify-between">
@@ -893,8 +896,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                 <div className="border-t pt-4 space-y-2">
                   {isEditing ? (
                     <>
-                      <Button 
-                        onClick={handleSaveEdit} 
+                      <Button
+                        onClick={handleSaveEdit}
                         disabled={saving}
                         className="w-full bg-green-600 hover:bg-green-700"
                       >
@@ -910,8 +913,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                           </>
                         )}
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={handleCancelEdit}
                         disabled={saving}
                         className="w-full"
@@ -934,8 +937,8 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                           </>
                         )}
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full"
                         onClick={handleSendEmail}
                         disabled={sendingEmail}
@@ -952,11 +955,11 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                           </>
                         )}
                       </Button>
-                      
+
                       {/* Reminder Button - Only show for unpaid invoices */}
                       {invoice.status !== 'Bezahlt' && invoice.status !== 'Storniert' && (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full mt-3 border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
                           onClick={handleSendReminder}
                           disabled={sendingReminder}
@@ -974,12 +977,12 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                           )}
                         </Button>
                       )}
-                      
+
                       {/* Storno Button - Only show for non-cancelled invoices */}
                       {invoice.status !== 'Storniert' && (
                         <Link href={`/invoices/${invoice.id}/cancel`} className="mt-6">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
                           >
                             <X className="h-4 w-4 mr-2" />
@@ -995,14 +998,13 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </main>
-      
+
       {/* Toast Notification */}
       {toastMessage && (
-        <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-          toastMessage.type === 'success' 
-            ? 'bg-green-500 text-white' 
+        <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${toastMessage.type === 'success'
+            ? 'bg-green-500 text-white'
             : 'bg-red-500 text-white'
-        }`}>
+          }`}>
           <div className="flex items-center">
             {toastMessage.type === 'success' ? (
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -1014,7 +1016,7 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
               </svg>
             )}
             <span>{toastMessage.message}</span>
-            <button 
+            <button
               onClick={() => setToastMessage(null)}
               className="ml-4 text-white hover:text-gray-200"
               title="Schließen"

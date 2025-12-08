@@ -86,14 +86,14 @@ export async function GET(
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
         total: Number(item.grossAmount),
-        ean: item.ean
+        ean: (item as any).ean
       })),
       // Document type fields
-      document_kind: invoice.documentKind,
-      reference_number: invoice.referenceNumber,
-      original_invoice_date: invoice.originalDate?.toISOString().split('T')[0],
-      grund: invoice.reason,
-      refund_amount: invoice.refundAmount ? Number(invoice.refundAmount) : undefined,
+      document_kind: (invoice as any).documentKind,
+      reference_number: (invoice as any).referenceNumber,
+      original_invoice_date: (invoice as any).originalDate?.toISOString().split('T')[0],
+      grund: (invoice as any).reason,
+      refund_amount: (invoice as any).refundAmount ? Number((invoice as any).refundAmount) : undefined,
       // QR Code settings - not in schema yet, return null or default
       qrCodeSettings: null
     }

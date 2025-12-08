@@ -62,6 +62,8 @@ export default function InvoicesPage() {
 
     // Custom event listener for invoice updates
     window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
+    window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
+    window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
 
     // ---------------------------------------------------------
     // AUTO-SYNC POLLING (Every 10 seconds)
@@ -90,11 +92,26 @@ export default function InvoicesPage() {
 
     return () => {
       window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
+      window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
+      window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
       if (syncInterval) clearInterval(syncInterval)
     }
   }, [isAuthenticated, user, isAutoSyncing])
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Bezahlt': return 'bg-green-100 text-green-800'
+      case 'Offen': return 'bg-yellow-100 text-yellow-800'
+      case 'Überfällig': return 'bg-red-100 text-red-800'
+      case 'Storniert': return 'bg-gray-100 text-gray-800'
+      case 'Gutschrift': return 'bg-blue-100 text-blue-800'
+      case 'Entwurf': return 'bg-gray-100 text-gray-600'
+      default: return 'bg-gray-100 text-gray-600'
+    }
+  }
+
   const fetchInvoices = async () => {
+
     if (!isAuthenticated || !user) {
       console.log('User not authenticated, cannot load invoices')
       setInvoices([])
@@ -935,7 +952,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${invoice.statusColor}`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
                             {invoice.status}
                           </span>
                           {/* E-Mail-Status-Anzeige */}
