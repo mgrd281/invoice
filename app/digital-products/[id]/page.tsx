@@ -36,6 +36,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const [isEditingProduct, setIsEditingProduct] = useState(false)
     const [editProductData, setEditProductData] = useState({ title: '' })
     const [showSourceCode, setShowSourceCode] = useState(false)
+    const [activeKeyTab, setActiveKeyTab] = useState<'history' | 'inventory'>('history')
 
 
     useEffect(() => {
@@ -314,10 +315,7 @@ Viel Spaß!`
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
-                    <Button variant="outline" size="sm" onClick={loadData}>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Aktualisieren
-                    </Button>
+
                 </div>
             </header>
 
@@ -409,7 +407,28 @@ Viel Spaß!`
                             <TabsContent value="keys">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Alle Keys</CardTitle>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <CardTitle>Produktschlüssel Verwaltung</CardTitle>
+                                                <CardDescription>
+                                                    Verwalten Sie Ihre Keys und sehen Sie die Verkaufshistorie ein.
+                                                </CardDescription>
+                                            </div>
+                                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                                <button
+                                                    onClick={() => setActiveKeyTab('history')}
+                                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'history' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                                >
+                                                    Verkaufshistorie
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveKeyTab('inventory')}
+                                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'inventory' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                                >
+                                                    Verfügbare Keys
+                                                </button>
+                                            </div>
+                                        </div>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="overflow-x-auto">
@@ -418,20 +437,32 @@ Viel Spaß!`
                                                     <tr>
                                                         <th className="px-4 py-3">Key</th>
                                                         <th className="px-4 py-3">Status</th>
-                                                        <th className="px-4 py-3">Verwendet am</th>
-                                                        <th className="px-4 py-3">Bestellung</th>
+                                                        {activeKeyTab === 'history' && (
+                                                            <>
+                                                                <th className="px-4 py-3">Verwendet am</th>
+                                                                <th className="px-4 py-3">Bestellung</th>
+                                                            </>
+                                                        )}
                                                         <th className="px-4 py-3"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {keys.length === 0 ? (
-                                                        <tr>
-                                                            <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                                                                Keine Keys vorhanden
-                                                            </td>
-                                                        </tr>
-                                                    ) : (
-                                                        keys.map((key) => (
+                                                    {(() => {
+                                                        const displayedKeys = activeKeyTab === 'history'
+                                                            ? keys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
+                                                            : keys.filter(k => !k.isUsed);
+
+                                                        if (displayedKeys.length === 0) {
+                                                            return (
+                                                                <tr>
+                                                                    <td colSpan={activeKeyTab === 'history' ? 5 : 3} className="px-4 py-8 text-center text-gray-500">
+                                                                        {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        }
+
+                                                        return displayedKeys.map((key) => (
                                                             <tr key={key.id} className="border-b hover:bg-gray-50">
                                                                 <td className="px-4 py-3 font-mono">{key.key}</td>
                                                                 <td className="px-4 py-3">
@@ -441,16 +472,20 @@ Viel Spaß!`
                                                                         <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Verfügbar</span>
                                                                     )}
                                                                 </td>
-                                                                <td className="px-4 py-3">
-                                                                    {key.usedAt ? new Date(key.usedAt).toLocaleDateString() + ' ' + new Date(key.usedAt).toLocaleTimeString() : '-'}
-                                                                </td>
-                                                                <td className="px-4 py-3">
-                                                                    {key.shopifyOrderId ? (
-                                                                        key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
-                                                                            ? key.shopifyOrderId
-                                                                            : `#${key.shopifyOrderId}`
-                                                                    ) : '-'}
-                                                                </td>
+                                                                {activeKeyTab === 'history' && (
+                                                                    <>
+                                                                        <td className="px-4 py-3">
+                                                                            {key.usedAt ? new Date(key.usedAt).toLocaleDateString() + ' ' + new Date(key.usedAt).toLocaleTimeString() : '-'}
+                                                                        </td>
+                                                                        <td className="px-4 py-3">
+                                                                            {key.shopifyOrderId ? (
+                                                                                key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
+                                                                                    ? key.shopifyOrderId
+                                                                                    : `#${key.shopifyOrderId}`
+                                                                            ) : '-'}
+                                                                        </td>
+                                                                    </>
+                                                                )}
                                                                 <td className="px-4 py-3 text-right">
                                                                     <Button
                                                                         variant="ghost"
@@ -462,8 +497,8 @@ Viel Spaß!`
                                                                     </Button>
                                                                 </td>
                                                             </tr>
-                                                        ))
-                                                    )}
+                                                        ));
+                                                    })()}
                                                 </tbody>
                                             </table>
                                         </div>
