@@ -90,8 +90,9 @@ export async function POST(req: Request) {
           // ---------------------------------------------------------
           // NEW: First Purchase Discount Automation
           // ---------------------------------------------------------
-          if (payload.financial_status === 'paid') {
-            log('🎁 Checking First Purchase Discount automation...')
+          // Allow 'paid' OR 'pending' (for Vorkasse/Rechnung)
+          if (payload.financial_status === 'paid' || payload.financial_status === 'pending') {
+            log(`🎁 Checking First Purchase Discount automation (Status: ${payload.financial_status})...`)
             try {
               const { prisma } = await import('@/lib/prisma')
               const { createCustomerDiscount } = await import('@/lib/shopify-discounts')
@@ -174,7 +175,7 @@ export async function POST(req: Request) {
               console.error(err)
             }
           } else {
-            log(`ℹ️ Order status is '${payload.financial_status}', not 'paid'. Skipping discount.`)
+            log(`ℹ️ Order status is '${payload.financial_status}', not 'paid' or 'pending'. Skipping discount.`)
           }
 
         } catch (err) {
