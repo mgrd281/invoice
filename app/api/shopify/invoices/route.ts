@@ -57,7 +57,8 @@ export async function GET(req: NextRequest) {
             invoices: mappedInvoices,
             userEmail: userEmail,
             organizationName: organization.name,
-            logoUrl: organization.logoUrl
+            logoUrl: organization.logoUrl,
+            plan: organization.plan
         });
 
     } catch (error) {

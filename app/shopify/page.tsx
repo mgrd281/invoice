@@ -36,6 +36,7 @@ function ShopifyEmbeddedContent() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<string>('FREE');
   const [stats, setStats] = useState({ totalRevenue: 0, openInvoices: 0, paidInvoices: 0 });
 
   useEffect(() => {
@@ -74,6 +75,10 @@ function ShopifyEmbeddedContent() {
         setLogoUrl(data.logoUrl);
       }
 
+      if (data.plan) {
+        setCurrentPlan(data.plan);
+      }
+
       if (data.invoices) {
         setInvoices(data.invoices);
         calculateStats(data.invoices);
@@ -82,6 +87,29 @@ function ShopifyEmbeddedContent() {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePlanSelect = async (plan: string) => {
+    if (!confirm(`Möchten Sie wirklich zum ${plan} Plan wechseln?`)) return;
+
+    try {
+      const res = await fetch('/api/shopify/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, shop })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setCurrentPlan(data.plan);
+        alert('Plan erfolgreich aktualisiert!');
+      } else {
+        alert('Fehler beim Aktualisieren des Plans.');
+      }
+    } catch (error) {
+      console.error('Failed to update plan', error);
+      alert('Ein Fehler ist aufgetreten.');
     }
   };
 
@@ -111,12 +139,15 @@ function ShopifyEmbeddedContent() {
             </h1>
           )}
           <p className="text-xs text-gray-500 mt-1">{shop}</p>
-          {userEmail && (
-            <div className="mt-2 flex items-center text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-              {userEmail}
-            </div>
-          )}
+          <div className="mt-2 flex items-center gap-2">
+            {userEmail && (
+              <div className="flex items-center text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                {userEmail}
+              </div>
+            )}
+            <span className="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded uppercase">{currentPlan}</span>
+          </div>
         </div>
 
         <nav className="p-4 space-y-1 flex-1">
@@ -335,26 +366,32 @@ function ShopifyEmbeddedContent() {
                     <p className="text-sm text-gray-600 mt-1">Wählen Sie den passenden Plan für Ihr Geschäft</p>
                   </div>
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wide">
-                    Aktueller Plan: Free
+                    Aktueller Plan: {currentPlan}
                   </span>
                 </div>
                 <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Free Plan */}
-                  <div className="border border-gray-200 rounded-xl p-6 relative hover:shadow-md transition-shadow">
+                  <div className={`border rounded-xl p-6 relative hover:shadow-md transition-shadow ${currentPlan === 'FREE' ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'}`}>
                     <h4 className="text-lg font-bold text-gray-900">Starter</h4>
                     <p className="text-3xl font-bold text-gray-900 mt-4">0€ <span className="text-sm font-normal text-gray-500">/Monat</span></p>
                     <ul className="mt-6 space-y-3 text-sm text-gray-600">
-                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> 50 Rechnungen/Monat</li>
+                      <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> 10 Rechnungen/Monat</li>
                       <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Standard Support</li>
                       <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> PDF Export</li>
                     </ul>
-                    <button className="w-full mt-8 py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 cursor-not-allowed" disabled>
-                      Aktiver Plan
+                    <button
+                      onClick={() => handlePlanSelect('FREE')}
+                      className={`w-full mt-8 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${currentPlan === 'FREE'
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border border-blue-600 text-blue-600 hover:bg-blue-50'}`}
+                      disabled={currentPlan === 'FREE'}
+                    >
+                      {currentPlan === 'FREE' ? 'Aktiver Plan' : 'Wählen'}
                     </button>
                   </div>
 
                   {/* Pro Plan */}
-                  <div className="border-2 border-blue-600 rounded-xl p-6 relative shadow-lg transform scale-105 bg-white">
+                  <div className={`border rounded-xl p-6 relative shadow-lg transform scale-105 bg-white ${currentPlan === 'PRO' ? 'border-blue-600 ring-2 ring-blue-600' : 'border-blue-100'}`}>
                     <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
                       BELIEBT
                     </div>
@@ -366,13 +403,19 @@ function ShopifyEmbeddedContent() {
                       <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Eigenes Branding</li>
                       <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Digitale Produkte</li>
                     </ul>
-                    <button className="w-full mt-8 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md">
-                      Jetzt upgraden
+                    <button
+                      onClick={() => handlePlanSelect('PRO')}
+                      className={`w-full mt-8 py-2 px-4 rounded-lg text-sm font-medium transition-colors shadow-md ${currentPlan === 'PRO'
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                      disabled={currentPlan === 'PRO'}
+                    >
+                      {currentPlan === 'PRO' ? 'Aktiver Plan' : 'Jetzt upgraden'}
                     </button>
                   </div>
 
                   {/* Enterprise Plan */}
-                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                  <div className={`border rounded-xl p-6 hover:shadow-md transition-shadow ${currentPlan === 'ENTERPRISE' ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'}`}>
                     <h4 className="text-lg font-bold text-gray-900">Enterprise</h4>
                     <p className="text-3xl font-bold text-gray-900 mt-4">99€ <span className="text-sm font-normal text-gray-500">/Monat</span></p>
                     <ul className="mt-6 space-y-3 text-sm text-gray-600">
@@ -380,8 +423,14 @@ function ShopifyEmbeddedContent() {
                       <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> API Zugriff</li>
                       <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Dedicated Manager</li>
                     </ul>
-                    <button className="w-full mt-8 py-2 px-4 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors">
-                      Kontaktieren
+                    <button
+                      onClick={() => handlePlanSelect('ENTERPRISE')}
+                      className={`w-full mt-8 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${currentPlan === 'ENTERPRISE'
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border border-blue-600 text-blue-600 hover:bg-blue-50'}`}
+                      disabled={currentPlan === 'ENTERPRISE'}
+                    >
+                      {currentPlan === 'ENTERPRISE' ? 'Aktiver Plan' : 'Kontaktieren'}
                     </button>
                   </div>
                 </div>
