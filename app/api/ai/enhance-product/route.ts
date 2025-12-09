@@ -16,32 +16,44 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Product data is required' }, { status: 400 })
         }
 
-        const prompt = `Du bist ein erstklassiger SEO-Experte und E-Commerce-Manager. Deine Aufgabe ist es, Produktdaten zu analysieren und eine vollständige, optimierte Datensatz-Struktur für Shopify zu erstellen.
+        // Strip HTML from description to force AI to focus on content, not structure
+        const cleanDescription = product.description ? product.description.replace(/<[^>]*>/g, ' ') : ''
 
-Antworte AUSSCHLIESSLICH mit einem gültigen JSON-Objekt. Kein Markdown, kein erklärender Text davor oder danach.
+        const prompt = `Du bist ein erstklassiger SEO-Copywriter. Deine Aufgabe ist es, eine KOMPLETT NEUE Produktbeschreibung zu schreiben.
 
-Das JSON-Objekt muss folgende Felder enthalten:
-1. "title": Ein SEO-optimierter, klickstarker Produkttitel (max 70 Zeichen).
-2. "description": Eine professionelle HTML-Produktbeschreibung (mit <h3>, <ul>, <li>, <strong>), die folgende Struktur hat:
-   - Subheadline (H3)
-   - Einleitung (Überzeugend, USP)
-   - Vorteile (<ul> mit <li><strong>Vorteil</strong>: Erklärung</li>)
-   - Features/Funktionen (<ul>)
-   - Systemanforderungen (falls relevant, sonst weglassen)
-   - Fazit (Motivierend)
-3. "tags": Ein Array von Strings mit 5-10 relevanten Tags für Filterung und Suche (z.B. "Software", "Office", "Windows 11").
-4. "metaTitle": Ein Titel für Google (max 60 Zeichen).
-5. "metaDescription": Eine Beschreibung für Google (max 160 Zeichen), die zum Klicken anregt.
-6. "handle": Ein sauberer URL-Slug (kebab-case, z.B. "microsoft-office-2024-professional-plus").
+WICHTIG:
+- Du darfst KEINE Sätze aus dem Originaltext kopieren.
+- Schreibe den Text von Grund auf neu.
+- Nutze nur die Fakten (Spezifikationen, Features), aber formuliere alles neu.
+- Der Stil muss verkaufsfördernd, professionell und für den deutschen Markt optimiert sein.
 
-Produktdaten:
+Antworte AUSSCHLIESSLICH mit einem gültigen JSON-Objekt.
+
+Struktur des JSON-Objekts:
+1. "title": Ein neuer, optimierter Titel (max 70 Zeichen).
+2. "description": Eine HTML-formatierte Beschreibung (NUR <h3>, <ul>, <li>, <p>, <strong> erlaubt).
+   - Aufbau:
+     - <h3>Subheadline (Der Hauptnutzen in einem Satz)</h3>
+     - <p>Einleitung (Warum dieses Produkt? USP hervorheben)</p>
+     - <h3>Vorteile</h3>
+     - <ul><li><strong>Vorteil 1</strong>: Erklärung</li>...</ul>
+     - <h3>Funktionen</h3>
+     - <ul><li>Feature 1</li>...</ul>
+     - <h3>Fazit</h3>
+     - <p>Zusammenfassung und Kaufempfehlung</p>
+3. "tags": Array mit 5-10 Tags.
+4. "metaTitle": SEO Titel.
+5. "metaDescription": SEO Beschreibung.
+6. "handle": URL-Slug.
+
+Produktdaten (Quelle):
 Name: ${product.title}
-Beschreibung: ${product.description}
-Spezifikationen: ${product.specifications || 'N/A'}
+Beschreibung (Rohdaten): ${cleanDescription}
+Specs: ${product.specifications || 'N/A'}
 Features: ${product.features || 'N/A'}
 Kategorie: ${product.product_type || 'General'}
 
-Erstelle jetzt das JSON-Objekt.`
+Erstelle jetzt das JSON-Objekt mit dem NEUEN Text.`
 
         const completion = await openai.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
