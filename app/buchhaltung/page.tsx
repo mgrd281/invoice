@@ -29,7 +29,8 @@ import {
   Trash2,
   Save,
   Archive,
-  Briefcase
+  Briefcase,
+  Database
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
