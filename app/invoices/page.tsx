@@ -248,29 +248,32 @@ export default function InvoicesPage() {
           console.log('✅ Found invoice in Shopify:', data.invoice.number)
 
           if (data.isNew) {
-            showToast(`Bestellung ${data.invoice.orderNumber} gefunden und importiert!`, 'success')
+            showToast(`Bestellung ${data.invoice.orderNumber || data.invoice.number} gefunden und importiert!`, 'success')
 
             // Add to invoices list
             setInvoices(prev => [data.invoice, ...prev])
-
-            // Add to search results if not already there
-            setSearchResults(prev => {
-              if (!prev.find(inv => inv.id === data.invoice.id)) {
-                return [data.invoice, ...prev]
-              }
-              return prev
-            })
           } else {
-            // If it exists but wasn't found in local search (maybe due to strict filtering?), ensure it's shown
-            // But usually local search should have found it. 
-            // Maybe we just want to highlight it?
-            console.log('Invoice already exists locally.')
+            showToast(`Rechnung für Bestellung ${potentialOrderNumber} existiert bereits.`, 'info')
           }
+
+          // ALWAYS add to search results if found (new or existing)
+          setSearchResults(prev => {
+            // Remove if already exists to avoid duplicates, then add to top
+            const filtered = prev.filter(inv => inv.id !== data.invoice.id)
+            return [data.invoice, ...filtered]
+          })
+          setShowSearchResults(true)
+
         } else {
           console.log('❌ Order not found in Shopify.')
+          // Only show error if we strictly searched for an order number and found nothing locally either
+          if (filteredInvoices.length === 0) {
+            showToast(`Keine Bestellung mit Nummer "${potentialOrderNumber}" in Shopify gefunden.`, 'error')
+          }
         }
       } catch (error) {
         console.error('Error searching Shopify:', error)
+        showToast('Fehler bei der Shopify-Suche.', 'error')
       } finally {
         setIsSearchingShopify(false)
       }

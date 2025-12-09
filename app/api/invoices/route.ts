@@ -76,7 +76,8 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         customer: true,
-        items: true
+        items: true,
+        order: true
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -112,7 +113,8 @@ export async function GET(request: NextRequest) {
       reference_number: (inv as any).referenceNumber,
       original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
       grund: (inv as any).reason,
-      refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined
+      refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined,
+      orderNumber: inv.order?.orderNumber
     }))
 
     return NextResponse.json(mappedInvoices)
