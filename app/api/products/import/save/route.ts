@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
             body_html: product.fullDescription || product.description,
             vendor: product.vendor,
             product_type: product.product_type,
-            tags: product.tags,
+            tags: product.tags ? `${product.tags}, Imported` : 'Imported',
             status: settings.isActive ? 'active' : 'draft',
             images: product.images.map((src: string) => ({ src })),
             variants: [
