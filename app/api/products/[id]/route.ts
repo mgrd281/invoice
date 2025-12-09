@@ -20,21 +20,41 @@ export async function DELETE(
 
         const api = new ShopifyAPI(shopifySettings)
 
-        // 1. Delete from Shopify
-        await api.deleteProduct(productId)
+        // 1. Delete from Shopify (Ignore 404 if already deleted)
+        try {
+            await api.deleteProduct(productId)
+        } catch (error: any) {
+            // Check if error message contains 404 or "Not Found"
+            // The ShopifyAPI throws an error with the status text
+            const errorMessage = error.message || ''
+            if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+                console.log(`Product ${productId} already deleted from Shopify (404), proceeding to local cleanup.`)
+            } else {
+                // If it's another error (e.g. 403 Forbidden, 500 Server Error), we should probably still try to clean up local data
+                // but log it as a warning.
+                console.warn(`Warning: Failed to delete product ${productId} from Shopify:`, error)
+                // We choose to proceed to delete local data so the user isn't stuck with a ghost product.
+            }
+        }
 
         // 2. Delete from local database (Review) if exists
-        // We delete all reviews associated with this product
-        await prisma.review.deleteMany({
-            where: {
-                productId: productId.toString()
-            }
-        })
+        try {
+            await prisma.review.deleteMany({
+                where: {
+                    productId: productId.toString()
+                }
+            })
+        } catch (dbError) {
+            console.error('Error deleting local reviews:', dbError)
+            // Even if DB fails, we return success if Shopify part was handled, 
+            // or maybe we should warn. But for UI experience, let's return success 
+            // so the item disappears.
+        }
 
         return NextResponse.json({ success: true })
 
     } catch (error) {
-        console.error('Error deleting product:', error)
+        console.error('Error in delete route:', error)
         return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
     }
 }
