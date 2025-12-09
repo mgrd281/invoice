@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
+import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
     request: NextRequest,
@@ -18,7 +19,17 @@ export async function DELETE(
         }
 
         const api = new ShopifyAPI(shopifySettings)
+
+        // 1. Delete from Shopify
         await api.deleteProduct(productId)
+
+        // 2. Delete from local database (Review) if exists
+        // We delete all reviews associated with this product
+        await prisma.review.deleteMany({
+            where: {
+                productId: productId.toString()
+            }
+        })
 
         return NextResponse.json({ success: true })
 
