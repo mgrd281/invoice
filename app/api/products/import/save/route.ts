@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
                     price: product.price,
                     sku: product.sku,
                     taxable: settings.chargeTax,
-                    inventory_management: settings.trackQuantity ? 'shopify' : null,
+                    inventory_management: 'shopify', // Always track inventory to set quantity
+                    inventory_quantity: 889, // Set default quantity to 889 as requested
                     requires_shipping: settings.isPhysical
                 }
             ]

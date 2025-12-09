@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
             tags: 'Imported'
         })
 
+        // Sort by created_at descending (newest first)
+        products.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
         return NextResponse.json({ success: true, products })
 
     } catch (error) {
