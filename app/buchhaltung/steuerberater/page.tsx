@@ -27,12 +27,52 @@ import {
     Briefcase,
     UserPlus,
     ChevronRight,
-    Calendar
+    Calendar,
+    Loader2,
+    ExternalLink
 } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useToast } from "@/components/ui/toast"
 
 export default function TaxAdvisorPage() {
+    const { toast } = useToast()
     const [selectedExport, setSelectedExport] = useState<'bookings' | 'invoices' | null>(null)
     const [datevConnected, setDatevConnected] = useState(false)
+    const [isConnecting, setIsConnecting] = useState(false)
+    const [showConnectionDialog, setShowConnectionDialog] = useState(false)
+
+    const handleConnect = () => {
+        setIsConnecting(true)
+        // Simulate connection delay
+        setTimeout(() => {
+            setIsConnecting(false)
+            setShowConnectionDialog(false)
+            setDatevConnected(true)
+            toast({
+                title: "Verbindung erfolgreich",
+                description: "Ihr Steuerberater wurde erfolgreich verknüpft.",
+                variant: "default", // or "success" if available, usually default is fine
+            })
+        }, 2000)
+    }
+
+    const handleHelp = () => {
+        toast({
+            title: "Hilfe & Support",
+            description: "Für Unterstützung wenden Sie sich bitte an support@example.com oder lesen Sie unsere Dokumentation.",
+        })
+    }
+
+    const handleDatevLogin = () => {
+        toast({
+            title: "Weiterleitung zu DATEV",
+            description: "Sie werden nun zur DATEV-Anmeldeseite weitergeleitet...",
+        })
+        // Simulate redirect
+        setTimeout(() => {
+            window.open('https://www.datev.de/unternehmen-online', '_blank')
+        }, 1000)
+    }
 
     // Export Configuration State
     const [exportConfig, setExportConfig] = useState({
@@ -76,7 +116,7 @@ export default function TaxAdvisorPage() {
                             </div>
                         </div>
                         <div className="flex items-center space-x-3">
-                            <Button variant="outline" className="hidden sm:flex">
+                            <Button variant="outline" className="hidden sm:flex" onClick={handleHelp}>
                                 <HelpCircle className="h-4 w-4 mr-2" />
                                 Hilfe
                             </Button>
@@ -142,9 +182,36 @@ export default function TaxAdvisorPage() {
                                     </div>
                                 </div>
 
-                                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200">
-                                    Verknüpfung einrichten
-                                </Button>
+                                <Dialog open={showConnectionDialog} onOpenChange={setShowConnectionDialog}>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200">
+                                            Verknüpfung einrichten
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Steuerberater verknüpfen</DialogTitle>
+                                            <DialogDescription>
+                                                Geben Sie den Einladungscode Ihres Steuerberaters ein, um eine direkte Verbindung herzustellen.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label htmlFor="invite-code" className="text-right">
+                                                    Code
+                                                </Label>
+                                                <Input id="invite-code" placeholder="z.B. 123-ABC-456" className="col-span-3" />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setShowConnectionDialog(false)}>Abbrechen</Button>
+                                            <Button onClick={handleConnect} disabled={isConnecting}>
+                                                {isConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                {isConnecting ? 'Verbinde...' : 'Verbinden'}
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
 
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                                     <div className="flex items-center justify-between">
@@ -428,9 +495,12 @@ export default function TaxAdvisorPage() {
                                     <Checkbox id="datevOpen" />
                                     <Label htmlFor="datevOpen">Auch offene Rechnungen & Belege übertragen</Label>
                                 </div>
-                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                                <Button
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={handleDatevLogin}
+                                >
                                     Zur DATEV Anmeldung
-                                    <ChevronRight className="h-4 w-4 ml-2" />
+                                    <ExternalLink className="h-4 w-4 ml-2" />
                                 </Button>
                             </div>
 
