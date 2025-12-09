@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator'
 import { Building2, Palette, Bell, Shield, Save, Loader2, ArrowLeft, Settings, Trash2, Gift } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { setCompanySettingsClient } from '@/lib/company-settings'
+import { useTheme } from '@/components/theme-provider'
+import { type Theme } from '@/lib/theme'
 
 interface CompanySettings {
   companyName: string
@@ -44,6 +46,7 @@ interface AppSettings {
 }
 
 export default function SettingsPage() {
+  const { setTheme } = useTheme()
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
     companyName: '',
     taxNumber: '',
@@ -101,6 +104,9 @@ export default function SettingsPage() {
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json()
         setSettings(settingsData)
+        if (settingsData.theme) {
+          setTheme(settingsData.theme as Theme)
+        }
       }
     } catch (error) {
       console.error('Error loading settings:', error)
@@ -502,7 +508,10 @@ export default function SettingsPage() {
               </div>
               <Select
                 value={settings.theme}
-                onValueChange={(value: string) => setSettings(prev => ({ ...prev, theme: value }))}
+                onValueChange={(value: string) => {
+                  setSettings(prev => ({ ...prev, theme: value }))
+                  setTheme(value as Theme) // Apply immediately
+                }}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
