@@ -82,6 +82,11 @@ export interface ShopifyProduct {
   product_type: string
   created_at: string
   updated_at: string
+  tags?: string
+  vendor?: string
+  status?: string
+  body_html?: string
+  images?: Array<{ src: string }>
   variants: Array<{
     id: number
     title: string
