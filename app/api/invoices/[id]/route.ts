@@ -86,7 +86,7 @@ export async function GET(
         description: item.description,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
-        total: Number(item.grossAmount),
+        total: Number(item.netAmount), // Send Net Amount as total so frontend calculation (Net + Tax) works correctly
         ean: (item as any).ean
       })),
       // Document type fields
