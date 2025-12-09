@@ -57,6 +57,13 @@ Struktur des JSON-Objekts:
    - "custom_label_2": Leer.
    - "custom_label_3": Leer.
    - "custom_label_4": Leer.
+8. "productMetafields": Objekt mit speziellen Produktfeldern:
+   - "emoji_benefits": Kurze Liste von Vorteilen mit Emojis getrennt durch " | " (z.B. "🚀 Sofort-Download | 🔒 Sicher | 🇩🇪 Support").
+   - "collapsible_row_content_1": HTML-Inhalt für einen ausklappbaren Reiter (z.B. "Installationsanleitung" oder "Systemanforderungen").
+9. "shipping": Objekt mit Versanddaten:
+   - "hs_code": HS-Code für den Zoll (z.B. "852349" für Software).
+   - "origin_country": ISO 2-Code des Herkunftslandes (z.B. "US" oder "DE").
+   - "weight": Gewicht in kg (0 für rein digitale Produkte).
 
 Produktdaten (Quelle):
 Name: ${product.title}
@@ -86,7 +93,9 @@ Erstelle jetzt das JSON-Objekt mit dem NEUEN Text.`
             metaTitle: aiData.metaTitle,
             metaDescription: aiData.metaDescription,
             handle: aiData.handle,
-            variantMetafields: aiData.variantMetafields
+            variantMetafields: aiData.variantMetafields,
+            productMetafields: aiData.productMetafields,
+            shipping: aiData.shipping
         })
 
     } catch (error: any) {

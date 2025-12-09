@@ -573,6 +573,26 @@ export class ShopifyAPI {
   }
 
   /**
+   * Update an inventory item in Shopify
+   */
+  async updateInventoryItem(inventoryItemId: number, data: { harmonized_system_code?: string, country_code_of_origin?: string }): Promise<any> {
+    try {
+      console.log(`🔄 Updating inventory item ${inventoryItemId}...`)
+      const response = await this.makeRequest(`/inventory_items/${inventoryItemId}.json`, {
+        method: 'PUT',
+        body: JSON.stringify({ inventory_item: { id: inventoryItemId, ...data } })
+      })
+
+      const result = await response.json()
+      console.log('✅ Inventory item updated successfully')
+      return result.inventory_item
+    } catch (error) {
+      console.error(`Error updating inventory item ${inventoryItemId}:`, error)
+      throw error
+    }
+  }
+
+  /**
    * Add a product to a collection (using Collects API)
    */
   async addProductToCollection(productId: number, collectionId: number): Promise<any> {

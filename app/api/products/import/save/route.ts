@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
         }
 
         const variantMetafields = createMetafields(product.variantMetafields)
-        console.log('Final variant metafields to send:', variantMetafields)
+        const productMetafields = createMetafields(product.productMetafields)
+
+        console.log('Final variant metafields:', variantMetafields)
+        console.log('Final product metafields:', productMetafields)
 
         // Prepare product data for Shopify
         const shopifyProduct: any = {
@@ -41,6 +44,7 @@ export async function POST(request: NextRequest) {
             tags: product.tags ? `${product.tags}, Imported` : 'Imported',
             status: settings.isActive ? 'active' : 'draft',
             images: product.images.map((src: string) => ({ src })),
+            metafields: productMetafields.length > 0 ? productMetafields : undefined,
             variants: [
                 {
                     price: product.price,
@@ -50,7 +54,9 @@ export async function POST(request: NextRequest) {
                     inventory_management: 'shopify', // Always track inventory to set quantity
                     inventory_quantity: 889, // Set default quantity to 889 as requested
                     requires_shipping: settings.isPhysical,
-                    metafields: variantMetafields.length > 0 ? variantMetafields : undefined
+                    metafields: variantMetafields.length > 0 ? variantMetafields : undefined,
+                    weight: product.shipping?.weight || 0,
+                    weight_unit: 'kg'
                 }
             ]
         }
@@ -65,6 +71,22 @@ export async function POST(request: NextRequest) {
         // (requires a separate call to Collects API), so we'll skip it for now or handle it later.
 
         const createdProduct = await api.createProduct(shopifyProduct)
+
+        // Update Inventory Item with HS Code and Country of Origin
+        if (createdProduct && createdProduct.variants && createdProduct.variants.length > 0 && product.shipping) {
+            const inventoryItemId = (createdProduct.variants[0] as any).inventory_item_id
+            if (inventoryItemId) {
+                try {
+                    await api.updateInventoryItem(inventoryItemId, {
+                        harmonized_system_code: product.shipping.hs_code,
+                        country_code_of_origin: product.shipping.origin_country
+                    })
+                    console.log('Updated inventory item with shipping data')
+                } catch (invError) {
+                    console.error('Failed to update inventory item:', invError)
+                }
+            }
+        }
 
         // Add to collection if specified
         if (settings.collection && createdProduct.id) {
