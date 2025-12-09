@@ -13,40 +13,28 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Product data is required' }, { status: 400 })
         }
 
-        const prompt = `أنت مساعد متخصص في كتابة أوصاف منتجات المتاجر الإلكترونية. سيتم تزويدك ببيانات منتج مستورد من موقع خارجي، ومهمتك هي تحويل هذه البيانات إلى وصف احترافي جاهز للنشر على متجر شوبيفاي.
+        const prompt = `Du bist ein Experte für das Verfassen von Produktbeschreibungen für Online-Shops. Du erhältst Produktdaten von einer externen Website und deine Aufgabe ist es, diese Daten in eine professionelle, veröffentlichungsreife Beschreibung für einen Shopify-Store umzuwandeln.
 
-اعتمد دائمًا التعليمات التالية:
+Befolge immer diese Anweisungen:
 
-1. اكتب مقدمة قصيرة من 2–3 جمل توضح فائدة المنتج ولماذا قد يحتاجه العميل.
-2. اكتب قائمة مميزات رئيسية على شكل نقاط، تركّز على الفوائد العملية وليس المواصفات الجافة.
-3. اكتب فقرة وصف تفصيلية تشرح كيفية استخدام المنتج وما الذي يميّزه عن المنتجات الأخرى.
-4. إذا كانت هناك مواصفات تقنية، قم بتبسيطها بطريقة مفهومة وواضحة.
-5. لا تضف أي معلومات عن الشحن أو الضمان أو السياسات؛ هذه تتم إضافتها لاحقًا من النظام.
-6. لا تختلق حقائق أو تفاصيل غير موجودة في البيانات التي سيتم إرسالها.
-7. استخدم لغة تسويقية، جذابة، سهلة القراءة، مناسبة للمتاجر الإلكترونية.
-8. في النهاية، أعطني عنوانًا قصيرًا وجذّابًا ومحسّنًا للمنتج.
+1. Schreibe eine kurze Einleitung (2-3 Sätze), die den Nutzen des Produkts hervorhebt und erklärt, warum der Kunde es braucht.
+2. Erstelle eine Liste der wichtigsten Funktionen als Aufzählungspunkte. Konzentriere dich auf den praktischen Nutzen, nicht nur auf trockene Spezifikationen.
+3. Schreibe einen detaillierten Absatz, der die Anwendung des Produkts erklärt und was es von anderen Produkten unterscheidet.
+4. Wenn technische Daten vorhanden sind, vereinfache sie so, dass sie leicht verständlich sind.
+5. Füge KEINE Informationen zu Versand, Garantie oder Rückgaberichtlinien hinzu; diese werden vom System separat hinzugefügt.
+6. Erfinde keine Fakten oder Details, die nicht in den übermittelten Daten enthalten sind.
+7. Verwende eine marketingorientierte, ansprechende und leicht lesbare Sprache, die für Online-Shops geeignet ist.
+8. Gib am Ende einen kurzen, attraktiven und SEO-optimierten Produkttitel an.
 
-بيانات المنتج التي ستعتمد عليها (ستصل بهذا الشكل من التطبيق):
+Produktdaten:
+Name: ${product.title}
+Beschreibung: ${product.description}
+Spezifikationen: ${product.specifications || 'N/A'}
+Features: ${product.features || 'N/A'}
+Kategorie: ${product.product_type || 'General'}
+Zielgruppe: ${product.tags || 'General Audience'}
 
-اسم المنتج:
-${product.title}
-
-الوصف الخام:
-${product.description}
-
-المواصفات:
-${product.specifications || 'N/A'}
-
-الميزات المتوفرة:
-${product.features || 'N/A'}
-
-الفئة / الاستخدام:
-${product.product_type || 'General'}
-
-الجمهور المستهدف:
-${product.tags || 'General Audience'}
-
-اكتب الآن الوصف الاحترافي وفق التعليمات أعلاه.`
+Schreibe jetzt die professionelle Beschreibung auf DEUTSCH gemäß den obigen Anweisungen.`
 
         const completion = await openai.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
@@ -65,9 +53,9 @@ ${product.tags || 'General Audience'}
             const lastLine = lines[lines.length - 1].trim()
 
             // Heuristic: If the last line is short and doesn't end with punctuation (mostly), it might be the title.
-            // Or if it starts with "العنوان:" or "Title:"
-            if (lastLine.length < 100 && (lastLine.includes('العنوان') || !lastLine.endsWith('.'))) {
-                newTitle = lastLine.replace(/^(العنوان|Title)[:\s-]+/i, '').replace(/["']/g, '').trim()
+            // Or if it starts with "Titel:" or "Title:"
+            if (lastLine.length < 100 && (lastLine.includes('Titel') || lastLine.includes('Title') || !lastLine.endsWith('.'))) {
+                newTitle = lastLine.replace(/^(Titel|Title)[:\s-]+/i, '').replace(/["']/g, '').trim()
                 // Remove the title from the description if it's just the title
                 // description = lines.slice(0, -1).join('\n').trim()
             }
