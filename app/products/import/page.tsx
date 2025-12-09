@@ -473,10 +473,9 @@ export default function ProductImportPage() {
                                                             setUrl(newUrls.join('\n'))
                                                         }}
                                                         onKeyDown={(e) => {
-                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                            if (e.key === 'Enter') {
                                                                 e.preventDefault()
-                                                                // Add new field on Enter
-                                                                setUrl(url + '\n')
+                                                                handleStartMigration()
                                                             }
                                                             // Delete empty field on Backspace if it's not the only one
                                                             if (e.key === 'Backspace' && u === '' && url.split('\n').length > 1) {
