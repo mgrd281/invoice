@@ -33,10 +33,27 @@ export async function POST(request: NextRequest) {
             ${text}`
         }
 
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: 'gpt-4o', // Use a capable model
-        })
+        let completion;
+        try {
+            completion = await openai.chat.completions.create({
+                messages: [{ role: 'user', content: prompt }],
+                model: 'gpt-4o',
+            })
+        } catch (e) {
+            console.warn('GPT-4o failed, falling back to gpt-4-turbo...', e)
+            try {
+                completion = await openai.chat.completions.create({
+                    messages: [{ role: 'user', content: prompt }],
+                    model: 'gpt-4-turbo',
+                })
+            } catch (e2) {
+                console.warn('GPT-4-turbo failed, falling back to gpt-3.5-turbo...', e2)
+                completion = await openai.chat.completions.create({
+                    messages: [{ role: 'user', content: prompt }],
+                    model: 'gpt-3.5-turbo',
+                })
+            }
+        }
 
         const rewrittenText = completion.choices[0].message.content
 

@@ -48,6 +48,21 @@ export async function POST(request: NextRequest) {
 
         const createdProduct = await api.createProduct(shopifyProduct)
 
+        // Add to collection if specified
+        if (settings.collection && createdProduct.id) {
+            // Check if collection is an ID (numeric) or title (string)
+            // If it's a string, we might need to find the ID first, but for now we assume the frontend sends the ID
+            // if we implement the Select component correctly.
+            // However, the current settings.collection might be a string title if coming from the old Input.
+            // We'll try to parse it as an ID.
+            const collectionId = parseInt(settings.collection)
+            if (!isNaN(collectionId)) {
+                await api.addProductToCollection(createdProduct.id, collectionId)
+            } else {
+                console.warn('Collection ID is not a number, skipping add to collection:', settings.collection)
+            }
+        }
+
         return NextResponse.json({ success: true, product: createdProduct })
 
     } catch (error) {

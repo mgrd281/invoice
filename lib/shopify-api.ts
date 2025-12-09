@@ -493,6 +493,45 @@ export class ShopifyAPI {
   }
 
   /**
+   * Get collections from Shopify
+   */
+  async getCollections(params: {
+    limit?: number
+    title?: string
+  } = {}): Promise<any[]> {
+    try {
+      const searchParams = new URLSearchParams()
+      searchParams.set('limit', (params.limit || 250).toString())
+
+      if (params.title) {
+        searchParams.set('title', params.title)
+      }
+
+      // Fetch both smart (automated) and custom (manual) collections
+      const [smartResponse, customResponse] = await Promise.all([
+        this.makeRequest(`/smart_collections.json?${searchParams}`),
+        this.makeRequest(`/custom_collections.json?${searchParams}`)
+      ])
+
+      const smartData = await smartResponse.json()
+      const customData = await customResponse.json()
+
+      const smartCollections = smartData.smart_collections || []
+      const customCollections = customData.custom_collections || []
+
+      // Combine and sort by title
+      const allCollections = [...smartCollections, ...customCollections].sort((a, b) =>
+        a.title.localeCompare(b.title)
+      )
+
+      return allCollections
+    } catch (error) {
+      console.error('Error fetching Shopify collections:', error)
+      throw error
+    }
+  }
+
+  /**
    * Delete a product from Shopify
    */
   async deleteProduct(productId: number): Promise<void> {
@@ -525,6 +564,32 @@ export class ShopifyAPI {
     } catch (error) {
       console.error(`Error updating product ${productId}:`, error)
       throw error
+    }
+  }
+
+  /**
+   * Add a product to a collection (using Collects API)
+   */
+  async addProductToCollection(productId: number, collectionId: number): Promise<any> {
+    try {
+      console.log(`➕ Adding product ${productId} to collection ${collectionId}...`)
+      const response = await this.makeRequest('/collects.json', {
+        method: 'POST',
+        body: JSON.stringify({
+          collect: {
+            product_id: productId,
+            collection_id: collectionId
+          }
+        })
+      })
+
+      const data = await response.json()
+      console.log('✅ Product added to collection successfully')
+      return data.collect
+    } catch (error) {
+      console.error(`Error adding product ${productId} to collection ${collectionId}:`, error)
+      // Don't throw here, just log error as this is a secondary action
+      return null
     }
   }
 

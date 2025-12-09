@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
     ArrowRight,
     Download,
@@ -64,6 +66,35 @@ export default function ProductImportPage() {
     const [loadingStore, setLoadingStore] = useState(false)
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
+    // Collections State
+    const [collections, setCollections] = useState<any[]>([])
+    const [loadingCollections, setLoadingCollections] = useState(false)
+
+    // Bulk Import State
+    const [importQueue, setImportQueue] = useState<string[]>([])
+    const [currentImportIndex, setCurrentImportIndex] = useState(0)
+    const [importLogs, setImportLogs] = useState<string[]>([])
+    const [isBulkImporting, setIsBulkImporting] = useState(false)
+
+    // Load collections on mount
+    useEffect(() => {
+        const fetchCollections = async () => {
+            setLoadingCollections(true)
+            try {
+                const response = await fetch('/api/shopify/collections')
+                const data = await response.json()
+                if (data.success) {
+                    setCollections(data.collections)
+                }
+            } catch (error) {
+                console.error('Error loading collections:', error)
+            } finally {
+                setLoadingCollections(false)
+            }
+        }
+        fetchCollections()
+    }, [])
+
     // Load imported products when tab changes to 'store'
     useEffect(() => {
         if (activeTab === 'store') {
@@ -116,6 +147,66 @@ export default function ProductImportPage() {
     const handleStartMigration = async () => {
         if (!url || !settings.acceptTerms) return
 
+        // Check for multiple URLs
+        const urls = url.split('\n').map(u => u.trim()).filter(u => u.length > 0)
+
+        if (urls.length > 1) {
+            // BULK IMPORT MODE
+            setIsBulkImporting(true)
+            setImportQueue(urls)
+            setCurrentImportIndex(0)
+            setImportLogs([])
+
+            for (let i = 0; i < urls.length; i++) {
+                setCurrentImportIndex(i + 1)
+                const currentUrl = urls[i]
+
+                try {
+                    // 1. Scrape
+                    const scrapeRes = await fetch('/api/products/import/external', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: currentUrl })
+                    })
+
+                    if (!scrapeRes.ok) throw new Error('Scrape failed')
+                    const scrapeData = await scrapeRes.json()
+                    const product = scrapeData.product
+
+                    // Apply multiplier
+                    const multiplier = parseFloat(settings.priceMultiplier) || 1
+                    if (product.price && multiplier !== 1) {
+                        product.price = (parseFloat(product.price) * multiplier).toFixed(2)
+                    }
+
+                    // 2. Save immediately
+                    const saveRes = await fetch('/api/products/import/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            product: product,
+                            settings: settings
+                        })
+                    })
+
+                    if (!saveRes.ok) throw new Error('Save failed')
+
+                    setImportLogs(prev => [`✅ ${currentUrl}: Success`, ...prev])
+                } catch (error) {
+                    console.error(`Failed to import ${currentUrl}:`, error)
+                    setImportLogs(prev => [`❌ ${currentUrl}: Failed`, ...prev])
+                }
+            }
+
+            setIsBulkImporting(false)
+            showToast(`Bulk Import abgeschlossen (${urls.length} Produkte)`, "success")
+            setUrl('')
+            loadImportedProducts()
+            setActiveTab('store')
+            return
+        }
+
+        // SINGLE IMPORT MODE (Existing Logic)
         setIsImporting(true)
         setImportStep('validating')
         setPreviewData(null)
@@ -366,13 +457,13 @@ export default function ProductImportPage() {
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <div className="relative group">
-                                            <Input
+                                            <Textarea
                                                 id="url"
-                                                placeholder="https://shop.beispiel.de/produkt/t-shirt"
-                                                className="pl-11 pr-24 h-14 text-lg bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-inner"
+                                                placeholder="https://shop.beispiel.de/produkt/t-shirt&#10;https://shop.beispiel.de/produkt/hose&#10;(Eine URL pro Zeile für Massenimport)"
+                                                className="pl-11 pr-24 min-h-[120px] text-lg bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-inner resize-y py-4"
                                                 value={url}
                                                 onChange={(e) => setUrl(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleStartMigration()}
+                                                onKeyDown={(e) => e.key === 'Enter' && e.ctrlKey && handleStartMigration()}
                                             />
                                             <Globe className="absolute left-4 top-4 h-6 w-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                                             <div className="absolute right-2 top-2 flex items-center space-x-1">
@@ -443,6 +534,36 @@ export default function ProductImportPage() {
                                 </CardContent>
                             </Card>
 
+                            {/* Bulk Import Progress */}
+                            {isBulkImporting && (
+                                <Card className="border-blue-200 bg-blue-50/50 shadow-lg animate-in fade-in slide-in-from-top-4">
+                                    <CardHeader>
+                                        <CardTitle className="text-blue-800 flex items-center">
+                                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                                            Bulk Import läuft...
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Verarbeite {currentImportIndex} von {importQueue.length} URLs
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                            <div
+                                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${(currentImportIndex / importQueue.length) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="max-h-40 overflow-y-auto space-y-2 p-2 bg-white rounded-md border border-gray-200 text-xs font-mono">
+                                            {importLogs.map((log, i) => (
+                                                <div key={i} className={log.startsWith('❌') ? 'text-red-600' : 'text-green-600'}>
+                                                    {log}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
                             {/* 2. Import Settings */}
                             <Card className="border-none shadow-lg bg-white/80 backdrop-blur-sm ring-1 ring-gray-200/50">
                                 <CardHeader className="pb-4">
@@ -456,13 +577,22 @@ export default function ProductImportPage() {
                                         <div className="space-y-2">
                                             <Label className="text-gray-600">Zu Kollektion hinzufügen</Label>
                                             <div className="relative">
-                                                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                                <Input
-                                                    placeholder="Kollektion suchen..."
-                                                    className="pl-9 bg-gray-50 border-gray-200 focus:bg-white"
+                                                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
+                                                <Select
                                                     value={settings.collection}
-                                                    onChange={(e) => setSettings({ ...settings, collection: e.target.value })}
-                                                />
+                                                    onValueChange={(value) => setSettings({ ...settings, collection: value })}
+                                                >
+                                                    <SelectTrigger className="pl-9 bg-gray-50 border-gray-200 focus:bg-white w-full">
+                                                        <SelectValue placeholder="Kollektion wählen..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {collections.map((col) => (
+                                                            <SelectItem key={col.id} value={col.id.toString()}>
+                                                                {col.title}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
                                         <div className="space-y-2">
