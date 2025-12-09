@@ -26,7 +26,8 @@ import {
   Shield,
   Package,
   Gift,
-  Globe
+  Globe,
+  Star
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -424,6 +425,27 @@ export default function DashboardPage() {
                     <CardTitle className="text-xl">Digitale Produkte</CardTitle>
                     <CardDescription>
                       Lizenzschlüssel und Downloads verwalten
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/reviews">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-yellow-300 bg-gradient-to-br from-white to-yellow-50">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mb-4 relative">
+                      <Star className="h-6 w-6 text-white" />
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                      </span>
+                    </div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      Produkt Reviews
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">NEU</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Bewertungen sammeln & verwalten (Loox Style)
                     </CardDescription>
                   </CardHeader>
                 </Card>

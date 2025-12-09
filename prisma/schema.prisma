@@ -92,6 +92,7 @@ model Organization {
   expenses          Expense[]
   additionalIncomes AdditionalIncome[]
   receipts          Receipt[]
+  reviews           Review[]
 }
 
 model Account {
@@ -147,6 +148,7 @@ model Customer {
   notes             CustomerNote[]
   emails            EmailMessage[]
   payments          Payment[]
+  reviews           Review[]
   
   // Marketing / Automation
   firstPurchaseDiscountSentAt DateTime?
@@ -544,6 +546,46 @@ model Receipt {
   date           DateTime
   description    String?
   category       String?      // "INCOME", "EXPENSE", "OTHER"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Review {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  // Product Info
+  productId      String       // Shopify Product ID or internal ID
+  productTitle   String?
+  productHandle  String?
+  productImage   String?
+
+  // Customer Info
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  customerName   String
+  customerEmail  String
+  
+  // Review Content
+  rating         Int          // 1-5
+  title          String?
+  content        String?      @db.Text
+  
+  // Media
+  images         String[]     // Array of image URLs
+  videos         String[]     // Array of video URLs
+  
+  // Status & Metadata
+  status         String       @default("PENDING") // PENDING, APPROVED, REJECTED, HIDDEN
+  source         String       @default("web")     // web, email, import, loox, judgeme, amazon
+  isVerified     Boolean      @default(false)
+  isFeatured     Boolean      @default(false)
+  
+  // Admin Reply
+  reply          String?      @db.Text
+  repliedAt      DateTime?
+  
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
