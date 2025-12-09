@@ -264,6 +264,7 @@ export class ShopifyAPI {
         try {
           console.log(`🔄 Page ${pageCount + 1}: Fetching ${maxPerPage} orders...`)
           console.log(`🔗 URL params: ${searchParams.toString()}`)
+          console.log(`🔌 Shopify API Request: ${this.baseUrl}/orders.json?${searchParams.toString()}`)
 
           const response = await this.makeRequest(`/orders.json?${searchParams}`)
 

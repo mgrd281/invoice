@@ -37,16 +37,20 @@ export async function GET(request: NextRequest) {
 
         const api = new ShopifyAPI(settings)
 
-        // Try to find the order
-        // 1. Search by name (e.g. #1001)
-        let orders = await api.getOrders({
+        // Try to find the order using multiple strategies
+        let orders: any[] = []
+
+        // Strategy 1: Search by name (e.g. "#2000")
+        console.log(`Trying strategy 1: name=${orderName}`)
+        orders = await api.getOrders({
             limit: 1,
             name: orderName,
             status: 'any'
         })
 
-        // 2. If not found, try searching by order number directly (sometimes works differently)
+        // Strategy 2: Search by number only (e.g. "2000")
         if (orders.length === 0) {
+            console.log(`Trying strategy 2: name=${orderNumber}`)
             orders = await api.getOrders({
                 limit: 1,
                 name: orderNumber,
@@ -54,7 +58,11 @@ export async function GET(request: NextRequest) {
             })
         }
 
+        // Strategy 3: General query search (if supported/needed, usually name covers it)
+        // But sometimes 'name' is strict. Let's rely on the above for now as getOrders uses specific params.
+
         if (orders.length === 0) {
+            console.log('❌ Order not found with any strategy.')
             return NextResponse.json({ found: false, message: 'Order not found in Shopify' })
         }
 
@@ -189,7 +197,7 @@ export async function GET(request: NextRequest) {
                 settings: {
                     paymentMethod: invoiceData.paymentMethod
                 }
-            },
+            } as any, // Cast to any to avoid strict type checking on JSON field if types are outdated
             include: {
                 items: true,
                 customer: true
