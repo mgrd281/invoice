@@ -46,9 +46,10 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Multi-Provider Proxy Strategy (Enterprise Grade)
-        // We implement a waterfall fallback: ZenRows -> ScrapingBee -> ScrapingAnt -> ScraperAPI -> Direct
+        // We implement a waterfall fallback: Bright Data -> ZenRows -> ScrapingBee -> ScrapingAnt -> ScraperAPI -> Direct
         // This ensures maximum reliability. If one service is down or blocked, the other takes over.
 
+        const BRIGHTDATA_API_KEY = process.env.BRIGHTDATA_API_KEY
         const ZENROWS_API_KEY = process.env.ZENROWS_API_KEY
         const SCRAPERAPI_KEY = process.env.SCRAPERAPI_KEY
         const SCRAPINGBEE_API_KEY = process.env.SCRAPINGBEE_API_KEY
@@ -109,6 +110,16 @@ export async function POST(request: NextRequest) {
             const vendor = url.includes('otto.de') ? 'Otto' : 'Amazon'
             console.log(`Detected ${vendor} URL, initiating proxy waterfall...`)
 
+            // Priority 0: Bright Data (The Heavy Lifter)
+            // Note: Bright Data usually requires a Zone Name and Customer ID for proxy usage.
+            // Since we only have an API Key, we assume this might be for a specific API endpoint or future config.
+            // For now, we log it. To fully enable, we need the Zone Name.
+            if (BRIGHTDATA_API_KEY) {
+                console.log('Bright Data Key detected. (Requires Zone Name for full Proxy implementation)')
+                // Placeholder for Bright Data Proxy logic:
+                // const proxyUrl = `http://user-zone-ZONE_NAME:${BRIGHTDATA_API_KEY}@brd.superproxy.io:22225`
+            }
+
             // Priority 1: ZenRows
             if (ZENROWS_API_KEY) {
                 try {
@@ -123,7 +134,7 @@ export async function POST(request: NextRequest) {
                 } catch (e) { console.error('ZenRows failed:', e) }
             }
 
-            // Priority 2: ScrapingBee (New)
+            // Priority 2: ScrapingBee
             if (SCRAPINGBEE_API_KEY) {
                 try {
                     console.log('Trying Provider 2: ScrapingBee...')
@@ -137,7 +148,7 @@ export async function POST(request: NextRequest) {
                 } catch (e) { console.error('ScrapingBee failed:', e) }
             }
 
-            // Priority 3: ScrapingAnt (New)
+            // Priority 3: ScrapingAnt
             if (SCRAPINGANT_API_KEY) {
                 try {
                     console.log('Trying Provider 3: ScrapingAnt...')
