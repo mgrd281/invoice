@@ -196,6 +196,7 @@ export class ShopifyAPI {
     financial_status?: string
     created_at_min?: string
     created_at_max?: string
+    name?: string
   } = {}): Promise<ShopifyOrder[]> {
     try {
       // Remove limit restriction for complete import
@@ -239,6 +240,13 @@ export class ShopifyAPI {
         }
         if (params.created_at_max) {
           searchParams.set('created_at_max', params.created_at_max)
+        }
+
+        // Filter by name (Order number)
+        if (params.name) {
+          searchParams.set('name', params.name)
+          // When searching by name, we usually want to ignore status filters to find the specific order
+          if (!params.status) searchParams.set('status', 'any')
         }
 
         // Cursor pagination using page_info

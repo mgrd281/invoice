@@ -170,8 +170,10 @@ export default function InvoicesPage() {
     }
   }
 
+  const [isSearchingShopify, setIsSearchingShopify] = useState(false)
+
   // Search invoices directly (supports multiple emails, names, and invoice numbers)
-  const searchInvoicesByCustomer = (query: string) => {
+  const searchInvoicesByCustomer = async (query: string) => {
     if (!query.trim()) {
       setShowSearchResults(false)
       return
@@ -190,6 +192,7 @@ export default function InvoicesPage() {
 
     console.log(`Search terms:`, searchTerms)
 
+    // Local Search
     const filteredInvoices = invoices.filter(invoice => {
       // Get all possible customer email fields
       const customerEmail = (
@@ -209,27 +212,69 @@ export default function InvoicesPage() {
 
       // Get invoice number
       const invoiceNumber = (invoice.number || invoice.invoiceNumber || '').toLowerCase()
+      const orderNumber = (invoice.orderNumber || '').toLowerCase()
 
       // Check if any search term matches any field
       const hasMatch = searchTerms.some(term => {
         const emailMatch = customerEmail.includes(term)
         const nameMatch = customerName.includes(term)
         const numberMatch = invoiceNumber.includes(term)
+        const orderMatch = orderNumber.includes(term)
 
-        return emailMatch || nameMatch || numberMatch
+        return emailMatch || nameMatch || numberMatch || orderMatch
       })
-
-      if (hasMatch) {
-        console.log(`Found match: ${invoice.number} - ${customerName} (${customerEmail})`)
-      }
 
       return hasMatch
     })
 
-    console.log(`Found ${filteredInvoices.length} matching invoices from ${searchTerms.length} search terms`)
+    console.log(`Found ${filteredInvoices.length} matching invoices locally`)
     setSearchResults(filteredInvoices)
     setShowSearchResults(true)
     setIsSearching(false)
+
+    // Shopify Search (if query looks like an order number)
+    // Check if any term looks like an order number (digits, optionally starting with #)
+    const potentialOrderNumber = searchTerms.find(term => /^#?\d+$/.test(term))
+
+    if (potentialOrderNumber) {
+      console.log(`🔍 Query "${potentialOrderNumber}" looks like an order number. Searching Shopify...`)
+      setIsSearchingShopify(true)
+
+      try {
+        const response = await fetch(`/api/shopify/search-order?query=${potentialOrderNumber}`)
+        const data = await response.json()
+
+        if (data.found && data.invoice) {
+          console.log('✅ Found invoice in Shopify:', data.invoice.number)
+
+          if (data.isNew) {
+            showToast(`Bestellung ${data.invoice.orderNumber} gefunden und importiert!`, 'success')
+
+            // Add to invoices list
+            setInvoices(prev => [data.invoice, ...prev])
+
+            // Add to search results if not already there
+            setSearchResults(prev => {
+              if (!prev.find(inv => inv.id === data.invoice.id)) {
+                return [data.invoice, ...prev]
+              }
+              return prev
+            })
+          } else {
+            // If it exists but wasn't found in local search (maybe due to strict filtering?), ensure it's shown
+            // But usually local search should have found it. 
+            // Maybe we just want to highlight it?
+            console.log('Invoice already exists locally.')
+          }
+        } else {
+          console.log('❌ Order not found in Shopify.')
+        }
+      } catch (error) {
+        console.error('Error searching Shopify:', error)
+      } finally {
+        setIsSearchingShopify(false)
+      }
+    }
   }
 
   // Handle search input change with debouncing
@@ -737,6 +782,13 @@ export default function InvoicesPage() {
 
             {isSearching && (
               <div className="text-sm text-gray-500">Suche läuft...</div>
+            )}
+
+            {isSearchingShopify && (
+              <div className="text-sm text-blue-600 flex items-center animate-pulse">
+                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                Suche in Shopify...
+              </div>
             )}
 
             {showSearchResults && (
