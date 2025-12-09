@@ -20,15 +20,17 @@ export async function POST(request: NextRequest) {
         // Helper to create metafields
         const createMetafields = (metaData: any) => {
             if (!metaData) return []
+            console.log('Processing variant metafields:', metaData)
             return Object.entries(metaData).map(([key, value]) => ({
                 namespace: 'custom',
                 key: key,
-                value: value || '', // Ensure no nulls
+                value: value || '',
                 type: 'single_line_text_field'
-            })).filter(m => m.value !== '') // Only send non-empty values? Or send empty to clear? User said "add empty fields if not imported", but Shopify might reject empty values. Better to send only if value exists, or send " " if strictly required. User said "empty fields", implying they want the field to exist. Shopify metafields don't really "exist" if empty unless defined in definitions. I'll send non-empty values.
+            })).filter(m => m.value !== '' && m.value !== null && m.value !== undefined)
         }
 
         const variantMetafields = createMetafields(product.variantMetafields)
+        console.log('Final variant metafields to send:', variantMetafields)
 
         // Prepare product data for Shopify
         const shopifyProduct: any = {
