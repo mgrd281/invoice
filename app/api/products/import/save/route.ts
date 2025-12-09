@@ -21,12 +21,53 @@ export async function POST(request: NextRequest) {
         const createMetafields = (metaData: any) => {
             if (!metaData) return []
             console.log('Processing variant metafields:', metaData)
-            return Object.entries(metaData).map(([key, value]) => ({
-                namespace: 'custom',
-                key: key,
-                value: value || '',
-                type: 'single_line_text_field'
-            })).filter(m => m.value !== '' && m.value !== null && m.value !== undefined)
+            return Object.entries(metaData).map(([key, value]) => {
+                let type = 'single_line_text_field'
+
+                // Determine type based on key or content
+                if (key.includes('collapsible_row_content') || key === 'faq') {
+                    type = 'rich_text_field'
+                } else if ((value as string).length > 200 || (value as string).includes('\n')) {
+                    type = 'multi_line_text_field'
+                }
+
+                // For rich_text_field, Shopify expects a JSON string of the content tree
+                // But for simplicity via API, we can often send just text if we don't have the complex structure.
+                // However, to be safe and fix the error, let's try 'multi_line_text_field' for everything EXCEPT
+                // those explicitly defined as rich_text in the store.
+                // The error explicitly says: "must be consistent with the definition's type: 'rich_text_field'".
+                // So we MUST use 'rich_text_field' for those keys.
+
+                // Construct rich text value (simple paragraph wrapper)
+                let finalValue = value
+                if (type === 'rich_text_field') {
+                    // We need to send a JSON string representing the rich text document
+                    // OR just send the raw string and hope Shopify accepts it.
+                    // Actually, Shopify API for rich_text_field requires a specific JSON structure.
+                    // Let's try to construct a simple one.
+                    finalValue = JSON.stringify({
+                        type: "root",
+                        children: [
+                            {
+                                type: "paragraph",
+                                children: [
+                                    {
+                                        type: "text",
+                                        value: value
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+                }
+
+                return {
+                    namespace: 'custom',
+                    key: key,
+                    value: finalValue || '',
+                    type: type
+                }
+            }).filter(m => m.value !== '' && m.value !== null && m.value !== undefined)
         }
 
         const variantMetafields = createMetafields(product.variantMetafields)
@@ -37,8 +78,21 @@ export async function POST(request: NextRequest) {
             productMetafields.push({
                 namespace: 'custom',
                 key: 'collapsible_row_content_2',
-                value: product.faq,
-                type: 'multi_line_text_field'
+                value: JSON.stringify({
+                    type: "root",
+                    children: [
+                        {
+                            type: "paragraph",
+                            children: [
+                                {
+                                    type: "text",
+                                    value: product.faq
+                                }
+                            ]
+                        }
+                    ]
+                }),
+                type: 'rich_text_field'
             })
             // Add heading for FAQ
             productMetafields.push({
