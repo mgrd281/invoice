@@ -177,7 +177,112 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 3. Fallback: Generic HTML Scraping (JSON-LD & Meta Tags)
+        // 3. Special Handling: Otto.de
+        if (url.includes('otto.de')) {
+            console.log('Detected Otto URL, applying specific scraping logic...')
+            try {
+                // Otto often returns 202/403 to standard browsers. 
+                // We try to mimic a very standard user first, then fallback to Googlebot if needed.
+
+                const fetchOtto = async (userAgent: string) => {
+                    const headers = {
+                        'User-Agent': userAgent,
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                        'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                    return await fetch(url, { headers })
+                }
+
+                let response = await fetchOtto('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+
+                if (!response.ok || response.status === 202) {
+                    console.log('Standard fetch failed for Otto, retrying as Googlebot...')
+                    // Retry as Googlebot - often allowed to bypass basic checks
+                    response = await fetchOtto('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')
+                }
+
+                if (!response.ok) throw new Error(`Otto fetch failed: ${response.status}`)
+
+                const html = await response.text()
+                const $ = cheerio.load(html)
+
+                let productData: any = {
+                    title: '',
+                    description: '',
+                    price: '0.00',
+                    currency: 'EUR',
+                    images: [],
+                    vendor: 'Otto',
+                    product_type: '',
+                    tags: 'Otto, Imported'
+                }
+
+                // Strategy A: Extract from embedded JSON (Redux State)
+                // Otto often puts state in a script tag
+                $('script').each((_, el) => {
+                    const content = $(el).html() || ''
+                    if (content.includes('productTitle') && content.includes('variationId')) {
+                        try {
+                            // Try to find JSON object structure
+                            // This is heuristic and might need adjustment based on actual page source
+                            // Replaced /s flag with [\s\S] for compatibility
+                            const match = content.match(/data\s*=\s*({[\s\S]+?});/) || content.match(/JSON\.parse\('(.+?)'\)/)
+                            if (match) {
+                                // This is complex to parse reliably without a real JS engine
+                                // So we rely more on the DOM selectors below which are robust
+                            }
+                        } catch (e) { }
+                    }
+                })
+
+                // Strategy B: DOM Selectors (Updated for Otto)
+                productData.title = $('h1[data-qa="product-title"]').text().trim() ||
+                    $('.p_name').text().trim()
+
+                // Price
+                const priceText = $('#normalPriceAmount').text().trim() ||
+                    $('.p_price__amount').text().trim() ||
+                    $('span[data-qa="price"]').text().trim()
+
+                if (priceText) {
+                    const match = priceText.match(/[\d,.]+/)
+                    if (match) productData.price = match[0].replace(',', '.')
+                }
+
+                // Images
+                // Otto uses data-src often for lazy loading
+                $('#product_gallery img').each((_, el) => {
+                    const src = $(el).attr('data-src') || $(el).attr('src')
+                    if (src) productData.images.push(src)
+                })
+                // Fallback gallery
+                if (productData.images.length === 0) {
+                    $('img[data-qa="product-gallery-image"]').each((_, el) => {
+                        const src = $(el).attr('data-src') || $(el).attr('src')
+                        if (src) productData.images.push(src)
+                    })
+                }
+
+                // Description
+                productData.description = $('.p_description').html() ||
+                    $('div[data-qa="product-description"]').html() ||
+                    ''
+
+                // SKU
+                productData.sku = $('[data-qa="article-number"]').text().replace('Artikel-Nr.', '').trim()
+
+                if (productData.title) {
+                    productData.fullDescription = productData.description
+                    return NextResponse.json({ product: productData })
+                }
+            } catch (error) {
+                console.error('Otto specific scrape failed:', error)
+            }
+        }
+
+        // 4. Fallback: Generic HTML Scraping (JSON-LD & Meta Tags)
         console.log('Attempting generic scrape for:', url)
 
         // Use more realistic browser headers to avoid bot detection (e.g. Otto.de)
@@ -187,14 +292,7 @@ export async function POST(request: NextRequest) {
             'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
             'Cache-Control': 'max-age=0',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"macOS"',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1'
+            'Upgrade-Insecure-Requests': '1'
         }
 
         const response = await fetch(url, { headers })
@@ -382,7 +480,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Remove duplicates from images
-        productData.images = [...new Set(productData.images)]
+        productData.images = Array.from(new Set(productData.images))
 
         if (!productData.title) {
             return NextResponse.json({ error: 'Could not detect product data. Ensure this is a valid product page.' }, { status: 400 })
