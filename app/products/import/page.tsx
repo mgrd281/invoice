@@ -202,6 +202,7 @@ export default function ProductImportPage() {
                             if (aiData.handle) product.handle = aiData.handle
                             if (aiData.metaTitle) product.metaTitle = aiData.metaTitle
                             if (aiData.metaDescription) product.metaDescription = aiData.metaDescription
+                            if (aiData.variantMetafields) product.variantMetafields = aiData.variantMetafields
 
                             setImportLogs(prev => [`✨ ${currentUrl}: Optimierung erfolgreich abgeschlossen`, ...prev])
                         }
@@ -295,6 +296,7 @@ export default function ProductImportPage() {
                     if (aiData.handle) product.handle = aiData.handle
                     if (aiData.metaTitle) product.metaTitle = aiData.metaTitle
                     if (aiData.metaDescription) product.metaDescription = aiData.metaDescription
+                    if (aiData.variantMetafields) product.variantMetafields = aiData.variantMetafields
 
                     showToast("Produktbeschreibung erfolgreich generiert", "success")
                 } else {

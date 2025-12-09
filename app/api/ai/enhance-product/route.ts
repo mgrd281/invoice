@@ -45,6 +45,18 @@ Struktur des JSON-Objekts:
 4. "metaTitle": SEO Titel.
 5. "metaDescription": SEO Beschreibung.
 6. "handle": URL-Slug.
+7. "variantMetafields": Objekt mit Google Shopping Feldern:
+   - "google_age_group": "adult", "kids", "toddler", "infant" oder "newborn" (meist "adult" für Software/Büro).
+   - "google_condition": "new", "refurbished" oder "used" (meist "new" für Software).
+   - "google_gender": "male", "female" oder "unisex" (meist "unisex").
+   - "google_mpn": Herstellernummer (falls im Text gefunden, sonst leer lassen).
+   - "google_size_type": "regular" (oder leer).
+   - "google_size_system": "DE" (oder leer).
+   - "google_custom_label_0": Leer oder spezifisches Label.
+   - "google_custom_label_1": Leer.
+   - "google_custom_label_2": Leer.
+   - "google_custom_label_3": Leer.
+   - "google_custom_label_4": Leer.
 
 Produktdaten (Quelle):
 Name: ${product.title}
@@ -73,7 +85,8 @@ Erstelle jetzt das JSON-Objekt mit dem NEUEN Text.`
             tags: aiData.tags,
             metaTitle: aiData.metaTitle,
             metaDescription: aiData.metaDescription,
-            handle: aiData.handle
+            handle: aiData.handle,
+            variantMetafields: aiData.variantMetafields
         })
 
     } catch (error: any) {
