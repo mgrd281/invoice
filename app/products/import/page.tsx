@@ -269,15 +269,20 @@ export default function ProductImportPage() {
             try {
                 showToast("Analysiere Produktdaten...", "info")
 
+                // Clear description to prevent "fallback" to original if AI fails
+                // This ensures we only get AI content or an error
+                const originalDescription = product.description
+                product.description = "⏳ Generiere professionelle Beschreibung..."
+
                 // Give AI time to "think" and process
-                await new Promise(resolve => setTimeout(resolve, 1500))
+                await new Promise(resolve => setTimeout(resolve, 2000))
 
                 showToast("Erstelle SEO-optimierte Beschreibung...", "info")
 
                 const aiRes = await fetch('/api/ai/enhance-product', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product })
+                    body: JSON.stringify({ product: { ...product, description: originalDescription } }) // Send original data to AI
                 })
 
                 if (aiRes.ok) {
@@ -298,7 +303,13 @@ export default function ProductImportPage() {
                 }
             } catch (aiError: any) {
                 console.error('AI Enhancement failed:', aiError)
-                showToast(`AI Fehler: ${aiError.message} - Nutze Originaldaten`, "warning")
+                // DO NOT revert to original description. Show error.
+                product.description = `<div style="color: red; padding: 20px; border: 1px solid red; border-radius: 8px;">
+                    <h3>⚠️ AI Generierung fehlgeschlagen</h3>
+                    <p>${aiError.message}</p>
+                    <p>Bitte versuchen Sie es erneut oder prüfen Sie den API Key.</p>
+                </div>`
+                showToast(`AI Fehler: ${aiError.message}`, "error")
             }
 
             // Apply price multiplier

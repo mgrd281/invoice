@@ -5,6 +5,9 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 
+export const maxDuration = 60; // Allow up to 60 seconds for AI processing
+
+
 export async function POST(request: NextRequest) {
     try {
         const { product } = await request.json()
