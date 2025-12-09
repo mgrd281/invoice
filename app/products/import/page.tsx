@@ -44,37 +44,52 @@ export default function ProductImportPage() {
     // Preview State
     const [previewData, setPreviewData] = useState<any>(null)
 
-    const handleStartMigration = () => {
+    const handleStartMigration = async () => {
         if (!url || !settings.acceptTerms) return
 
         setIsImporting(true)
         setImportStep('validating')
 
-        // Simulate Validation
-        setTimeout(() => {
-            setImportStep('importing')
+        try {
+            // 1. Validate & Fetch Data
+            const response = await fetch('/api/products/import/external', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            })
 
-            // Simulate Import
-            setTimeout(() => {
-                setPreviewData({
-                    title: 'Premium Organic Cotton T-Shirt',
-                    description: 'Experience ultimate comfort with our 100% organic cotton t-shirt. Breathable, durable, and ethically sourced. Perfect for everyday wear.',
-                    price: 29.99,
-                    currency: 'EUR',
-                    images: [
-                        'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-                    ],
-                    sku: 'TSHIRT-ORG-001',
-                    weight: '0.2 kg',
-                    vendor: 'EcoStyle'
-                })
-                setImportStep('complete')
-                setIsImporting(false)
-            }, 2000)
-        }, 1500)
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to import product')
+            }
+
+            setImportStep('importing')
+            const data = await response.json()
+
+            // Apply price multiplier
+            const multiplier = parseFloat(settings.priceMultiplier) || 1
+            if (data.product.price && multiplier !== 1) {
+                data.product.price = (parseFloat(data.product.price) * multiplier).toFixed(2)
+            }
+
+            setPreviewData(data.product)
+            setImportStep('complete')
+        } catch (error) {
+            console.error('Import error:', error)
+            alert('Error importing product: ' + (error instanceof Error ? error.message : 'Unknown error'))
+            setImportStep('idle')
+        } finally {
+            setIsImporting(false)
+        }
     }
 
+    const handleSaveProduct = async () => {
+        if (!previewData) return
+
+        // Here you would implement the logic to save to your own database or Shopify store
+        // For now, we'll just show a success message
+        alert('Product would be saved to your store now! (Backend implementation pending)')
+    }
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-12">
             <div className="max-w-7xl mx-auto space-y-8">
@@ -287,9 +302,14 @@ export default function ProductImportPage() {
                                                 </Badge>
                                             </div>
 
-                                            <Button className="w-full mt-4" variant="outline">
-                                                <ExternalLink className="w-4 h-4 mr-2" /> View Full Details
-                                            </Button>
+                                            <div className="flex flex-col gap-2 mt-4">
+                                                <Button className="w-full" variant="outline">
+                                                    <ExternalLink className="w-4 h-4 mr-2" /> View Full Details
+                                                </Button>
+                                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveProduct}>
+                                                    <CheckCircle2 className="w-4 h-4 mr-2" /> Import to Store
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
