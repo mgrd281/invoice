@@ -46,11 +46,12 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Multi-Provider Proxy Strategy (Enterprise Grade)
-        // We implement a waterfall fallback: ZenRows -> ScraperAPI -> Direct
+        // We implement a waterfall fallback: ZenRows -> ScrapingBee -> ScraperAPI -> Direct
         // This ensures maximum reliability. If one service is down or blocked, the other takes over.
 
         const ZENROWS_API_KEY = process.env.ZENROWS_API_KEY
         const SCRAPERAPI_KEY = process.env.SCRAPERAPI_KEY
+        const SCRAPINGBEE_API_KEY = process.env.SCRAPINGBEE_API_KEY
 
         // Helper to parse HTML and extract data (Shared logic)
         const parseProductData = ($: any, vendor: string) => {
@@ -121,10 +122,24 @@ export async function POST(request: NextRequest) {
                 } catch (e) { console.error('ZenRows failed:', e) }
             }
 
-            // Priority 2: ScraperAPI (Fallback)
+            // Priority 2: ScrapingBee (New)
+            if (SCRAPINGBEE_API_KEY) {
+                try {
+                    console.log('Trying Provider 2: ScrapingBee...')
+                    const sbUrl = `https://app.scrapingbee.com/api/v1/?api_key=${SCRAPINGBEE_API_KEY}&url=${encodeURIComponent(url)}&render_js=true&premium_proxy=true&country_code=de`
+                    const response = await fetch(sbUrl)
+                    if (response.ok) {
+                        const html = await response.text()
+                        const productData = parseProductData(cheerio.load(html), vendor)
+                        if (productData.title) return NextResponse.json({ product: productData })
+                    }
+                } catch (e) { console.error('ScrapingBee failed:', e) }
+            }
+
+            // Priority 3: ScraperAPI (Fallback)
             if (SCRAPERAPI_KEY) {
                 try {
-                    console.log('Trying Provider 2: ScraperAPI...')
+                    console.log('Trying Provider 3: ScraperAPI...')
                     // ScraperAPI format: http://api.scraperapi.com/?api_key=KEY&url=URL&render=true
                     const scraperApiUrl = `http://api.scraperapi.com/?api_key=${SCRAPERAPI_KEY}&url=${encodeURIComponent(url)}&render=true&country_code=de`
                     const response = await fetch(scraperApiUrl)
