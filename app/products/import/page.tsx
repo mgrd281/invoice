@@ -217,6 +217,8 @@ export default function ProductImportPage() {
                             if (aiData.variantMetafields) product.variantMetafields = aiData.variantMetafields
                             if (aiData.productMetafields) product.productMetafields = aiData.productMetafields
                             if (aiData.shipping) product.shipping = aiData.shipping
+                            if (aiData.image_alt_text) product.image_alt_text = aiData.image_alt_text
+                            if (aiData.faq) product.faq = aiData.faq
 
                             setImportLogs(prev => [`✨ ${currentUrl}: Optimierung erfolgreich abgeschlossen`, ...prev])
                         }
@@ -313,6 +315,8 @@ export default function ProductImportPage() {
                     if (aiData.variantMetafields) product.variantMetafields = aiData.variantMetafields
                     if (aiData.productMetafields) product.productMetafields = aiData.productMetafields
                     if (aiData.shipping) product.shipping = aiData.shipping
+                    if (aiData.image_alt_text) product.image_alt_text = aiData.image_alt_text
+                    if (aiData.faq) product.faq = aiData.faq
 
                     showToast("Produktbeschreibung erfolgreich generiert", "success")
                 } else {

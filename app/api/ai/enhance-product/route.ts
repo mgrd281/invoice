@@ -64,6 +64,8 @@ Struktur des JSON-Objekts:
    - "hs_code": HS-Code für den Zoll (z.B. "852349" für Software).
    - "origin_country": ISO 2-Code des Herkunftslandes (z.B. "US" oder "DE").
    - "weight": Gewicht in kg (0 für rein digitale Produkte).
+10. "image_alt_text": Ein SEO-optimierter Alt-Text für das Hauptbild (max 120 Zeichen).
+11. "faq": HTML-Inhalt für einen weiteren ausklappbaren Reiter "Häufige Fragen" (3-4 relevante Fragen & Antworten).
 
 Produktdaten (Quelle):
 Name: ${product.title}
@@ -95,7 +97,9 @@ Erstelle jetzt das JSON-Objekt mit dem NEUEN Text.`
             handle: aiData.handle,
             variantMetafields: aiData.variantMetafields,
             productMetafields: aiData.productMetafields,
-            shipping: aiData.shipping
+            shipping: aiData.shipping,
+            image_alt_text: aiData.image_alt_text,
+            faq: aiData.faq
         })
 
     } catch (error: any) {

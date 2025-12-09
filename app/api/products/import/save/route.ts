@@ -32,8 +32,29 @@ export async function POST(request: NextRequest) {
         const variantMetafields = createMetafields(product.variantMetafields)
         const productMetafields = createMetafields(product.productMetafields)
 
+        // Add FAQ to product metafields if available
+        if (product.faq) {
+            productMetafields.push({
+                namespace: 'custom',
+                key: 'collapsible_row_content_2',
+                value: product.faq,
+                type: 'multi_line_text_field'
+            })
+            // Add heading for FAQ
+            productMetafields.push({
+                namespace: 'custom',
+                key: 'collapsible_row_heading_2',
+                value: 'Häufige Fragen',
+                type: 'single_line_text_field'
+            })
+        }
+
         console.log('Final variant metafields:', variantMetafields)
         console.log('Final product metafields:', productMetafields)
+
+        // Calculate Compare At Price (30% markup to show "Sale")
+        const price = parseFloat(product.price)
+        const compareAtPrice = (price * 1.3).toFixed(2)
 
         // Prepare product data for Shopify
         const shopifyProduct: any = {
@@ -43,11 +64,15 @@ export async function POST(request: NextRequest) {
             product_type: product.product_type,
             tags: product.tags ? `${product.tags}, Imported` : 'Imported',
             status: settings.isActive ? 'active' : 'draft',
-            images: product.images.map((src: string) => ({ src })),
+            images: product.images.map((src: string, index: number) => ({
+                src,
+                alt: index === 0 && product.image_alt_text ? product.image_alt_text : undefined
+            })),
             metafields: productMetafields.length > 0 ? productMetafields : undefined,
             variants: [
                 {
                     price: product.price,
+                    compare_at_price: compareAtPrice,
                     sku: product.sku,
                     barcode: product.ean,
                     taxable: settings.chargeTax,
