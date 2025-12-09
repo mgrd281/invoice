@@ -88,7 +88,7 @@ export default function InvoicesPage() {
         } catch (err) {
           console.error('Auto-Sync failed:', err)
         }
-      }, 10000) // 10 seconds
+      }, 3000) // 3 seconds for faster updates
     }
 
     return () => {
@@ -688,6 +688,31 @@ export default function InvoicesPage() {
               >
                 <Download className="h-4 w-4 mr-2" />
                 {selectedInvoices.size > 0 ? `${selectedInvoices.size} als ZIP` : 'Alle als ZIP'}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  showToast('Synchronisiere mit Shopify...', 'info')
+                  try {
+                    const res = await fetch('/api/shopify/auto-sync')
+                    const data = await res.json()
+                    if (data.synced > 0) {
+                      showToast(`${data.synced} neue Bestellungen importiert!`, 'success')
+                      fetchInvoices()
+                    } else {
+                      showToast('Keine neuen Bestellungen gefunden.', 'info')
+                    }
+                  } catch (err) {
+                    console.error('Manual sync failed:', err)
+                    showToast('Fehler bei der Synchronisation', 'error')
+                  }
+                }}
+                className="text-gray-600 hover:text-gray-700 hover:border-gray-300"
+                title="Manuell mit Shopify synchronisieren"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync
               </Button>
 
               {/* CSV Export Button */}

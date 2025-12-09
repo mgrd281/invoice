@@ -126,6 +126,12 @@ export default function ReviewsPage() {
     const [csvFile, setCsvFile] = useState<File | null>(null)
     const [isUploadingCsv, setIsUploadingCsv] = useState(false)
 
+    // Widget Settings State
+    const [widgetSettings, setWidgetSettings] = useState({
+        primaryColor: '#2563eb',
+        layout: 'list' // 'list' | 'grid'
+    })
+
     useEffect(() => {
         if (activeTab === 'import' && products.length === 0) {
             fetchProducts()
@@ -812,8 +818,9 @@ export default function ReviewsPage() {
                                             {['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#000000'].map((color) => (
                                                 <div
                                                     key={color}
-                                                    className="h-8 w-8 rounded-full cursor-pointer border-2 border-white ring-1 ring-gray-200"
+                                                    className={`h-8 w-8 rounded-full cursor-pointer border-2 ring-1 ring-gray-200 transition-all ${widgetSettings.primaryColor === color ? 'border-gray-900 scale-110' : 'border-white hover:scale-105'}`}
                                                     style={{ backgroundColor: color }}
+                                                    onClick={() => setWidgetSettings(prev => ({ ...prev, primaryColor: color }))}
                                                 />
                                             ))}
                                         </div>
@@ -822,16 +829,22 @@ export default function ReviewsPage() {
                                     <div className="space-y-2">
                                         <Label>Layout</Label>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="border-2 border-blue-600 bg-blue-50 rounded-lg p-4 cursor-pointer text-center">
-                                                <div className="h-12 bg-white rounded mb-2 border border-blue-100"></div>
-                                                <span className="text-sm font-medium text-blue-700">Liste</span>
+                                            <div
+                                                className={`border-2 rounded-lg p-4 cursor-pointer text-center transition-all ${widgetSettings.layout === 'list' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                                                onClick={() => setWidgetSettings(prev => ({ ...prev, layout: 'list' }))}
+                                            >
+                                                <div className="h-12 bg-white rounded mb-2 border border-gray-100"></div>
+                                                <span className={`text-sm font-medium ${widgetSettings.layout === 'list' ? 'text-blue-700' : 'text-gray-600'}`}>Liste</span>
                                             </div>
-                                            <div className="border rounded-lg p-4 cursor-pointer text-center hover:bg-gray-50">
+                                            <div
+                                                className={`border-2 rounded-lg p-4 cursor-pointer text-center transition-all ${widgetSettings.layout === 'grid' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                                                onClick={() => setWidgetSettings(prev => ({ ...prev, layout: 'grid' }))}
+                                            >
                                                 <div className="grid grid-cols-2 gap-1 mb-2">
                                                     <div className="h-12 bg-gray-100 rounded"></div>
                                                     <div className="h-12 bg-gray-100 rounded"></div>
                                                 </div>
-                                                <span className="text-sm font-medium text-gray-600">Raster</span>
+                                                <span className={`text-sm font-medium ${widgetSettings.layout === 'grid' ? 'text-blue-700' : 'text-gray-600'}`}>Raster</span>
                                             </div>
                                         </div>
                                     </div>
@@ -848,7 +861,7 @@ export default function ReviewsPage() {
                                         <div className="flex items-center gap-4 mb-6">
                                             <div className="text-center">
                                                 <div className="text-4xl font-bold text-gray-900">4.8</div>
-                                                <div className="flex text-yellow-400 my-1">
+                                                <div className="flex my-1" style={{ color: widgetSettings.primaryColor }}>
                                                     <Star className="h-4 w-4 fill-current" />
                                                     <Star className="h-4 w-4 fill-current" />
                                                     <Star className="h-4 w-4 fill-current" />
@@ -863,8 +876,11 @@ export default function ReviewsPage() {
                                                         <span className="w-3">{star}</span>
                                                         <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                                             <div
-                                                                className="h-full bg-yellow-400 rounded-full"
-                                                                style={{ width: star === 5 ? '70%' : star === 4 ? '20%' : '5%' }}
+                                                                className="h-full rounded-full"
+                                                                style={{
+                                                                    width: star === 5 ? '70%' : star === 4 ? '20%' : '5%',
+                                                                    backgroundColor: widgetSettings.primaryColor
+                                                                }}
                                                             />
                                                         </div>
                                                     </div>
@@ -879,7 +895,7 @@ export default function ReviewsPage() {
                                                         <div className="h-8 w-8 rounded-full bg-gray-200"></div>
                                                         <div>
                                                             <div className="font-medium text-sm">Max M.</div>
-                                                            <div className="flex text-yellow-400 text-xs">
+                                                            <div className="flex text-xs" style={{ color: widgetSettings.primaryColor }}>
                                                                 <Star className="h-3 w-3 fill-current" />
                                                                 <Star className="h-3 w-3 fill-current" />
                                                                 <Star className="h-3 w-3 fill-current" />
