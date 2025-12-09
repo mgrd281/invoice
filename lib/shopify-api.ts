@@ -534,7 +534,7 @@ export class ShopifyAPI {
   /**
    * Delete a product from Shopify
    */
-  async deleteProduct(productId: number): Promise<void> {
+  async deleteProduct(productId: string | number): Promise<void> {
     try {
       console.log(`🗑️ Deleting product ${productId}...`)
       await this.makeRequest(`/products/${productId}.json`, {

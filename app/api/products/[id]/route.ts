@@ -8,10 +8,12 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     try {
-        const productId = parseInt(params.id)
-        if (isNaN(productId)) {
+        const productId = params.id
+        if (!productId) {
             return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
         }
+
+        console.log(`Attempting to delete product ${productId}`)
 
         const shopifySettings = getShopifySettings()
         if (!shopifySettings.accessToken || !shopifySettings.shopDomain) {
@@ -23,32 +25,42 @@ export async function DELETE(
         // 1. Delete from Shopify (Ignore 404 if already deleted)
         try {
             await api.deleteProduct(productId)
+            console.log(`Shopify product ${productId} deleted successfully`)
         } catch (error: any) {
-            // Check if error message contains 404 or "Not Found"
-            // The ShopifyAPI throws an error with the status text
             const errorMessage = error.message || ''
             if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
                 console.log(`Product ${productId} already deleted from Shopify (404), proceeding to local cleanup.`)
             } else {
-                // If it's another error (e.g. 403 Forbidden, 500 Server Error), we should probably still try to clean up local data
-                // but log it as a warning.
                 console.warn(`Warning: Failed to delete product ${productId} from Shopify:`, error)
-                // We choose to proceed to delete local data so the user isn't stuck with a ghost product.
             }
         }
 
-        // 2. Delete from local database (Review) if exists
+        // 2. Delete from local database (Review & DigitalProduct) if exists
         try {
-            await prisma.review.deleteMany({
+            // Delete Reviews
+            const deletedReviews = await prisma.review.deleteMany({
                 where: {
-                    productId: productId.toString()
+                    productId: productId
                 }
             })
+            console.log(`Deleted ${deletedReviews.count} local reviews for product ${productId}`)
+
+            // Delete DigitalProduct (if exists)
+            // We need to check if there's a DigitalProduct with this shopifyProductId
+            // Note: shopifyProductId in DigitalProduct is String @unique
+            try {
+                const deletedDigitalProduct = await prisma.digitalProduct.deleteMany({
+                    where: {
+                        shopifyProductId: productId
+                    }
+                })
+                console.log(`Deleted ${deletedDigitalProduct.count} digital products for product ${productId}`)
+            } catch (dpError) {
+                console.log('No digital product found or error deleting:', dpError)
+            }
+
         } catch (dbError) {
-            console.error('Error deleting local reviews:', dbError)
-            // Even if DB fails, we return success if Shopify part was handled, 
-            // or maybe we should warn. But for UI experience, let's return success 
-            // so the item disappears.
+            console.error('Error deleting local data:', dbError)
         }
 
         return NextResponse.json({ success: true })
