@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
         return generatePDFReport(invoices, expenses, additionalIncomes || [], summary, filter)
       case 'datev':
         return generateDATEVExport(invoices, expenses, filter)
+      case 'zip':
+        return generateZIPExport(invoices, expenses, additionalIncomes || [], summary, filter)
       default:
         return NextResponse.json({ error: 'Unsupported export format' }, { status: 400 })
     }
@@ -429,4 +431,54 @@ function getExpenseAccount(category: string): string {
   }
 
   return accountMap[category] || DATEV_ACCOUNTS.OFFICE_SUPPLIES
+}
+
+async function generateZIPExport(
+  invoices: AccountingInvoice[],
+  expenses: Expense[],
+  additionalIncomes: any[],
+  summary: AccountingSummary,
+  filter: any
+) {
+  const JSZip = (await import('jszip')).default
+  const zip = new JSZip()
+  const folderName = `buchhaltung-${filter.startDate}-${filter.endDate}`
+  const folder = zip.folder(folderName)
+
+  if (!folder) {
+    throw new Error('Failed to create zip folder')
+  }
+
+  // 1. Add CSV Export
+  const csvResponse = await generateCSVExport(invoices, expenses, additionalIncomes, summary, filter)
+  const csvContent = await csvResponse.text()
+  folder.file('buchhaltung.csv', csvContent)
+
+  // 2. Add Excel Export (currently CSV with .xls extension as per existing implementation)
+  const excelResponse = await generateExcelExport(invoices, expenses, additionalIncomes, summary, filter)
+  const excelContent = await excelResponse.text()
+  folder.file('buchhaltung.xls', excelContent)
+
+  // 3. Add PDF Report (HTML)
+  const pdfResponse = await generatePDFReport(invoices, expenses, additionalIncomes, summary, filter)
+  const pdfContent = await pdfResponse.text()
+  folder.file('bericht.html', pdfContent)
+
+  // 4. Add DATEV Export
+  const datevResponse = await generateDATEVExport(invoices, expenses, filter)
+  const datevContent = await datevResponse.text()
+  folder.file('datev-export.csv', datevContent)
+
+  // Generate ZIP file
+  const zipContent = await zip.generateAsync({ type: 'blob' })
+
+  // Convert Blob to ArrayBuffer for NextResponse
+  const arrayBuffer = await zipContent.arrayBuffer()
+
+  return new NextResponse(arrayBuffer, {
+    headers: {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${folderName}.zip"`
+    }
+  })
 }

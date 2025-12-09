@@ -4,7 +4,7 @@
 export type AccountingPeriod = 'month' | 'quarter' | 'year' | 'custom'
 export type InvoiceStatus = 'offen' | 'bezahlt' | 'erstattet' | 'storniert' | 'überfällig'
 export type ExpenseCategory = 'office' | 'travel' | 'equipment' | 'marketing' | 'utilities' | 'professional_services' | 'other'
-export type ExportFormat = 'csv' | 'pdf' | 'datev' | 'excel'
+export type ExportFormat = 'csv' | 'pdf' | 'datev' | 'excel' | 'zip'
 
 export interface AccountingFilter {
   period: AccountingPeriod

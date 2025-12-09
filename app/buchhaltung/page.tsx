@@ -27,7 +27,8 @@ import {
   ArrowLeft,
   Upload,
   Trash2,
-  Save
+  Save,
+  Archive
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
@@ -531,6 +532,16 @@ export default function BuchhaltungPage() {
               >
                 <Calculator className="w-4 h-4" />
                 <span>DATEV Export</span>
+              </Button>
+
+              <Button
+                onClick={() => handleExport('zip')}
+                disabled={exporting}
+                variant="outline"
+                className="flex items-center space-x-2 bg-yellow-50 text-yellow-700 border-yellow-300 hover:bg-yellow-100"
+              >
+                <Archive className="w-4 h-4" />
+                <span>ZIP Export</span>
               </Button>
             </div>
 
