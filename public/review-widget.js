@@ -1,7 +1,7 @@
 // public/review-widget.js
 
 (function () {
-    const BASE_URL = 'https://your-app-url.vercel.app'; // Replace with your actual deployed URL
+    const BASE_URL = 'https://invoice-kohl-five.vercel.app'; // Updated to actual deployed URL
 
     function initStarRating() {
         const containers = document.querySelectorAll('.rechnung-profi-stars');
