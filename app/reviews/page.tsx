@@ -45,6 +45,37 @@ interface Product {
 export default function ReviewsPage() {
     const [activeTab, setActiveTab] = useState('overview')
 
+    // Stats State
+    const [stats, setStats] = useState({
+        totalReviews: 0,
+        averageRating: 0,
+        photoReviews: 0,
+        pendingReviews: 0,
+        recentReviews: [] as any[]
+    })
+    const [loadingStats, setLoadingStats] = useState(false)
+
+    useEffect(() => {
+        if (activeTab === 'overview') {
+            fetchStats()
+        }
+    }, [activeTab])
+
+    const fetchStats = async () => {
+        setLoadingStats(true)
+        try {
+            const res = await fetch('/api/reviews/stats')
+            const data = await res.json()
+            if (!data.error) {
+                setStats(data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch stats', error)
+        } finally {
+            setLoadingStats(false)
+        }
+    }
+
     // Import Flow State
     const [products, setProducts] = useState<Product[]>([])
     const [loadingProducts, setLoadingProducts] = useState(false)
@@ -265,7 +296,9 @@ export default function ReviewsPage() {
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-sm font-medium text-gray-500">Gesamt Reviews</p>
-                                            <h3 className="text-3xl font-bold text-gray-900 mt-2">1,248</h3>
+                                            <h3 className="text-3xl font-bold text-gray-900 mt-2">
+                                                {loadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalReviews.toLocaleString()}
+                                            </h3>
                                         </div>
                                         <div className="p-2 bg-blue-50 rounded-lg">
                                             <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -273,7 +306,7 @@ export default function ReviewsPage() {
                                     </div>
                                     <div className="mt-4 flex items-center text-sm text-green-600">
                                         <TrendingUp className="h-4 w-4 mr-1" />
-                                        <span>+12% diesen Monat</span>
+                                        <span>Aktualisiert gerade eben</span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -284,7 +317,7 @@ export default function ReviewsPage() {
                                         <div>
                                             <p className="text-sm font-medium text-gray-500">Durchschnitt</p>
                                             <h3 className="text-3xl font-bold text-gray-900 mt-2 flex items-center">
-                                                4.8
+                                                {loadingStats ? '...' : stats.averageRating}
                                                 <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 ml-2" />
                                             </h3>
                                         </div>
@@ -303,7 +336,9 @@ export default function ReviewsPage() {
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-sm font-medium text-gray-500">Foto Reviews</p>
-                                            <h3 className="text-3xl font-bold text-gray-900 mt-2">342</h3>
+                                            <h3 className="text-3xl font-bold text-gray-900 mt-2">
+                                                {loadingStats ? '...' : stats.photoReviews.toLocaleString()}
+                                            </h3>
                                         </div>
                                         <div className="p-2 bg-purple-50 rounded-lg">
                                             <ImageIcon className="h-5 w-5 text-purple-600" />
@@ -311,7 +346,11 @@ export default function ReviewsPage() {
                                     </div>
                                     <div className="mt-4 flex items-center text-sm text-green-600">
                                         <TrendingUp className="h-4 w-4 mr-1" />
-                                        <span>28% Conversion Rate</span>
+                                        <span>
+                                            {stats.totalReviews > 0
+                                                ? `${Math.round((stats.photoReviews / stats.totalReviews) * 100)}% der Reviews`
+                                                : '0% der Reviews'}
+                                        </span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -321,7 +360,9 @@ export default function ReviewsPage() {
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-sm font-medium text-gray-500">Ausstehend</p>
-                                            <h3 className="text-3xl font-bold text-gray-900 mt-2">5</h3>
+                                            <h3 className="text-3xl font-bold text-gray-900 mt-2">
+                                                {loadingStats ? '...' : stats.pendingReviews.toLocaleString()}
+                                            </h3>
                                         </div>
                                         <div className="p-2 bg-orange-50 rounded-lg">
                                             <CheckCircle className="h-5 w-5 text-orange-600" />
@@ -342,50 +383,97 @@ export default function ReviewsPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="flex gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                                            <div className="w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 overflow-hidden">
-                                                {/* Placeholder Image */}
-                                                <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500">
-                                                    <ImageIcon className="h-6 w-6" />
-                                                </div>
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex text-yellow-400">
-                                                                {[...Array(5)].map((_, j) => (
-                                                                    <Star key={j} className="h-4 w-4 fill-current" />
-                                                                ))}
-                                                            </div>
-                                                            <span className="font-medium text-gray-900">Toller Service!</span>
-                                                        </div>
-                                                        <p className="text-sm text-gray-600 mt-1">
-                                                            Das Produkt ist genau wie beschrieben. Der Versand war super schnell. Gerne wieder!
-                                                        </p>
-                                                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                                                            <span>Max Mustermann</span>
-                                                            <span>•</span>
-                                                            <span>vor 2 Stunden</span>
-                                                            <span>•</span>
-                                                            <span className="text-green-600 flex items-center gap-1">
-                                                                <CheckCircle className="h-3 w-3" /> Verifizierter Kauf
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-                                                            <CheckCircle className="h-4 w-4 mr-1" /> Approve
-                                                        </Button>
-                                                        <Button size="sm" variant="ghost">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    {loadingStats ? (
+                                        <div className="flex justify-center py-8">
+                                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                                         </div>
-                                    ))}
+                                    ) : stats.recentReviews.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500">
+                                            Noch keine Bewertungen vorhanden.
+                                        </div>
+                                    ) : (
+                                        stats.recentReviews.map((review: any) => (
+                                            <div key={review.id} className="flex gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                                                <div className="w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 overflow-hidden">
+                                                    {review.images && review.images.length > 0 ? (
+                                                        <img src={review.images[0]} alt="Review" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                                            <ImageIcon className="h-6 w-6" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex text-yellow-400">
+                                                                    {[...Array(5)].map((_, j) => (
+                                                                        <Star
+                                                                            key={j}
+                                                                            className={`h-4 w-4 ${j < review.rating ? 'fill-current' : 'text-gray-300'}`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                                <span className="font-medium text-gray-900">{review.title}</span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                                                {review.content}
+                                                            </p>
+                                                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                                                                <span>{review.customerName}</span>
+                                                                <span>•</span>
+                                                                <span>{new Date(review.createdAt).toLocaleDateString('de-DE')}</span>
+                                                                {review.isVerified && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span className="text-green-600 flex items-center gap-1">
+                                                                            <CheckCircle className="h-3 w-3" /> Verifizierter Kauf
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                                {review.productTitle && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span className="text-blue-600 truncate max-w-[200px]">
+                                                                            {review.productTitle}
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {review.status === 'PENDING' && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            const res = await fetch(`/api/reviews/${review.id}/approve`, { method: 'POST' })
+                                                                            if (res.ok) {
+                                                                                toast.success('Review genehmigt')
+                                                                                fetchStats() // Refresh stats
+                                                                            } else {
+                                                                                toast.error('Fehler beim Genehmigen')
+                                                                            }
+                                                                        } catch (e) {
+                                                                            toast.error('Fehler')
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                                                                </Button>
+                                                            )}
+                                                            <Button size="sm" variant="ghost">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                                 <div className="mt-4 text-center">
                                     <Button variant="link" onClick={() => setActiveTab('reviews')}>Alle Bewertungen anzeigen</Button>

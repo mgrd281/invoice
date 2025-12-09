@@ -1,0 +1,72 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+export async function GET(request: NextRequest) {
+    try {
+        // Get the first organization (assuming single tenant for this context)
+        const org = await prisma.organization.findFirst()
+
+        if (!org) {
+            return NextResponse.json({
+                totalReviews: 0,
+                averageRating: 0,
+                photoReviews: 0,
+                pendingReviews: 0,
+                recentReviews: []
+            })
+        }
+
+        // 1. Total Reviews
+        const totalReviews = await prisma.review.count({
+            where: { organizationId: org.id }
+        })
+
+        // 2. Average Rating
+        const aggregate = await prisma.review.aggregate({
+            where: { organizationId: org.id },
+            _avg: { rating: true }
+        })
+        const averageRating = aggregate._avg.rating || 0
+
+        // 3. Photo Reviews (reviews with images)
+        // Note: Prisma's array filtering can be tricky. 
+        // We'll count where images is not empty.
+        const photoReviews = await prisma.review.count({
+            where: {
+                organizationId: org.id,
+                NOT: {
+                    images: {
+                        equals: []
+                    }
+                }
+            }
+        })
+
+        // 4. Pending Reviews
+        const pendingReviews = await prisma.review.count({
+            where: {
+                organizationId: org.id,
+                status: 'PENDING'
+            }
+        })
+
+        // 5. Recent Reviews
+        const recentReviews = await prisma.review.findMany({
+            where: { organizationId: org.id },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        })
+
+        return NextResponse.json({
+            totalReviews,
+            averageRating: parseFloat(averageRating.toFixed(1)),
+            photoReviews,
+            pendingReviews,
+            recentReviews
+        })
+
+    } catch (error) {
+        console.error('Error fetching review stats:', error)
+        return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
+    }
+}
