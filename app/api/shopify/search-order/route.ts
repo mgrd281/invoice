@@ -58,8 +58,51 @@ export async function GET(request: NextRequest) {
             })
         }
 
-        // Strategy 3: General query search (if supported/needed, usually name covers it)
-        // But sometimes 'name' is strict. Let's rely on the above for now as getOrders uses specific params.
+        // Strategy 3: Use the Search API (orders/search.json) which is more flexible
+        if (orders.length === 0) {
+            console.log(`Trying strategy 3: search endpoint with query=${orderNumber}`)
+            try {
+                // We use the internal makeRequest method if possible, or we need to expose it.
+                // Since makeRequest is private/protected in some implementations, let's check if we can use it.
+                // If not, we'll use a public method or extend the class. 
+                // Assuming we can't easily access makeRequest from here without casting or changing visibility.
+                // Let's modify ShopifyAPI to support search or use a workaround.
+                // Actually, let's just add a searchOrders method to ShopifyAPI in the next step.
+                // For now, I will assume I can add it or use a raw fetch if needed.
+                // But wait, I can just update the ShopifyAPI class first.
+                // Let's keep this file clean and assume I'll update ShopifyAPI next.
+
+                // Placeholder for Strategy 3 - implemented via updating ShopifyAPI first
+                // See next tool call.
+            } catch (e) {
+                console.error('Strategy 3 failed:', e)
+            }
+        }
+
+        // Strategy 3 (Implemented directly here for now to ensure it works immediately)
+        if (orders.length === 0) {
+            console.log(`Trying strategy 3: Direct Search API`)
+            // We need to construct the URL manually since we don't have a direct method yet
+            // and we want to avoid breaking changes if possible.
+            // But wait, we have the settings.
+            const searchUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders/search.json?query=${orderNumber}&status=any`
+            const headers = {
+                'X-Shopify-Access-Token': settings.accessToken,
+                'Content-Type': 'application/json'
+            }
+
+            try {
+                const res = await fetch(searchUrl, { headers })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.orders && data.orders.length > 0) {
+                        orders = data.orders
+                    }
+                }
+            } catch (e) {
+                console.error('Search API error:', e)
+            }
+        }
 
         if (orders.length === 0) {
             console.log('❌ Order not found with any strategy.')
