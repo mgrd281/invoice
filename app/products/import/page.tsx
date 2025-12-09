@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
     ArrowRight,
     Download,
@@ -21,18 +22,30 @@ import {
     Package,
     Info,
     ExternalLink,
-    Zap
+    Zap,
+    ArrowLeft,
+    RefreshCw,
+    LayoutGrid,
+    List,
+    MoreHorizontal,
+    Trash2,
+    Copy,
+    Edit
 } from 'lucide-react'
+import Link from 'next/link'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function ProductImportPage() {
+    const { toast } = useToast()
     const [url, setUrl] = useState('')
     const [isImporting, setIsImporting] = useState(false)
     const [importStep, setImportStep] = useState<'idle' | 'validating' | 'importing' | 'complete'>('idle')
+    const [activeTab, setActiveTab] = useState('import')
 
     // Settings State
     const [settings, setSettings] = useState({
-        skipValidation: false,
-        acceptTerms: false,
+        skipValidation: true,
+        acceptTerms: true,
         collection: '',
         priceMultiplier: '1',
         isActive: true,
@@ -43,14 +56,46 @@ export default function ProductImportPage() {
 
     // Preview State
     const [previewData, setPreviewData] = useState<any>(null)
-
     const [isSaving, setIsSaving] = useState(false)
+
+    // Store State
+    const [importedProducts, setImportedProducts] = useState<any[]>([])
+    const [loadingStore, setLoadingStore] = useState(false)
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+    // Load imported products when tab changes to 'store'
+    useEffect(() => {
+        if (activeTab === 'store') {
+            loadImportedProducts()
+        }
+    }, [activeTab])
+
+    const loadImportedProducts = async () => {
+        setLoadingStore(true)
+        try {
+            const response = await fetch('/api/products/imported')
+            const data = await response.json()
+            if (data.success) {
+                setImportedProducts(data.products)
+            }
+        } catch (error) {
+            console.error('Error loading store:', error)
+            toast({
+                title: "Fehler beim Laden",
+                description: "Die Produkte konnten nicht geladen werden.",
+                variant: "destructive"
+            })
+        } finally {
+            setLoadingStore(false)
+        }
+    }
 
     const handleStartMigration = async () => {
         if (!url || !settings.acceptTerms) return
 
         setIsImporting(true)
         setImportStep('validating')
+        setPreviewData(null)
 
         try {
             // 1. Validate & Fetch Data
@@ -76,9 +121,17 @@ export default function ProductImportPage() {
 
             setPreviewData(data.product)
             setImportStep('complete')
+            toast({
+                title: "Daten abgerufen",
+                description: "Produktdaten wurden erfolgreich geladen.",
+            })
         } catch (error) {
             console.error('Import error:', error)
-            alert('Error importing product: ' + (error instanceof Error ? error.message : 'Unknown error'))
+            toast({
+                title: "Import fehlgeschlagen",
+                description: error instanceof Error ? error.message : 'Unbekannter Fehler',
+                variant: "destructive"
+            })
             setImportStep('idle')
         } finally {
             setIsImporting(false)
@@ -105,221 +158,211 @@ export default function ProductImportPage() {
             }
 
             const data = await response.json()
-            alert(`Success! Product created in Shopify with ID: ${data.product.id}`)
 
-            // Reset or redirect? For now, maybe just clear preview
-            // setPreviewData(null)
-            // setUrl('')
+            toast({
+                title: "Produkt gespeichert!",
+                description: `Das Produkt wurde erfolgreich zu Shopify importiert.`,
+                className: "bg-green-50 border-green-200 text-green-800"
+            })
+
+            // Switch to store tab to show the new product
+            setActiveTab('store')
+            // Reset preview
+            setPreviewData(null)
+            setUrl('')
+            setImportStep('idle')
 
         } catch (error) {
             console.error('Save error:', error)
-            alert('Error saving product: ' + (error instanceof Error ? error.message : 'Unknown error'))
+            toast({
+                title: "Speichern fehlgeschlagen",
+                description: error instanceof Error ? error.message : 'Unbekannter Fehler',
+                variant: "destructive"
+            })
         } finally {
             setIsSaving(false)
         }
     }
-    const [activeTab, setActiveTab] = useState('import')
-    const [importedProducts, setImportedProducts] = useState<any[]>([])
-    const [loadingStore, setLoadingStore] = useState(false)
-
-    // Load imported products when tab changes to 'store'
-    useEffect(() => {
-        if (activeTab === 'store') {
-            loadImportedProducts()
-        }
-    }, [activeTab])
-
-    const loadImportedProducts = async () => {
-        setLoadingStore(true)
-        try {
-            const response = await fetch('/api/products/imported')
-            const data = await response.json()
-            if (data.success) {
-                setImportedProducts(data.products)
-            }
-        } catch (error) {
-            console.error('Error loading store:', error)
-        } finally {
-            setLoadingStore(false)
-        }
-    }
 
     return (
-        <div className="min-h-screen bg-gray-50/50 p-6 md:p-12">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-12 font-sans">
             <div className="max-w-7xl mx-auto space-y-8">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Product Manager</h1>
-                        <p className="text-gray-500 mt-2">Import external products and manage your imported inventory.</p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors mb-2">
+                            <ArrowLeft className="h-4 w-4 mr-1" />
+                            Zurück zum Dashboard
+                        </Link>
+                        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+                            Product<span className="text-blue-600">Importer</span>
+                        </h1>
+                        <p className="text-gray-500 text-lg">Importieren Sie Produkte von jeder URL direkt in Ihren Store.</p>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl shadow-sm border border-gray-200">
                         <Button
-                            variant={activeTab === 'import' ? 'default' : 'outline'}
+                            variant={activeTab === 'import' ? 'default' : 'ghost'}
                             onClick={() => setActiveTab('import')}
+                            className={`rounded-lg transition-all ${activeTab === 'import' ? 'bg-blue-600 shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             <Download className="h-4 w-4 mr-2" />
                             Import
                         </Button>
                         <Button
-                            variant={activeTab === 'store' ? 'default' : 'outline'}
+                            variant={activeTab === 'store' ? 'default' : 'ghost'}
                             onClick={() => setActiveTab('store')}
+                            className={`rounded-lg transition-all ${activeTab === 'store' ? 'bg-blue-600 shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             <ShoppingCart className="h-4 w-4 mr-2" />
-                            Store ({importedProducts.length})
+                            Store
+                            <Badge variant="secondary" className="ml-2 bg-white/20 text-current border-0">
+                                {importedProducts.length}
+                            </Badge>
                         </Button>
                     </div>
                 </div>
+
                 {activeTab === 'import' ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                         {/* Left Column: Input & Settings */}
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="lg:col-span-7 space-y-6">
 
                             {/* 1. Product URL Area */}
-                            <Card className="border-none shadow-md overflow-hidden">
-                                <CardHeader className="bg-white border-b border-gray-100 pb-6">
+                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden ring-1 ring-gray-200/50">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                                <CardHeader className="pb-4">
                                     <CardTitle className="flex items-center text-xl">
-                                        <Globe className="h-5 w-5 mr-2 text-blue-600" />
-                                        Source URL
+                                        <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                                            <Globe className="h-5 w-5 text-blue-600" />
+                                        </div>
+                                        Quelle
                                     </CardTitle>
                                     <CardDescription>
-                                        Enter the product page URL you want to import from.
+                                        Geben Sie die URL der Produktseite ein, die Sie importieren möchten.
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-6 space-y-6">
+                                <CardContent className="space-y-6">
                                     <div className="space-y-2">
-                                        <Label htmlFor="url">Product URL</Label>
-                                        <div className="relative">
+                                        <div className="relative group">
                                             <Input
                                                 id="url"
-                                                placeholder="https://example.com/product/t-shirt"
-                                                className="pl-10 h-12 text-lg"
+                                                placeholder="https://shop.beispiel.de/produkt/t-shirt"
+                                                className="pl-11 h-14 text-lg bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-inner"
                                                 value={url}
                                                 onChange={(e) => setUrl(e.target.value)}
                                             />
-                                            <Globe className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                                            <Globe className="absolute left-4 top-4 h-6 w-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                            <div className="absolute right-2 top-2">
+                                                <Button
+                                                    size="sm"
+                                                    className="h-10 px-4 bg-blue-600 hover:bg-blue-700 transition-all shadow-md"
+                                                    disabled={!url || isImporting}
+                                                    onClick={handleStartMigration}
+                                                >
+                                                    {isImporting ? (
+                                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <ArrowRight className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-50 rounded-lg p-4 flex items-start space-x-3">
+                                    <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex items-start space-x-3">
                                         <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                                        <p className="text-sm text-blue-800">
-                                            We support imports from most major e-commerce platforms including Shopify, WooCommerce, and Magento.
-                                            <br /><span className="font-bold">Note:</span> All available data (Metafields, SEO, etc.) will be imported automatically.
-                                        </p>
+                                        <div className="text-sm text-blue-800 space-y-1">
+                                            <p className="font-medium">Unterstützte Plattformen</p>
+                                            <p className="text-blue-600/80">
+                                                Wir unterstützen Importe von Shopify, WooCommerce, Magento und vielen anderen.
+                                                Alle verfügbaren Daten (Metafields, SEO, Bilder) werden automatisch extrahiert.
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-4 pt-2">
-                                        <div className="flex items-center space-x-2">
+                                    <div className="flex flex-wrap gap-4 pt-2">
+                                        <label className="flex items-center space-x-2 cursor-pointer group">
                                             <Checkbox
-                                                id="skipValidation"
                                                 checked={settings.skipValidation}
                                                 onCheckedChange={(c) => setSettings({ ...settings, skipValidation: c as boolean })}
+                                                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                             />
-                                            <Label htmlFor="skipValidation" className="font-normal">Skip validation (try to import even if platform is not recognized)</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
+                                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">Validierung überspringen</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer group">
                                             <Checkbox
-                                                id="acceptTerms"
                                                 checked={settings.acceptTerms}
                                                 onCheckedChange={(c) => setSettings({ ...settings, acceptTerms: c as boolean })}
+                                                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                             />
-                                            <Label htmlFor="acceptTerms" className="font-normal">
-                                                I accept the <span className="text-blue-600 underline cursor-pointer">terms and conditions</span> regarding content usage.
-                                            </Label>
-                                        </div>
+                                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
+                                                AGB akzeptieren
+                                            </span>
+                                        </label>
                                     </div>
-
-                                    <Button
-                                        className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
-                                        disabled={!url || !settings.acceptTerms || isImporting}
-                                        onClick={handleStartMigration}
-                                    >
-                                        {isImporting ? (
-                                            <span className="flex items-center">
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                                                {importStep === 'validating' ? 'Validating URL...' : 'Importing Data...'}
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center">
-                                                Start migration <ArrowRight className="ml-2 h-5 w-5" />
-                                            </span>
-                                        )}
-                                    </Button>
                                 </CardContent>
                             </Card>
 
                             {/* 2. Import Settings */}
-                            <Card className="border-none shadow-md">
-                                <CardHeader className="border-b border-gray-100">
-                                    <CardTitle className="flex items-center">
-                                        <SettingsIcon className="h-5 w-5 mr-2 text-gray-500" />
-                                        Import Settings
+                            <Card className="border-none shadow-lg bg-white/80 backdrop-blur-sm ring-1 ring-gray-200/50">
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="flex items-center text-lg">
+                                        <SettingsIcon className="h-5 w-5 mr-3 text-gray-500" />
+                                        Import Einstellungen
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-6 space-y-6">
+                                <CardContent className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <Label>Add to collection</Label>
+                                            <Label className="text-gray-600">Zu Kollektion hinzufügen</Label>
                                             <div className="relative">
-                                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                                 <Input
-                                                    placeholder="Search collections..."
-                                                    className="pl-9"
+                                                    placeholder="Kollektion suchen..."
+                                                    className="pl-9 bg-gray-50 border-gray-200 focus:bg-white"
                                                     value={settings.collection}
                                                     onChange={(e) => setSettings({ ...settings, collection: e.target.value })}
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Price multiplier</Label>
-                                            <Input
-                                                type="number"
-                                                step="0.1"
-                                                value={settings.priceMultiplier}
-                                                onChange={(e) => setSettings({ ...settings, priceMultiplier: e.target.value })}
-                                            />
-                                            <p className="text-xs text-gray-500">Adjust imported prices (e.g. 1.2 for +20%)</p>
+                                            <Label className="text-gray-600">Preis-Multiplikator</Label>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    step="0.1"
+                                                    className="bg-gray-50 border-gray-200 focus:bg-white"
+                                                    value={settings.priceMultiplier}
+                                                    onChange={(e) => setSettings({ ...settings, priceMultiplier: e.target.value })}
+                                                />
+                                                <div className="absolute right-3 top-2.5 text-xs text-gray-400 pointer-events-none">
+                                                    x {settings.priceMultiplier}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <Separator />
+                                    <Separator className="bg-gray-100" />
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="flex items-center space-x-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <Checkbox
-                                                id="isActive"
-                                                checked={settings.isActive}
-                                                onCheckedChange={(c) => setSettings({ ...settings, isActive: c as boolean })}
-                                            />
-                                            <Label htmlFor="isActive" className="cursor-pointer">Set product as active</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <Checkbox
-                                                id="isPhysical"
-                                                checked={settings.isPhysical}
-                                                onCheckedChange={(c) => setSettings({ ...settings, isPhysical: c as boolean })}
-                                            />
-                                            <Label htmlFor="isPhysical" className="cursor-pointer">This is a physical product</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <Checkbox
-                                                id="chargeTax"
-                                                checked={settings.chargeTax}
-                                                onCheckedChange={(c) => setSettings({ ...settings, chargeTax: c as boolean })}
-                                            />
-                                            <Label htmlFor="chargeTax" className="cursor-pointer">Charge tax on this product</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <Checkbox
-                                                id="trackQuantity"
-                                                checked={settings.trackQuantity}
-                                                onCheckedChange={(c) => setSettings({ ...settings, trackQuantity: c as boolean })}
-                                            />
-                                            <Label htmlFor="trackQuantity" className="cursor-pointer">Track quantity</Label>
-                                        </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {[
+                                            { id: 'isActive', label: 'Produkt aktivieren', checked: settings.isActive },
+                                            { id: 'isPhysical', label: 'Physisches Produkt', checked: settings.isPhysical },
+                                            { id: 'chargeTax', label: 'Steuern erheben', checked: settings.chargeTax },
+                                            { id: 'trackQuantity', label: 'Bestand verfolgen', checked: settings.trackQuantity },
+                                        ].map((item) => (
+                                            <div key={item.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 cursor-pointer" onClick={() => setSettings({ ...settings, [item.id]: !item.checked })}>
+                                                <Checkbox
+                                                    id={item.id}
+                                                    checked={item.checked}
+                                                    onCheckedChange={(c) => setSettings({ ...settings, [item.id]: c as boolean })}
+                                                    className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                                />
+                                                <Label htmlFor={item.id} className="cursor-pointer font-medium text-gray-700">{item.label}</Label>
+                                            </div>
+                                        ))}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -327,108 +370,108 @@ export default function ProductImportPage() {
                         </div>
 
                         {/* Right Column: Preview & Sidebar */}
-                        <div className="space-y-6">
+                        <div className="lg:col-span-5 space-y-6">
 
                             {/* 3. Product Preview */}
-                            <Card className="border-none shadow-md h-fit sticky top-6">
-                                <CardHeader className="bg-gray-50/50 border-b border-gray-100">
-                                    <CardTitle className="text-lg flex items-center justify-between">
-                                        <span>Product Preview</span>
-                                        {previewData && <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Ready</Badge>}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-0">
+                            <div className="sticky top-6 space-y-6">
+                                <Card className={`border-none shadow-2xl transition-all duration-500 overflow-hidden ${previewData ? 'ring-2 ring-blue-500/20 transform hover:scale-[1.01]' : 'bg-gray-50 border-dashed border-2 border-gray-200'}`}>
                                     {previewData ? (
                                         <div className="animate-in fade-in duration-500">
-                                            <div className="aspect-square relative bg-gray-100 overflow-hidden">
+                                            <div className="relative aspect-[4/3] bg-white overflow-hidden group">
                                                 <img
                                                     src={previewData.images[0]}
                                                     alt={previewData.title}
-                                                    className="w-full h-full object-cover"
+                                                    className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
                                                 />
-                                                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-bold shadow-sm">
-                                                    {previewData.currency} {previewData.price}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                                                    <div className="text-white">
+                                                        <p className="font-bold text-lg">{previewData.images.length} Bilder gefunden</p>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute top-4 right-4">
+                                                    <Badge className="bg-white/90 text-black hover:bg-white backdrop-blur shadow-sm">
+                                                        {previewData.currency} {previewData.price}
+                                                    </Badge>
                                                 </div>
                                             </div>
-                                            <div className="p-6 space-y-4">
+
+                                            <div className="p-6 bg-white space-y-4">
                                                 <div>
-                                                    <h3 className="font-bold text-lg text-gray-900 leading-tight">{previewData.title}</h3>
-                                                    <p className="text-sm text-gray-500 mt-1">{previewData.vendor}</p>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <Badge variant="outline" className="text-xs font-normal text-gray-500 border-gray-200">
+                                                            {previewData.vendor || 'Unbekannter Hersteller'}
+                                                        </Badge>
+                                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0">
+                                                            Bereit zum Import
+                                                        </Badge>
+                                                    </div>
+                                                    <h3 className="font-bold text-xl text-gray-900 leading-tight">{previewData.title}</h3>
                                                 </div>
 
-                                                <p className="text-sm text-gray-600 line-clamp-3">
-                                                    {previewData.description}
-                                                </p>
+                                                <div className="prose prose-sm text-gray-500 line-clamp-3" dangerouslySetInnerHTML={{ __html: previewData.description }}></div>
 
                                                 <div className="flex flex-wrap gap-2 pt-2">
-                                                    <Badge variant="secondary" className="font-normal">
-                                                        <Box className="w-3 h-3 mr-1" /> {previewData.weight || 'N/A'}
-                                                    </Badge>
-                                                    <Badge variant="secondary" className="font-normal">
-                                                        <Tag className="w-3 h-3 mr-1" /> {previewData.sku || 'N/A'}
-                                                    </Badge>
+                                                    {previewData.sku && (
+                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                                                            SKU: {previewData.sku}
+                                                        </Badge>
+                                                    )}
+                                                    {previewData.product_type && (
+                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                                                            Typ: {previewData.product_type}
+                                                        </Badge>
+                                                    )}
                                                 </div>
 
-                                                <div className="flex flex-col gap-2 mt-4">
-                                                    <Button className="w-full" variant="outline">
-                                                        <ExternalLink className="w-4 h-4 mr-2" /> View Full Details
+                                                <div className="pt-4 grid grid-cols-2 gap-3">
+                                                    <Button variant="outline" className="w-full border-gray-200 hover:bg-gray-50 hover:text-gray-900">
+                                                        <ExternalLink className="w-4 h-4 mr-2" /> Details
                                                     </Button>
-                                                    <Button className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveProduct} disabled={isSaving}>
+                                                    <Button
+                                                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-200"
+                                                        onClick={handleSaveProduct}
+                                                        disabled={isSaving}
+                                                    >
                                                         {isSaving ? (
-                                                            <span className="flex items-center">
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                                                Saving...
-                                                            </span>
+                                                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                                                         ) : (
-                                                            <span className="flex items-center">
-                                                                <CheckCircle2 className="w-4 h-4 mr-2" /> Import to Store
-                                                            </span>
+                                                            <CheckCircle2 className="w-4 h-4 mr-2" />
                                                         )}
+                                                        {isSaving ? 'Speichern...' : 'Importieren'}
                                                     </Button>
                                                 </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="p-12 text-center text-gray-400 space-y-4">
-                                            <div className="h-24 w-24 bg-gray-100 rounded-2xl mx-auto flex items-center justify-center">
-                                                <Package className="h-10 w-10 text-gray-300" />
+                                        <div className="p-12 text-center space-y-4 min-h-[400px] flex flex-col items-center justify-center">
+                                            <div className="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center mb-2 animate-pulse">
+                                                <Package className="h-8 w-8 text-gray-300" />
                                             </div>
                                             <div>
-                                                <p className="font-medium text-gray-900">No data yet</p>
-                                                <p className="text-sm mt-1">Start the migration to see the product preview here.</p>
+                                                <h3 className="font-medium text-gray-900 text-lg">Warte auf Eingabe</h3>
+                                                <p className="text-gray-500 mt-1 max-w-xs mx-auto">
+                                                    Geben Sie eine URL ein, um die Vorschau zu laden.
+                                                </p>
                                             </div>
                                         </div>
                                     )}
-                                </CardContent>
-                            </Card>
-
-                            {/* 4. Partner Apps / Info */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-1">Recommended Apps</h3>
-
-                                <Card className="border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
-                                    <CardContent className="p-4 flex items-start space-x-4">
-                                        <div className="h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
-                                            <Zap className="h-5 w-5 text-indigo-600 group-hover:text-white transition-colors" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">BlogAgent</h4>
-                                            <p className="text-xs text-gray-500 mt-1">Auto-generate SEO blogs for your imported products.</p>
-                                        </div>
-                                    </CardContent>
                                 </Card>
 
-                                <Card className="border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
-                                    <CardContent className="p-4 flex items-start space-x-4">
-                                        <div className="h-10 w-10 bg-yellow-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-yellow-500 transition-colors">
-                                            <CheckCircle2 className="h-5 w-5 text-yellow-600 group-hover:text-white transition-colors" />
+                                {/* Recommended Apps (Mini) */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg flex items-center justify-between cursor-pointer hover:shadow-xl transition-all">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="bg-white/20 p-2 rounded-lg">
+                                                <Zap className="h-5 w-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm">BlogAgent AI</p>
+                                                <p className="text-xs text-indigo-100">SEO-Texte generieren</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">WiseReviews</h4>
-                                            <p className="text-xs text-gray-500 mt-1">Import reviews along with your products.</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        <ArrowRight className="h-4 w-4 text-white/70" />
+                                    </div>
+                                </div>
                             </div>
 
                         </div>
@@ -437,82 +480,149 @@ export default function ProductImportPage() {
                 ) : (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                         {/* Store View */}
-                        <Card className="border-none shadow-md">
-                            <CardHeader className="border-b border-gray-100 flex flex-row items-center justify-between">
+                        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm">
+                            <CardHeader className="border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
                                 <div>
-                                    <CardTitle>Imported Products</CardTitle>
-                                    <CardDescription>Manage all products imported via RechnungsProfi.</CardDescription>
+                                    <CardTitle className="text-2xl">Importierte Produkte</CardTitle>
+                                    <CardDescription>Verwalten Sie Ihre importierten Produkte.</CardDescription>
                                 </div>
-                                <div className="flex space-x-2">
-                                    <Input placeholder="Search products..." className="w-64" />
-                                    <Button variant="outline"><Search className="h-4 w-4" /></Button>
+                                <div className="flex items-center space-x-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`rounded-md ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+                                        onClick={() => setViewMode('grid')}
+                                    >
+                                        <LayoutGrid className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`rounded-md ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+                                        onClick={() => setViewMode('list')}
+                                    >
+                                        <List className="h-4 w-4" />
+                                    </Button>
+                                    <div className="w-px h-4 bg-gray-300 mx-2"></div>
+                                    <Button variant="ghost" size="sm" onClick={loadImportedProducts} disabled={loadingStore}>
+                                        <RefreshCw className={`h-4 w-4 ${loadingStore ? 'animate-spin' : ''}`} />
+                                    </Button>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-0">
+                            <CardContent className="p-6">
                                 {loadingStore ? (
-                                    <div className="p-12 text-center">
+                                    <div className="p-24 text-center">
                                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                        <p className="text-gray-500">Loading your store...</p>
+                                        <p className="text-gray-500">Lade Inventar...</p>
                                     </div>
                                 ) : importedProducts.length > 0 ? (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="bg-gray-50 text-gray-500 font-medium border-b">
-                                                <tr>
-                                                    <th className="px-6 py-4">Product</th>
-                                                    <th className="px-6 py-4">Status</th>
-                                                    <th className="px-6 py-4">Type</th>
-                                                    <th className="px-6 py-4">Vendor</th>
-                                                    <th className="px-6 py-4 text-right">Price</th>
-                                                    <th className="px-6 py-4 text-right">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-100">
-                                                {importedProducts.map((product) => (
-                                                    <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center space-x-4">
-                                                                <div className="h-12 w-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
-                                                                    {product.image?.src ? (
-                                                                        <img src={product.image.src} alt={product.title} className="h-full w-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="h-full w-full flex items-center justify-center text-gray-300">
-                                                                            <Package className="h-6 w-6" />
+                                    viewMode === 'list' ? (
+                                        <div className="overflow-x-auto rounded-xl border border-gray-100">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4">Produkt</th>
+                                                        <th className="px-6 py-4">Status</th>
+                                                        <th className="px-6 py-4">Typ</th>
+                                                        <th className="px-6 py-4">Hersteller</th>
+                                                        <th className="px-6 py-4 text-right">Preis</th>
+                                                        <th className="px-6 py-4 text-right">Aktionen</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100 bg-white">
+                                                    {importedProducts.map((product) => (
+                                                        <tr key={product.id} className="hover:bg-gray-50/50 transition-colors group">
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center space-x-4">
+                                                                    <div className="h-12 w-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200 relative">
+                                                                        {product.images?.[0]?.src ? (
+                                                                            <img src={product.images[0].src} alt={product.title} className="h-full w-full object-cover" />
+                                                                        ) : (
+                                                                            <div className="h-full w-full flex items-center justify-center text-gray-300">
+                                                                                <Package className="h-6 w-6" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{product.title}</div>
+                                                                        <div className="text-xs text-gray-500 mt-0.5 flex items-center">
+                                                                            <Tag className="h-3 w-3 mr-1" />
+                                                                            {product.tags || 'Keine Tags'}
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="font-medium text-gray-900">{product.title}</div>
-                                                                    <div className="text-xs text-gray-500 mt-0.5 flex items-center">
-                                                                        <Tag className="h-3 w-3 mr-1" />
-                                                                        {product.tags || 'No tags'}
                                                                     </div>
                                                                 </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className={product.status === 'active' ? 'bg-green-100 text-green-700 hover:bg-green-100 border-0' : ''}>
+                                                                    {product.status}
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-gray-600">{product.product_type}</td>
+                                                            <td className="px-6 py-4 text-gray-600">{product.vendor}</td>
+                                                            <td className="px-6 py-4 text-right font-medium font-mono">
+                                                                {product.variants?.[0]?.price} €
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600">
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {importedProducts.map((product) => (
+                                                <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 border-gray-100 overflow-hidden">
+                                                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                                                        {product.images?.[0]?.src ? (
+                                                            <img src={product.images[0].src} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                <Package className="h-12 w-12" />
                                                             </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className={product.status === 'active' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}>
+                                                        )}
+                                                        <div className="absolute top-3 right-3">
+                                                            <Badge className={product.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
                                                                 {product.status}
                                                             </Badge>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-gray-600">{product.product_type}</td>
-                                                        <td className="px-6 py-4 text-gray-600">{product.vendor}</td>
-                                                        <td className="px-6 py-4 text-right font-medium">
-                                                            {product.variants?.[0]?.price} €
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <Button variant="ghost" size="sm">Edit</Button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                        </div>
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                            <Button size="sm" variant="secondary" className="rounded-full">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button size="sm" variant="secondary" className="rounded-full text-red-600 hover:text-red-700">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    <CardContent className="p-4">
+                                                        <h3 className="font-bold text-gray-900 line-clamp-1 mb-1 group-hover:text-blue-600 transition-colors">{product.title}</h3>
+                                                        <p className="text-sm text-gray-500 mb-3">{product.vendor}</p>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-mono font-bold text-lg">{product.variants?.[0]?.price} €</span>
+                                                            <span className="text-xs text-gray-400">{product.product_type}</span>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    )
                                 ) : (
-                                    <div className="p-12 text-center text-gray-500">
-                                        <Package className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                                        <p>No imported products found.</p>
-                                        <Button variant="link" onClick={() => setActiveTab('import')}>Start your first import</Button>
+                                    <div className="p-16 text-center text-gray-500 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+                                        <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900">Keine importierten Produkte</h3>
+                                        <p className="max-w-md mx-auto mt-2 mb-6">Starten Sie Ihren ersten Import, um Ihren Store zu füllen.</p>
+                                        <Button onClick={() => setActiveTab('import')} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                            Jetzt importieren
+                                        </Button>
                                     </div>
                                 )}
                             </CardContent>
