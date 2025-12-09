@@ -35,7 +35,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/components/ui/toast"
 
 export default function TaxAdvisorPage() {
-    const { toast } = useToast()
+    const { showToast, ToastContainer } = useToast()
     const [selectedExport, setSelectedExport] = useState<'bookings' | 'invoices' | null>(null)
     const [datevConnected, setDatevConnected] = useState(false)
     const [isConnecting, setIsConnecting] = useState(false)
@@ -48,26 +48,16 @@ export default function TaxAdvisorPage() {
             setIsConnecting(false)
             setShowConnectionDialog(false)
             setDatevConnected(true)
-            toast({
-                title: "Verbindung erfolgreich",
-                description: "Ihr Steuerberater wurde erfolgreich verknüpft.",
-                variant: "default", // or "success" if available, usually default is fine
-            })
+            showToast("Verbindung erfolgreich: Ihr Steuerberater wurde erfolgreich verknüpft.", "success")
         }, 2000)
     }
 
     const handleHelp = () => {
-        toast({
-            title: "Hilfe & Support",
-            description: "Für Unterstützung wenden Sie sich bitte an support@example.com oder lesen Sie unsere Dokumentation.",
-        })
+        showToast("Hilfe & Support: Wenden Sie sich an support@example.com", "success")
     }
 
     const handleDatevLogin = () => {
-        toast({
-            title: "Weiterleitung zu DATEV",
-            description: "Sie werden nun zur DATEV-Anmeldeseite weitergeleitet...",
-        })
+        showToast("Weiterleitung zu DATEV...", "success")
         // Simulate redirect
         setTimeout(() => {
             window.open('https://www.datev.de/unternehmen-online', '_blank')
@@ -95,6 +85,7 @@ export default function TaxAdvisorPage() {
     return (
         <div className="min-h-screen bg-gray-50/50">
             {/* Header */}
+            <ToastContainer />
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
