@@ -45,7 +45,139 @@ export async function POST(request: NextRequest) {
             console.log('Shopify JSON fetch failed, trying generic scrape...', e)
         }
 
-        // 2. Fallback: Generic HTML Scraping (JSON-LD & Meta Tags)
+        // 2. Special Handling: Amazon
+        // Amazon is notoriously difficult to scrape due to anti-bot measures.
+        // We use specific headers and selectors, but for a production SaaS, 
+        // a proxy network (like BrightData or ZenRows) is HIGHLY recommended.
+        if (url.includes('amazon') || url.includes('amzn')) {
+            console.log('Detected Amazon URL, applying specific scraping logic...')
+            try {
+                // Amazon requires very specific headers to look like a real browser
+                const amazonHeaders = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                    'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"macOS"',
+                    'upgrade-insecure-requests': '1',
+                    'cache-control': 'max-age=0',
+                    'viewport-width': '1920'
+                }
+
+                const response = await fetch(url, { headers: amazonHeaders })
+
+                if (!response.ok) throw new Error(`Amazon fetch failed: ${response.status}`)
+
+                const html = await response.text()
+
+                // Check for CAPTCHA
+                if (html.includes('api-services-support@amazon.com') || html.includes('Type the characters you see in this image')) {
+                    throw new Error('Amazon detected a bot (CAPTCHA). Try again later or use a proxy.')
+                }
+
+                const $ = cheerio.load(html)
+                let productData: any = {
+                    title: '',
+                    description: '',
+                    price: '0.00',
+                    currency: 'EUR',
+                    images: [],
+                    vendor: 'Amazon',
+                    product_type: '',
+                    tags: 'Amazon, Imported'
+                }
+
+                // 1. Title
+                productData.title = $('#productTitle').text().trim() ||
+                    $('#title').text().trim()
+
+                // 2. Price (Complex due to different formats)
+                // Priority: Deal Price -> Our Price -> Sale Price -> Generic
+                const priceSelectors = [
+                    '.a-price .a-offscreen', // Modern Amazon
+                    '#priceblock_ourprice',
+                    '#priceblock_dealprice',
+                    '#priceblock_saleprice',
+                    '.apexPriceToPay .a-offscreen'
+                ]
+
+                for (const selector of priceSelectors) {
+                    const priceText = $(selector).first().text().trim()
+                    if (priceText) {
+                        const match = priceText.match(/[\d,.]+/)
+                        if (match) {
+                            productData.price = match[0].replace(',', '.')
+                            if (priceText.includes('€')) productData.currency = 'EUR'
+                            if (priceText.includes('$')) productData.currency = 'USD'
+                            break
+                        }
+                    }
+                }
+
+                // 3. Description (Bullet Points are usually better than the long description on Amazon)
+                const features = $('#feature-bullets li span.a-list-item').map((_, el) => $(el).text().trim()).get()
+                if (features.length > 0) {
+                    // Create an HTML list for the description
+                    productData.description = '<ul>' + features.map(f => `<li>${f}</li>`).join('') + '</ul>'
+                } else {
+                    productData.description = $('#productDescription').text().trim() ||
+                        $('[data-feature-name="productDescription"]').text().trim()
+                }
+
+                // 4. Images (High Res)
+                // Amazon stores images in a JSON object in the script tags or data attributes
+                // Try to find the dynamic image data
+                try {
+                    // Method A: data-a-dynamic-image attribute
+                    const dynamicImageAttr = $('#imgTagWrapperId img').attr('data-a-dynamic-image') ||
+                        $('#landingImage').attr('data-a-dynamic-image')
+
+                    if (dynamicImageAttr) {
+                        const imagesJson = JSON.parse(dynamicImageAttr)
+                        // The keys are the URLs
+                        productData.images = Object.keys(imagesJson)
+                    }
+                } catch (e) {
+                    console.log('Failed to parse dynamic Amazon images', e)
+                }
+
+                // Fallback Images
+                if (productData.images.length === 0) {
+                    $('#altImages ul li img').each((_, el) => {
+                        let src = $(el).attr('src')
+                        // Convert thumbnail to full size (Amazon trick: remove ._SS40_ part)
+                        if (src) {
+                            src = src.replace(/\._[A-Z]{2}\d+_/, '')
+                            productData.images.push(src)
+                        }
+                    })
+                }
+
+                // 5. SKU / ASIN
+                const asin = $('input#ASIN').val() ||
+                    $('[data-asin]').attr('data-asin') ||
+                    url.match(/\/dp\/([A-Z0-9]{10})/)?.[1]
+
+                if (asin) productData.sku = asin as string
+
+                // 6. Vendor
+                const brand = $('#bylineInfo').text().trim().replace('Visit the ', '').replace(' Store', '')
+                if (brand) productData.vendor = brand
+
+                if (productData.title) {
+                    productData.fullDescription = productData.description
+                    return NextResponse.json({ product: productData })
+                }
+
+                console.log('Amazon scrape incomplete, falling back to generic...')
+            } catch (error) {
+                console.error('Amazon specific scrape failed:', error)
+                // Continue to generic fallback
+            }
+        }
+
+        // 3. Fallback: Generic HTML Scraping (JSON-LD & Meta Tags)
         console.log('Attempting generic scrape for:', url)
 
         // Use more realistic browser headers to avoid bot detection (e.g. Otto.de)
