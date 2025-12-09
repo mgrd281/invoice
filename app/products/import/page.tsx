@@ -282,23 +282,23 @@ export default function ProductImportPage() {
 
                 if (aiRes.ok) {
                     const aiData = await aiRes.json()
-                    if (aiData.enhancedText) {
-                        product.description = aiData.enhancedText
-                    }
-                    if (aiData.newTitle) {
-                        product.title = aiData.newTitle
-                    }
-                    // Apply new SEO fields
+                    // ... (success logic)
+                    if (aiData.enhancedText) product.description = aiData.enhancedText
+                    if (aiData.newTitle) product.title = aiData.newTitle
+
                     if (aiData.tags) product.tags = Array.isArray(aiData.tags) ? aiData.tags.join(', ') : aiData.tags
                     if (aiData.handle) product.handle = aiData.handle
                     if (aiData.metaTitle) product.metaTitle = aiData.metaTitle
                     if (aiData.metaDescription) product.metaDescription = aiData.metaDescription
 
                     showToast("Produktbeschreibung erfolgreich generiert", "success")
+                } else {
+                    const errorData = await aiRes.json()
+                    throw new Error(errorData.error || 'AI request failed')
                 }
-            } catch (aiError) {
+            } catch (aiError: any) {
                 console.error('AI Enhancement failed:', aiError)
-                showToast("AI Optimierung fehlgeschlagen - Nutze Originaldaten", "warning")
+                showToast(`AI Fehler: ${aiError.message} - Nutze Originaldaten`, "warning")
             }
 
             // Apply price multiplier

@@ -61,8 +61,9 @@ Erstelle jetzt das JSON-Objekt.`
             handle: aiData.handle
         })
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error enhancing product with AI:', error)
-        return NextResponse.json({ error: 'Failed to enhance product' }, { status: 500 })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to enhance product'
+        return NextResponse.json({ error: errorMessage }, { status: 500 })
     }
 }
