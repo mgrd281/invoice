@@ -62,6 +62,9 @@ export default function ProductImportPage() {
     const [previewData, setPreviewData] = useState<any>(null)
     const [isSaving, setIsSaving] = useState(false)
 
+    // Shop Domain State
+    const [shopDomain, setShopDomain] = useState('')
+
     // Store State
     const [importedProducts, setImportedProducts] = useState<any[]>([])
     const [loadingStore, setLoadingStore] = useState(false)
@@ -127,7 +130,7 @@ export default function ProductImportPage() {
         return () => {
             window.removeEventListener('focus', checkClipboard)
         }
-    }, [url]) // Remove showToast from dependency to avoid loop if toast triggers re-render (unlikely but safe)
+    }, [url])
 
     const loadImportedProducts = async () => {
         setLoadingStore(true)
@@ -136,6 +139,7 @@ export default function ProductImportPage() {
             const data = await response.json()
             if (data.success) {
                 setImportedProducts(data.products)
+                setShopDomain(data.shopDomain)
             }
         } catch (error) {
             console.error('Error loading store:', error)
@@ -143,6 +147,99 @@ export default function ProductImportPage() {
         } finally {
             setLoadingStore(false)
         }
+    }
+
+    const handleProductClick = (product: any) => {
+        if (!shopDomain) return
+        const adminUrl = `https://${shopDomain}/admin/products/${product.id}`
+        window.open(adminUrl, '_blank')
+    }
+
+    // ... (inside return)
+
+    {
+        importedProducts.map((product) => (
+            <tr
+                key={product.id}
+                className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                onClick={() => handleProductClick(product)}
+            >
+                <td className="px-6 py-4">
+                    {/* ... content ... */}
+                </td>
+                {/* ... other cells ... */}
+                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    {/* Actions (stop propagation to prevent opening link when clicking delete/edit) */}
+                    <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-blue-600"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingProduct(product)
+                            }}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-red-600"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteProduct(product.id)
+                            }}
+                            disabled={isDeleting === product.id}
+                        >
+                            {isDeleting === product.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                </td>
+            </tr>
+        ))
+    }
+
+    // ... (grid view)
+
+    {
+        importedProducts.map((product) => (
+            <Card
+                key={product.id}
+                className="group hover:shadow-xl transition-all duration-300 border-gray-100 overflow-hidden cursor-pointer"
+                onClick={() => handleProductClick(product)}
+            >
+                <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                    {/* ... image ... */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            className="rounded-full"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingProduct(product)
+                            }}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            className="rounded-full text-red-600 hover:text-red-700"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteProduct(product.id)
+                            }}
+                            disabled={isDeleting === product.id}
+                        >
+                            {isDeleting === product.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                </div>
+                {/* ... content ... */}
+            </Card>
+        ))
     }
 
     const handleStartMigration = async () => {
