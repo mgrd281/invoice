@@ -244,6 +244,9 @@ export async function POST(request: NextRequest) {
                     productData.vendor = product.brand?.name || product.brand || productData.vendor
                     productData.product_type = product.category || productData.product_type
 
+                    // Extract EAN/GTIN
+                    productData.ean = product.gtin || product.gtin13 || product.gtin12 || product.gtin8 || product.ean || product.isbn || productData.ean
+
                     // Images
                     if (product.image) {
                         if (Array.isArray(product.image)) {
@@ -348,11 +351,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // SKU Fallback
+        // SKU & EAN Fallback
         if (!productData.sku) {
             productData.sku = $('[itemprop="sku"]').attr('content') ||
                 $('[itemprop="sku"]').text().trim() ||
                 $('[data-qa="article-number"]').text().trim() || // Otto
+                ''
+        }
+        if (!productData.ean) {
+            productData.ean = $('[itemprop="gtin"]').attr('content') ||
+                $('[itemprop="gtin13"]').attr('content') ||
+                $('[itemprop="ean"]').attr('content') ||
+                $('[itemprop="isbn"]').attr('content') ||
                 ''
         }
 
