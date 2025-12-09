@@ -71,6 +71,32 @@ export default function ProductImportPage() {
         }
     }, [activeTab])
 
+    // Auto-paste from clipboard on focus
+    useEffect(() => {
+        const checkClipboard = async () => {
+            // Only check if input is empty to avoid annoying the user
+            if (url) return
+
+            try {
+                const text = await navigator.clipboard.readText()
+                if (text && (text.startsWith('http://') || text.startsWith('https://'))) {
+                    setUrl(text)
+                    showToast("URL aus Zwischenablage eingefügt", "success")
+                }
+            } catch (err) {
+                // Ignore errors (permissions, etc) silently
+            }
+        }
+
+        window.addEventListener('focus', checkClipboard)
+        // Also check on mount
+        checkClipboard()
+
+        return () => {
+            window.removeEventListener('focus', checkClipboard)
+        }
+    }, [url]) // Remove showToast from dependency to avoid loop if toast triggers re-render (unlikely but safe)
+
     const loadImportedProducts = async () => {
         setLoadingStore(true)
         try {
