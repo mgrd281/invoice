@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
     Star,
     Download,
@@ -22,12 +23,67 @@ import {
     Trash2,
     Mail,
     Share2,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Loader2,
+    ArrowRight,
+    Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
+
+interface Product {
+    id: number
+    title: string
+    images: { src: string }[]
+    handle: string
+}
 
 export default function ReviewsPage() {
     const [activeTab, setActiveTab] = useState('overview')
+
+    // Import Flow State
+    const [products, setProducts] = useState<Product[]>([])
+    const [loadingProducts, setLoadingProducts] = useState(false)
+    const [selectedProducts, setSelectedProducts] = useState<number[]>([])
+    const [importStep, setImportStep] = useState(1) // 1: Select Products, 2: Choose Source
+    const [importSource, setImportSource] = useState<'csv' | 'url' | null>(null)
+    const [importUrl, setImportUrl] = useState('')
+
+    useEffect(() => {
+        if (activeTab === 'import' && products.length === 0) {
+            fetchProducts()
+        }
+    }, [activeTab])
+
+    const fetchProducts = async () => {
+        setLoadingProducts(true)
+        try {
+            const res = await fetch('/api/shopify/products')
+            const data = await res.json()
+            if (data.success) {
+                setProducts(data.data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch products', error)
+            toast.error('Fehler beim Laden der Produkte')
+        } finally {
+            setLoadingProducts(false)
+        }
+    }
+
+    const toggleProduct = (id: number) => {
+        setSelectedProducts(prev =>
+            prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+        )
+    }
+
+    const toggleAll = () => {
+        if (selectedProducts.length === products.length) {
+            setSelectedProducts([])
+        } else {
+            setSelectedProducts(products.map(p => p.id))
+        }
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -50,7 +106,7 @@ export default function ReviewsPage() {
                                 <Settings className="h-4 w-4 mr-2" />
                                 Einstellungen
                             </Button>
-                            <Button className="bg-blue-600 hover:bg-blue-700">
+                            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setActiveTab('import')}>
                                 <Upload className="h-4 w-4 mr-2" />
                                 Importieren
                             </Button>
@@ -61,7 +117,7 @@ export default function ReviewsPage() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="bg-white border p-1 h-12 rounded-lg shadow-sm">
+                    <TabsList className="bg-white border p-1 h-12 rounded-lg shadow-sm w-full justify-start overflow-x-auto">
                         <TabsTrigger value="overview" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Übersicht</TabsTrigger>
                         <TabsTrigger value="reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Alle Reviews</TabsTrigger>
                         <TabsTrigger value="import" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Import & Export</TabsTrigger>
@@ -242,67 +298,154 @@ export default function ReviewsPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* IMPORT TAB */}
+                    {/* IMPORT TAB - NEW DESIGN */}
                     <TabsContent value="import" className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {importStep === 1 && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Upload className="h-5 w-5 text-blue-600" />
-                                        Import aus anderen Apps
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Importieren Sie Bewertungen von Loox, Judge.me, Yotpo, etc.
-                                    </CardDescription>
+                                    <CardTitle>Schritt 1: Produkte auswählen</CardTitle>
+                                    <CardDescription>Wählen Sie die Produkte aus, für die Sie Bewertungen importieren möchten.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                                        <FileText className="h-10 w-10 mx-auto text-gray-400 mb-3" />
-                                        <p className="text-sm font-medium text-gray-900">CSV Datei hier ablegen</p>
-                                        <p className="text-xs text-gray-500 mt-1">oder klicken zum Auswählen</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-medium">Unterstützte Formate:</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant="secondary">Loox CSV</Badge>
-                                            <Badge variant="secondary">Judge.me CSV</Badge>
-                                            <Badge variant="secondary">Shopify Reviews</Badge>
-                                            <Badge variant="secondary">AliExpress</Badge>
+                                <CardContent>
+                                    {loadingProducts ? (
+                                        <div className="flex justify-center py-12">
+                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border">
+                                                <div className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        checked={selectedProducts.length === products.length && products.length > 0}
+                                                        onCheckedChange={toggleAll}
+                                                    />
+                                                    <span className="text-sm font-medium">Alle auswählen ({products.length})</span>
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    {selectedProducts.length} ausgewählt
+                                                </div>
+                                            </div>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Globe className="h-5 w-5 text-green-600" />
-                                        Import von URL
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Importieren Sie Bewertungen direkt von AliExpress oder Amazon
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Produkt URL</label>
-                                        <div className="flex gap-2">
-                                            <Input placeholder="https://aliexpress.com/item/..." />
-                                            <Button>Import</Button>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                                                {products.map(product => (
+                                                    <div
+                                                        key={product.id}
+                                                        className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${selectedProducts.includes(product.id) ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'}`}
+                                                        onClick={() => toggleProduct(product.id)}
+                                                    >
+                                                        <Checkbox
+                                                            checked={selectedProducts.includes(product.id)}
+                                                            onCheckedChange={() => toggleProduct(product.id)}
+                                                        />
+                                                        <div className="h-12 w-12 bg-white rounded border flex-shrink-0 overflow-hidden">
+                                                            {product.images && product.images[0] ? (
+                                                                <img src={product.images[0].src} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center bg-gray-100">
+                                                                    <ImageIcon className="h-4 w-4 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium truncate" title={product.title}>{product.title}</p>
+                                                            <p className="text-xs text-gray-500">ID: {product.id}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="flex justify-end pt-4 border-t">
+                                                <Button
+                                                    disabled={selectedProducts.length === 0}
+                                                    onClick={() => setImportStep(2)}
+                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                >
+                                                    Weiter zu Schritt 2 <ArrowRight className="ml-2 h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
-                                        <p className="font-medium flex items-center gap-2">
-                                            <Info className="h-4 w-4" />
-                                            Hinweis
-                                        </p>
-                                        <p className="mt-1">
-                                            Verwenden Sie unseren Chrome Extension für schnelleren Import von AliExpress & Amazon.
-                                        </p>
-                                    </div>
+                                    )}
                                 </CardContent>
                             </Card>
-                        </div>
+                        )}
+
+                        {importStep === 2 && (
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Button variant="ghost" size="sm" onClick={() => setImportStep(1)} className="-ml-2 text-gray-500">
+                                            &larr; Zurück
+                                        </Button>
+                                    </div>
+                                    <CardTitle>Schritt 2: Importquelle wählen</CardTitle>
+                                    <CardDescription>
+                                        Importieren Sie Bewertungen für <strong>{selectedProducts.length} ausgewählte Produkte</strong>.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'csv' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                                            onClick={() => setImportSource('csv')}
+                                        >
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="p-3 bg-white rounded-full shadow-sm">
+                                                    <FileText className="h-6 w-6 text-blue-600" />
+                                                </div>
+                                                <h3 className="font-semibold text-lg">CSV Datei</h3>
+                                            </div>
+                                            <p className="text-sm text-gray-600">
+                                                Laden Sie eine CSV-Datei von Loox, Judge.me oder Shopify Reviews hoch.
+                                            </p>
+                                        </div>
+
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'url' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                                            onClick={() => setImportSource('url')}
+                                        >
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="p-3 bg-white rounded-full shadow-sm">
+                                                    <LinkIcon className="h-6 w-6 text-green-600" />
+                                                </div>
+                                                <h3 className="font-semibold text-lg">URL Import</h3>
+                                            </div>
+                                            <p className="text-sm text-gray-600">
+                                                Importieren Sie direkt von AliExpress, Amazon oder anderen Shops via URL.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {importSource === 'url' && (
+                                        <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4">
+                                            <h4 className="font-medium mb-4">URL eingeben</h4>
+                                            <div className="flex gap-3">
+                                                <Input
+                                                    placeholder="https://aliexpress.com/item/..."
+                                                    value={importUrl}
+                                                    onChange={(e) => setImportUrl(e.target.value)}
+                                                />
+                                                <Button className="bg-green-600 hover:bg-green-700">
+                                                    Import Starten
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                Die Bewertungen werden automatisch auf alle {selectedProducts.length} ausgewählten Produkte verteilt.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {importSource === 'csv' && (
+                                        <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4 text-center">
+                                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:bg-gray-50 transition-colors cursor-pointer">
+                                                <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+                                                <p className="font-medium">CSV Datei hier ablegen</p>
+                                                <p className="text-xs text-gray-500 mt-1">Unterstützt: Loox, Judge.me, Shopify</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
                     </TabsContent>
 
                     {/* WIDGETS TAB */}
@@ -471,44 +614,6 @@ function FileText({ className }: { className?: string }) {
             <line x1="16" y1="13" x2="8" y2="13" />
             <line x1="16" y1="17" x2="8" y2="17" />
             <line x1="10" y1="9" x2="8" y2="9" />
-        </svg>
-    )
-}
-
-function Globe({ className }: { className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="2" y1="12" x2="22" y2="12" />
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-    )
-}
-
-function Info({ className }: { className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
         </svg>
     )
 }
