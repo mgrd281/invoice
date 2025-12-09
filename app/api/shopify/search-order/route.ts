@@ -104,6 +104,66 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        // Strategy 4: GraphQL Search (Most robust for finding specific orders by name)
+        // We use GraphQL to find the ID, then fetch the full order via REST to ensure compatibility
+        if (orders.length === 0) {
+            console.log(`Trying strategy 4: GraphQL search for name:${orderNumber}`)
+            const graphqlUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/graphql.json`
+            const headers = {
+                'X-Shopify-Access-Token': settings.accessToken,
+                'Content-Type': 'application/json'
+            }
+
+            // Query to find order by name (flexible filter)
+            const query = `
+            {
+              orders(first: 1, query: "name:${orderNumber}") {
+                edges {
+                  node {
+                    id
+                    legacyResourceId
+                    name
+                  }
+                }
+              }
+            }
+            `
+
+            try {
+                const res = await fetch(graphqlUrl, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ query })
+                })
+
+                if (res.ok) {
+                    const data = await res.json()
+                    const edges = data.data?.orders?.edges
+                    if (edges && edges.length > 0) {
+                        const node = edges[0].node
+                        console.log(`✅ Found via GraphQL: ${node.name} (Legacy ID: ${node.legacyResourceId})`)
+
+                        // Now fetch the full order via REST using the ID we found
+                        // This ensures our convert function works without modification
+                        const restUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders/${node.legacyResourceId}.json`
+                        const orderRes = await fetch(restUrl, { headers })
+
+                        if (orderRes.ok) {
+                            const orderData = await orderRes.json()
+                            if (orderData.order) {
+                                orders = [orderData.order]
+                            }
+                        }
+                    }
+                } else {
+                    const errText = await res.text()
+                    console.error('GraphQL Error:', errText)
+                }
+            } catch (e) {
+                console.error('Strategy 4 failed:', e)
+            }
+        }
+
         if (orders.length === 0) {
             console.log('❌ Order not found with any strategy.')
             return NextResponse.json({ found: false, message: 'Order not found in Shopify' })
