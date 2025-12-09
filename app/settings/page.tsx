@@ -564,18 +564,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Rechnungserinnerungen</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatische Erinnerungen für überfällige Rechnungen
-                </p>
-              </div>
-              <Switch
-                checked={settings.invoiceReminders}
-                onCheckedChange={(checked: boolean) => setSettings(prev => ({ ...prev, invoiceReminders: checked }))}
-              />
-            </div>
+
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -592,34 +581,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Reminder Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bell className="h-5 w-5 mr-2 text-orange-600" />
-              Rechnungserinnerungen
-            </CardTitle>
-            <CardDescription>
-              Automatische Erinnerungen für überfällige Rechnungen
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Erinnerungssystem konfigurieren</Label>
-                <p className="text-sm text-muted-foreground">
-                  Zeitplan, Vorlagen und automatische Erinnerungen verwalten
-                </p>
-              </div>
-              <Link href="/settings/reminders">
-                <Button variant="outline" size="sm">
-                  <Bell className="h-4 w-4 mr-2" />
-                  Verwalten
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+
 
 
 
