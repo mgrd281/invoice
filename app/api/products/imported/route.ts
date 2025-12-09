@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
     try {
         const shopifySettings = getShopifySettings()
@@ -15,7 +17,8 @@ export async function GET(request: NextRequest) {
         // This is much more efficient and avoids the 250 limit issue for non-imported products
         const products = await api.getProducts({
             limit: 250,
-            tags: 'Imported'
+            tags: 'Imported',
+            fetchOptions: { cache: 'no-store' }
         })
 
         // Sort by created_at descending (newest first)
