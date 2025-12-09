@@ -915,6 +915,72 @@ export default function ReviewsPage() {
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* Installation Instructions */}
+                        <Card className="mt-8">
+                            <CardHeader>
+                                <CardTitle>Installation</CardTitle>
+                                <CardDescription>Fügen Sie diesen Code in Ihr Shopify Theme ein</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label>1. Script einbinden (theme.liquid)</Label>
+                                    <p className="text-sm text-gray-500">Fügen Sie dies vor dem schließenden <code>&lt;/body&gt;</code> Tag ein:</p>
+                                    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm relative group">
+                                        <code>&lt;script src="https://invoice-kohl-five.vercel.app/review-widget.js" async&gt;&lt;/script&gt;</code>
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText('<script src="https://invoice-kohl-five.vercel.app/review-widget.js" async></script>')
+                                                toast.success('Code kopiert!')
+                                            }}
+                                        >
+                                            Kopieren
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>2. Sterne-Bewertung anzeigen (product.liquid)</Label>
+                                    <p className="text-sm text-gray-500">Fügen Sie dies dort ein, wo die Sterne erscheinen sollen (z.B. unter dem Titel):</p>
+                                    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm relative group">
+                                        <code>&lt;div class="rechnung-profi-stars" data-product-id="&#123;&#123; product.id &#125;&#125;"&gt;&lt;/div&gt;</code>
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText('<div class="rechnung-profi-stars" data-product-id="{{ product.id }}"></div>')
+                                                toast.success('Code kopiert!')
+                                            }}
+                                        >
+                                            Kopieren
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>3. Bewertungen anzeigen (product.liquid)</Label>
+                                    <p className="text-sm text-gray-500">Fügen Sie dies dort ein, wo die Liste der Bewertungen erscheinen soll:</p>
+                                    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm relative group">
+                                        <code>&lt;div id="rechnung-profi-reviews-widget" data-product-id="&#123;&#123; product.id &#125;&#125;"&gt;&lt;/div&gt;</code>
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText('<div id="rechnung-profi-reviews-widget" data-product-id="{{ product.id }}"></div>')
+                                                toast.success('Code kopiert!')
+                                            }}
+                                        >
+                                            Kopieren
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     {/* EMAILS TAB */}
@@ -935,6 +1001,6 @@ export default function ReviewsPage() {
                     </TabsContent>
                 </Tabs>
             </main>
-        </div>
+        </div >
     )
 }
