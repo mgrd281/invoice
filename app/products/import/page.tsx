@@ -174,6 +174,30 @@ export default function ProductImportPage() {
                     const scrapeData = await scrapeRes.json()
                     const product = scrapeData.product
 
+                    // 1.5 AI Enhancement (Automatic)
+                    try {
+                        setImportLogs(prev => [`🤖 ${currentUrl}: AI Optimierung...`, ...prev])
+                        const aiRes = await fetch('/api/ai/enhance-product', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ product })
+                        })
+
+                        if (aiRes.ok) {
+                            const aiData = await aiRes.json()
+                            if (aiData.enhancedText) {
+                                product.description = aiData.enhancedText
+                            }
+                            if (aiData.newTitle) {
+                                product.title = aiData.newTitle
+                            }
+                            setImportLogs(prev => [`✨ ${currentUrl}: AI Optimierung erfolgreich`, ...prev])
+                        }
+                    } catch (aiError) {
+                        console.error('AI Enhancement failed:', aiError)
+                        setImportLogs(prev => [`⚠️ ${currentUrl}: AI fehlgeschlagen, nutze Originaldaten`, ...prev])
+                    }
+
                     // Apply multiplier
                     const multiplier = parseFloat(settings.priceMultiplier) || 1
                     if (product.price && multiplier !== 1) {
@@ -227,14 +251,39 @@ export default function ProductImportPage() {
 
             setImportStep('importing')
             const data = await response.json()
+            const product = data.product
+
+            // 1.5 AI Enhancement (Automatic)
+            try {
+                showToast("Optimiere Produktdaten mit AI...", "info")
+                const aiRes = await fetch('/api/ai/enhance-product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product })
+                })
+
+                if (aiRes.ok) {
+                    const aiData = await aiRes.json()
+                    if (aiData.enhancedText) {
+                        product.description = aiData.enhancedText
+                    }
+                    if (aiData.newTitle) {
+                        product.title = aiData.newTitle
+                    }
+                    showToast("Produktbeschreibung erfolgreich generiert", "success")
+                }
+            } catch (aiError) {
+                console.error('AI Enhancement failed:', aiError)
+                showToast("AI Optimierung fehlgeschlagen - Nutze Originaldaten", "warning")
+            }
 
             // Apply price multiplier
             const multiplier = parseFloat(settings.priceMultiplier) || 1
-            if (data.product.price && multiplier !== 1) {
-                data.product.price = (parseFloat(data.product.price) * multiplier).toFixed(2)
+            if (product.price && multiplier !== 1) {
+                product.price = (parseFloat(product.price) * multiplier).toFixed(2)
             }
 
-            setPreviewData(data.product)
+            setPreviewData(product)
             setImportStep('complete')
             showToast("Produktdaten erfolgreich geladen", "success")
         } catch (error) {
