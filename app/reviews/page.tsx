@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
     Star,
     Download,
@@ -26,7 +28,9 @@ import {
     Image as ImageIcon,
     Loader2,
     ArrowRight,
-    Link as LinkIcon
+    Link as LinkIcon,
+    PenTool,
+    FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -46,8 +50,24 @@ export default function ReviewsPage() {
     const [loadingProducts, setLoadingProducts] = useState(false)
     const [selectedProducts, setSelectedProducts] = useState<number[]>([])
     const [importStep, setImportStep] = useState(1) // 1: Select Products, 2: Choose Source
-    const [importSource, setImportSource] = useState<'csv' | 'url' | null>(null)
+    const [importSource, setImportSource] = useState<'csv' | 'url' | 'manual' | null>(null)
     const [importUrl, setImportUrl] = useState('')
+
+    // Manual Review State
+    const [manualReview, setManualReview] = useState({
+        rating: 5,
+        title: '',
+        content: '',
+        customer_name: '',
+        customer_email: '',
+        date: new Date().toISOString().split('T')[0],
+        images: [] as string[]
+    })
+    const [isSubmittingManual, setIsSubmittingManual] = useState(false)
+
+    // CSV State
+    const [csvFile, setCsvFile] = useState<File | null>(null)
+    const [isUploadingCsv, setIsUploadingCsv] = useState(false)
 
     useEffect(() => {
         if (activeTab === 'import' && products.length === 0) {
@@ -83,6 +103,117 @@ export default function ReviewsPage() {
         } else {
             setSelectedProducts(products.map(p => p.id))
         }
+    }
+
+    const downloadCsvTemplate = () => {
+        const headers = ['rating', 'title', 'content', 'customer_name', 'customer_email', 'date', 'images']
+        const example = ['5', 'Tolles Produkt', 'Bin sehr zufrieden mit der Qualität.', 'Max Mustermann', 'max@example.com', '2023-10-01', '']
+        const csvContent = [headers.join(','), example.join(',')].join('\n')
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', 'reviews_template.csv')
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
+    const handleManualSubmit = async () => {
+        if (!manualReview.customer_name || !manualReview.content) {
+            toast.error('Bitte füllen Sie alle Pflichtfelder aus.')
+            return
+        }
+
+        setIsSubmittingManual(true)
+        try {
+            // Send requests for each selected product
+            for (const productId of selectedProducts) {
+                const product = products.find(p => p.id === productId)
+
+                await fetch('/api/reviews/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productId: productId,
+                        reviews: [{
+                            ...manualReview,
+                            product_title: product?.title
+                        }]
+                    })
+                })
+            }
+
+            toast.success('Bewertung erfolgreich erstellt!')
+            setImportStep(1)
+            setImportSource(null)
+            setManualReview({
+                rating: 5,
+                title: '',
+                content: '',
+                customer_name: '',
+                customer_email: '',
+                date: new Date().toISOString().split('T')[0],
+                images: []
+            })
+            setSelectedProducts([])
+            setActiveTab('reviews') // Go to reviews list
+        } catch (error) {
+            console.error('Error submitting review:', error)
+            toast.error('Fehler beim Erstellen der Bewertung')
+        } finally {
+            setIsSubmittingManual(false)
+        }
+    }
+
+    const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploadingCsv(true)
+        const reader = new FileReader()
+        reader.onload = async (event) => {
+            const text = event.target?.result as string
+            const lines = text.split('\n')
+            const headers = lines[0].split(',').map(h => h.trim())
+
+            const reviews = []
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue
+                const values = lines[i].split(',')
+                const review: any = {}
+                headers.forEach((header, index) => {
+                    review[header] = values[index]?.trim()
+                })
+                reviews.push(review)
+            }
+
+            try {
+                for (const productId of selectedProducts) {
+                    const product = products.find(p => p.id === productId)
+                    await fetch('/api/reviews/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            productId: productId,
+                            reviews: reviews.map(r => ({ ...r, product_title: product?.title }))
+                        })
+                    })
+                }
+                toast.success(`${reviews.length} Bewertungen erfolgreich importiert!`)
+                setImportStep(1)
+                setImportSource(null)
+                setSelectedProducts([])
+                setActiveTab('reviews')
+            } catch (error) {
+                console.error('CSV Import Error:', error)
+                toast.error('Fehler beim Importieren der CSV')
+            } finally {
+                setIsUploadingCsv(false)
+            }
+        }
+        reader.readAsText(file)
     }
 
     return (
@@ -383,7 +514,7 @@ export default function ReviewsPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div
                                             className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'csv' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
                                             onClick={() => setImportSource('csv')}
@@ -413,6 +544,21 @@ export default function ReviewsPage() {
                                                 Importieren Sie direkt von AliExpress, Amazon oder anderen Shops via URL.
                                             </p>
                                         </div>
+
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                                            onClick={() => setImportSource('manual')}
+                                        >
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="p-3 bg-white rounded-full shadow-sm">
+                                                    <PenTool className="h-6 w-6 text-purple-600" />
+                                                </div>
+                                                <h3 className="font-semibold text-lg">Manuell schreiben</h3>
+                                            </div>
+                                            <p className="text-sm text-gray-600">
+                                                Erstellen Sie Bewertungen manuell direkt hier im Dashboard.
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {importSource === 'url' && (
@@ -436,10 +582,119 @@ export default function ReviewsPage() {
 
                                     {importSource === 'csv' && (
                                         <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4 text-center">
-                                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:bg-gray-50 transition-colors cursor-pointer">
-                                                <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
-                                                <p className="font-medium">CSV Datei hier ablegen</p>
-                                                <p className="text-xs text-gray-500 mt-1">Unterstützt: Loox, Judge.me, Shopify</p>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h4 className="font-medium">CSV Upload</h4>
+                                                <Button variant="outline" size="sm" onClick={downloadCsvTemplate}>
+                                                    <Download className="h-4 w-4 mr-2" />
+                                                    Vorlage herunterladen
+                                                </Button>
+                                            </div>
+                                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:bg-gray-50 transition-colors cursor-pointer relative">
+                                                <input
+                                                    type="file"
+                                                    accept=".csv"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    onChange={handleCsvUpload}
+                                                />
+                                                {isUploadingCsv ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <Loader2 className="h-10 w-10 text-blue-600 animate-spin mb-3" />
+                                                        <p className="font-medium">Wird hochgeladen...</p>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+                                                        <p className="font-medium">CSV Datei hier ablegen oder klicken</p>
+                                                        <p className="text-xs text-gray-500 mt-1">Unterstützt: Loox, Judge.me, Shopify</p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {importSource === 'manual' && (
+                                        <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4">
+                                            <h4 className="font-medium mb-4">Bewertung schreiben</h4>
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Name des Kunden</Label>
+                                                        <Input
+                                                            placeholder="Max Mustermann"
+                                                            value={manualReview.customer_name}
+                                                            onChange={(e) => setManualReview({ ...manualReview, customer_name: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>E-Mail (Optional)</Label>
+                                                        <Input
+                                                            placeholder="max@example.com"
+                                                            value={manualReview.customer_email}
+                                                            onChange={(e) => setManualReview({ ...manualReview, customer_email: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Bewertung (Sterne)</Label>
+                                                        <select
+                                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            value={manualReview.rating}
+                                                            onChange={(e) => setManualReview({ ...manualReview, rating: parseInt(e.target.value) })}
+                                                        >
+                                                            <option value="5">5 Sterne</option>
+                                                            <option value="4">4 Sterne</option>
+                                                            <option value="3">3 Sterne</option>
+                                                            <option value="2">2 Sterne</option>
+                                                            <option value="1">1 Stern</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Datum</Label>
+                                                        <Input
+                                                            type="date"
+                                                            value={manualReview.date}
+                                                            onChange={(e) => setManualReview({ ...manualReview, date: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>Titel der Bewertung</Label>
+                                                    <Input
+                                                        placeholder="Super Produkt!"
+                                                        value={manualReview.title}
+                                                        onChange={(e) => setManualReview({ ...manualReview, title: e.target.value })}
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>Inhalt</Label>
+                                                    <Textarea
+                                                        placeholder="Ich bin sehr zufrieden mit..."
+                                                        rows={4}
+                                                        value={manualReview.content}
+                                                        onChange={(e) => setManualReview({ ...manualReview, content: e.target.value })}
+                                                    />
+                                                </div>
+
+                                                <div className="pt-2 flex justify-end">
+                                                    <Button
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                        onClick={handleManualSubmit}
+                                                        disabled={isSubmittingManual}
+                                                    >
+                                                        {isSubmittingManual ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                Speichern...
+                                                            </>
+                                                        ) : (
+                                                            'Bewertung hinzufügen'
+                                                        )}
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -593,27 +848,6 @@ function TrendingUp({ className }: { className?: string }) {
         >
             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
             <polyline points="17 6 23 6 23 12" />
-        </svg>
-    )
-}
-
-function FileText({ className }: { className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <line x1="10" y1="9" x2="8" y2="9" />
         </svg>
     )
 }
