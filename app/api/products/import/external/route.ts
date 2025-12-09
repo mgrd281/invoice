@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
             const shopifyUrl = url.endsWith('.json') ? url : `${url}.json`
             const response = await fetch(shopifyUrl, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                 }
             })
 
@@ -47,15 +47,31 @@ export async function POST(request: NextRequest) {
 
         // 2. Fallback: Generic HTML Scraping (JSON-LD & Meta Tags)
         console.log('Attempting generic scrape for:', url)
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5'
-            }
-        })
+
+        // Use more realistic browser headers to avoid bot detection (e.g. Otto.de)
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'max-age=0',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"macOS"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1'
+        }
+
+        const response = await fetch(url, { headers })
 
         if (!response.ok) {
+            // If 202 Accepted, it might be processing, but for scraping it usually means failure/bot protection
+            if (response.status === 202) {
+                console.warn('Received 202 Accepted - likely bot protection or async processing')
+            }
             throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`)
         }
 
@@ -115,19 +131,33 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        // B. Fallback to Open Graph & Meta Tags if JSON-LD missed something
+        // B. Fallback to Open Graph & Meta Tags
         if (!productData.title) {
-            productData.title = $('meta[property="og:title"]').attr('content') || $('title').text() || ''
+            productData.title = $('meta[property="og:title"]').attr('content') ||
+                $('meta[name="twitter:title"]').attr('content') ||
+                $('title').text() || ''
         }
         if (!productData.description) {
-            productData.description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || ''
+            productData.description = $('meta[property="og:description"]').attr('content') ||
+                $('meta[name="description"]').attr('content') ||
+                $('meta[name="twitter:description"]').attr('content') || ''
         }
         if (productData.images.length === 0) {
-            const ogImage = $('meta[property="og:image"]').attr('content')
+            const ogImage = $('meta[property="og:image"]').attr('content') ||
+                $('meta[name="twitter:image"]').attr('content')
             if (ogImage) productData.images.push(ogImage)
         }
 
-        // C. Enhanced HTML Scraping (Microdata & Common Selectors)
+        // C. Enhanced HTML Scraping (Specific Selectors for Otto & Others)
+
+        // Title Fallback
+        if (!productData.title) {
+            productData.title = $('h1[data-qa="product-title"]').text().trim() ||
+                $('h1.p_name').text().trim() ||
+                $('h1').first().text().trim()
+        }
+
+        // Price Fallback
         if (!productData.price || productData.price === '0.00') {
             // 1. Try Microdata
             const microdataPrice = $('[itemprop="price"]').attr('content') || $('[itemprop="price"]').text()
@@ -136,44 +166,69 @@ export async function POST(request: NextRequest) {
             const microdataCurrency = $('[itemprop="priceCurrency"]').attr('content') || $('[itemprop="priceCurrency"]').text()
             if (microdataCurrency) productData.currency = microdataCurrency.trim()
 
-            // 2. Try Common Class Names if still 0
+            // 2. Otto specific selectors
+            if (!productData.price || productData.price === '0.00') {
+                const ottoPrice = $('span[data-qa="price"]').text().trim() ||
+                    $('.p_price__amount').text().trim() ||
+                    $('#normalPriceAmount').text().trim()
+
+                if (ottoPrice) {
+                    const match = ottoPrice.match(/[\d,.]+/)
+                    if (match) productData.price = match[0].replace(',', '.')
+                }
+            }
+
+            // 3. Common Class Names
             if (!productData.price || productData.price === '0.00') {
                 const priceSelectors = ['.price', '.product-price', '.offer-price', '.amount', '.current-price', '[data-price]']
                 for (const selector of priceSelectors) {
                     const priceText = $(selector).first().text().trim()
                     if (priceText) {
-                        // Extract number from string (e.g. "19,99 €" -> "19.99")
                         const match = priceText.match(/[\d,.]+/)
                         if (match) {
                             productData.price = match[0].replace(',', '.')
-                            // Try to guess currency
                             if (priceText.includes('€') || priceText.includes('EUR')) productData.currency = 'EUR'
-                            if (priceText.includes('$') || priceText.includes('USD')) productData.currency = 'USD'
                             break
                         }
                     }
                 }
             }
+        }
 
-            // 3. Fallback to Meta Tags
-            if (!productData.price || productData.price === '0.00') {
-                productData.price = $('meta[property="product:price:amount"]').attr('content') ||
-                    $('meta[property="og:price:amount"]').attr('content') ||
-                    '0.00'
-                productData.currency = $('meta[property="product:price:currency"]').attr('content') ||
-                    $('meta[property="og:price:currency"]').attr('content') ||
-                    'EUR'
+        // Images Fallback
+        if (productData.images.length === 0) {
+            // Otto specific
+            $('img[data-qa="product-gallery-image"]').each((_, el) => {
+                const src = $(el).attr('src') || $(el).attr('data-src')
+                if (src) productData.images.push(src)
+            })
+
+            // Generic gallery
+            if (productData.images.length === 0) {
+                $('.product-gallery img, .gallery img, .product-images img').each((_, el) => {
+                    const src = $(el).attr('src') || $(el).attr('data-src')
+                    if (src) productData.images.push(src)
+                })
             }
         }
 
-        // Try to find SKU
+        // SKU Fallback
         if (!productData.sku) {
-            productData.sku = $('[itemprop="sku"]').attr('content') || $('[itemprop="sku"]').text().trim() || ''
+            productData.sku = $('[itemprop="sku"]').attr('content') ||
+                $('[itemprop="sku"]').text().trim() ||
+                $('[data-qa="article-number"]').text().trim() || // Otto
+                ''
         }
 
-        // Try to find better description if current is short
+        // Description Fallback
         if (productData.description.length < 50) {
-            const descSelectors = ['[itemprop="description"]', '.product-description', '.description', '#description']
+            const descSelectors = [
+                '[itemprop="description"]',
+                '.product-description',
+                '.description',
+                '#description',
+                'div[data-qa="product-description"]' // Otto
+            ]
             for (const selector of descSelectors) {
                 const desc = $(selector).first().text().trim()
                 if (desc && desc.length > productData.description.length) {
@@ -184,7 +239,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Clean up data
-        productData.fullDescription = productData.description // Use description as full description for generic sites
+        productData.fullDescription = productData.description
 
         // Ensure absolute URLs for images
         productData.images = productData.images.map((img: string) => {
@@ -193,6 +248,9 @@ export async function POST(request: NextRequest) {
             }
             return img
         })
+
+        // Remove duplicates from images
+        productData.images = [...new Set(productData.images)]
 
         if (!productData.title) {
             return NextResponse.json({ error: 'Could not detect product data. Ensure this is a valid product page.' }, { status: 400 })
