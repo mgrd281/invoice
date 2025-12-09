@@ -482,28 +482,48 @@ export class ShopifyAPI {
         searchParams.set('product_type', params.product_type)
       }
 
-      if (params.tags) {
-        searchParams.set('collection_id', '') // Reset collection if any
-        // Shopify API doesn't support direct tag filtering on /products.json easily without GraphQL or specific tricks.
-        // However, we can filter client-side or use specific params if available.
-        // Actually, /products.json DOES NOT support 'tag' or 'tags' as a filter parameter directly in standard REST.
-        // It's better to fetch and filter, OR use GraphQL.
-        // BUT, for this specific requirement, let's try to filter client-side if the API doesn't support it, 
-        // OR assume the user might want to filter by 'handle' or something else.
-        // WAIT: Shopify REST API *does* support `product_type`, `vendor`, `collection_id`.
-        // It does NOT support `tag`.
-        // We will fetch more and filter in memory for now, or use GraphQL later.
-        // For now, let's just leave it and filter in the calling function if needed, 
-        // OR we can try to use a smart collection approach.
-        // Let's just return all and filter in the route handler for simplicity in this iteration.
-      }
-
       const response = await this.makeRequest(`/products.json?${searchParams}`)
       const data = await response.json()
 
       return data.products || []
     } catch (error) {
       console.error('Error fetching Shopify products:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete a product from Shopify
+   */
+  async deleteProduct(productId: number): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting product ${productId}...`)
+      await this.makeRequest(`/products/${productId}.json`, {
+        method: 'DELETE'
+      })
+      console.log('✅ Product deleted successfully')
+    } catch (error) {
+      console.error(`Error deleting product ${productId}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Update a product in Shopify
+   */
+  async updateProduct(productId: number, productData: any): Promise<ShopifyProduct> {
+    try {
+      console.log(`🔄 Updating product ${productId}...`)
+      const response = await this.makeRequest(`/products/${productId}.json`, {
+        method: 'PUT',
+        body: JSON.stringify({ product: productData })
+      })
+
+      const data = await response.json()
+      console.log('✅ Product updated successfully')
+      return data.product
+    } catch (error) {
+      console.error(`Error updating product ${productId}:`, error)
       throw error
     }
   }

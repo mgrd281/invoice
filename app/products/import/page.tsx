@@ -184,6 +184,140 @@ export default function ProductImportPage() {
         }
     }
 
+    const [isDeleting, setIsDeleting] = useState<number | null>(null)
+    const [isRewriting, setIsRewriting] = useState(false)
+
+    const handleDeleteProduct = async (productId: number) => {
+        if (!confirm('Möchten Sie dieses Produkt wirklich löschen?')) return
+
+        setIsDeleting(productId)
+        try {
+            const response = await fetch(`/api/products/${productId}`, {
+                method: 'DELETE'
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to delete product')
+            }
+
+            toast({
+                title: "Produkt gelöscht",
+                description: "Das Produkt wurde erfolgreich entfernt.",
+            })
+
+            // Refresh list
+            loadImportedProducts()
+        } catch (error) {
+            console.error('Delete error:', error)
+            toast({
+                title: "Fehler beim Löschen",
+                description: "Das Produkt konnte nicht gelöscht werden.",
+                variant: "destructive"
+            })
+        } finally {
+            setIsDeleting(null)
+        }
+    }
+
+    const [editingProduct, setEditingProduct] = useState<any>(null)
+    const [isUpdating, setIsUpdating] = useState(false)
+
+    const handleUpdateProduct = async () => {
+        if (!editingProduct) return
+
+        setIsUpdating(true)
+        try {
+            // Prepare payload for Shopify
+            // Note: Price is on the variant level
+            const payload: any = {
+                title: editingProduct.title,
+                vendor: editingProduct.vendor,
+                product_type: editingProduct.product_type,
+            }
+
+            // If price changed, we need to update the first variant
+            // We assume the first variant is the main one for simple products
+            if (editingProduct.variants && editingProduct.variants.length > 0) {
+                payload.variants = [{
+                    id: editingProduct.variants[0].id,
+                    price: editingProduct.variants[0].price
+                }]
+            }
+
+            const response = await fetch(`/api/products/${editingProduct.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product: payload })
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to update product')
+            }
+
+            toast({
+                title: "Produkt aktualisiert",
+                description: "Die Änderungen wurden erfolgreich gespeichert.",
+                className: "bg-green-50 border-green-200 text-green-800"
+            })
+
+            setEditingProduct(null)
+            loadImportedProducts()
+
+        } catch (error) {
+            console.error('Update error:', error)
+            toast({
+                title: "Fehler beim Speichern",
+                description: "Das Produkt konnte nicht aktualisiert werden.",
+                variant: "destructive"
+            })
+        } finally {
+            setIsUpdating(false)
+        }
+    }
+
+    const handleAiRewrite = async () => {
+        if (!previewData || !previewData.description) return
+
+        setIsRewriting(true)
+        try {
+            const response = await fetch('/api/ai/rewrite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: previewData.description,
+                    type: 'description'
+                })
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'AI Rewrite failed')
+            }
+
+            setPreviewData({
+                ...previewData,
+                description: data.text
+            })
+
+            toast({
+                title: "AI Optimierung erfolgreich",
+                description: "Die Produktbeschreibung wurde optimiert.",
+                className: "bg-purple-50 border-purple-200 text-purple-800"
+            })
+
+        } catch (error) {
+            console.error('AI error:', error)
+            toast({
+                title: "AI Fehler",
+                description: "Die Beschreibung konnte nicht optimiert werden. Prüfen Sie Ihren API Key.",
+                variant: "destructive"
+            })
+        } finally {
+            setIsRewriting(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-12 font-sans">
             <div className="max-w-7xl mx-auto space-y-8">
@@ -408,7 +542,19 @@ export default function ProductImportPage() {
                                                     <h3 className="font-bold text-xl text-gray-900 leading-tight">{previewData.title}</h3>
                                                 </div>
 
-                                                <div className="prose prose-sm text-gray-500 line-clamp-3" dangerouslySetInnerHTML={{ __html: previewData.description }}></div>
+                                                <div className="relative group/desc">
+                                                    <div className="prose prose-sm text-gray-500 line-clamp-3" dangerouslySetInnerHTML={{ __html: previewData.description }}></div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        className="absolute bottom-0 right-0 opacity-0 group-hover/desc:opacity-100 transition-opacity bg-white/90 shadow-sm border border-gray-200 text-purple-600 hover:text-purple-700"
+                                                        onClick={handleAiRewrite}
+                                                        disabled={isRewriting}
+                                                    >
+                                                        {isRewriting ? <RefreshCw className="h-3 w-3 animate-spin mr-1" /> : <Zap className="h-3 w-3 mr-1" />}
+                                                        AI Rewrite
+                                                    </Button>
+                                                </div>
 
                                                 <div className="flex flex-wrap gap-2 pt-2">
                                                     {previewData.sku && (
@@ -564,11 +710,22 @@ export default function ProductImportPage() {
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 text-gray-400 hover:text-blue-600"
+                                                                        onClick={() => setEditingProduct(product)}
+                                                                    >
                                                                         <Edit className="h-4 w-4" />
                                                                     </Button>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600">
-                                                                        <Trash2 className="h-4 w-4" />
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 text-gray-400 hover:text-red-600"
+                                                                        onClick={() => handleDeleteProduct(product.id)}
+                                                                        disabled={isDeleting === product.id}
+                                                                    >
+                                                                        {isDeleting === product.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                                                     </Button>
                                                                 </div>
                                                             </td>
@@ -595,11 +752,22 @@ export default function ProductImportPage() {
                                                             </Badge>
                                                         </div>
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                            <Button size="sm" variant="secondary" className="rounded-full">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="rounded-full"
+                                                                onClick={() => setEditingProduct(product)}
+                                                            >
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
-                                                            <Button size="sm" variant="secondary" className="rounded-full text-red-600 hover:text-red-700">
-                                                                <Trash2 className="h-4 w-4" />
+                                                            <Button
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="rounded-full text-red-600 hover:text-red-700"
+                                                                onClick={() => handleDeleteProduct(product.id)}
+                                                                disabled={isDeleting === product.id}
+                                                            >
+                                                                {isDeleting === product.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -626,6 +794,63 @@ export default function ProductImportPage() {
                                     </div>
                                 )}
                             </CardContent>
+                        </Card>
+                    </div>
+                )}
+                {/* Edit Dialog */}
+                {editingProduct && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <Card className="w-full max-w-md bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                            <CardHeader>
+                                <CardTitle>Produkt bearbeiten</CardTitle>
+                                <CardDescription>Ändern Sie die wichtigsten Details des Produkts.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Titel</Label>
+                                    <Input
+                                        value={editingProduct.title}
+                                        onChange={(e) => setEditingProduct({ ...editingProduct, title: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Preis (€)</Label>
+                                        <Input
+                                            type="number"
+                                            value={editingProduct.variants?.[0]?.price || ''}
+                                            onChange={(e) => {
+                                                const newVariants = [...(editingProduct.variants || [])]
+                                                if (newVariants.length > 0) {
+                                                    newVariants[0] = { ...newVariants[0], price: e.target.value }
+                                                }
+                                                setEditingProduct({ ...editingProduct, variants: newVariants })
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hersteller</Label>
+                                        <Input
+                                            value={editingProduct.vendor || ''}
+                                            onChange={(e) => setEditingProduct({ ...editingProduct, vendor: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Produkttyp</Label>
+                                    <Input
+                                        value={editingProduct.product_type || ''}
+                                        onChange={(e) => setEditingProduct({ ...editingProduct, product_type: e.target.value })}
+                                    />
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-end space-x-2 bg-gray-50 rounded-b-xl">
+                                <Button variant="outline" onClick={() => setEditingProduct(null)}>Abbrechen</Button>
+                                <Button onClick={handleUpdateProduct} disabled={isUpdating} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                    {isUpdating ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
+                                    Speichern
+                                </Button>
+                            </CardFooter>
                         </Card>
                     </div>
                 )}

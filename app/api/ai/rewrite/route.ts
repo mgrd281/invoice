@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server'
+import OpenAI from 'openai'
+
+// Initialize OpenAI client
+// Note: This requires OPENAI_API_KEY environment variable
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+})
+
+export async function POST(request: NextRequest) {
+    try {
+        const { text, type } = await request.json()
+
+        if (!text) {
+            return NextResponse.json({ error: 'Text is required' }, { status: 400 })
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({ error: 'OpenAI API key is not configured' }, { status: 500 })
+        }
+
+        let prompt = ''
+        if (type === 'description') {
+            prompt = `Rewrite the following product description to be more engaging, sales-oriented, and SEO-friendly. Keep the same key information but make it sound professional and persuasive. Use HTML formatting (paragraphs, bullet points) for better readability. Language: German.
+
+            Original Text:
+            ${text}`
+        } else {
+            // Default rewrite
+            prompt = `Rewrite the following text to be more professional and clear. Language: German.
+            
+            Original Text:
+            ${text}`
+        }
+
+        const completion = await openai.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'gpt-4o', // Use a capable model
+        })
+
+        const rewrittenText = completion.choices[0].message.content
+
+        return NextResponse.json({ success: true, text: rewrittenText })
+
+    } catch (error) {
+        console.error('Error rewriting text with AI:', error)
+        return NextResponse.json({ error: 'Failed to rewrite text' }, { status: 500 })
+    }
+}
