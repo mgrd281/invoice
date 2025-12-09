@@ -115,14 +115,16 @@ export async function GET(request: NextRequest) {
             }
 
             // Query to find order by name (flexible filter)
+            // We use a broader query to match name, order_number, etc.
             const query = `
             {
-              orders(first: 1, query: "name:${orderNumber}") {
+              orders(first: 5, query: "${orderNumber} OR name:${orderNumber}") {
                 edges {
                   node {
                     id
                     legacyResourceId
                     name
+                    displayFulfillmentStatus
                   }
                 }
               }
@@ -130,6 +132,7 @@ export async function GET(request: NextRequest) {
             `
 
             try {
+                console.log(`🔌 GraphQL Query: ${query.replace(/\s+/g, ' ').trim()}`)
                 const res = await fetch(graphqlUrl, {
                     method: 'POST',
                     headers,
@@ -138,13 +141,17 @@ export async function GET(request: NextRequest) {
 
                 if (res.ok) {
                     const data = await res.json()
+                    console.log('🔌 GraphQL Response:', JSON.stringify(data))
+
                     const edges = data.data?.orders?.edges
                     if (edges && edges.length > 0) {
-                        const node = edges[0].node
+                        // Find the best match
+                        const match = edges.find((e: any) => e.node.name === `#${orderNumber}` || e.node.name === orderNumber) || edges[0]
+                        const node = match.node
+
                         console.log(`✅ Found via GraphQL: ${node.name} (Legacy ID: ${node.legacyResourceId})`)
 
                         // Now fetch the full order via REST using the ID we found
-                        // This ensures our convert function works without modification
                         const restUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}/orders/${node.legacyResourceId}.json`
                         const orderRes = await fetch(restUrl, { headers })
 
@@ -153,7 +160,11 @@ export async function GET(request: NextRequest) {
                             if (orderData.order) {
                                 orders = [orderData.order]
                             }
+                        } else {
+                            console.error(`❌ Failed to fetch full order via REST: ${restUrl} (${orderRes.status})`)
                         }
+                    } else {
+                        console.log('❌ GraphQL returned no orders.')
                     }
                 } else {
                     const errText = await res.text()
