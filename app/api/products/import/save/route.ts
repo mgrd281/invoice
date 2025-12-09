@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
                 let type = 'single_line_text_field'
 
                 // Determine type based on key or content
+                // STRICTLY enforce rich_text_field for known rich text keys
                 if (key.includes('collapsible_row_content') || key === 'faq') {
                     type = 'rich_text_field'
                 } else if ((value as string).length > 200 || (value as string).includes('\n')) {
@@ -40,11 +41,9 @@ export async function POST(request: NextRequest) {
 
                 // Construct rich text value (simple paragraph wrapper)
                 let finalValue = value
+
                 if (type === 'rich_text_field') {
-                    // We need to send a JSON string representing the rich text document
-                    // OR just send the raw string and hope Shopify accepts it.
-                    // Actually, Shopify API for rich_text_field requires a specific JSON structure.
-                    // Let's try to construct a simple one.
+                    // Always format as JSON for rich_text_field
                     finalValue = JSON.stringify({
                         type: "root",
                         children: [
