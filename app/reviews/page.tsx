@@ -30,7 +30,8 @@ import {
     ArrowRight,
     Link as LinkIcon,
     PenTool,
-    FileText
+    FileText,
+    TrendingUp
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -223,7 +224,7 @@ export default function ReviewsPage() {
         }
     }
 
-    const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
 
@@ -270,11 +271,10 @@ export default function ReviewsPage() {
             }
         }
         reader.readAsText(file)
-    }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            {/* Header */}
             <header className="bg-white border-b sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
@@ -301,7 +301,6 @@ export default function ReviewsPage() {
                     </div>
                 </div>
             </header>
-
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="bg-white border p-1 h-12 rounded-lg shadow-sm w-full justify-start overflow-x-auto">
@@ -343,7 +342,7 @@ export default function ReviewsPage() {
                                             <p className="text-sm font-medium text-gray-500">Durchschnitt</p>
                                             <h3 className="text-3xl font-bold text-gray-900 mt-2 flex items-center">
                                                 {loadingStats ? '...' : stats.averageRating}
-                                                <Star className="h-5 w-5 text-yellow-400 fill-yellow-400 ml-2" />
+                                                <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 ml-2" />
                                             </h3>
                                         </div>
                                         <div className="p-2 bg-yellow-50 rounded-lg">
@@ -360,22 +359,18 @@ export default function ReviewsPage() {
                                 <CardContent className="pt-6">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-sm font-medium text-gray-500">Foto Reviews</p>
+                                            <p className="text-sm font-medium text-gray-500">Mit Fotos</p>
                                             <h3 className="text-3xl font-bold text-gray-900 mt-2">
-                                                {loadingStats ? '...' : stats.photoReviews.toLocaleString()}
+                                                {loadingStats ? '...' : stats.photoReviews}
                                             </h3>
                                         </div>
                                         <div className="p-2 bg-purple-50 rounded-lg">
                                             <ImageIcon className="h-5 w-5 text-purple-600" />
                                         </div>
                                     </div>
-                                    <div className="mt-4 flex items-center text-sm text-green-600">
-                                        <TrendingUp className="h-4 w-4 mr-1" />
-                                        <span>
-                                            {stats.totalReviews > 0
-                                                ? `${Math.round((stats.photoReviews / stats.totalReviews) * 100)}% der Reviews`
-                                                : '0% der Reviews'}
-                                        </span>
+                                    <div className="mt-4 flex items-center text-sm text-purple-600">
+                                        <ImageIcon className="h-4 w-4 mr-1" />
+                                        <span>{loadingStats ? '...' : Math.round((stats.photoReviews / stats.totalReviews) * 100)}% aller Reviews</span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -386,21 +381,22 @@ export default function ReviewsPage() {
                                         <div>
                                             <p className="text-sm font-medium text-gray-500">Ausstehend</p>
                                             <h3 className="text-3xl font-bold text-gray-900 mt-2">
-                                                {loadingStats ? '...' : stats.pendingReviews.toLocaleString()}
+                                                {loadingStats ? '...' : stats.pendingReviews}
                                             </h3>
                                         </div>
                                         <div className="p-2 bg-orange-50 rounded-lg">
                                             <CheckCircle className="h-5 w-5 text-orange-600" />
                                         </div>
                                     </div>
-                                    <div className="mt-4 flex items-center text-sm text-orange-600 cursor-pointer hover:underline">
-                                        <span>Jetzt prüfen &rarr;</span>
+                                    <div className="mt-4 flex items-center text-sm text-orange-600">
+                                        <ArrowRight className="h-4 w-4 mr-1" />
+                                        <span>Jetzt prüfen</span>
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
 
-                        {/* Recent Reviews Preview */}
+                        {/* Recent Reviews */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Neueste Bewertungen</CardTitle>
@@ -410,116 +406,79 @@ export default function ReviewsPage() {
                                 <div className="space-y-4">
                                     {loadingStats ? (
                                         <div className="flex justify-center py-8">
-                                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                         </div>
-                                    ) : stats.recentReviews.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-500">
-                                            Noch keine Bewertungen vorhanden.
-                                        </div>
-                                    ) : (
+                                    ) : stats.recentReviews.length > 0 ? (
                                         stats.recentReviews.map((review: any) => (
-                                            <div key={review.id} className="flex gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                                                <div className="w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 overflow-hidden">
-                                                    {review.images && review.images.length > 0 ? (
-                                                        <img src={review.images[0]} alt="Review" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                                            <ImageIcon className="h-6 w-6" />
-                                                        </div>
-                                                    )}
+                                            <div key={review.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border">
+                                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                                                    {review.customer_name.charAt(0)}
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="flex text-yellow-400">
-                                                                    {[...Array(5)].map((_, j) => (
+                                                            <h4 className="font-medium text-gray-900">{review.customer_name}</h4>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <div className="flex">
+                                                                    {[...Array(5)].map((_, i) => (
                                                                         <Star
-                                                                            key={j}
-                                                                            className={`h-4 w-4 ${j < review.rating ? 'fill-current' : 'text-gray-300'}`}
+                                                                            key={i}
+                                                                            className={`h-3 w-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
                                                                         />
                                                                     ))}
                                                                 </div>
-                                                                <span className="font-medium text-gray-900">{review.title}</span>
-                                                            </div>
-                                                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                                                {review.content}
-                                                            </p>
-                                                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                                                                <span>{review.customerName}</span>
-                                                                <span>•</span>
-                                                                <span>{new Date(review.createdAt).toLocaleDateString('de-DE')}</span>
-                                                                {review.isVerified && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span className="text-green-600 flex items-center gap-1">
-                                                                            <CheckCircle className="h-3 w-3" /> Verifizierter Kauf
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                                {review.productTitle && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span className="text-blue-600 truncate max-w-[200px]">
-                                                                            {review.productTitle}
-                                                                        </span>
-                                                                    </>
-                                                                )}
+                                                                <span className="text-xs text-gray-500">
+                                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                                </span>
                                                             </div>
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            {review.status === 'PENDING' && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                                                    onClick={async () => {
-                                                                        try {
-                                                                            const res = await fetch(`/api/reviews/${review.id}/approve`, { method: 'POST' })
-                                                                            if (res.ok) {
-                                                                                toast.success('Review genehmigt')
-                                                                                fetchStats() // Refresh stats
-                                                                            } else {
-                                                                                toast.error('Fehler beim Genehmigen')
-                                                                            }
-                                                                        } catch (e) {
-                                                                            toast.error('Fehler')
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <CheckCircle className="h-4 w-4 mr-1" /> Approve
-                                                                </Button>
-                                                            )}
-                                                            <Button size="sm" variant="ghost">
-                                                                <MoreHorizontal className="h-4 w-4" />
+                                                        <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
+                                                            {review.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mt-2">{review.content}</p>
+                                                    {review.status === 'PENDING' && (
+                                                        <div className="mt-3 flex gap-2">
+                                                            <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={async () => {
+                                                                try {
+                                                                    await fetch(`/api/reviews/${review.id}/approve`, { method: 'POST' });
+                                                                    toast.success('Bewertung freigegeben');
+                                                                    fetchStats(); // Refresh stats
+                                                                } catch (e) {
+                                                                    toast.error('Fehler beim Freigeben');
+                                                                }
+                                                            }}>
+                                                                <CheckCircle className="h-3 w-3 mr-1" />
+                                                                Freigeben
                                                             </Button>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-500">
+                                            Keine Bewertungen vorhanden
+                                        </div>
                                     )}
-                                </div>
-                                <div className="mt-4 text-center">
-                                    <Button variant="link" onClick={() => setActiveTab('reviews')}>Alle Bewertungen anzeigen</Button>
                                 </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* ALL REVIEWS TAB */}
-                    <TabsContent value="reviews" className="space-y-6">
+                    {/* REVIEWS LIST TAB */}
+                    <TabsContent value="reviews">
                         <Card>
                             <CardHeader>
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <CardTitle>Alle Bewertungen</CardTitle>
-                                        <CardDescription>Verwalten Sie alle Kundenbewertungen an einem Ort</CardDescription>
+                                        <CardDescription>Verwalten Sie alle Kundenbewertungen</CardDescription>
                                     </div>
                                     <div className="flex gap-2">
                                         <div className="relative">
-                                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                            <Input placeholder="Suchen..." className="pl-9 w-64" />
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                            <Input placeholder="Suchen..." className="pl-9 w-[200px]" />
                                         </div>
                                         <Button variant="outline">
                                             <Filter className="h-4 w-4 mr-2" />
@@ -528,325 +487,260 @@ export default function ReviewsPage() {
                                     </div>
                                 </div>
                             </CardHeader>
-                        </CardHeader>
-                        <CardContent>
-                            {loadingAllReviews ? (
-                                <div className="flex justify-center py-12">
-                                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                                </div>
-                            ) : allReviews.length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">
-                                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                    <h3 className="text-lg font-medium text-gray-900">Noch keine Bewertungen</h3>
-                                    <p className="mb-6">Importieren Sie Bewertungen oder warten Sie auf die ersten Kundenfeedbacks.</p>
-                                    <Button onClick={() => setActiveTab('import')}>
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Bewertungen importieren
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {allReviews.map((review) => (
-                                        <div key={review.id} className="flex gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors bg-white">
-                                            <div className="w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 overflow-hidden">
-                                                {review.images && review.images.length > 0 ? (
-                                                    <img src={review.images[0]} alt="Review" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                                        <ImageIcon className="h-6 w-6" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex text-yellow-400">
-                                                                {[...Array(5)].map((_, j) => (
-                                                                    <Star
-                                                                        key={j}
-                                                                        className={`h-4 w-4 ${j < review.rating ? 'fill-current' : 'text-gray-300'}`}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                            <span className="font-medium text-gray-900">{review.title}</span>
-                                                            <Badge variant={review.status === 'APPROVED' ? 'default' : review.status === 'PENDING' ? 'secondary' : 'destructive'}>
-                                                                {review.status}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-sm text-gray-600 mt-1">
-                                                            {review.content}
-                                                        </p>
-                                                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                                                            <span>{review.customerName}</span>
-                                                            <span>•</span>
-                                                            <span>{new Date(review.createdAt).toLocaleDateString('de-DE')}</span>
-                                                            {review.isVerified && (
-                                                                <>
-                                                                    <span>•</span>
-                                                                    <span className="text-green-600 flex items-center gap-1">
-                                                                        <CheckCircle className="h-3 w-3" /> Verifizierter Kauf
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {review.status === 'PENDING' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        const res = await fetch(`/api/reviews/${review.id}/approve`, { method: 'POST' })
-                                                                        if (res.ok) {
-                                                                            toast.success('Review genehmigt')
-                                                                            fetchAllReviews()
-                                                                        }
-                                                                    } catch (e) {
-                                                                        toast.error('Fehler')
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <CheckCircle className="h-4 w-4 mr-1" /> Approve
-                                                            </Button>
-                                                        )}
-                                                        <Button size="sm" variant="ghost">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* IMPORT TAB - NEW DESIGN */}
-                <TabsContent value="import" className="space-y-6">
-                    {importStep === 1 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Schritt 1: Produkte auswählen</CardTitle>
-                                <CardDescription>Wählen Sie die Produkte aus, für die Sie Bewertungen importieren möchten.</CardDescription>
-                            </CardHeader>
                             <CardContent>
-                                {loadingProducts ? (
+                                {loadingAllReviews ? (
                                     <div className="flex justify-center py-12">
                                         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                     </div>
-                                ) : (
+                                ) : allReviews.length > 0 ? (
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border">
-                                            <div className="flex items-center gap-2">
-                                                <Checkbox
-                                                    checked={selectedProducts.length === products.length && products.length > 0}
-                                                    onCheckedChange={toggleAll}
-                                                />
-                                                <span className="text-sm font-medium">Alle auswählen ({products.length})</span>
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {selectedProducts.length} ausgewählt
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
-                                            {products.map(product => (
-                                                <div
-                                                    key={product.id}
-                                                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${selectedProducts.includes(product.id) ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'}`}
-                                                    onClick={() => toggleProduct(product.id)}
-                                                >
-                                                    <Checkbox
-                                                        checked={selectedProducts.includes(product.id)}
-                                                        onCheckedChange={() => toggleProduct(product.id)}
-                                                    />
-                                                    <div className="h-12 w-12 bg-white rounded border flex-shrink-0 overflow-hidden">
-                                                        {product.images && product.images[0] ? (
-                                                            <img src={product.images[0].src} alt="" className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            <div className="h-full w-full flex items-center justify-center bg-gray-100">
-                                                                <ImageIcon className="h-4 w-4 text-gray-400" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium truncate" title={product.title}>{product.title}</p>
-                                                        <p className="text-xs text-gray-500">ID: {product.id}</p>
-                                                    </div>
+                                        {allReviews.map((review: any) => (
+                                            <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                                                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
+                                                    {review.customer_name.charAt(0)}
                                                 </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="flex justify-end pt-4 border-t">
-                                            <Button
-                                                disabled={selectedProducts.length === 0}
-                                                onClick={() => setImportStep(2)}
-                                                className="bg-blue-600 hover:bg-blue-700"
-                                            >
-                                                Weiter zu Schritt 2 <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between">
+                                                        <div>
+                                                            <h4 className="font-medium">{review.customer_name}</h4>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <div className="flex">
+                                                                    {[...Array(5)].map((_, i) => (
+                                                                        <Star
+                                                                            key={i}
+                                                                            className={`h-3 w-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                                <span className="text-xs text-gray-500">
+                                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
+                                                                {review.status}
+                                                            </Badge>
+                                                            <Button variant="ghost" size="icon">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mt-2">{review.content}</p>
+                                                    {review.product && (
+                                                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                                                            <LinkIcon className="h-3 w-3" />
+                                                            {review.product.title}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900">Keine Bewertungen gefunden</h3>
+                                        <p className="text-gray-500 mt-1">Es wurden noch keine Bewertungen abgegeben.</p>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
-                    )}
+                    </TabsContent>
 
-                    {importStep === 2 && (
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Button variant="ghost" size="sm" onClick={() => setImportStep(1)} className="-ml-2 text-gray-500">
-                                        &larr; Zurück
-                                    </Button>
-                                </div>
-                                <CardTitle>Schritt 2: Importquelle wählen</CardTitle>
-                                <CardDescription>
-                                    Importieren Sie Bewertungen für <strong>{selectedProducts.length} ausgewählte Produkte</strong>.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div
-                                        className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'csv' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                                        onClick={() => setImportSource('csv')}
-                                    >
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="p-3 bg-white rounded-full shadow-sm">
-                                                <FileText className="h-6 w-6 text-blue-600" />
-                                            </div>
-                                            <h3 className="font-semibold text-lg">CSV Datei</h3>
+                    {/* IMPORT TAB */}
+                    <TabsContent value="import" className="space-y-6">
+                        {/* Step 1: Select Products */}
+                        {importStep === 1 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>1. Produkte auswählen</CardTitle>
+                                    <CardDescription>Wählen Sie die Produkte aus, für die Sie Bewertungen importieren möchten</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {loadingProducts ? (
+                                        <div className="flex justify-center py-8">
+                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                         </div>
-                                        <p className="text-sm text-gray-600">
-                                            Laden Sie eine CSV-Datei von Loox, Judge.me oder Shopify Reviews hoch.
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'url' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                                        onClick={() => setImportSource('url')}
-                                    >
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="p-3 bg-white rounded-full shadow-sm">
-                                                <LinkIcon className="h-6 w-6 text-green-600" />
-                                            </div>
-                                            <h3 className="font-semibold text-lg">URL Import</h3>
-                                        </div>
-                                        <p className="text-sm text-gray-600">
-                                            Importieren Sie direkt von AliExpress, Amazon oder anderen Shops via URL.
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${importSource === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                                        onClick={() => setImportSource('manual')}
-                                    >
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="p-3 bg-white rounded-full shadow-sm">
-                                                <PenTool className="h-6 w-6 text-purple-600" />
-                                            </div>
-                                            <h3 className="font-semibold text-lg">Manuell schreiben</h3>
-                                        </div>
-                                        <p className="text-sm text-gray-600">
-                                            Erstellen Sie Bewertungen manuell direkt hier im Dashboard.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {importSource === 'url' && (
-                                    <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4">
-                                        <h4 className="font-medium mb-4">URL eingeben</h4>
-                                        <div className="flex gap-3">
-                                            <Input
-                                                placeholder="https://aliexpress.com/item/..."
-                                                value={importUrl}
-                                                onChange={(e) => setImportUrl(e.target.value)}
-                                            />
-                                            <Button className="bg-green-600 hover:bg-green-700">
-                                                Import Starten
-                                            </Button>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            Die Bewertungen werden automatisch auf alle {selectedProducts.length} ausgewählten Produkte verteilt.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {importSource === 'csv' && (
-                                    <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4 text-center">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h4 className="font-medium">CSV Upload</h4>
-                                            <Button variant="outline" size="sm" onClick={downloadCsvTemplate}>
-                                                <Download className="h-4 w-4 mr-2" />
-                                                Vorlage herunterladen
-                                            </Button>
-                                        </div>
-                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:bg-gray-50 transition-colors cursor-pointer relative">
-                                            <input
-                                                type="file"
-                                                accept=".csv"
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                onChange={handleCsvUpload}
-                                            />
-                                            {isUploadingCsv ? (
-                                                <div className="flex flex-col items-center">
-                                                    <Loader2 className="h-10 w-10 text-blue-600 animate-spin mb-3" />
-                                                    <p className="font-medium">Wird hochgeladen...</p>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
-                                                    <p className="font-medium">CSV Datei hier ablegen oder klicken</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Unterstützt: Loox, Judge.me, Shopify</p>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {importSource === 'manual' && (
-                                    <div className="bg-white p-6 rounded-lg border animate-in fade-in slide-in-from-top-4">
-                                        <h4 className="font-medium mb-4">Bewertung schreiben</h4>
+                                    ) : (
                                         <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Name des Kunden</Label>
-                                                    <Input
-                                                        placeholder="Max Mustermann"
-                                                        value={manualReview.customer_name}
-                                                        onChange={(e) => setManualReview({ ...manualReview, customer_name: e.target.value })}
-                                                    />
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div className="text-sm text-gray-500">
+                                                    {selectedProducts.length} Produkte ausgewählt
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label>E-Mail (Optional)</Label>
+                                                <Button variant="outline" size="sm" onClick={toggleAll}>
+                                                    {selectedProducts.length === products.length ? 'Alle abwählen' : 'Alle auswählen'}
+                                                </Button>
+                                            </div>
+                                            <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
+                                                {products.map(product => (
+                                                    <div key={product.id} className="flex items-center p-3 hover:bg-gray-50">
+                                                        <Checkbox
+                                                            checked={selectedProducts.includes(product.id)}
+                                                            onCheckedChange={() => toggleProduct(product.id)}
+                                                            className="mr-4"
+                                                        />
+                                                        <div className="h-10 w-10 bg-gray-100 rounded-md mr-4 overflow-hidden">
+                                                            {product.images[0] && (
+                                                                <img src={product.images[0].src} alt="" className="h-full w-full object-cover" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-medium">{product.title}</h4>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-end pt-4">
+                                                <Button
+                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                    disabled={selectedProducts.length === 0}
+                                                    onClick={() => setImportStep(2)}
+                                                >
+                                                    Weiter zu Schritt 2
+                                                    <ArrowRight className="h-4 w-4 ml-2" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Step 2: Choose Source */}
+                        {importStep === 2 && (
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-4">
+                                        <Button variant="ghost" size="icon" onClick={() => setImportStep(1)}>
+                                            <ArrowRight className="h-4 w-4 rotate-180" />
+                                        </Button>
+                                        <div>
+                                            <CardTitle>2. Quelle wählen</CardTitle>
+                                            <CardDescription>Woher möchten Sie die Bewertungen importieren?</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-blue-500 ${importSource === 'csv' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
+                                            onClick={() => setImportSource('csv')}
+                                        >
+                                            <FileText className="h-8 w-8 text-blue-600 mb-4" />
+                                            <h3 className="font-semibold mb-2">CSV Datei</h3>
+                                            <p className="text-sm text-gray-500">Laden Sie eine CSV-Datei mit Bewertungen hoch</p>
+                                        </div>
+
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-purple-500 ${importSource === 'url' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
+                                            onClick={() => setImportSource('url')}
+                                        >
+                                            <LinkIcon className="h-8 w-8 text-purple-600 mb-4" />
+                                            <h3 className="font-semibold mb-2">AliExpress / Amazon</h3>
+                                            <p className="text-sm text-gray-500">Importieren Sie per URL von anderen Marktplätzen</p>
+                                        </div>
+
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-green-500 ${importSource === 'manual' ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}
+                                            onClick={() => setImportSource('manual')}
+                                        >
+                                            <PenTool className="h-8 w-8 text-green-600 mb-4" />
+                                            <h3 className="font-semibold mb-2">Manuell erstellen</h3>
+                                            <p className="text-sm text-gray-500">Schreiben Sie eine Bewertung selbst</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Source Content */}
+                                    <div className="mt-8">
+                                        {importSource === 'url' && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                                                <div className="flex gap-2">
                                                     <Input
-                                                        placeholder="max@example.com"
-                                                        value={manualReview.customer_email}
-                                                        onChange={(e) => setManualReview({ ...manualReview, customer_email: e.target.value })}
+                                                        placeholder="https://aliexpress.com/item/..."
+                                                        value={importUrl}
+                                                        onChange={(e) => setImportUrl(e.target.value)}
                                                     />
+                                                    <Button className="bg-purple-600 hover:bg-purple-700">
+                                                        Importieren
+                                                    </Button>
+                                                </div>
+                                                <p className="text-sm text-gray-500">
+                                                    Unterstützt aktuell AliExpress und Amazon Produkt-URLs.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {importSource === 'csv' && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors relative">
+                                                    <Upload className="h-10 w-10 text-gray-400 mx-auto mb-4" />
+                                                    <p className="text-sm text-gray-600 mb-2">
+                                                        CSV Datei hier ablegen oder klicken zum Auswählen
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        Max. 5MB
+                                                    </p>
+                                                    <input
+                                                        type="file"
+                                                        accept=".csv"
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                        onChange={handleCsvUpload}
+                                                    />
+                                                    {isUploadingCsv ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <Loader2 className="h-6 w-6 animate-spin text-blue-600 mt-2" />
+                                                            <span className="text-xs text-blue-600 mt-1">Wird hochgeladen...</span>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <Button variant="link" className="text-blue-600 p-0" onClick={downloadCsvTemplate}>
+                                                        <Download className="h-4 w-4 mr-2" />
+                                                        Beispiel-CSV herunterladen
+                                                    </Button>
                                                 </div>
                                             </div>
+                                        )}
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Bewertung (Sterne)</Label>
-                                                    <select
-                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        value={manualReview.rating}
-                                                        onChange={(e) => setManualReview({ ...manualReview, rating: parseInt(e.target.value) })}
-                                                    >
-                                                        <option value="5">5 Sterne</option>
-                                                        <option value="4">4 Sterne</option>
-                                                        <option value="3">3 Sterne</option>
-                                                        <option value="2">2 Sterne</option>
-                                                        <option value="1">1 Stern</option>
-                                                    </select>
+                                        {importSource === 'manual' && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 max-w-2xl mx-auto">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Kundenname</Label>
+                                                        <Input
+                                                            placeholder="Max Mustermann"
+                                                            value={manualReview.customer_name}
+                                                            onChange={(e) => setManualReview({ ...manualReview, customer_name: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>E-Mail (Optional)</Label>
+                                                        <Input
+                                                            placeholder="max@example.com"
+                                                            value={manualReview.customer_email}
+                                                            onChange={(e) => setManualReview({ ...manualReview, customer_email: e.target.value })}
+                                                        />
+                                                    </div>
                                                 </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>Bewertung</Label>
+                                                    <div className="flex gap-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                onClick={() => setManualReview({ ...manualReview, rating: star })}
+                                                                className="focus:outline-none"
+                                                            >
+                                                                <Star
+                                                                    className={`h-6 w-6 ${star <= manualReview.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                                                                />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
                                                 <div className="space-y-2">
                                                     <Label>Datum</Label>
                                                     <Input
@@ -855,214 +749,176 @@ export default function ReviewsPage() {
                                                         onChange={(e) => setManualReview({ ...manualReview, date: e.target.value })}
                                                     />
                                                 </div>
-                                            </div>
 
-                                            <div className="space-y-2">
-                                                <Label>Titel der Bewertung</Label>
-                                                <Input
-                                                    placeholder="Super Produkt!"
-                                                    value={manualReview.title}
-                                                    onChange={(e) => setManualReview({ ...manualReview, title: e.target.value })}
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label>Inhalt</Label>
-                                                <Textarea
-                                                    placeholder="Ich bin sehr zufrieden mit..."
-                                                    rows={4}
-                                                    value={manualReview.content}
-                                                    onChange={(e) => setManualReview({ ...manualReview, content: e.target.value })}
-                                                />
-                                            </div>
-
-                                            <div className="pt-2 flex justify-end">
-                                                <Button
-                                                    className="bg-blue-600 hover:bg-blue-700"
-                                                    onClick={handleManualSubmit}
-                                                    disabled={isSubmittingManual}
-                                                >
-                                                    {isSubmittingManual ? (
-                                                        <>
-                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                            Speichern...
-                                                        </>
-                                                    ) : (
-                                                        'Bewertung hinzufügen'
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
-
-                {/* WIDGETS TAB */}
-                <TabsContent value="widgets" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Widget Design</CardTitle>
-                            <CardDescription>Passen Sie das Aussehen Ihrer Bewertungen an</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {/* Settings Sidebar */}
-                                <div className="space-y-6 border-r pr-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Primärfarbe</label>
-                                        <div className="flex gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-black cursor-pointer ring-2 ring-offset-2 ring-black"></div>
-                                            <div className="w-8 h-8 rounded-full bg-blue-600 cursor-pointer"></div>
-                                            <div className="w-8 h-8 rounded-full bg-red-500 cursor-pointer"></div>
-                                            <div className="w-8 h-8 rounded-full bg-green-500 cursor-pointer"></div>
-                                            <div className="w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer">
-                                                <Plus className="h-4 w-4 text-gray-400" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Layout</label>
-                                        <select className="w-full border rounded-md h-10 px-3">
-                                            <option>Liste (Standard)</option>
-                                            <option>Raster (Grid)</option>
-                                            <option>Karussell (Slider)</option>
-                                            <option>Masonry</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Preview Area */}
-                                <div className="col-span-2 bg-gray-50 p-6 rounded-lg border border-dashed">
-                                    <h4 className="text-sm font-medium text-gray-500 mb-4 uppercase tracking-wider">Vorschau</h4>
-
-                                    {/* Mock Widget */}
-                                    <div className="bg-white p-6 rounded-lg shadow-sm max-w-md mx-auto">
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="text-4xl font-bold text-gray-900">4.8</div>
-                                            <div>
-                                                <div className="flex text-yellow-400 mb-1">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star key={i} className="h-5 w-5 fill-current" />
-                                                    ))}
+                                                <div className="space-y-2">
+                                                    <Label>Titel (Optional)</Label>
+                                                    <Input
+                                                        placeholder="Tolles Produkt!"
+                                                        value={manualReview.title}
+                                                        onChange={(e) => setManualReview({ ...manualReview, title: e.target.value })}
+                                                    />
                                                 </div>
-                                                <p className="text-sm text-gray-500">Basierend auf 128 Bewertungen</p>
+
+                                                <div className="space-y-2">
+                                                    <Label>Inhalt</Label>
+                                                    <Textarea
+                                                        placeholder="Ich bin sehr zufrieden mit..."
+                                                        className="min-h-[100px]"
+                                                        value={manualReview.content}
+                                                        onChange={(e) => setManualReview({ ...manualReview, content: e.target.value })}
+                                                    />
+                                                </div>
+
+                                                <div className="pt-2 flex justify-end">
+                                                    <Button
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                        onClick={handleManualSubmit}
+                                                        disabled={isSubmittingManual}
+                                                    >
+                                                        {isSubmittingManual ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                Speichern...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle className="h-4 w-4 mr-2" />
+                                                                Bewertung erstellen
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </TabsContent>
+
+                    {/* WIDGETS TAB */}
+                    <TabsContent value="widgets">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Settings */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Widget Design</CardTitle>
+                                    <CardDescription>Passen Sie das Aussehen Ihrer Widgets an</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label>Primärfarbe</Label>
+                                        <div className="flex gap-2">
+                                            {['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#000000'].map((color) => (
+                                                <div
+                                                    key={color}
+                                                    className="h-8 w-8 rounded-full cursor-pointer border-2 border-white ring-1 ring-gray-200"
+                                                    style={{ backgroundColor: color }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Layout</Label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="border-2 border-blue-600 bg-blue-50 rounded-lg p-4 cursor-pointer text-center">
+                                                <div className="h-12 bg-white rounded mb-2 border border-blue-100"></div>
+                                                <span className="text-sm font-medium text-blue-700">Liste</span>
+                                            </div>
+                                            <div className="border rounded-lg p-4 cursor-pointer text-center hover:bg-gray-50">
+                                                <div className="grid grid-cols-2 gap-1 mb-2">
+                                                    <div className="h-12 bg-gray-100 rounded"></div>
+                                                    <div className="h-12 bg-gray-100 rounded"></div>
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-600">Raster</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Preview */}
+                            <Card className="bg-gray-50/50">
+                                <CardHeader>
+                                    <CardTitle>Vorschau</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="text-center">
+                                                <div className="text-4xl font-bold text-gray-900">4.8</div>
+                                                <div className="flex text-yellow-400 my-1">
+                                                    <Star className="h-4 w-4 fill-current" />
+                                                    <Star className="h-4 w-4 fill-current" />
+                                                    <Star className="h-4 w-4 fill-current" />
+                                                    <Star className="h-4 w-4 fill-current" />
+                                                    <Star className="h-4 w-4 fill-current" />
+                                                </div>
+                                                <div className="text-xs text-gray-500">128 Reviews</div>
+                                            </div>
+                                            <div className="flex-1 space-y-1">
+                                                {[5, 4, 3, 2, 1].map((star) => (
+                                                    <div key={star} className="flex items-center gap-2 text-xs">
+                                                        <span className="w-3">{star}</span>
+                                                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-yellow-400 rounded-full"
+                                                                style={{ width: star === 5 ? '70%' : star === 4 ? '20%' : '5%' }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="border-b pb-4">
-                                                <div className="flex justify-between mb-2">
+                                                <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                                                        <span className="font-medium">Anna S.</span>
+                                                        <div className="h-8 w-8 rounded-full bg-gray-200"></div>
+                                                        <div>
+                                                            <div className="font-medium text-sm">Max M.</div>
+                                                            <div className="flex text-yellow-400 text-xs">
+                                                                <Star className="h-3 w-3 fill-current" />
+                                                                <Star className="h-3 w-3 fill-current" />
+                                                                <Star className="h-3 w-3 fill-current" />
+                                                                <Star className="h-3 w-3 fill-current" />
+                                                                <Star className="h-3 w-3 fill-current" />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     <span className="text-xs text-gray-400">vor 2 Tagen</span>
                                                 </div>
-                                                <div className="flex text-yellow-400 mb-2">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star key={i} className="h-3 w-3 fill-current" />
-                                                    ))}
-                                                </div>
-                                                <p className="text-sm text-gray-600">Super Qualität, bin sehr zufrieden!</p>
-                                                <div className="mt-3 flex gap-2">
-                                                    <div className="w-16 h-16 bg-gray-100 rounded-md"></div>
-                                                    <div className="w-16 h-16 bg-gray-100 rounded-md"></div>
-                                                </div>
+                                                <p className="text-sm text-gray-600">
+                                                    Super Produkt, bin sehr zufrieden mit der Qualität und dem schnellen Versand!
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
+
+                    {/* EMAILS TAB */}
+                    <TabsContent value="emails">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>E-Mail Automation</CardTitle>
+                                <CardDescription>Senden Sie automatische Bewertungsanfragen</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-center py-12 text-gray-500">
+                                    <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                    <h3 className="text-lg font-medium text-gray-900">Bald verfügbar</h3>
+                                    <p className="mt-1">Die E-Mail Automation wird in Kürze freigeschaltet.</p>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* EMAILS TAB */}
-                <TabsContent value="emails" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>E-Mail Automation</CardTitle>
-                            <CardDescription>Senden Sie automatische Bewertungsanfragen nach dem Kauf</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 border-blue-100">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-white rounded-full shadow-sm">
-                                            <Mail className="h-6 w-6 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-medium text-blue-900">Automatische Anfragen sind aktiv</h4>
-                                            <p className="text-sm text-blue-700">E-Mails werden 14 Tage nach Erfüllung versendet.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-blue-900">Status:</span>
-                                        <Badge className="bg-green-500 hover:bg-green-600">Aktiv</Badge>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h4 className="font-medium">Timing</h4>
-                                        <div className="flex gap-4 items-center">
-                                            <Input type="number" defaultValue={14} className="w-24" />
-                                            <span className="text-gray-600">Tage nach Fulfillment senden</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h4 className="font-medium">Belohnung (Incentive)</h4>
-                                        <div className="flex gap-4 items-center">
-                                            <Input type="number" defaultValue={10} className="w-24" />
-                                            <span className="text-gray-600">% Rabatt für Foto-Reviews</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
-        </main>
-        </div >
-    )
-}
-
-function TrendingUp({ className }: { className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-            <polyline points="17 6 23 6 23 12" />
-        </svg>
-    )
-}
-
-function Plus({ className }: { className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </main>
+        </div>
     )
 }
