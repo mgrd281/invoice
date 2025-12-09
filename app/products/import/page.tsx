@@ -33,7 +33,8 @@ import {
     Trash2,
     Copy,
     Edit,
-    Clipboard
+    Clipboard,
+    Plus
 } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
@@ -455,48 +456,87 @@ export default function ProductImportPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <div className="space-y-2">
-                                        <div className="relative group">
-                                            <Textarea
-                                                id="url"
-                                                placeholder="https://shop.beispiel.de/produkt/t-shirt&#10;https://shop.beispiel.de/produkt/hose&#10;(Eine URL pro Zeile für Massenimport)"
-                                                className="pl-11 pr-24 min-h-[120px] text-lg bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-inner resize-y py-4"
-                                                value={url}
-                                                onChange={(e) => setUrl(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && e.ctrlKey && handleStartMigration()}
-                                            />
-                                            <Globe className="absolute left-4 top-4 h-6 w-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                            <div className="absolute right-2 top-2 flex items-center space-x-1">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="h-10 px-2 text-gray-400 hover:text-blue-600"
-                                                    onClick={async () => {
-                                                        try {
-                                                            const text = await navigator.clipboard.readText()
-                                                            if (text) setUrl(text)
-                                                        } catch (err) {
-                                                            console.error('Failed to read clipboard', err)
-                                                            showToast("Konnte nicht aus der Zwischenablage lesen", "error")
-                                                        }
-                                                    }}
-                                                    title="Aus Zwischenablage einfügen"
-                                                >
-                                                    <Clipboard className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    className="h-10 px-4 bg-blue-600 hover:bg-blue-700 transition-all shadow-md"
-                                                    disabled={!url || isImporting}
-                                                    onClick={handleStartMigration}
-                                                >
-                                                    {isImporting ? (
-                                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <ArrowRight className="h-4 w-4" />
+                                    <div className="space-y-3">
+                                        <Label className="text-gray-600 font-medium">Produkt URLs</Label>
+
+                                        {/* Dynamic URL Inputs */}
+                                        <div className="space-y-3">
+                                            {url.split('\n').map((u, index) => (
+                                                <div key={index} className="relative group animate-in fade-in slide-in-from-left-4 duration-300">
+                                                    <Input
+                                                        placeholder="https://shop.beispiel.de/produkt/t-shirt"
+                                                        className="pl-11 pr-12 h-12 text-base bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-sm"
+                                                        value={u}
+                                                        onChange={(e) => {
+                                                            const newUrls = url.split('\n')
+                                                            newUrls[index] = e.target.value
+                                                            setUrl(newUrls.join('\n'))
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                e.preventDefault()
+                                                                // Add new field on Enter
+                                                                setUrl(url + '\n')
+                                                            }
+                                                            // Delete empty field on Backspace if it's not the only one
+                                                            if (e.key === 'Backspace' && u === '' && url.split('\n').length > 1) {
+                                                                e.preventDefault()
+                                                                const newUrls = url.split('\n')
+                                                                newUrls.splice(index, 1)
+                                                                setUrl(newUrls.join('\n'))
+                                                            }
+                                                        }}
+                                                    />
+                                                    <Globe className="absolute left-4 top-3 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+
+                                                    {/* Delete Button (only if more than 1) */}
+                                                    {url.split('\n').length > 1 && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const newUrls = url.split('\n')
+                                                                newUrls.splice(index, 1)
+                                                                setUrl(newUrls.join('\n'))
+                                                            }}
+                                                            className="absolute right-3 top-3 text-gray-400 hover:text-red-500 transition-colors"
+                                                            title="Entfernen"
+                                                        >
+                                                            <Trash2 className="h-5 w-5" />
+                                                        </button>
                                                     )}
-                                                </Button>
-                                            </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Add Button */}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setUrl(url + '\n')}
+                                            className="w-full border-dashed border-2 border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600 h-10"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Weitere URL hinzufügen
+                                        </Button>
+
+                                        <div className="flex justify-end pt-2">
+                                            <Button
+                                                size="lg"
+                                                className="bg-blue-600 hover:bg-blue-700 transition-all shadow-md px-8"
+                                                disabled={!url.trim() || isImporting}
+                                                onClick={handleStartMigration}
+                                            >
+                                                {isImporting ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                        Importiere...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Import Starten
+                                                        <ArrowRight className="h-4 w-4 ml-2" />
+                                                    </>
+                                                )}
+                                            </Button>
                                         </div>
                                     </div>
 

@@ -106,18 +106,27 @@ export async function POST(request: NextRequest) {
             return data
         }
 
+        // Helper for timeout
+        const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 15000) => {
+            const controller = new AbortController()
+            const id = setTimeout(() => controller.abort(), timeout)
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal })
+                clearTimeout(id)
+                return response
+            } catch (error) {
+                clearTimeout(id)
+                throw error
+            }
+        }
+
         if (url.includes('amazon') || url.includes('amzn') || url.includes('otto.de')) {
             const vendor = url.includes('otto.de') ? 'Otto' : 'Amazon'
             console.log(`Detected ${vendor} URL, initiating proxy waterfall...`)
 
             // Priority 0: Bright Data (The Heavy Lifter)
-            // Note: Bright Data usually requires a Zone Name and Customer ID for proxy usage.
-            // Since we only have an API Key, we assume this might be for a specific API endpoint or future config.
-            // For now, we log it. To fully enable, we need the Zone Name.
             if (BRIGHTDATA_API_KEY) {
                 console.log('Bright Data Key detected. (Requires Zone Name for full Proxy implementation)')
-                // Placeholder for Bright Data Proxy logic:
-                // const proxyUrl = `http://user-zone-ZONE_NAME:${BRIGHTDATA_API_KEY}@brd.superproxy.io:22225`
             }
 
             // Priority 1: ZenRows
@@ -125,7 +134,7 @@ export async function POST(request: NextRequest) {
                 try {
                     console.log('Trying Provider 1: ZenRows...')
                     const zenRowsUrl = `https://api.zenrows.com/v1/?apikey=${ZENROWS_API_KEY}&url=${encodeURIComponent(url)}&js_render=true&antibot=true&premium_proxy=true`
-                    const response = await fetch(zenRowsUrl)
+                    const response = await fetchWithTimeout(zenRowsUrl, {}, 20000) // 20s timeout
                     if (response.ok) {
                         const html = await response.text()
                         const productData = parseProductData(cheerio.load(html), vendor)
@@ -139,7 +148,7 @@ export async function POST(request: NextRequest) {
                 try {
                     console.log('Trying Provider 2: ScrapingBee...')
                     const sbUrl = `https://app.scrapingbee.com/api/v1/?api_key=${SCRAPINGBEE_API_KEY}&url=${encodeURIComponent(url)}&render_js=true&premium_proxy=true&country_code=de`
-                    const response = await fetch(sbUrl)
+                    const response = await fetchWithTimeout(sbUrl, {}, 20000)
                     if (response.ok) {
                         const html = await response.text()
                         const productData = parseProductData(cheerio.load(html), vendor)
@@ -153,7 +162,7 @@ export async function POST(request: NextRequest) {
                 try {
                     console.log('Trying Provider 3: ScrapingAnt...')
                     const saUrl = `https://api.scrapingant.com/v2/general?x-api-key=${SCRAPINGANT_API_KEY}&url=${encodeURIComponent(url)}&browser=true`
-                    const response = await fetch(saUrl)
+                    const response = await fetchWithTimeout(saUrl, {}, 20000)
                     if (response.ok) {
                         const html = await response.text()
                         const productData = parseProductData(cheerio.load(html), vendor)
@@ -166,9 +175,8 @@ export async function POST(request: NextRequest) {
             if (SCRAPERAPI_KEY) {
                 try {
                     console.log('Trying Provider 4: ScraperAPI...')
-                    // ScraperAPI format: http://api.scraperapi.com/?api_key=KEY&url=URL&render=true
                     const scraperApiUrl = `http://api.scraperapi.com/?api_key=${SCRAPERAPI_KEY}&url=${encodeURIComponent(url)}&render=true&country_code=de`
-                    const response = await fetch(scraperApiUrl)
+                    const response = await fetchWithTimeout(scraperApiUrl, {}, 20000)
                     if (response.ok) {
                         const html = await response.text()
                         const productData = parseProductData(cheerio.load(html), vendor)

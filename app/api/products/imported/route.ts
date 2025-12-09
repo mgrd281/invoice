@@ -11,15 +11,14 @@ export async function GET(request: NextRequest) {
 
         const api = new ShopifyAPI(shopifySettings)
 
-        // Fetch products (limit 250 for now)
-        const products = await api.getProducts({ limit: 250 })
+        // Fetch products with tag "Imported" directly from Shopify
+        // This is much more efficient and avoids the 250 limit issue for non-imported products
+        const products = await api.getProducts({
+            limit: 250,
+            tags: 'Imported'
+        })
 
-        // Filter for products with tag "Imported" (case insensitive)
-        const importedProducts = products.filter(p =>
-            p.tags && p.tags.toLowerCase().includes('imported')
-        )
-
-        return NextResponse.json({ success: true, products: importedProducts })
+        return NextResponse.json({ success: true, products })
 
     } catch (error) {
         console.error('Error fetching imported products:', error)
