@@ -44,6 +44,8 @@ export default function ProductImportPage() {
     // Preview State
     const [previewData, setPreviewData] = useState<any>(null)
 
+    const [isSaving, setIsSaving] = useState(false)
+
     const handleStartMigration = async () => {
         if (!url || !settings.acceptTerms) return
 
@@ -86,9 +88,35 @@ export default function ProductImportPage() {
     const handleSaveProduct = async () => {
         if (!previewData) return
 
-        // Here you would implement the logic to save to your own database or Shopify store
-        // For now, we'll just show a success message
-        alert('Product would be saved to your store now! (Backend implementation pending)')
+        setIsSaving(true)
+        try {
+            const response = await fetch('/api/products/import/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    product: previewData,
+                    settings: settings
+                })
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to save product')
+            }
+
+            const data = await response.json()
+            alert(`Success! Product created in Shopify with ID: ${data.product.id}`)
+
+            // Reset or redirect? For now, maybe just clear preview
+            // setPreviewData(null)
+            // setUrl('')
+
+        } catch (error) {
+            console.error('Save error:', error)
+            alert('Error saving product: ' + (error instanceof Error ? error.message : 'Unknown error'))
+        } finally {
+            setIsSaving(false)
+        }
     }
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-12">
@@ -306,8 +334,17 @@ export default function ProductImportPage() {
                                                 <Button className="w-full" variant="outline">
                                                     <ExternalLink className="w-4 h-4 mr-2" /> View Full Details
                                                 </Button>
-                                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveProduct}>
-                                                    <CheckCircle2 className="w-4 h-4 mr-2" /> Import to Store
+                                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveProduct} disabled={isSaving}>
+                                                    {isSaving ? (
+                                                        <span className="flex items-center">
+                                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                            Saving...
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center">
+                                                            <CheckCircle2 className="w-4 h-4 mr-2" /> Import to Store
+                                                        </span>
+                                                    )}
                                                 </Button>
                                             </div>
                                         </div>

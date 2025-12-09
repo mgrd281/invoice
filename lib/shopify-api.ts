@@ -442,6 +442,26 @@ export class ShopifyAPI {
   }
 
   /**
+   * Create a new product in Shopify
+   */
+  async createProduct(productData: any): Promise<ShopifyProduct> {
+    try {
+      console.log('🚀 Creating new product in Shopify...')
+      const response = await this.makeRequest('/products.json', {
+        method: 'POST',
+        body: JSON.stringify({ product: productData })
+      })
+
+      const data = await response.json()
+      console.log('✅ Product created successfully:', data.product?.id)
+      return data.product
+    } catch (error) {
+      console.error('Error creating Shopify product:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get products from Shopify
    */
   async getProducts(params: {
