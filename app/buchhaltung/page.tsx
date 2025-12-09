@@ -28,7 +28,8 @@ import {
   Upload,
   Trash2,
   Save,
-  Archive
+  Archive,
+  Briefcase
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
@@ -321,6 +322,12 @@ export default function BuchhaltungPage() {
               </h1>
             </div>
             <div className="flex space-x-2">
+              <Link href="/buchhaltung/steuerberater">
+                <Button variant="outline" className="flex items-center space-x-2 border-blue-200 text-blue-700 hover:bg-blue-50">
+                  <Briefcase className="w-4 h-4" />
+                  <span>Steuerberater</span>
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 onClick={handleRefresh}
@@ -679,236 +686,261 @@ export default function BuchhaltungPage() {
           </TabsContent>
 
           <TabsContent value="voranmeldung">
-            <div className="space-y-6">
-              {/* 1. KPIs */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
+            <div className="space-y-8">
+              {/* 1. Extended KPIs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Einnahmen Breakdown */}
+                <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Einnahmen</CardTitle>
+                    <CardTitle className="text-sm font-medium text-green-800">Einnahmen</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
+                    <div className="text-2xl font-bold text-green-600 mb-2">
                       €{summary?.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
                     </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Ausgaben</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-red-600">
-                      €{summary?.totalExpenses.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                    <div className="space-y-1 text-xs text-green-700/80">
+                      <div className="flex justify-between">
+                        <span>Steuerpflichtig:</span>
+                        <span className="font-medium">€{(summary?.totalRevenue || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Steuerfrei:</span>
+                        <span className="font-medium">€0,00</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+
+                {/* Ausgaben Breakdown */}
+                <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Steuerpflichtiger Gewinn/Verlust</CardTitle>
+                    <CardTitle className="text-sm font-medium text-red-800">Ausgaben</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className={`text-2xl font-bold ${summary && summary.netIncome >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                    <div className="text-2xl font-bold text-red-600 mb-2">
+                      €{summary?.totalExpenses.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="space-y-1 text-xs text-red-700/80">
+                      <div className="flex justify-between">
+                        <span>Abzugsfähig:</span>
+                        <span className="font-medium">€{(summary?.totalExpenses || 0).toLocaleString('de-DE', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Nicht abzugsfähig:</span>
+                        <span className="font-medium">€0,00</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Gewinn/Verlust */}
+                <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-blue-800">Steuerpfl. Gewinn</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold mb-2 ${summary && summary.netIncome >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
                       €{summary?.netIncome.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                    </div>
+                    <p className="text-xs text-blue-700/80">
+                      Einnahmen - Ausgaben
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Zu versteuerndes Einkommen */}
+                <Card className="bg-white border-dashed border-2 border-gray-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-600">Zu versteuerndes Einkommen</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-2xl font-bold text-gray-800">
+                        €{summary?.netIncome.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        className="h-6 text-xs w-24"
+                        placeholder="+ / - Betrag"
+                        type="number"
+                      />
+                      <span className="text-xs text-gray-500">Korrektur</span>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* 2. Additional Income */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Zusätzliche Einkünfte</CardTitle>
-                  <CardDescription>Erfassen Sie hier weitere einkommensteuerrelevante Beträge.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4 items-end mb-6">
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                      <Label htmlFor="income-desc">Beschreibung</Label>
-                      <Input
-                        id="income-desc"
-                        value={newIncome.description}
-                        onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })}
-                        placeholder="z.B. Mieteinnahmen"
-                      />
-                    </div>
-                    <div className="grid w-full max-w-xs items-center gap-1.5">
-                      <Label htmlFor="income-amount">Betrag (€)</Label>
-                      <Input
-                        id="income-amount"
-                        type="number"
-                        value={newIncome.amount}
-                        onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="grid w-full max-w-xs items-center gap-1.5">
-                      <Label htmlFor="income-date">Datum</Label>
-                      <Input
-                        id="income-date"
-                        type="date"
-                        value={newIncome.date}
-                        onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
-                      />
-                    </div>
-                    <Button onClick={handleAddIncome}>
-                      <Plus className="w-4 h-4 mr-2" /> Hinzufügen
-                    </Button>
-                  </div>
-
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Datum</TableHead>
-                        <TableHead>Beschreibung</TableHead>
-                        <TableHead className="text-right">Betrag</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {additionalIncomes.map((inc) => (
-                        <TableRow key={inc.id}>
-                          <TableCell>{new Date(inc.date).toLocaleDateString('de-DE')}</TableCell>
-                          <TableCell>{inc.description}</TableCell>
-                          <TableCell className="text-right">€{Number(inc.amount).toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                      {additionalIncomes.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center text-gray-500">Keine Einträge vorhanden</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              {/* 3. Receipt Upload */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Beleg-Upload</CardTitle>
-                  <CardDescription>Laden Sie Rechnungen und Belege für die Voranmeldung hoch.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                    <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
-                      <h3 className="font-medium">Neuer Upload</h3>
-                      <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="file">Datei (PDF, JPG, PNG, DOCX, XLSX)</Label>
-                        <Input
-                          id="file"
+              {/* 2. Modern Upload System */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Upload Area */}
+                <div className="lg:col-span-1 space-y-6">
+                  <Card className="h-full">
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Upload className="h-5 w-5 mr-2 text-blue-600" />
+                        Beleg hochladen
+                      </CardTitle>
+                      <CardDescription>Drag & Drop oder Klicken zum Auswählen</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div
+                        className="border-2 border-dashed border-blue-200 rounded-xl bg-blue-50/50 p-8 text-center hover:bg-blue-50 transition-colors cursor-pointer"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        <input
+                          id="file-upload"
                           type="file"
+                          className="hidden"
                           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                          accept=".pdf,.jpg,.png,.docx,.xlsx"
                         />
+                        {uploadFile ? (
+                          <div className="space-y-2">
+                            <div className="h-12 w-12 bg-blue-100 rounded-lg mx-auto flex items-center justify-center">
+                              <FileText className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <p className="font-medium text-blue-900 truncate px-2">{uploadFile.name}</p>
+                            <p className="text-xs text-blue-600">{(uploadFile.size / 1024).toFixed(0)} KB</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="h-12 w-12 bg-white rounded-full shadow-sm mx-auto flex items-center justify-center">
+                              <Upload className="h-6 w-6 text-blue-400" />
+                            </div>
+                            <p className="font-medium text-gray-900">Datei auswählen</p>
+                            <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX</p>
+                          </div>
+                        )}
                       </div>
-                      <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="upload-desc">Beschreibung / Notiz</Label>
-                        <Input
-                          id="upload-desc"
-                          value={uploadMeta.description}
-                          onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
-                          placeholder="Kurze Beschreibung"
-                        />
-                      </div>
-                      <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="upload-cat">Zuordnung</Label>
-                        <Select
-                          value={uploadMeta.category}
-                          onValueChange={(val) => setUploadMeta({ ...uploadMeta, category: val })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="EXPENSE">Ausgabe</SelectItem>
-                            <SelectItem value="INCOME">Einnahme</SelectItem>
-                            <SelectItem value="OTHER">Sonstiges</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button onClick={handleUploadReceipt} disabled={!uploadFile} className="w-full">
-                        <Upload className="w-4 h-4 mr-2" /> Hochladen
-                      </Button>
-                    </div>
 
-                    <div>
-                      <h3 className="font-medium mb-4">Hochgeladene Belege</h3>
-                      <div className="border rounded-md">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Datei</TableHead>
-                              <TableHead>Datum</TableHead>
-                              <TableHead>Typ</TableHead>
-                              <TableHead>Notiz</TableHead>
-                              <TableHead></TableHead>
+                      {uploadFile && (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Beschreibung</Label>
+                            <Input
+                              value={uploadMeta.description}
+                              onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
+                              placeholder="Was wurde gekauft?"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Kategorie</Label>
+                            <Select
+                              value={uploadMeta.category}
+                              onValueChange={(v) => setUploadMeta({ ...uploadMeta, category: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="EXPENSE">Ausgabe</SelectItem>
+                                <SelectItem value="INCOME">Einnahme</SelectItem>
+                                <SelectItem value="OTHER">Sonstiges</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button onClick={handleUploadReceipt} className="w-full bg-blue-600 hover:bg-blue-700">
+                            Hochladen speichern
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Uploaded List */}
+                <div className="lg:col-span-2">
+                  <Card className="h-full">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle>Beleg-Eingang</CardTitle>
+                        <CardDescription>Zuletzt hochgeladene Dokumente</CardDescription>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Filter
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Datei</TableHead>
+                            <TableHead>Datum</TableHead>
+                            <TableHead>Kategorie</TableHead>
+                            <TableHead>Beschreibung</TableHead>
+                            <TableHead className="text-right">Aktion</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {receipts.map((receipt) => (
+                            <TableRow key={receipt.id}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center space-x-2">
+                                  <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                  </div>
+                                  <span className="truncate max-w-[150px]" title={receipt.filename}>{receipt.filename}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="text-xs">
+                                  {receipt.category === 'EXPENSE' ? 'Ausgabe' : receipt.category === 'INCOME' ? 'Einnahme' : 'Sonstiges'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-gray-500">{receipt.description}</TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="sm">
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {receipts.map((receipt) => (
-                              <TableRow key={receipt.id}>
-                                <TableCell className="font-medium truncate max-w-[150px]" title={receipt.filename}>
-                                  {receipt.filename}
-                                </TableCell>
-                                <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
-                                <TableCell>
-                                  <Badge variant="outline">{receipt.category}</Badge>
-                                </TableCell>
-                                <TableCell className="truncate max-w-[150px]" title={receipt.description}>
-                                  {receipt.description}
-                                </TableCell>
-                                <TableCell>
-                                  <a href={receipt.url} target="_blank" rel="noopener noreferrer">
-                                    <Button variant="ghost" size="sm">
-                                      <Download className="w-4 h-4" />
-                                    </Button>
-                                  </a>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {receipts.length === 0 && (
-                              <TableRow>
-                                <TableCell colSpan={5} className="text-center text-gray-500 py-4">Keine Belege hochgeladen</TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                          ))}
+                          {receipts.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                <div className="flex flex-col items-center justify-center">
+                                  <div className="h-12 w-12 bg-gray-50 rounded-full flex items-center justify-center mb-2">
+                                    <FileText className="h-6 w-6 text-gray-300" />
+                                  </div>
+                                  <p>Keine Belege vorhanden</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
 
-              {/* 4. Import / Export */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Daten Import & Export</CardTitle>
-                  <CardDescription>Exportieren Sie Daten für Ihren Steuerberater oder importieren Sie externe Daten.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => handleExport('csv')}>
-                        <FileText className="w-4 h-4 mr-2" /> CSV Export
-                      </Button>
-                      <Button variant="outline" onClick={() => handleExport('excel')}>
-                        <BarChart3 className="w-4 h-4 mr-2" /> Excel Export
-                      </Button>
-                      <Button variant="outline" onClick={() => handleExport('pdf')}>
-                        <FileText className="w-4 h-4 mr-2" /> PDF Bericht
-                      </Button>
+              {/* 3. Import System (Teaser) */}
+              <Card className="bg-gray-50 border-dashed">
+                <CardContent className="p-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-white rounded-lg border shadow-sm">
+                      <Database className="h-6 w-6 text-blue-600" />
                     </div>
-                    <Separator orientation="vertical" className="h-10" />
-                    <div className="flex gap-2 items-center">
-                      <Button variant="secondary">
-                        <Upload className="w-4 h-4 mr-2" /> Importieren (CSV/Excel)
-                      </Button>
+                    <div>
+                      <h3 className="font-medium text-gray-900">Daten importieren?</h3>
+                      <p className="text-sm text-gray-500">Importieren Sie Buchungen aus CSV oder Excel Dateien.</p>
                     </div>
                   </div>
+                  <Button variant="outline">
+                    Import starten
+                  </Button>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+
+        </Tabs >
+      </div >
+    </div >
   )
 }
