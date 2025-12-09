@@ -30,7 +30,8 @@ import {
     MoreHorizontal,
     Trash2,
     Copy,
-    Edit
+    Edit,
+    Clipboard
 } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
@@ -342,12 +343,30 @@ export default function ProductImportPage() {
                                             <Input
                                                 id="url"
                                                 placeholder="https://shop.beispiel.de/produkt/t-shirt"
-                                                className="pl-11 h-14 text-lg bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-inner"
+                                                className="pl-11 pr-24 h-14 text-lg bg-gray-50 border-gray-200 focus:bg-white transition-all shadow-inner"
                                                 value={url}
                                                 onChange={(e) => setUrl(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleStartMigration()}
                                             />
                                             <Globe className="absolute left-4 top-4 h-6 w-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                            <div className="absolute right-2 top-2">
+                                            <div className="absolute right-2 top-2 flex items-center space-x-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-10 px-2 text-gray-400 hover:text-blue-600"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const text = await navigator.clipboard.readText()
+                                                            if (text) setUrl(text)
+                                                        } catch (err) {
+                                                            console.error('Failed to read clipboard', err)
+                                                            showToast("Konnte nicht aus der Zwischenablage lesen", "error")
+                                                        }
+                                                    }}
+                                                    title="Aus Zwischenablage einfügen"
+                                                >
+                                                    <Clipboard className="h-4 w-4" />
+                                                </Button>
                                                 <Button
                                                     size="sm"
                                                     className="h-10 px-4 bg-blue-600 hover:bg-blue-700 transition-all shadow-md"
@@ -529,7 +548,12 @@ export default function ProductImportPage() {
                                                 </div>
 
                                                 <div className="pt-4 grid grid-cols-2 gap-3">
-                                                    <Button variant="outline" className="w-full border-gray-200 hover:bg-gray-50 hover:text-gray-900">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                                                        onClick={() => previewData.url && window.open(previewData.url, '_blank')}
+                                                        disabled={!previewData.url}
+                                                    >
                                                         <ExternalLink className="w-4 h-4 mr-2" /> Details
                                                     </Button>
                                                     <Button
