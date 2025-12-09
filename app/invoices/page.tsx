@@ -170,7 +170,7 @@ export default function InvoicesPage() {
     }
   }
 
-  const [isSearchingShopify, setIsSearchingShopify] = useState(false)
+
 
   // Search invoices directly (supports multiple emails, names, and invoice numbers)
   const searchInvoicesByCustomer = async (query: string) => {
@@ -232,52 +232,7 @@ export default function InvoicesPage() {
     setShowSearchResults(true)
     setIsSearching(false)
 
-    // Shopify Search (if query looks like an order number)
-    // Check if any term looks like an order number (digits, optionally starting with #)
-    const potentialOrderNumber = searchTerms.find(term => /^#?\d+$/.test(term))
 
-    if (potentialOrderNumber) {
-      console.log(`🔍 Query "${potentialOrderNumber}" looks like an order number. Searching Shopify...`)
-      setIsSearchingShopify(true)
-
-      try {
-        const response = await fetch(`/api/shopify/search-order?query=${potentialOrderNumber}`)
-        const data = await response.json()
-
-        if (data.found && data.invoice) {
-          console.log('✅ Found invoice in Shopify:', data.invoice.number)
-
-          if (data.isNew) {
-            showToast(`Bestellung ${data.invoice.orderNumber || data.invoice.number} gefunden und importiert!`, 'success')
-
-            // Add to invoices list
-            setInvoices(prev => [data.invoice, ...prev])
-          } else {
-            showToast(`Rechnung für Bestellung ${potentialOrderNumber} existiert bereits.`, 'info')
-          }
-
-          // ALWAYS add to search results if found (new or existing)
-          setSearchResults(prev => {
-            // Remove if already exists to avoid duplicates, then add to top
-            const filtered = prev.filter(inv => inv.id !== data.invoice.id)
-            return [data.invoice, ...filtered]
-          })
-          setShowSearchResults(true)
-
-        } else {
-          console.log('❌ Order not found in Shopify.')
-          // Only show error if we strictly searched for an order number and found nothing locally either
-          if (filteredInvoices.length === 0) {
-            showToast(`Keine Bestellung mit Nummer "${potentialOrderNumber}" in Shopify gefunden.`, 'error')
-          }
-        }
-      } catch (error) {
-        console.error('Error searching Shopify:', error)
-        showToast('Fehler bei der Shopify-Suche.', 'error')
-      } finally {
-        setIsSearchingShopify(false)
-      }
-    }
   }
 
   // Handle search input change with debouncing
@@ -787,12 +742,7 @@ export default function InvoicesPage() {
               <div className="text-sm text-gray-500">Suche läuft...</div>
             )}
 
-            {isSearchingShopify && (
-              <div className="text-sm text-blue-600 flex items-center animate-pulse">
-                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                Suche in Shopify...
-              </div>
-            )}
+
 
             {showSearchResults && (
               <div className="text-sm text-gray-600">
