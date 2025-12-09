@@ -126,13 +126,61 @@ export async function POST(request: NextRequest) {
             const ogImage = $('meta[property="og:image"]').attr('content')
             if (ogImage) productData.images.push(ogImage)
         }
+
+        // C. Enhanced HTML Scraping (Microdata & Common Selectors)
         if (!productData.price || productData.price === '0.00') {
-            productData.price = $('meta[property="product:price:amount"]').attr('content') ||
-                $('meta[property="og:price:amount"]').attr('content') ||
-                '0.00'
-            productData.currency = $('meta[property="product:price:currency"]').attr('content') ||
-                $('meta[property="og:price:currency"]').attr('content') ||
-                'EUR'
+            // 1. Try Microdata
+            const microdataPrice = $('[itemprop="price"]').attr('content') || $('[itemprop="price"]').text()
+            if (microdataPrice) productData.price = microdataPrice.trim()
+
+            const microdataCurrency = $('[itemprop="priceCurrency"]').attr('content') || $('[itemprop="priceCurrency"]').text()
+            if (microdataCurrency) productData.currency = microdataCurrency.trim()
+
+            // 2. Try Common Class Names if still 0
+            if (!productData.price || productData.price === '0.00') {
+                const priceSelectors = ['.price', '.product-price', '.offer-price', '.amount', '.current-price', '[data-price]']
+                for (const selector of priceSelectors) {
+                    const priceText = $(selector).first().text().trim()
+                    if (priceText) {
+                        // Extract number from string (e.g. "19,99 €" -> "19.99")
+                        const match = priceText.match(/[\d,.]+/)
+                        if (match) {
+                            productData.price = match[0].replace(',', '.')
+                            // Try to guess currency
+                            if (priceText.includes('€') || priceText.includes('EUR')) productData.currency = 'EUR'
+                            if (priceText.includes('$') || priceText.includes('USD')) productData.currency = 'USD'
+                            break
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback to Meta Tags
+            if (!productData.price || productData.price === '0.00') {
+                productData.price = $('meta[property="product:price:amount"]').attr('content') ||
+                    $('meta[property="og:price:amount"]').attr('content') ||
+                    '0.00'
+                productData.currency = $('meta[property="product:price:currency"]').attr('content') ||
+                    $('meta[property="og:price:currency"]').attr('content') ||
+                    'EUR'
+            }
+        }
+
+        // Try to find SKU
+        if (!productData.sku) {
+            productData.sku = $('[itemprop="sku"]').attr('content') || $('[itemprop="sku"]').text().trim() || ''
+        }
+
+        // Try to find better description if current is short
+        if (productData.description.length < 50) {
+            const descSelectors = ['[itemprop="description"]', '.product-description', '.description', '#description']
+            for (const selector of descSelectors) {
+                const desc = $(selector).first().text().trim()
+                if (desc && desc.length > productData.description.length) {
+                    productData.description = desc
+                    break
+                }
+            }
         }
 
         // Clean up data
