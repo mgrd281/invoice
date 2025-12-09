@@ -176,7 +176,13 @@ export default function ProductImportPage() {
 
                     // 1.5 AI Enhancement (Automatic)
                     try {
-                        setImportLogs(prev => [`🤖 ${currentUrl}: AI Optimierung...`, ...prev])
+                        setImportLogs(prev => [`🤖 ${currentUrl}: Analysiere Produktdaten...`, ...prev])
+
+                        // Artificial delay to ensure user sees the process and to prevent rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 2000))
+
+                        setImportLogs(prev => [`✍️ ${currentUrl}: Schreibe professionelle Beschreibung (SEO)...`, ...prev])
+
                         const aiRes = await fetch('/api/ai/enhance-product', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -191,7 +197,13 @@ export default function ProductImportPage() {
                             if (aiData.newTitle) {
                                 product.title = aiData.newTitle
                             }
-                            setImportLogs(prev => [`✨ ${currentUrl}: AI Optimierung erfolgreich`, ...prev])
+                            // Apply new SEO fields
+                            if (aiData.tags) product.tags = Array.isArray(aiData.tags) ? aiData.tags.join(', ') : aiData.tags
+                            if (aiData.handle) product.handle = aiData.handle
+                            if (aiData.metaTitle) product.metaTitle = aiData.metaTitle
+                            if (aiData.metaDescription) product.metaDescription = aiData.metaDescription
+
+                            setImportLogs(prev => [`✨ ${currentUrl}: Optimierung erfolgreich abgeschlossen`, ...prev])
                         }
                     } catch (aiError) {
                         console.error('AI Enhancement failed:', aiError)
@@ -255,7 +267,13 @@ export default function ProductImportPage() {
 
             // 1.5 AI Enhancement (Automatic)
             try {
-                showToast("Optimiere Produktdaten mit AI...", "info")
+                showToast("Analysiere Produktdaten...", "info")
+
+                // Give AI time to "think" and process
+                await new Promise(resolve => setTimeout(resolve, 1500))
+
+                showToast("Erstelle SEO-optimierte Beschreibung...", "info")
+
                 const aiRes = await fetch('/api/ai/enhance-product', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -270,6 +288,12 @@ export default function ProductImportPage() {
                     if (aiData.newTitle) {
                         product.title = aiData.newTitle
                     }
+                    // Apply new SEO fields
+                    if (aiData.tags) product.tags = Array.isArray(aiData.tags) ? aiData.tags.join(', ') : aiData.tags
+                    if (aiData.handle) product.handle = aiData.handle
+                    if (aiData.metaTitle) product.metaTitle = aiData.metaTitle
+                    if (aiData.metaDescription) product.metaDescription = aiData.metaDescription
+
                     showToast("Produktbeschreibung erfolgreich generiert", "success")
                 }
             } catch (aiError) {
