@@ -13,24 +13,26 @@
             fetch(`${BASE_URL}/api/reviews/public?productId=${productId}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success && data.stats.total > 0) {
-                        container.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                                <div style="color: #fbbf24; display: flex;">
-                                    ${getStarsHTML(data.stats.average)}
-                                </div>
-                                <span style="font-size: 14px; color: #6b7280;">
-                                    (${data.stats.total} Reviews)
-                                </span>
-                            </div>
-                        `;
+                    // Always show widget, even if 0 reviews
+                    const total = data.stats?.total || 0;
+                    const average = data.stats?.average || 0;
 
-                        // Add click listener to scroll to reviews widget
-                        container.addEventListener('click', () => {
-                            const widget = document.getElementById('rechnung-profi-reviews-widget');
-                            if (widget) widget.scrollIntoView({ behavior: 'smooth' });
-                        });
-                    }
+                    container.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <div style="color: #fbbf24; display: flex;">
+                                ${getStarsHTML(average)}
+                            </div>
+                            <span style="font-size: 14px; color: #6b7280;">
+                                (${total} Reviews)
+                            </span>
+                        </div>
+                    `;
+
+                    // Add click listener to scroll to reviews widget
+                    container.addEventListener('click', () => {
+                        const widget = document.getElementById('rechnung-profi-reviews-widget');
+                        if (widget) widget.scrollIntoView({ behavior: 'smooth' });
+                    });
                 })
                 .catch(err => console.error('Failed to load rating:', err));
         });
