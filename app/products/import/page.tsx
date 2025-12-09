@@ -33,10 +33,10 @@ import {
     Edit
 } from 'lucide-react'
 import Link from 'next/link'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/components/ui/toast'
 
 export default function ProductImportPage() {
-    const { toast } = useToast()
+    const { showToast, ToastContainer } = useToast()
     const [url, setUrl] = useState('')
     const [isImporting, setIsImporting] = useState(false)
     const [importStep, setImportStep] = useState<'idle' | 'validating' | 'importing' | 'complete'>('idle')
@@ -80,11 +80,7 @@ export default function ProductImportPage() {
             }
         } catch (error) {
             console.error('Error loading store:', error)
-            toast({
-                title: "Fehler beim Laden",
-                description: "Die Produkte konnten nicht geladen werden.",
-                variant: "destructive"
-            })
+            showToast("Fehler beim Laden der Produkte", "error")
         } finally {
             setLoadingStore(false)
         }
@@ -121,17 +117,10 @@ export default function ProductImportPage() {
 
             setPreviewData(data.product)
             setImportStep('complete')
-            toast({
-                title: "Daten abgerufen",
-                description: "Produktdaten wurden erfolgreich geladen.",
-            })
+            showToast("Produktdaten erfolgreich geladen", "success")
         } catch (error) {
             console.error('Import error:', error)
-            toast({
-                title: "Import fehlgeschlagen",
-                description: error instanceof Error ? error.message : 'Unbekannter Fehler',
-                variant: "destructive"
-            })
+            showToast(error instanceof Error ? error.message : 'Import fehlgeschlagen', "error")
             setImportStep('idle')
         } finally {
             setIsImporting(false)
@@ -159,11 +148,7 @@ export default function ProductImportPage() {
 
             const data = await response.json()
 
-            toast({
-                title: "Produkt gespeichert!",
-                description: `Das Produkt wurde erfolgreich zu Shopify importiert.`,
-                className: "bg-green-50 border-green-200 text-green-800"
-            })
+            showToast("Produkt erfolgreich importiert!", "success")
 
             // Switch to store tab to show the new product
             setActiveTab('store')
@@ -174,11 +159,7 @@ export default function ProductImportPage() {
 
         } catch (error) {
             console.error('Save error:', error)
-            toast({
-                title: "Speichern fehlgeschlagen",
-                description: error instanceof Error ? error.message : 'Unbekannter Fehler',
-                variant: "destructive"
-            })
+            showToast(error instanceof Error ? error.message : 'Speichern fehlgeschlagen', "error")
         } finally {
             setIsSaving(false)
         }
@@ -200,20 +181,13 @@ export default function ProductImportPage() {
                 throw new Error('Failed to delete product')
             }
 
-            toast({
-                title: "Produkt gelöscht",
-                description: "Das Produkt wurde erfolgreich entfernt.",
-            })
+            showToast("Produkt erfolgreich gelöscht", "success")
 
             // Refresh list
             loadImportedProducts()
         } catch (error) {
             console.error('Delete error:', error)
-            toast({
-                title: "Fehler beim Löschen",
-                description: "Das Produkt konnte nicht gelöscht werden.",
-                variant: "destructive"
-            })
+            showToast("Fehler beim Löschen des Produkts", "error")
         } finally {
             setIsDeleting(null)
         }
@@ -254,22 +228,14 @@ export default function ProductImportPage() {
                 throw new Error('Failed to update product')
             }
 
-            toast({
-                title: "Produkt aktualisiert",
-                description: "Die Änderungen wurden erfolgreich gespeichert.",
-                className: "bg-green-50 border-green-200 text-green-800"
-            })
+            showToast("Produkt erfolgreich aktualisiert", "success")
 
             setEditingProduct(null)
             loadImportedProducts()
 
         } catch (error) {
             console.error('Update error:', error)
-            toast({
-                title: "Fehler beim Speichern",
-                description: "Das Produkt konnte nicht aktualisiert werden.",
-                variant: "destructive"
-            })
+            showToast("Fehler beim Aktualisieren des Produkts", "error")
         } finally {
             setIsUpdating(false)
         }
@@ -300,19 +266,11 @@ export default function ProductImportPage() {
                 description: data.text
             })
 
-            toast({
-                title: "AI Optimierung erfolgreich",
-                description: "Die Produktbeschreibung wurde optimiert.",
-                className: "bg-purple-50 border-purple-200 text-purple-800"
-            })
+            showToast("Beschreibung erfolgreich optimiert", "success")
 
         } catch (error) {
             console.error('AI error:', error)
-            toast({
-                title: "AI Fehler",
-                description: "Die Beschreibung konnte nicht optimiert werden. Prüfen Sie Ihren API Key.",
-                variant: "destructive"
-            })
+            showToast("AI Optimierung fehlgeschlagen", "error")
         } finally {
             setIsRewriting(false)
         }
@@ -320,6 +278,7 @@ export default function ProductImportPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-12 font-sans">
+            <ToastContainer />
             <div className="max-w-7xl mx-auto space-y-8">
 
                 {/* Header */}
