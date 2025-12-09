@@ -412,12 +412,12 @@ export default function ReviewsPage() {
                                         stats.recentReviews.map((review: any) => (
                                             <div key={review.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border">
                                                 <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                                    {review.customer_name.charAt(0)}
+                                                    {review.customerName?.charAt(0) || '?'}
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <h4 className="font-medium text-gray-900">{review.customer_name}</h4>
+                                                            <h4 className="font-medium text-gray-900">{review.customerName}</h4>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <div className="flex">
                                                                     {[...Array(5)].map((_, i) => (
@@ -497,12 +497,12 @@ export default function ReviewsPage() {
                                         {allReviews.map((review: any) => (
                                             <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                                                 <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
-                                                    {review.customer_name.charAt(0)}
+                                                    {review.customerName?.charAt(0) || '?'}
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex justify-between">
                                                         <div>
-                                                            <h4 className="font-medium">{review.customer_name}</h4>
+                                                            <h4 className="font-medium">{review.customerName}</h4>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <div className="flex">
                                                                     {[...Array(5)].map((_, i) => (
@@ -527,10 +527,10 @@ export default function ReviewsPage() {
                                                         </div>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mt-2">{review.content}</p>
-                                                    {review.product && (
+                                                    {review.productTitle && (
                                                         <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
                                                             <LinkIcon className="h-3 w-3" />
-                                                            {review.product.title}
+                                                            {review.productTitle}
                                                         </div>
                                                     )}
                                                 </div>
