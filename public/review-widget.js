@@ -103,20 +103,20 @@
             const style = document.createElement('style');
             style.textContent = `
                 .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-                .rp-header { display: flex; align-items: flex-start; gap: 40px; padding-bottom: 30px; margin-bottom: 0; flex-wrap: wrap; }
+                .rp-header { display: flex; align-items: center; gap: 30px; padding-bottom: 30px; margin-bottom: 0; flex-wrap: wrap; }
                 .rp-divider { height: 1px; background-color: #e5e7eb; margin: 0 0 30px 0; width: 100%; }
-                .rp-summary { text-align: center; min-width: 120px; }
+                .rp-summary { text-align: center; min-width: 120px; flex-shrink: 0; }
                 .rp-big-rating { font-size: 48px; font-weight: 700; line-height: 1; color: ${primaryColor}; margin-bottom: 8px; }
                 .rp-total-count { font-size: 14px; color: #6b7280; margin-top: 4px; }
                 
-                .rp-bars { flex: 0 1 400px; width: 100%; }
+                .rp-bars { flex: 1; min-width: 250px; max-width: 500px; }
                 .rp-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; font-size: 13px; color: #4b5563; cursor: pointer; transition: opacity 0.2s; }
                 .rp-bar-row:hover { opacity: 0.8; }
                 .rp-bar-row.active .rp-stars { font-weight: bold; }
                 .rp-bar-bg { flex: 1; height: 8px; background-color: #f3f4f6; border-radius: 4px; overflow: hidden; }
                 .rp-bar-fill { height: 100%; background-color: ${primaryColor}; border-radius: 4px; }
                 
-                .rp-write-btn { background-color: ${primaryColor}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+                .rp-write-btn { background-color: ${primaryColor}; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
                 .rp-write-btn:hover { opacity: 0.9; }
                 
                 .rp-review-list { display: flex; flex-direction: column; gap: 24px; }
