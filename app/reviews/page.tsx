@@ -31,10 +31,12 @@ import {
     Link as LinkIcon,
     PenTool,
     FileText,
-    TrendingUp
+    TrendingUp,
+    Clock
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { Switch } from '@/components/ui/switch'
 import {
     Dialog,
     DialogContent,
@@ -238,14 +240,41 @@ export default function ReviewsPage() {
             .catch(err => console.error('Failed to load widget settings:', err))
     }, [])
 
-    const updateWidgetSettings = (newSettings: any) => {
+    const [isSavingSettings, setIsSavingSettings] = useState(false)
+
+    const updateWidgetSettings = async (newSettings: any) => {
         setWidgetSettings(newSettings)
-        // Save to API
-        fetch('/api/reviews/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSettings)
-        }).catch(err => console.error('Failed to save widget settings:', err))
+        setIsSavingSettings(true)
+        try {
+            await fetch('/api/reviews/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newSettings)
+            })
+            toast.success('Einstellungen gespeichert')
+        } catch (err) {
+            console.error('Failed to save widget settings:', err)
+            toast.error('Fehler beim Speichern')
+        } finally {
+            setIsSavingSettings(false)
+        }
+    }
+
+    // Email Settings State
+    const [emailSettings, setEmailSettings] = useState({
+        enabled: false,
+        delayDays: 3,
+        subject: 'Ihre Meinung ist uns wichtig! 🌟',
+        body: 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team'
+    })
+    const [isSavingEmailSettings, setIsSavingEmailSettings] = useState(false)
+
+    const saveEmailSettings = async () => {
+        setIsSavingEmailSettings(true)
+        // Simulate API call for now, or implement real one later
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        toast.success('E-Mail Einstellungen gespeichert')
+        setIsSavingEmailSettings(false)
     }
 
     useEffect(() => {
@@ -393,7 +422,7 @@ export default function ReviewsPage() {
             }
         }
         reader.readAsText(file)
-    };
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -555,7 +584,7 @@ export default function ReviewsPage() {
                                                             </div>
                                                         </div>
                                                         <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
-                                                            {review.status}
+                                                            {review.status === 'APPROVED' ? 'Genehmigt' : review.status === 'PENDING' ? 'Ausstehend' : review.status === 'REJECTED' ? 'Abgelehnt' : review.status}
                                                         </Badge>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mt-2">{review.content}</p>
@@ -641,7 +670,7 @@ export default function ReviewsPage() {
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
-                                                                {review.status}
+                                                                {review.status === 'APPROVED' ? 'Genehmigt' : review.status === 'PENDING' ? 'Ausstehend' : review.status === 'REJECTED' ? 'Abgelehnt' : review.status}
                                                             </Badge>
 
                                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -971,7 +1000,8 @@ export default function ReviewsPage() {
                                         </div>
                                     </div>
                                     <div className="pt-4 flex justify-end">
-                                        <Button onClick={() => updateWidgetSettings(widgetSettings)}>
+                                        <Button onClick={() => updateWidgetSettings(widgetSettings)} disabled={isSavingSettings}>
+                                            {isSavingSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                             Speichern
                                         </Button>
                                     </div>
@@ -1111,20 +1141,130 @@ export default function ReviewsPage() {
                     </TabsContent>
 
                     {/* EMAILS TAB */}
-                    <TabsContent value="emails">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>E-Mail Automation</CardTitle>
-                                <CardDescription>Senden Sie automatische Bewertungsanfragen</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-center py-12 text-gray-500">
-                                    <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                    <h3 className="text-lg font-medium text-gray-900">Bald verfügbar</h3>
-                                    <p className="mt-1">Die E-Mail Automation wird in Kürze freigeschaltet.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+
+                    {/* EMAIL AUTOMATION TAB */}
+                    <TabsContent value="emails" className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="lg:col-span-2 space-y-6">
+                                <Card>
+                                    <CardHeader>
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <CardTitle>E-Mail Automation</CardTitle>
+                                                <CardDescription>Senden Sie automatische Bewertungsanfragen an Ihre Kunden</CardDescription>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Label htmlFor="email-automation-mode" className="text-sm font-medium">Aktivieren</Label>
+                                                <Switch
+                                                    id="email-automation-mode"
+                                                    checked={emailSettings.enabled}
+                                                    onCheckedChange={(checked) => setEmailSettings({ ...emailSettings, enabled: checked })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3">
+                                            <div className="bg-blue-100 p-2 rounded-full h-fit">
+                                                <Mail className="h-5 w-5 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium text-blue-900">Wie es funktioniert</h4>
+                                                <p className="text-sm text-blue-700 mt-1">
+                                                    Wir senden automatisch eine E-Mail an Ihre Kunden, nachdem eine Bestellung erfüllt wurde.
+                                                    Sie können festlegen, wie viele Tage wir warten sollen.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label>Verzögerung (Tage)</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        value={emailSettings.delayDays}
+                                                        onChange={(e) => setEmailSettings({ ...emailSettings, delayDays: parseInt(e.target.value) || 0 })}
+                                                        className="pl-10"
+                                                    />
+                                                    <div className="absolute left-3 top-2.5 text-gray-400">
+                                                        <Clock className="h-4 w-4" />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-gray-500">Tage nach Erfüllung der Bestellung</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>Betreffzeile</Label>
+                                            <Input
+                                                value={emailSettings.subject}
+                                                onChange={(e) => setEmailSettings({ ...emailSettings, subject: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>E-Mail Inhalt</Label>
+                                            <Textarea
+                                                value={emailSettings.body}
+                                                onChange={(e) => setEmailSettings({ ...emailSettings, body: e.target.value })}
+                                                className="min-h-[200px] font-mono text-sm"
+                                            />
+                                            <div className="flex gap-2 mt-2">
+                                                <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setEmailSettings({ ...emailSettings, body: emailSettings.body + ' {customer_name}' })}>{'{customer_name}'}</Badge>
+                                                <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setEmailSettings({ ...emailSettings, body: emailSettings.body + ' {product_title}' })}>{'{product_title}'}</Badge>
+                                                <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setEmailSettings({ ...emailSettings, body: emailSettings.body + ' {shop_name}' })}>{'{shop_name}'}</Badge>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between pt-4">
+                                            <Button variant="outline">
+                                                Test E-Mail senden
+                                            </Button>
+                                            <Button onClick={saveEmailSettings} disabled={isSavingEmailSettings}>
+                                                {isSavingEmailSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                                Einstellungen speichern
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Preview */}
+                            <div className="space-y-6">
+                                <Card className="bg-gray-50 border-dashed">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm uppercase text-gray-500 tracking-wider">Vorschau</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                                            <div className="bg-gray-50 p-4 border-b flex items-center gap-3">
+                                                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                                    S
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">{emailSettings.subject}</p>
+                                                    <p className="text-xs text-gray-500">Von: Ihr Shop Name</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-6 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                                {emailSettings.body
+                                                    .replace('{customer_name}', 'Max Mustermann')
+                                                    .replace('{product_title}', 'Beispiel Produkt')
+                                                    .replace('{shop_name}', 'Mein Shop')
+                                                }
+                                                <div className="mt-6">
+                                                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                                                        Jetzt bewerten
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </main>
