@@ -73,242 +73,367 @@
 
         widgetContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Loading reviews...</div>';
 
+        // State
+        let allReviews = [];
+        let currentFilter = null; // null, 1, 2, 3, 4, 5
+        let currentPage = 1;
+        const reviewsPerPage = 5;
+        let widgetSettings = { primaryColor: '#2563eb', layout: 'list' };
+        let stats = { total: 0, average: 0 };
+
         fetch(`${BASE_URL}/api/reviews/public?productId=${productId}`)
             .then(res => res.json())
             .then(data => {
-                const settings = data.settings || { primaryColor: '#2563eb', layout: 'list' };
-                const primaryColor = settings.primaryColor;
+                widgetSettings = data.settings || widgetSettings;
+                allReviews = data.reviews || [];
+                stats = data.stats || { total: 0, average: 0 };
 
                 // Inject CSS
-                const style = document.createElement('style');
-                style.textContent = `
-                    .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; }
-                    .rp-header { display: flex; align-items: flex-start; gap: 40px; padding-bottom: 30px; border-bottom: 1px solid #e5e7eb; margin-bottom: 30px; }
-                    .rp-summary { text-align: center; min-width: 120px; }
-                    .rp-big-rating { font-size: 48px; font-weight: 700; line-height: 1; color: ${primaryColor}; margin-bottom: 8px; }
-                    .rp-total-count { font-size: 14px; color: #6b7280; margin-top: 4px; }
-                    
-                    .rp-bars { flex: 0 1 400px; width: 100%; }
-                    .rp-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; font-size: 13px; color: #4b5563; }
-                    .rp-bar-bg { flex: 1; height: 8px; background-color: #f3f4f6; border-radius: 4px; overflow: hidden; }
-                    .rp-bar-fill { height: 100%; background-color: ${primaryColor}; border-radius: 4px; }
-                    
-                    .rp-write-btn { background-color: ${primaryColor}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-                    .rp-write-btn:hover { opacity: 0.9; }
-                    
-                    .rp-review-list { display: flex; flex-direction: column; gap: 24px; }
-                    .rp-review-card { padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; }
-                    .rp-review-card:last-child { border-bottom: none; }
-                    
-                    .rp-review-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-                    .rp-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-                    .rp-avatar { width: 32px; height: 32px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #4b5563; font-size: 14px; }
-                    .rp-username { font-weight: 600; font-size: 14px; }
-                    .rp-verified { color: #16a34a; font-size: 12px; display: flex; align-items: center; gap: 2px; }
-                    .rp-date { color: #9ca3af; font-size: 12px; }
-                    
-                    .rp-stars { display: flex; color: ${primaryColor}; margin-bottom: 8px; }
-                    .rp-content { font-size: 15px; line-height: 1.6; color: #374151; }
-                    .rp-title { font-weight: 600; display: block; margin-bottom: 4px; color: #111827; }
+                injectStyles(widgetSettings.primaryColor);
 
-                    /* Modal Styles */
-                    .rp-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; }
-                    .rp-modal { background: white; width: 90%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; max-height: 90vh; overflow-y: auto; }
-                    .rp-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                    .rp-modal-title { font-size: 20px; font-weight: bold; margin: 0; }
-                    .rp-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; }
-                    .rp-form-group { margin-bottom: 16px; }
-                    .rp-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #374151; }
-                    .rp-input, .rp-textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-                    .rp-textarea { min-height: 100px; resize: vertical; }
-                    .rp-submit-btn { width: 100%; background-color: ${primaryColor}; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-                    .rp-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-                    
-                    .rp-star-input { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
-                    .rp-star-input input { display: none; }
-                    .rp-star-input label { cursor: pointer; color: #d1d5db; font-size: 24px; transition: color 0.2s; }
-                    .rp-star-input label:hover,
-                    .rp-star-input label:hover ~ label,
-                    .rp-star-input input:checked ~ label { color: #fbbf24; }
-
-                    @media (max-width: 600px) {
-                        .rp-header { flex-direction: column; gap: 20px; align-items: center; text-align: center; }
-                        .rp-bars { width: 100%; }
-                        .rp-write-btn { width: 100%; margin: 10px 0 0 0; }
-                    }
-                `;
-                document.head.appendChild(style);
-
-                // Calculate distribution
-                const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-                data.reviews.forEach(r => {
-                    const rating = Math.round(r.rating);
-                    if (distribution[rating] !== undefined) distribution[rating]++;
-                });
-                const total = data.stats.total;
-
-                // Generate Bars HTML
-                let barsHTML = '';
-                for (let i = 5; i >= 1; i--) {
-                    const count = distribution[i];
-                    const percentage = total > 0 ? (count / total) * 100 : 0;
-                    barsHTML += `
-                        <div class="rp-bar-row">
-                            <div class="rp-stars" style="margin:0; font-size:12px;">
-                                ${getStarsHTML(i).replace(/width="16"/g, 'width="12"').replace(/height="16"/g, 'height="12"')}
-                            </div>
-                            <div class="rp-bar-bg">
-                                <div class="rp-bar-fill" style="width: ${percentage}%"></div>
-                            </div>
-                            <span style="min-width: 20px; text-align: right;">(${count})</span>
-                        </div>
-                    `;
-                }
-
-                const reviewsHTML = data.reviews.map(review => `
-                    <div class="rp-review-card">
-                        <div class="rp-user-row">
-                            <div class="rp-avatar">${review.customerName ? review.customerName.charAt(0).toUpperCase() : '?'}</div>
-                            <span class="rp-username">${review.customerName}</span>
-                            ${review.isVerified ? '<span class="rp-verified">✓ Verifizierter Kauf</span>' : ''}
-                            <span class="rp-date" style="margin-left: auto;">${timeAgo(review.createdAt)}</span>
-                        </div>
-                        <div class="rp-stars">
-                            ${getStarsHTML(review.rating)}
-                        </div>
-                        <div class="rp-content">
-                            ${review.title ? `<span class="rp-title">${review.title}</span>` : ''}
-                            ${review.content}
-                        </div>
-                    </div>
-                `).join('');
-
-                // Modal HTML
-                const modalHTML = `
-                    <div class="rp-modal-overlay" id="rp-modal-overlay">
-                        <div class="rp-modal">
-                            <div class="rp-modal-header">
-                                <h3 class="rp-modal-title">Bewertung schreiben</h3>
-                                <button class="rp-close-btn" id="rp-close-modal">&times;</button>
-                            </div>
-                            <form id="rp-review-form">
-                                <div class="rp-form-group">
-                                    <label class="rp-label">Bewertung</label>
-                                    <div class="rp-star-input">
-                                        <input type="radio" name="rating" id="star5" value="5" required><label for="star5">★</label>
-                                        <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
-                                        <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
-                                        <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
-                                        <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
-                                    </div>
-                                </div>
-                                <div class="rp-form-group">
-                                    <label class="rp-label">Name</label>
-                                    <input type="text" class="rp-input" name="customerName" required placeholder="Ihr Name">
-                                </div>
-                                <div class="rp-form-group">
-                                    <label class="rp-label">E-Mail</label>
-                                    <input type="email" class="rp-input" name="customerEmail" required placeholder="ihre@email.com">
-                                </div>
-                                <div class="rp-form-group">
-                                    <label class="rp-label">Titel (Optional)</label>
-                                    <input type="text" class="rp-input" name="title" placeholder="Zusammenfassung Ihrer Erfahrung">
-                                </div>
-                                <div class="rp-form-group">
-                                    <label class="rp-label">Bewertung</label>
-                                    <textarea class="rp-textarea" name="content" required placeholder="Wie hat Ihnen das Produkt gefallen?"></textarea>
-                                </div>
-                                <button type="submit" class="rp-submit-btn">Bewertung absenden</button>
-                            </form>
-                        </div>
-                    </div>
-                `;
-
-                widgetContainer.innerHTML = `
-                    <div class="rp-widget">
-                        <div class="rp-header">
-                            <div class="rp-summary">
-                                <div class="rp-big-rating">${data.stats.average}</div>
-                                <div class="rp-stars" style="justify-content:center; margin-bottom:4px;">
-                                    ${getStarsHTML(data.stats.average)}
-                                </div>
-                                <div class="rp-total-count">${data.stats.total} Rezensionen</div>
-                            </div>
-                            <div class="rp-bars">
-                                ${barsHTML}
-                            </div>
-                            <button class="rp-write-btn" id="rp-open-modal">Bewertung schreiben</button>
-                        </div>
-                        <div class="rp-review-list">
-                            ${reviewsHTML.length > 0 ? reviewsHTML : '<div style="text-align:center; color:#6b7280; padding:20px;">Noch keine Bewertungen.</div>'}
-                        </div>
-                        ${modalHTML}
-                    </div>
-                `;
-
-                // Event Listeners
-                const modal = document.getElementById('rp-modal-overlay');
-                const openBtn = document.getElementById('rp-open-modal');
-                const closeBtn = document.getElementById('rp-close-modal');
-                const form = document.getElementById('rp-review-form');
-
-                if (openBtn) openBtn.onclick = () => modal.style.display = 'flex';
-                if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-                if (modal) modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
-
-                if (form) {
-                    form.onsubmit = (e) => {
-                        e.preventDefault();
-                        const formData = new FormData(form);
-                        const submitBtn = form.querySelector('.rp-submit-btn');
-                        submitBtn.disabled = true;
-                        submitBtn.textContent = 'Wird gesendet...';
-
-                        const payload = {
-                            productId: productId,
-                            rating: formData.get('rating'),
-                            customerName: formData.get('customerName'),
-                            customerEmail: formData.get('customerEmail'),
-                            title: formData.get('title'),
-                            content: formData.get('content')
-                        };
-
-                        fetch(`${BASE_URL}/api/reviews/public`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        })
-                            .then(res => res.json())
-                            .then(response => {
-                                if (response.success) {
-                                    modal.innerHTML = `
-                                    <div class="rp-modal" style="text-align:center;">
-                                        <div style="color: #16a34a; font-size: 48px; margin-bottom: 16px;">✓</div>
-                                        <h3 style="margin-bottom: 8px;">Vielen Dank!</h3>
-                                        <p style="color: #6b7280; margin-bottom: 24px;">Ihre Bewertung wurde eingereicht und wird nach Prüfung veröffentlicht.</p>
-                                        <button onclick="document.getElementById('rp-modal-overlay').style.display='none'" class="rp-submit-btn">Schließen</button>
-                                    </div>
-                                `;
-                                } else {
-                                    alert('Fehler beim Senden: ' + (response.error || 'Unbekannter Fehler'));
-                                    submitBtn.disabled = false;
-                                    submitBtn.textContent = 'Bewertung absenden';
-                                }
-                            })
-                            .catch(err => {
-                                console.error(err);
-                                alert('Ein Fehler ist aufgetreten.');
-                                submitBtn.disabled = false;
-                                submitBtn.textContent = 'Bewertung absenden';
-                            });
-                    };
-                }
-
+                // Initial Render
+                renderWidget();
             })
             .catch(err => {
                 console.error('Failed to load reviews widget:', err);
                 widgetContainer.innerHTML = '<p style="color:red">Failed to load reviews.</p>';
             });
+
+        function injectStyles(primaryColor) {
+            const style = document.createElement('style');
+            style.textContent = `
+                .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; }
+                .rp-header { display: flex; align-items: flex-start; gap: 40px; padding-bottom: 30px; border-bottom: 1px solid #e5e7eb; margin-bottom: 30px; }
+                .rp-summary { text-align: center; min-width: 120px; }
+                .rp-big-rating { font-size: 48px; font-weight: 700; line-height: 1; color: ${primaryColor}; margin-bottom: 8px; }
+                .rp-total-count { font-size: 14px; color: #6b7280; margin-top: 4px; }
+                
+                .rp-bars { flex: 0 1 400px; width: 100%; }
+                .rp-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; font-size: 13px; color: #4b5563; cursor: pointer; transition: opacity 0.2s; }
+                .rp-bar-row:hover { opacity: 0.8; }
+                .rp-bar-row.active .rp-stars { font-weight: bold; }
+                .rp-bar-bg { flex: 1; height: 8px; background-color: #f3f4f6; border-radius: 4px; overflow: hidden; }
+                .rp-bar-fill { height: 100%; background-color: ${primaryColor}; border-radius: 4px; }
+                
+                .rp-write-btn { background-color: ${primaryColor}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+                .rp-write-btn:hover { opacity: 0.9; }
+                
+                .rp-review-list { display: flex; flex-direction: column; gap: 24px; }
+                .rp-review-card { padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; }
+                .rp-review-card:last-child { border-bottom: none; }
+                
+                .rp-review-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+                .rp-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+                .rp-avatar { width: 32px; height: 32px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #4b5563; font-size: 14px; }
+                .rp-username { font-weight: 600; font-size: 14px; }
+                .rp-verified { color: #16a34a; font-size: 12px; display: flex; align-items: center; gap: 2px; }
+                .rp-date { color: #9ca3af; font-size: 12px; }
+                
+                .rp-stars { display: flex; color: ${primaryColor}; margin-bottom: 8px; }
+                .rp-content { font-size: 15px; line-height: 1.6; color: #374151; }
+                .rp-title { font-weight: 600; display: block; margin-bottom: 4px; color: #111827; }
+
+                /* Pagination */
+                .rp-pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 30px; }
+                .rp-page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer; color: #374151; font-size: 14px; transition: all 0.2s; }
+                .rp-page-btn:hover { border-color: ${primaryColor}; color: ${primaryColor}; }
+                .rp-page-btn.active { background-color: ${primaryColor}; color: white; border-color: ${primaryColor}; }
+                .rp-page-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #e5e7eb; color: #9ca3af; }
+
+                /* Modal Styles */
+                .rp-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; }
+                .rp-modal { background: white; width: 90%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; max-height: 90vh; overflow-y: auto; }
+                .rp-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                .rp-modal-title { font-size: 20px; font-weight: bold; margin: 0; }
+                .rp-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; }
+                .rp-form-group { margin-bottom: 16px; }
+                .rp-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #374151; }
+                .rp-input, .rp-textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+                .rp-textarea { min-height: 100px; resize: vertical; }
+                .rp-submit-btn { width: 100%; background-color: ${primaryColor}; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+                .rp-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+                
+                .rp-star-input { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
+                .rp-star-input input { display: none; }
+                .rp-star-input label { cursor: pointer; color: #d1d5db; font-size: 24px; transition: color 0.2s; }
+                .rp-star-input label:hover,
+                .rp-star-input label:hover ~ label,
+                .rp-star-input input:checked ~ label { color: #fbbf24; }
+
+                @media (max-width: 600px) {
+                    .rp-header { flex-direction: column; gap: 20px; align-items: center; text-align: center; }
+                    .rp-bars { width: 100%; }
+                    .rp-write-btn { width: 100%; margin: 10px 0 0 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function renderWidget() {
+            // Filter reviews
+            const filteredReviews = currentFilter
+                ? allReviews.filter(r => Math.round(r.rating) === currentFilter)
+                : allReviews;
+
+            // Pagination
+            const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+            const startIndex = (currentPage - 1) * reviewsPerPage;
+            const displayedReviews = filteredReviews.slice(startIndex, startIndex + reviewsPerPage);
+
+            // Calculate distribution for bars (always based on ALL reviews)
+            const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+            allReviews.forEach(r => {
+                const rating = Math.round(r.rating);
+                if (distribution[rating] !== undefined) distribution[rating]++;
+            });
+
+            // Generate Bars HTML
+            let barsHTML = '';
+            for (let i = 5; i >= 1; i--) {
+                const count = distribution[i];
+                const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
+                const isActive = currentFilter === i;
+                const opacity = currentFilter && !isActive ? '0.4' : '1';
+
+                barsHTML += `
+                    <div class="rp-bar-row ${isActive ? 'active' : ''}" onclick="window.rpFilter(${i})" style="opacity: ${opacity}">
+                        <div class="rp-stars" style="margin:0; font-size:12px;">
+                            ${getStarsHTML(i).replace(/width="16"/g, 'width="12"').replace(/height="16"/g, 'height="12"')}
+                        </div>
+                        <div class="rp-bar-bg">
+                            <div class="rp-bar-fill" style="width: ${percentage}%"></div>
+                        </div>
+                        <span style="min-width: 20px; text-align: right;">(${count})</span>
+                    </div>
+                `;
+            }
+
+            // Generate Reviews HTML
+            const reviewsHTML = displayedReviews.map(review => `
+                <div class="rp-review-card">
+                    <div class="rp-user-row">
+                        <div class="rp-avatar">${review.customerName ? review.customerName.charAt(0).toUpperCase() : '?'}</div>
+                        <span class="rp-username">${review.customerName}</span>
+                        ${review.isVerified ? '<span class="rp-verified">✓ Verifizierter Kauf</span>' : ''}
+                        <span class="rp-date" style="margin-left: auto;">${timeAgo(review.createdAt)}</span>
+                    </div>
+                    <div class="rp-stars">
+                        ${getStarsHTML(review.rating)}
+                    </div>
+                    <div class="rp-content">
+                        ${review.title ? `<span class="rp-title">${review.title}</span>` : ''}
+                        ${review.content}
+                    </div>
+                </div>
+            `).join('');
+
+            // Generate Pagination HTML
+            let paginationHTML = '';
+            if (totalPages > 1) {
+                paginationHTML += `<div class="rp-pagination">`;
+
+                // Prev Button
+                paginationHTML += `
+                    <button class="rp-page-btn" 
+                        onclick="window.rpPage(${currentPage - 1})"
+                        ${currentPage === 1 ? 'disabled' : ''}>
+                        &lt;
+                    </button>
+                `;
+
+                // Page Numbers
+                // Simple logic: show all if <= 7 pages, otherwise show simplified range
+                // For now, let's implement a simple range: 1, 2, 3 ... last
+
+                if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) {
+                        paginationHTML += `
+                            <button class="rp-page-btn ${currentPage === i ? 'active' : ''}" 
+                                onclick="window.rpPage(${i})">
+                                ${i}
+                            </button>
+                        `;
+                    }
+                } else {
+                    // Complex pagination logic (1 2 3 ... 10)
+                    if (currentPage <= 4) {
+                        for (let i = 1; i <= 5; i++) {
+                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
+                        }
+                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
+                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(${totalPages})">${totalPages}</button>`;
+                    } else if (currentPage >= totalPages - 3) {
+                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(1)">1</button>`;
+                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
+                        for (let i = totalPages - 4; i <= totalPages; i++) {
+                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
+                        }
+                    } else {
+                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(1)">1</button>`;
+                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
+                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
+                        }
+                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
+                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(${totalPages})">${totalPages}</button>`;
+                    }
+                }
+
+                // Next Button
+                paginationHTML += `
+                    <button class="rp-page-btn" 
+                        onclick="window.rpPage(${currentPage + 1})"
+                        ${currentPage === totalPages ? 'disabled' : ''}>
+                        &gt;
+                    </button>
+                `;
+
+                paginationHTML += `</div>`;
+            }
+
+            // Modal HTML (Static)
+            const modalHTML = `
+                <div class="rp-modal-overlay" id="rp-modal-overlay">
+                    <div class="rp-modal">
+                        <div class="rp-modal-header">
+                            <h3 class="rp-modal-title">Bewertung schreiben</h3>
+                            <button class="rp-close-btn" id="rp-close-modal">&times;</button>
+                        </div>
+                        <form id="rp-review-form">
+                            <div class="rp-form-group">
+                                <label class="rp-label">Bewertung</label>
+                                <div class="rp-star-input">
+                                    <input type="radio" name="rating" id="star5" value="5" required><label for="star5">★</label>
+                                    <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
+                                    <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
+                                    <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
+                                    <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
+                                </div>
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label">Name</label>
+                                <input type="text" class="rp-input" name="customerName" required placeholder="Ihr Name">
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label">E-Mail</label>
+                                <input type="email" class="rp-input" name="customerEmail" required placeholder="ihre@email.com">
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label">Titel (Optional)</label>
+                                <input type="text" class="rp-input" name="title" placeholder="Zusammenfassung Ihrer Erfahrung">
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label">Bewertung</label>
+                                <textarea class="rp-textarea" name="content" required placeholder="Wie hat Ihnen das Produkt gefallen?"></textarea>
+                            </div>
+                            <button type="submit" class="rp-submit-btn">Bewertung absenden</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            widgetContainer.innerHTML = `
+                <div class="rp-widget">
+                    <div class="rp-header">
+                        <div class="rp-summary">
+                            <div class="rp-big-rating">${stats.average}</div>
+                            <div class="rp-stars" style="justify-content:center; margin-bottom:4px;">
+                                ${getStarsHTML(stats.average)}
+                            </div>
+                            <div class="rp-total-count">${stats.total} Rezensionen</div>
+                        </div>
+                        <div class="rp-bars">
+                            ${barsHTML}
+                        </div>
+                        <button class="rp-write-btn" id="rp-open-modal">Bewertung schreiben</button>
+                    </div>
+                    <div class="rp-review-list">
+                        ${reviewsHTML.length > 0 ? reviewsHTML : '<div style="text-align:center; color:#6b7280; padding:20px;">Keine Bewertungen gefunden.</div>'}
+                    </div>
+                    ${paginationHTML}
+                    ${modalHTML}
+                </div>
+            `;
+
+            attachEventListeners();
+        }
+
+        // Global handlers for onclick events in HTML strings
+        window.rpFilter = function (rating) {
+            if (currentFilter === rating) {
+                currentFilter = null; // Toggle off
+            } else {
+                currentFilter = rating;
+            }
+            currentPage = 1;
+            renderWidget();
+        };
+
+        window.rpPage = function (page) {
+            currentPage = page;
+            renderWidget();
+            // Scroll to top of widget
+            widgetContainer.scrollIntoView({ behavior: 'smooth' });
+        };
+
+        function attachEventListeners() {
+            const modal = document.getElementById('rp-modal-overlay');
+            const openBtn = document.getElementById('rp-open-modal');
+            const closeBtn = document.getElementById('rp-close-modal');
+            const form = document.getElementById('rp-review-form');
+
+            if (openBtn) openBtn.onclick = () => modal.style.display = 'flex';
+            if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+            if (modal) modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+            if (form) {
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const submitBtn = form.querySelector('.rp-submit-btn');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Wird gesendet...';
+
+                    const payload = {
+                        productId: productId,
+                        rating: formData.get('rating'),
+                        customerName: formData.get('customerName'),
+                        customerEmail: formData.get('customerEmail'),
+                        title: formData.get('title'),
+                        content: formData.get('content')
+                    };
+
+                    fetch(`${BASE_URL}/api/reviews/public`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(res => res.json())
+                        .then(response => {
+                            if (response.success) {
+                                modal.innerHTML = `
+                                <div class="rp-modal" style="text-align:center;">
+                                    <div style="color: #16a34a; font-size: 48px; margin-bottom: 16px;">✓</div>
+                                    <h3 style="margin-bottom: 8px;">Vielen Dank!</h3>
+                                    <p style="color: #6b7280; margin-bottom: 24px;">Ihre Bewertung wurde eingereicht und wird nach Prüfung veröffentlicht.</p>
+                                    <button onclick="document.getElementById('rp-modal-overlay').style.display='none'" class="rp-submit-btn">Schließen</button>
+                                </div>
+                            `;
+                            } else {
+                                alert('Fehler beim Senden: ' + (response.error || 'Unbekannter Fehler'));
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Bewertung absenden';
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert('Ein Fehler ist aufgetreten.');
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Bewertung absenden';
+                        });
+                };
+            }
+        }
     }
 
     function getStarsHTML(rating) {
