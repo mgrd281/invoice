@@ -33,7 +33,8 @@ import {
     PenTool,
     FileText,
     TrendingUp,
-    Clock
+    Clock,
+    AlertTriangle
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -814,6 +815,140 @@ export default function ReviewsPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+                        </div>
+
+                        {/* Negative Reviews Section */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Negative Reviews List */}
+                            <Card className="lg:col-span-2">
+                                <CardHeader>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2 text-red-600">
+                                                <AlertTriangle className="h-5 w-5" />
+                                                Kritische Bewertungen (1-2 Sterne)
+                                            </CardTitle>
+                                            <CardDescription>Hier sehen Sie alle negativen Bewertungen, die Ihre Aufmerksamkeit benötigen.</CardDescription>
+                                        </div>
+                                        <Badge variant="destructive">{stats.negativeReviews.length} Neu</Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    {stats.negativeReviews.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {stats.negativeReviews.map((review: any) => (
+                                                <div key={review.id} className="border rounded-lg p-4 hover:bg-red-50/30 transition-colors">
+                                                    <div className="flex gap-4">
+                                                        {/* Product Image */}
+                                                        <div className="h-12 w-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                                                            {review.productImage ? (
+                                                                <img src={review.productImage} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                                    <ImageIcon className="h-4 w-4" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <h4 className="font-medium text-sm text-gray-900">{review.productTitle}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <div className="flex text-yellow-400">
+                                                                            {[...Array(5)].map((_, i) => (
+                                                                                <Star
+                                                                                    key={i}
+                                                                                    className={`h-3 w-3 ${i < review.rating ? 'fill-current text-yellow-500' : 'text-gray-300'}`}
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                        <span className="text-xs text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</span>
+                                                                        <span className="text-xs font-medium text-gray-700">• {review.customerName}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <Badge variant={review.handlingStatus === 'RESOLVED' ? 'outline' : review.handlingStatus === 'REPLIED' ? 'secondary' : 'destructive'}>
+                                                                    {review.handlingStatus === 'RESOLVED' ? 'Gelöst' : review.handlingStatus === 'REPLIED' ? 'Antwort gesendet' : 'Neu'}
+                                                                </Badge>
+                                                            </div>
+
+                                                            <p className="text-sm text-gray-700 mt-2 bg-white p-2 rounded border border-gray-100">
+                                                                "{review.content}"
+                                                            </p>
+
+                                                            <div className="mt-3 flex justify-end gap-2">
+                                                                <Button size="sm" variant="outline" className="h-8 text-xs">
+                                                                    <MessageSquare className="h-3 w-3 mr-1" />
+                                                                    Antworten
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12 text-gray-500">
+                                            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                                            <p>Keine kritischen Bewertungen gefunden. Weiter so!</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Analysis Section */}
+                            <div className="space-y-6">
+                                {/* Trend Card */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">Trend-Analyse</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-sm text-gray-500">Negative Reviews (30 Tage)</span>
+                                            <span className={`text-sm font-bold ${stats.analysis.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                {stats.analysis.trend > 0 ? '+' : ''}{stats.analysis.trend}
+                                            </span>
+                                        </div>
+                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full ${stats.analysis.trendDirection === 'increasing' ? 'bg-red-500' : 'bg-green-500'}`}
+                                                style={{ width: '60%' }}
+                                            ></div>
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-2">
+                                            {stats.analysis.trendDirection === 'increasing'
+                                                ? 'Die Anzahl negativer Bewertungen steigt.'
+                                                : 'Die Anzahl negativer Bewertungen ist stabil oder sinkt.'}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Reasons Card */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">Häufigste Gründe</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            {stats.analysis.negativeReasons.map((reason: any, index: number) => (
+                                                <div key={index}>
+                                                    <div className="flex justify-between text-sm mb-1">
+                                                        <span className="font-medium text-gray-700">{reason.reason}</span>
+                                                        <span className="text-gray-500">{reason.percentage}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-blue-600 rounded-full"
+                                                            style={{ width: `${reason.percentage}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
 
                         {/* Recent Reviews */}
