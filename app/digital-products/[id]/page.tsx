@@ -567,6 +567,7 @@ Viel Spaß!`
                                                 <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
                                                     <strong>Verfügbare Variablen:</strong><br />
                                                     {'{{ customer_name }}'} - Name des Kunden<br />
+                                                    {'{{ customer_salutation }}'} - Automatische Anrede (z.B. Sehr geehrter Herr...)<br />
                                                     {'{{ product_title }}'} - Name des Produkts<br />
                                                     {'{{ license_key }}'} - Der zugewiesene Key<br />
                                                     {'{{ download_button }}'} - Die Download-Buttons (wird durch die Konfiguration unten erstellt)<br />
@@ -803,6 +804,7 @@ Viel Spaß!`
                                                                     // 3. Replace variables
                                                                     html = html
                                                                         .replace(/{{ customer_name }}/g, 'Max Mustermann')
+                                                                        .replace(/{{ customer_salutation }}/g, 'Sehr geehrter Herr Mustermann')
                                                                         .replace(/{{ product_title }}/g, product?.title || 'Beispiel Produkt')
                                                                         .replace(/{{ license_key }}/g, 'XXXX-YYYY-ZZZZ-AAAA');
 

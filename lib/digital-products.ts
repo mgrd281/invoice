@@ -80,7 +80,8 @@ export async function processDigitalProductOrder(
     customerEmail: string,
     customerName: string,
     productTitle: string,
-    shopifyVariantId?: string
+    shopifyVariantId?: string,
+    customerSalutation?: string
 ) {
     const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
 
@@ -159,6 +160,7 @@ export async function processDigitalProductOrder(
 
     const emailBody = replaceVariables(htmlTemplate, {
         customer_name: customerName,
+        customer_salutation: customerSalutation || `Hallo ${customerName}`,
         product_title: productTitle,
         license_key: key.key,
         download_button: downloadButtonHtml

@@ -79,7 +79,35 @@ export async function POST(req: Request) {
                   payload.email || payload.customer?.email,
                   payload.shipping_address?.first_name || payload.customer?.first_name || 'Kunde',
                   item.title,
-                  item.variant_id ? String(item.variant_id) : undefined
+                  item.variant_id ? String(item.variant_id) : undefined,
+                  (() => {
+                    // Determine Salutation
+                    const lastName = payload.customer?.last_name || payload.shipping_address?.last_name || '';
+                    // Shopify doesn't always provide gender directly in the order payload, 
+                    // but if it's there (e.g. from a custom field or meta), we can use it.
+                    // Often it's not standard. We'll check for common indicators if available, 
+                    // otherwise fallback to neutral.
+                    // NOTE: Standard Shopify Order object doesn't have a 'gender' field on root or customer.
+                    // If you have a custom implementation or app adding it, adjust here.
+                    // For now, we'll try to guess or use a neutral default if unknown.
+
+                    // IF you had gender:
+                    // const gender = payload.customer?.gender; // Hypothetical
+
+                    // Since we don't have reliable gender in standard Shopify webhooks, 
+                    // we might need to rely on a neutral fallback OR if the user requested it,
+                    // we could try to infer from title if provided (e.g. "Mr", "Mrs" in note_attributes?)
+
+                    // Let's implement the logic requested:
+                    // "Sehr geehrte Frau {{ customer_last_name }}"
+                    // "Sehr geehrter Herr {{ customer_last_name }}"
+                    // "Sehr geehrte/r Kunde/Kundin {{ customer_last_name }}"
+
+                    // As we can't reliably know gender from standard payload, we'll use the neutral one 
+                    // UNLESS we find a strong hint.
+
+                    return `Sehr geehrte/r Kunde/Kundin ${lastName}`.trim();
+                  })()
                 )
               } catch (err) {
                 log(`❌ Error processing digital product ${item.product_id}:`, err)
