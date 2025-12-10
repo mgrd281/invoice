@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
                 customerName: true,
                 createdAt: true,
                 images: true,
+                videos: true,
                 isVerified: true,
                 reply: true,
                 repliedAt: true
@@ -114,6 +115,8 @@ export async function POST(request: NextRequest) {
                 rating: parseInt(body.rating),
                 title: body.title || '',
                 content: body.content || '',
+                images: body.images || [], // Save images (Base64)
+                videos: body.videos || [], // Save videos (Base64)
                 status: 'PENDING', // Always pending initially
                 isVerified: false, // Can be updated if we verify purchase later
                 source: 'web'

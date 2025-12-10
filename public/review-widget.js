@@ -230,6 +230,16 @@
                     <div class="rp-content">
                         ${review.title ? `<span class="rp-title">${review.title}</span>` : ''}
                         ${review.content}
+                        ${(review.images && review.images.length > 0) ? `
+                            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                                ${review.images.map(img => `<img src="${img}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer;" onclick="window.open(this.src, '_blank')">`).join('')}
+                            </div>
+                        ` : ''}
+                        ${(review.videos && review.videos.length > 0) ? `
+                            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                                ${review.videos.map(vid => `<video src="${vid}" controls style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;"></video>`).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
@@ -333,6 +343,11 @@
                                 <label class="rp-label">Bewertung</label>
                                 <textarea class="rp-textarea" name="content" required placeholder="Wie hat Ihnen das Produkt gefallen?"></textarea>
                             </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label">Fotos/Videos hinzufügen (Optional)</label>
+                                <input type="file" class="rp-input" name="media" accept="image/*,video/*" multiple style="padding: 6px;">
+                                <p style="font-size: 11px; color: #6b7280; margin-top: 4px;">Max. 5MB pro Datei. Unterstützt: JPG, PNG, MP4</p>
+                            </div>
                             <button type="submit" class="rp-submit-btn">Bewertung absenden</button>
                         </form>
                     </div>
@@ -394,11 +409,47 @@
             if (modal) modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
             if (form) {
-                form.onsubmit = (e) => {
+                form.onsubmit = async (e) => {
                     e.preventDefault();
                     const formData = new FormData(form);
                     const submitBtn = form.querySelector('.rp-submit-btn');
                     submitBtn.disabled = true;
+                    submitBtn.textContent = 'Wird verarbeitet...';
+
+                    // Handle File Uploads (Convert to Base64)
+                    const fileInput = form.querySelector('input[type="file"]');
+                    const images = [];
+                    const videos = [];
+
+                    if (fileInput && fileInput.files.length > 0) {
+                        for (let i = 0; i < fileInput.files.length; i++) {
+                            const file = fileInput.files[i];
+                            if (file.size > 5 * 1024 * 1024) {
+                                alert(`Datei ${file.name} ist zu groß (Max 5MB)`);
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Bewertung absenden';
+                                return;
+                            }
+
+                            try {
+                                const base64 = await new Promise((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onload = () => resolve(reader.result);
+                                    reader.onerror = reject;
+                                    reader.readAsDataURL(file);
+                                });
+
+                                if (file.type.startsWith('image/')) {
+                                    images.push(base64);
+                                } else if (file.type.startsWith('video/')) {
+                                    videos.push(base64);
+                                }
+                            } catch (err) {
+                                console.error('Error reading file:', err);
+                            }
+                        }
+                    }
+
                     submitBtn.textContent = 'Wird gesendet...';
 
                     const payload = {
@@ -407,7 +458,9 @@
                         customerName: formData.get('customerName'),
                         customerEmail: formData.get('customerEmail'),
                         title: formData.get('title'),
-                        content: formData.get('content')
+                        content: formData.get('content'),
+                        images: images,
+                        videos: videos
                     };
 
                     fetch(`${BASE_URL}/api/reviews/public`, {
