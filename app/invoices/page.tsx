@@ -153,9 +153,17 @@ export default function InvoicesPage() {
 
       // Sort invoices by creation date/upload date in descending order (newest first)
       const sortedInvoices = combinedInvoices.sort((a: any, b: any) => {
-        const dateA = new Date(a.createdAt || a.date || a.uploadedAt || '1970-01-01')
-        const dateB = new Date(b.createdAt || b.date || b.uploadedAt || '1970-01-01')
-        return dateB.getTime() - dateA.getTime() // Descending order (newest first)
+        const dateA = new Date(a.date || a.createdAt || a.uploadedAt || '1970-01-01').getTime()
+        const dateB = new Date(b.date || b.createdAt || b.uploadedAt || '1970-01-01').getTime()
+
+        if (dateB !== dateA) {
+          return dateB - dateA // Sort by date descending
+        }
+
+        // If dates are equal, sort by invoice number descending
+        const numA = a.number || a.invoiceNumber || ''
+        const numB = b.number || b.invoiceNumber || ''
+        return numB.localeCompare(numA, undefined, { numeric: true, sensitivity: 'base' })
       })
 
       console.log('Invoices sorted by date (newest first):', sortedInvoices.length)

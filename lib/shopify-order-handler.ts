@@ -69,7 +69,13 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     // 2. Find/Create Customer
     const customerData = {
         organizationId: organization.id,
-        name: `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim() || 'Gast',
+        name: (
+            `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim() ||
+            `${order.billing_address?.first_name || ''} ${order.billing_address?.last_name || ''}`.trim() ||
+            `${order.shipping_address?.first_name || ''} ${order.shipping_address?.last_name || ''}`.trim() ||
+            order.email ||
+            'Gast'
+        ),
         email: order.email || '',
         address: order.billing_address?.address1 || '',
         city: order.billing_address?.city || '',

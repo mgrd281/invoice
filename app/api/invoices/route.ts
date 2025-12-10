@@ -79,7 +79,10 @@ export async function GET(request: NextRequest) {
         items: true,
         order: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { issueDate: 'desc' },
+        { invoiceNumber: 'desc' }
+      ]
     })
 
     // Map to frontend format
