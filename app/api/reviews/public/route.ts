@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
                 isVerified: true,
                 reply: true,
                 repliedAt: true,
-                helpful: true
+                helpful: true,
+                notHelpful: true
             }
         })
 

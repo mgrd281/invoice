@@ -7,26 +7,33 @@ export async function POST(
 ) {
     try {
         const id = params.id
+        const body = await request.json().catch(() => ({})) // Handle empty body safely
+        const action = body.action || 'helpful' // Default to helpful for backward compatibility
 
         if (!id) {
             return NextResponse.json({ error: 'Review ID is required' }, { status: 400 })
         }
 
+        let updateData = {}
+        if (action === 'notHelpful') {
+            updateData = { notHelpful: { increment: 1 } }
+        } else {
+            updateData = { helpful: { increment: 1 } }
+        }
+
         const review = await prisma.review.update({
             where: { id },
-            data: {
-                helpful: {
-                    increment: 1
-                }
-            },
+            data: updateData,
             select: {
-                helpful: true
+                helpful: true,
+                notHelpful: true
             }
         })
 
         return NextResponse.json({
             success: true,
-            helpful: review.helpful
+            helpful: review.helpful,
+            notHelpful: review.notHelpful
         }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
@@ -35,8 +42,8 @@ export async function POST(
         })
 
     } catch (error) {
-        console.error('Error updating helpful count:', error)
-        return NextResponse.json({ error: 'Failed to update helpful count' }, { status: 500 })
+        console.error('Error updating vote count:', error)
+        return NextResponse.json({ error: 'Failed to update vote count' }, { status: 500 })
     }
 }
 

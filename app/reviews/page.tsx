@@ -16,6 +16,7 @@ import {
     Settings,
     MessageSquare,
     ThumbsUp,
+    ThumbsDown,
     MoreHorizontal,
     Search,
     Filter,
@@ -63,17 +64,32 @@ function timeAgo(dateString: string) {
     const now = new Date()
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-    let interval = seconds / 31536000
-    if (interval > 1) return "vor " + Math.floor(interval) + " Jahren"
-    interval = seconds / 2592000
-    if (interval > 1) return "vor " + Math.floor(interval) + " Monaten"
-    interval = seconds / 86400
-    if (interval > 1) return "vor " + Math.floor(interval) + " Tagen"
-    interval = seconds / 3600
-    if (interval > 1) return "vor " + Math.floor(interval) + " Stunden"
-    interval = seconds / 60
-    if (interval > 1) return "vor " + Math.floor(interval) + " Minuten"
-    return "vor wenigen Sekunden"
+    if (seconds < 60) {
+        return seconds === 1 ? "vor 1 Sekunde" : "vor " + seconds + " Sekunden"
+    }
+
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) {
+        return minutes === 1 ? "vor 1 Minute" : "vor " + minutes + " Minuten"
+    }
+
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) {
+        return hours === 1 ? "vor 1 Stunde" : "vor " + hours + " Stunden"
+    }
+
+    const days = Math.floor(hours / 24)
+    if (days < 30) {
+        return days === 1 ? "vor 1 Tag" : "vor " + days + " Tagen"
+    }
+
+    const months = Math.floor(days / 30)
+    if (months < 12) {
+        return months === 1 ? "vor 1 Monat" : "vor " + months + " Monaten"
+    }
+
+    const years = Math.floor(days / 365)
+    return years === 1 ? "vor 1 Jahr" : "vor " + years + " Jahren"
 }
 
 interface Product {
@@ -721,12 +737,22 @@ export default function ReviewsPage() {
                                                         </div>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mt-2">{review.content}</p>
-                                                    {review.productTitle && (
-                                                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-                                                            <LinkIcon className="h-3 w-3" />
-                                                            {review.productTitle}
+                                                    <div className="flex items-center gap-4 mt-2">
+                                                        {review.productTitle && (
+                                                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                                <LinkIcon className="h-3 w-3" />
+                                                                {review.productTitle}
+                                                            </div>
+                                                        )}
+                                                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <ThumbsUp className="h-3 w-3" />
+                                                            {review.helpful || 0}
                                                         </div>
-                                                    )}
+                                                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <ThumbsDown className="h-3 w-3" />
+                                                            {review.notHelpful || 0}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

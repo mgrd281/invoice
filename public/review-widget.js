@@ -48,17 +48,32 @@
         const now = new Date();
         const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-        let interval = seconds / 31536000;
-        if (interval > 1) return "vor " + Math.floor(interval) + " Jahren";
-        interval = seconds / 2592000;
-        if (interval > 1) return "vor " + Math.floor(interval) + " Monaten";
-        interval = seconds / 86400;
-        if (interval > 1) return "vor " + Math.floor(interval) + " Tagen";
-        interval = seconds / 3600;
-        if (interval > 1) return "vor " + Math.floor(interval) + " Stunden";
-        interval = seconds / 60;
-        if (interval > 1) return "vor " + Math.floor(interval) + " Minuten";
-        return "vor wenigen Sekunden";
+        if (seconds < 60) {
+            return seconds === 1 ? "vor 1 Sekunde" : "vor " + seconds + " Sekunden";
+        }
+
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) {
+            return minutes === 1 ? "vor 1 Minute" : "vor " + minutes + " Minuten";
+        }
+
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) {
+            return hours === 1 ? "vor 1 Stunde" : "vor " + hours + " Stunden";
+        }
+
+        const days = Math.floor(hours / 24);
+        if (days < 30) {
+            return days === 1 ? "vor 1 Tag" : "vor " + days + " Tagen";
+        }
+
+        const months = Math.floor(days / 30);
+        if (months < 12) {
+            return months === 1 ? "vor 1 Monat" : "vor " + months + " Monaten";
+        }
+
+        const years = Math.floor(days / 365);
+        return years === 1 ? "vor 1 Jahr" : "vor " + years + " Jahren";
     }
 
     function initReviewsWidget() {
@@ -256,11 +271,17 @@
                         ` : ''}
                     </div>
                     <div class="rp-helpful-section">
-                        <span class="rp-helpful-text">Fanden Sie diese Bewertung hilfreich?</span>
-                        <button id="rp-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpHelpful('${review.id}')" ${sessionStorage.getItem(`rp-helpful-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-                            <span id="rp-helpful-count-${review.id}">${review.helpful || 0}</span>
-                        </button>
+                        <span class="rp-helpful-text">War diese Bewertung hilfreich?</span>
+                        <div style="display:flex; gap:8px;">
+                            <button id="rp-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpVote('${review.id}', 'helpful')" ${sessionStorage.getItem(`rp-vote-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                <span id="rp-helpful-count-${review.id}">${review.helpful || 0}</span>
+                            </button>
+                            <button id="rp-not-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpVote('${review.id}', 'notHelpful')" ${sessionStorage.getItem(`rp-vote-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+                                <span id="rp-not-helpful-count-${review.id}">${review.notHelpful || 0}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -420,28 +441,38 @@
             widgetContainer.scrollIntoView({ behavior: 'smooth' });
         };
 
-        window.rpHelpful = function (reviewId) {
-            // Check if already voted in this session (simple prevention)
-            if (sessionStorage.getItem(`rp-helpful-${reviewId}`)) return;
+        window.rpVote = function (reviewId, action) {
+            // Check if already voted in this session
+            if (sessionStorage.getItem(`rp-vote-${reviewId}`)) return;
 
-            const countSpan = document.getElementById(`rp-helpful-count-${reviewId}`);
+            const countId = action === 'helpful' ? `rp-helpful-count-${reviewId}` : `rp-not-helpful-count-${reviewId}`;
+            const countSpan = document.getElementById(countId);
+
             if (countSpan) {
                 const current = parseInt(countSpan.innerText);
                 countSpan.innerText = current + 1;
             }
 
-            // Disable button visually
-            const btn = document.getElementById(`rp-helpful-btn-${reviewId}`);
-            if (btn) {
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'default';
+            // Disable buttons visually
+            const btnHelpful = document.getElementById(`rp-helpful-btn-${reviewId}`);
+            const btnNotHelpful = document.getElementById(`rp-not-helpful-btn-${reviewId}`);
+
+            if (btnHelpful) {
+                btnHelpful.style.opacity = '0.5';
+                btnHelpful.style.cursor = 'default';
+            }
+            if (btnNotHelpful) {
+                btnNotHelpful.style.opacity = '0.5';
+                btnNotHelpful.style.cursor = 'default';
             }
 
-            sessionStorage.setItem(`rp-helpful-${reviewId}`, 'true');
+            sessionStorage.setItem(`rp-vote-${reviewId}`, action);
 
             fetch(`${BASE_URL}/api/reviews/${reviewId}/helpful`, {
-                method: 'POST'
-            }).catch(err => console.error('Failed to mark helpful:', err));
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            }).catch(err => console.error('Failed to vote:', err));
         };
 
         function attachEventListeners() {

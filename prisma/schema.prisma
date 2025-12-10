@@ -603,6 +603,7 @@ model Review {
   isVerified     Boolean      @default(false)
   isFeatured     Boolean      @default(false)
   helpful        Int          @default(0)
+  notHelpful     Int          @default(0)
   
   // Admin Reply
   reply          String?
