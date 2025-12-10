@@ -197,7 +197,7 @@ export default function ReviewsPage() {
     const fetchAllReviews = async () => {
         setLoadingAllReviews(true)
         try {
-            let url = `/api/reviews?page=${reviewsPage}&limit=20`
+            let url = `/api/reviews?page=${reviewsPage}&limit=100`
             if (selectedProductStat) {
                 url += `&productId=${selectedProductStat.productId}`
             }
