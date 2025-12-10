@@ -15,23 +15,25 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
     const contentRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
-    // Initialize content
+    // Initialize and sync content
     useEffect(() => {
-        if (contentRef.current && contentRef.current.innerHTML !== value) {
-            // Only update if significantly different to avoid cursor jumping
-            // This is a simple check; for production-grade, more complex diffing is needed
-            // But for this use case, it's acceptable if we only update on mount or external change
-            if (value === '' && contentRef.current.innerHTML === '<br>') {
-                return;
+        if (contentRef.current) {
+            // Ensure consistent paragraph separator
+            document.execCommand('defaultParagraphSeparator', false, 'p');
+
+            // Only update if content is different to avoid cursor jumping
+            if (contentRef.current.innerHTML !== value) {
+                contentRef.current.innerHTML = value;
             }
-            contentRef.current.innerHTML = value;
         }
-    }, []); // Run once on mount, or we need a better way to sync without loop
+    }, [value]);
 
     const handleInput = () => {
         if (contentRef.current) {
             const html = contentRef.current.innerHTML;
-            onChange(html);
+            if (html !== value) {
+                onChange(html);
+            }
         }
     };
 
@@ -73,16 +75,14 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
                 onInput={handleInput}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                dangerouslySetInnerHTML={{ __html: value }} // Initial render
-                style={{ whiteSpace: 'pre-wrap' }} // Preserve whitespace behavior
-            />
+                suppressContentEditableWarning={true}
 
-            {/* Placeholder overlay if needed, though CSS :empty is better */}
-            {value === '' && !isFocused && (
-                <div className="absolute top-[50px] left-4 text-gray-400 pointer-events-none text-sm">
-                    {placeholder || 'Nachricht hier schreiben...'}
-                </div>
-            )}
+                {/* Placeholder overlay if needed, though CSS :empty is better */}
+                {value === '' && !isFocused && (
+                    <div className="absolute top-[50px] left-4 text-gray-400 pointer-events-none text-sm">
+                        {placeholder || 'Nachricht hier schreiben...'}
+                    </div>
+                )}
         </div>
     );
 }
