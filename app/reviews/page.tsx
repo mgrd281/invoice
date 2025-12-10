@@ -241,7 +241,7 @@ export default function ReviewsPage() {
     // Fetch settings on mount
     // Fetch settings on mount
     useEffect(() => {
-        fetch('/api/reviews/settings')
+        fetch('/api/reviews/settings', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
                 if (data && !data.error) {
