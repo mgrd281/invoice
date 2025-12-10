@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { Checkbox } from '@/components/ui/checkbox'
 export default function DigitalProductDetailPage({ params }: { params: { id: string } }) {
     const router = useRouter()
     const [product, setProduct] = useState<any>(null)
@@ -41,6 +42,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
 
     const [selectedVariant, setSelectedVariant] = useState<string>('any')
     const [variants, setVariants] = useState<any[]>([])
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         loadData()
@@ -270,6 +272,51 @@ Viel Spaß!`
         }
     }
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            const displayedKeys = activeKeyTab === 'history'
+                ? keys.filter(k => k.isUsed)
+                : keys.filter(k => !k.isUsed)
+            setSelectedKeys(new Set(displayedKeys.map(k => k.id)))
+        } else {
+            setSelectedKeys(new Set())
+        }
+    }
+
+    const handleSelectKey = (keyId: string, checked: boolean) => {
+        const newSelected = new Set(selectedKeys)
+        if (checked) {
+            newSelected.add(keyId)
+        } else {
+            newSelected.delete(keyId)
+        }
+        setSelectedKeys(newSelected)
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedKeys.size === 0) return
+        if (!confirm(`Sind Sie sicher, dass Sie die ${selectedKeys.size} ausgewählten Keys löschen möchten?`)) return
+
+        try {
+            const res = await fetch(`/api/digital-products/${params.id}/keys`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyIds: Array.from(selectedKeys) })
+            })
+
+            if (res.ok) {
+                alert(`${selectedKeys.size} Keys wurden erfolgreich gelöscht.`)
+                setSelectedKeys(new Set())
+                loadData()
+            } else {
+                alert('Fehler beim Löschen der Keys')
+            }
+        } catch (error) {
+            console.error(error)
+            alert('Ein Fehler ist aufgetreten')
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
@@ -464,10 +511,35 @@ Viel Spaß!`
                                         </div>
                                     </CardHeader>
                                     <CardContent>
+                                        {selectedKeys.size > 0 && (
+                                            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-md mb-4 flex items-center justify-between">
+                                                <span className="font-medium">{selectedKeys.size} Keys ausgewählt</span>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={handleBulkDelete}
+                                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                                >
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    Ausgewählte löschen
+                                                </Button>
+                                            </div>
+                                        )}
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
                                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                                     <tr>
+                                                        <th className="px-4 py-3 w-[50px]">
+                                                            <Checkbox
+                                                                checked={(() => {
+                                                                    const displayedKeys = activeKeyTab === 'history'
+                                                                        ? keys.filter(k => k.isUsed)
+                                                                        : keys.filter(k => !k.isUsed)
+                                                                    return displayedKeys.length > 0 && displayedKeys.every(k => selectedKeys.has(k.id))
+                                                                })()}
+                                                                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                                            />
+                                                        </th>
                                                         <th className="px-4 py-3">Key</th>
                                                         {variants.length > 0 && <th className="px-4 py-3">Variante</th>}
                                                         <th className="px-4 py-3">Status</th>
@@ -498,6 +570,12 @@ Viel Spaß!`
 
                                                         return displayedKeys.map((key) => (
                                                             <tr key={key.id} className="border-b hover:bg-gray-50">
+                                                                <td className="px-4 py-3">
+                                                                    <Checkbox
+                                                                        checked={selectedKeys.has(key.id)}
+                                                                        onCheckedChange={(checked) => handleSelectKey(key.id, checked as boolean)}
+                                                                    />
+                                                                </td>
                                                                 <td className="px-4 py-3 font-mono">{key.key}</td>
                                                                 {variants.length > 0 && (
                                                                     <td className="px-4 py-3 text-gray-500">

@@ -44,18 +44,37 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         const { searchParams } = new URL(req.url)
         const keyId = searchParams.get('keyId')
 
-        if (!keyId) {
-            return NextResponse.json({ error: 'Key ID required' }, { status: 400 })
+        if (keyId) {
+            // Single delete
+            await prisma.licenseKey.delete({
+                where: {
+                    id: keyId,
+                    digitalProductId: params.id
+                }
+            })
+            return NextResponse.json({ success: true })
         }
 
-        await prisma.licenseKey.delete({
-            where: {
-                id: keyId,
-                digitalProductId: params.id // Ensure it belongs to this product
-            }
-        })
+        // Try bulk delete from body
+        try {
+            const body = await req.json()
+            const { keyIds } = body
 
-        return NextResponse.json({ success: true })
+            if (Array.isArray(keyIds) && keyIds.length > 0) {
+                await prisma.licenseKey.deleteMany({
+                    where: {
+                        id: { in: keyIds },
+                        digitalProductId: params.id
+                    }
+                })
+                return NextResponse.json({ success: true })
+            }
+        } catch (e) {
+            // Body parsing failed or no body, fall through to error
+        }
+
+        return NextResponse.json({ error: 'Key ID or keyIds required' }, { status: 400 })
+
     } catch (error) {
         console.error('Error deleting key:', error)
         return NextResponse.json({ error: 'Failed to delete key' }, { status: 500 })
