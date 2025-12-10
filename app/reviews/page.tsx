@@ -1178,7 +1178,7 @@ export default function ReviewsPage() {
                                                 {[5, 4, 3, 2, 1].map((star) => (
                                                     <div key={star} className="flex items-center gap-2 text-xs">
                                                         <span className="w-3">{star}</span>
-                                                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                                             <div
                                                                 className="h-full rounded-full"
                                                                 style={{
