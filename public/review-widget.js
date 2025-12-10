@@ -16,7 +16,7 @@
             const productId = container.dataset.productId;
             if (!productId) return;
 
-            fetch(`${BASE_URL}/api/reviews/public?productId=${productId}`)
+            fetch(`${BASE_URL}/api/reviews/public?productId=${productId}&t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     const total = data.stats?.total || 0;
@@ -81,7 +81,7 @@
         let widgetSettings = { primaryColor: '#2563eb', layout: 'list' };
         let stats = { total: 0, average: 0 };
 
-        fetch(`${BASE_URL}/api/reviews/public?productId=${productId}`)
+        fetch(`${BASE_URL}/api/reviews/public?productId=${productId}&t=${Date.now()}`)
             .then(res => res.json())
             .then(data => {
                 widgetSettings = data.settings || widgetSettings;
