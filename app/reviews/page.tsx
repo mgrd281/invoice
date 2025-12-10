@@ -139,6 +139,7 @@ function useShopifyProducts() {
 
 export default function ReviewsPage() {
     const [activeTab, setActiveTab] = useState('overview')
+    const { products: shopifyProducts } = useShopifyProducts()
 
     // Stats State
     const [stats, setStats] = useState({
@@ -1104,84 +1105,107 @@ export default function ReviewsPage() {
                     <TabsContent value="reviews">
                         {viewMode === 'products' ? (
                             <Card>
-                                <CardHeader className="pb-4">
-                                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <CardHeader className="pb-6 border-b border-gray-100 bg-white/50 backdrop-blur-sm">
+                                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                                         <div>
-                                            <CardTitle className="text-xl">Produkte mit Bewertungen</CardTitle>
-                                            <CardDescription>Wählen Sie ein Produkt, um dessen Bewertungen zu verwalten</CardDescription>
+                                            <CardTitle className="text-2xl font-bold text-gray-900">Produkte mit Bewertungen</CardTitle>
+                                            <CardDescription className="text-base text-gray-500 mt-1">
+                                                Wählen Sie ein Produkt, um dessen Bewertungen zu verwalten
+                                            </CardDescription>
                                         </div>
-                                        <div className="relative w-full md:w-auto">
-                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                        <div className="relative w-full md:w-[320px] group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                            </div>
                                             <Input
                                                 placeholder="Produkt suchen..."
-                                                className="pl-10 rounded-full bg-gray-50 border-gray-200 focus:bg-white transition-colors w-full md:w-[300px]"
+                                                className="pl-10 h-11 rounded-full bg-white border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base"
                                                 value={productSearch}
                                                 onChange={(e) => setProductSearch(e.target.value)}
                                             />
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="p-6 bg-gray-50/50 min-h-[500px]">
                                     {loadingProductStats ? (
-                                        <div className="flex justify-center py-12">
-                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                        <div className="flex justify-center py-20">
+                                            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                                         </div>
                                     ) : productStats.length > 0 ? (
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                             {productStats
                                                 .filter(stat => stat.productTitle.toLowerCase().includes(productSearch.toLowerCase()))
                                                 .sort((a, b) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime())
-                                                .map((stat) => (
-                                                    <div
-                                                        key={stat.productId}
-                                                        className="group bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row gap-5 items-start hover:scale-[1.01]"
-                                                        onClick={() => {
-                                                            setSelectedProductStat(stat)
-                                                            setViewMode('details')
-                                                        }}
-                                                    >
-                                                        {/* Product Image */}
-                                                        <div className="h-20 w-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm">
-                                                            {stat.productImage ? (
-                                                                <img src={stat.productImage} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                            ) : (
-                                                                <div className="h-full w-full flex items-center justify-center text-gray-300">
-                                                                    <ImageIcon className="h-8 w-8" />
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                .map((stat) => {
+                                                    const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
+                                                    const productImage = shopifyProduct?.images?.[0]?.src || stat.productImage
 
-                                                        {/* Product Info */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="text-base font-semibold text-gray-900 leading-tight mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                                                {stat.productTitle}
-                                                            </h4>
+                                                    return (
+                                                        <div
+                                                            key={stat.productId}
+                                                            className="group bg-white rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:scale-[1.02] transition-all duration-300 cursor-pointer p-5 flex items-center gap-5 relative overflow-hidden"
+                                                            onClick={() => {
+                                                                setSelectedProductStat(stat)
+                                                                setViewMode('details')
+                                                            }}
+                                                        >
+                                                            {/* Hover Highlight Line */}
+                                                            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                                            <div className="flex flex-col gap-1.5">
-                                                                {/* Rating & Count */}
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="flex text-yellow-400">
-                                                                        <Star className="h-4 w-4 fill-current" />
+                                                            {/* Product Image */}
+                                                            <div className="h-[80px] w-[80px] rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm bg-white relative group-hover:shadow-md transition-shadow">
+                                                                {productImage ? (
+                                                                    <img
+                                                                        src={productImage}
+                                                                        alt={stat.productTitle}
+                                                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                                                        <ImageIcon className="h-8 w-8" />
                                                                     </div>
-                                                                    <span className="font-bold text-gray-900">{stat.averageRating.toFixed(1)}</span>
-                                                                    <span className="text-gray-500 text-sm">({stat.reviewCount})</span>
-                                                                </div>
+                                                                )}
+                                                            </div>
 
-                                                                {/* Last Review Date */}
-                                                                <div className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
-                                                                    <Clock className="h-3.5 w-3.5" />
-                                                                    {new Date(stat.lastReviewDate).toLocaleDateString()}
+                                                            {/* Product Info */}
+                                                            <div className="flex-1 min-w-0 py-1">
+                                                                <h4 className="text-[17px] font-bold text-gray-900 leading-snug mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                                                    {stat.productTitle}
+                                                                </h4>
+
+                                                                <div className="space-y-1.5">
+                                                                    {/* Rating & Count */}
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-md border border-yellow-100">
+                                                                            <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                                                                            <span className="font-bold text-gray-900 text-sm">{stat.averageRating.toFixed(1)}</span>
+                                                                        </div>
+                                                                        <span className="text-gray-500 text-sm font-medium">({stat.reviewCount})</span>
+                                                                    </div>
+
+                                                                    {/* Last Review Date */}
+                                                                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                                                                        <Clock className="h-3.5 w-3.5" />
+                                                                        <span>{new Date(stat.lastReviewDate).toLocaleDateString()}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
+
+                                                            {/* Chevron for affordance */}
+                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                                <ArrowRight className="h-5 w-5 text-gray-300" />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    )
+                                                })}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-12">
-                                            <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                            <h3 className="text-lg font-medium text-gray-900">Keine Bewertungen gefunden</h3>
-                                            <p className="text-gray-500 mt-1">Es wurden noch keine Bewertungen für Produkte abgegeben.</p>
+                                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                                            <div className="h-20 w-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                                <MessageSquare className="h-10 w-10 text-gray-300" />
+                                            </div>
+                                            <h3 className="text-xl font-semibold text-gray-900">Keine Bewertungen gefunden</h3>
+                                            <p className="text-gray-500 mt-2 max-w-md">Es wurden noch keine Bewertungen für Produkte abgegeben oder es wurden keine Produkte gefunden, die Ihrer Suche entsprechen.</p>
                                         </div>
                                     )}
                                 </CardContent>
