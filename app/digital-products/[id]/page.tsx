@@ -231,7 +231,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const getDefaultTemplate = () => {
         return `Hallo {{ customer_name }},
 <br/><br/>
-Vielen Dank für Ihre Bestellung!
+vielen Dank für Ihre Bestellung!
 <br/><br/>
 Hier ist Ihr Produktschlüssel für {{ product_title }}:
 <br/>

@@ -199,7 +199,7 @@ function getDefaultTemplate() {
     return `
 Hallo {{ customer_name }},
 
-Vielen Dank für Ihre Bestellung!
+vielen Dank für Ihre Bestellung!
 
 Hier ist Ihr Produktschlüssel für {{ product_title }}:
 {{ license_key }}
