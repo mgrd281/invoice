@@ -7,6 +7,7 @@ export interface WidgetSettings {
     emailDelayDays: number
     emailSubject: string
     emailBody: string
+    reviewsEnabled: boolean
 }
 
 export const DEFAULT_WIDGET_SETTINGS: WidgetSettings = {
@@ -15,7 +16,8 @@ export const DEFAULT_WIDGET_SETTINGS: WidgetSettings = {
     emailEnabled: false,
     emailDelayDays: 3,
     emailSubject: 'Ihre Meinung ist uns wichtig! 🌟',
-    emailBody: 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team'
+    emailBody: 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team',
+    reviewsEnabled: true
 }
 
 /**
@@ -38,7 +40,8 @@ export async function getWidgetSettings(): Promise<WidgetSettings> {
                 emailEnabled: settings.emailEnabled,
                 emailDelayDays: settings.emailDelayDays,
                 emailSubject: settings.emailSubject,
-                emailBody: settings.emailBody
+                emailBody: settings.emailBody,
+                reviewsEnabled: settings.reviewsEnabled
             }
         }
     } catch (error) {
@@ -65,7 +68,8 @@ export async function saveWidgetSettings(settings: Partial<WidgetSettings>): Pro
                 emailEnabled: settings.emailEnabled,
                 emailDelayDays: settings.emailDelayDays,
                 emailSubject: settings.emailSubject,
-                emailBody: settings.emailBody
+                emailBody: settings.emailBody,
+                reviewsEnabled: settings.reviewsEnabled
             },
             create: {
                 organizationId: organization.id,
@@ -74,7 +78,8 @@ export async function saveWidgetSettings(settings: Partial<WidgetSettings>): Pro
                 emailEnabled: settings.emailEnabled ?? DEFAULT_WIDGET_SETTINGS.emailEnabled,
                 emailDelayDays: settings.emailDelayDays ?? DEFAULT_WIDGET_SETTINGS.emailDelayDays,
                 emailSubject: settings.emailSubject || DEFAULT_WIDGET_SETTINGS.emailSubject,
-                emailBody: settings.emailBody || DEFAULT_WIDGET_SETTINGS.emailBody
+                emailBody: settings.emailBody || DEFAULT_WIDGET_SETTINGS.emailBody,
+                reviewsEnabled: settings.reviewsEnabled ?? DEFAULT_WIDGET_SETTINGS.reviewsEnabled
             }
         })
     } catch (error) {

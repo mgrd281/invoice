@@ -114,6 +114,9 @@ model WidgetSettings {
   emailDelayDays Int          @default(3)
   emailSubject   String       @default("Ihre Meinung ist uns wichtig! 🌟")
   emailBody      String       @default("Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team")
+  
+  // General Settings
+  reviewsEnabled Boolean      @default(true)
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

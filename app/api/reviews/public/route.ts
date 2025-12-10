@@ -62,6 +62,24 @@ export async function GET(request: NextRequest) {
         const { getWidgetSettings } = await import('@/lib/widget-settings')
         const widgetSettings = await getWidgetSettings()
 
+        // If reviews are disabled globally, return empty data but include settings
+        if (widgetSettings.reviewsEnabled === false) {
+            return NextResponse.json({
+                success: true,
+                stats: {
+                    total: 0,
+                    average: 0
+                },
+                reviews: [],
+                settings: widgetSettings
+            }, {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                }
+            })
+        }
+
         return NextResponse.json({
             success: true,
             stats: {

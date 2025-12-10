@@ -19,6 +19,10 @@
             fetch(`${BASE_URL}/api/reviews/public?productId=${productId}&t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
+                    if (data.settings && data.settings.reviewsEnabled === false) {
+                        container.style.display = 'none';
+                        return;
+                    }
                     const total = data.stats?.total || 0;
                     const average = data.stats?.average || 0;
 
@@ -99,6 +103,10 @@
         fetch(`${BASE_URL}/api/reviews/public?productId=${productId}&t=${Date.now()}`)
             .then(res => res.json())
             .then(data => {
+                if (data.settings && data.settings.reviewsEnabled === false) {
+                    widgetContainer.style.display = 'none';
+                    return;
+                }
                 widgetSettings = data.settings || widgetSettings;
                 allReviews = data.reviews || [];
                 stats = data.stats || { total: 0, average: 0 };

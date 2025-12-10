@@ -393,7 +393,8 @@ export default function ReviewsPage() {
     // Widget Settings State
     const [widgetSettings, setWidgetSettings] = useState({
         primaryColor: '#2563eb',
-        layout: 'list' // 'list' | 'grid'
+        layout: 'list', // 'list' | 'grid'
+        reviewsEnabled: true
     })
 
     // Email Settings State
@@ -545,7 +546,8 @@ export default function ReviewsPage() {
                 if (data && !data.error) {
                     setWidgetSettings({
                         primaryColor: data.primaryColor || '#2563eb',
-                        layout: data.layout || 'list'
+                        layout: data.layout || 'list',
+                        reviewsEnabled: data.reviewsEnabled !== undefined ? data.reviewsEnabled : true
                     })
                     setEmailSettings({
                         enabled: data.emailEnabled || false,
@@ -1762,6 +1764,23 @@ export default function ReviewsPage() {
                                     <CardDescription>Passen Sie das Aussehen Ihrer Widgets an</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
+                                    <div className="space-y-4 border-b pb-4 mb-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-base">Bewertungen im Shop anzeigen</Label>
+                                                <p className="text-sm text-gray-500">
+                                                    {widgetSettings.reviewsEnabled
+                                                        ? 'Bewertungen werden im Shop angezeigt.'
+                                                        : 'Bewertungen sind aktuell ausgeblendet.'}
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={widgetSettings.reviewsEnabled}
+                                                onCheckedChange={(checked) => updateWidgetSettings({ ...widgetSettings, reviewsEnabled: checked })}
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2">
                                         <Label>Primärfarbe</Label>
                                         <div className="flex gap-2 items-center flex-wrap">
