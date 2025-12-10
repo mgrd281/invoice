@@ -282,6 +282,44 @@ export default function ReviewsPage() {
 
     const sortedVendors = Object.keys(productsByVendor).sort()
 
+    const handleExportReviews = async () => {
+        if (selectedProducts.length === 0) {
+            toast.error('Bitte wählen Sie mindestens ein Produkt aus.')
+            return
+        }
+
+        try {
+            const productIds = selectedProducts.join(',')
+            const res = await fetch(`/api/reviews/export?productIds=${productIds}`)
+            const data = await res.json()
+
+            if (data.reviews && data.reviews.length > 0) {
+                const exportData = data.reviews.map((r: any) => ({
+                    'Produktname': r.productTitle,
+                    'Produkt-ID': r.productId,
+                    'Bewertungstitel': r.title,
+                    'Bewertungstext': r.content,
+                    'Sterne': r.rating,
+                    'Name des Kunden': r.customerName,
+                    'E-Mail': r.customerEmail,
+                    'Datum': new Date(r.createdAt).toLocaleDateString(),
+                    'Status': r.status
+                }))
+
+                const ws = XLSX.utils.json_to_sheet(exportData)
+                const wb = XLSX.utils.book_new()
+                XLSX.utils.book_append_sheet(wb, ws, "Reviews")
+                XLSX.writeFile(wb, "reviews_export.xlsx")
+                toast.success(`${data.reviews.length} Bewertungen exportiert`)
+            } else {
+                toast.info('Keine Bewertungen für die ausgewählten Produkte gefunden.')
+            }
+        } catch (error) {
+            console.error('Export failed', error)
+            toast.error('Fehler beim Exportieren')
+        }
+    }
+
     // Manual Review State
     const [manualReview, setManualReview] = useState({
         rating: 5,
@@ -1043,8 +1081,16 @@ export default function ReviewsPage() {
                         {importStep === 1 && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>1. Produkte auswählen</CardTitle>
-                                    <CardDescription>Wählen Sie die Produkte aus, für die Sie Bewertungen importieren möchten</CardDescription>
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <CardTitle>1. Produkte auswählen</CardTitle>
+                                            <CardDescription>Wählen Sie die Produkte aus, für die Sie Bewertungen importieren oder exportieren möchten</CardDescription>
+                                        </div>
+                                        <Button variant="outline" onClick={handleExportReviews} disabled={selectedProducts.length === 0}>
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Exportieren
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     {loadingProducts ? (
