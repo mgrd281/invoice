@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
         // Get widget settings
         const { getWidgetSettings } = await import('@/lib/widget-settings')
-        const widgetSettings = getWidgetSettings()
+        const widgetSettings = await getWidgetSettings()
 
         return NextResponse.json({
             success: true,
