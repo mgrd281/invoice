@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import * as XLSX from 'xlsx'
 import { Switch } from '@/components/ui/switch'
 import {
     Dialog,
@@ -474,29 +475,36 @@ export default function ReviewsPage() {
         }
     }
 
-    const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
 
         setIsUploadingCsv(true)
         const reader = new FileReader()
+
         reader.onload = async (event) => {
-            const text = event.target?.result as string
-            const lines = text.split('\n')
-            const headers = lines[0].split(',').map(h => h.trim())
-
-            const reviews = []
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue
-                const values = lines[i].split(',')
-                const review: any = {}
-                headers.forEach((header, index) => {
-                    review[header] = values[index]?.trim()
-                })
-                reviews.push(review)
-            }
-
             try {
+                const data = event.target?.result
+                const workbook = XLSX.read(data, { type: 'binary' })
+                const firstSheetName = workbook.SheetNames[0]
+                const worksheet = workbook.Sheets[firstSheetName]
+                const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+                const reviews = jsonData.map((row: any) => ({
+                    rating: row.rating || row.Rating || row.sterne || 5,
+                    title: row.title || row.Title || row.titel || '',
+                    content: row.content || row.Content || row.inhalt || row.text || '',
+                    customer_name: row.customer_name || row.CustomerName || row.name || row.Name || 'Kunde',
+                    customer_email: row.customer_email || row.CustomerEmail || row.email || row.Email || '',
+                    date: row.date || row.Date || row.datum || new Date().toISOString(),
+                    images: row.images ? row.images.split(',').map((img: string) => img.trim()) : []
+                }))
+
+                if (reviews.length === 0) {
+                    toast.error('Keine gültigen Daten gefunden')
+                    return
+                }
+
                 for (const productId of selectedProducts) {
                     const product = products.find(p => p.id === productId)
                     await fetch('/api/reviews/create', {
@@ -504,7 +512,7 @@ export default function ReviewsPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             productId: productId,
-                            reviews: reviews.map(r => ({ ...r, product_title: product?.title }))
+                            reviews: reviews.map((r: any) => ({ ...r, product_title: product?.title }))
                         })
                     })
                 }
@@ -514,13 +522,14 @@ export default function ReviewsPage() {
                 setSelectedProducts([])
                 setActiveTab('reviews')
             } catch (error) {
-                console.error('CSV Import Error:', error)
-                toast.error('Fehler beim Importieren der CSV')
+                console.error('Import Error:', error)
+                toast.error('Fehler beim Importieren der Datei')
             } finally {
                 setIsUploadingCsv(false)
             }
         }
-        reader.readAsText(file)
+
+        reader.readAsBinaryString(file)
     }
 
     return (
@@ -895,8 +904,8 @@ export default function ReviewsPage() {
                                             onClick={() => setImportSource('csv')}
                                         >
                                             <FileText className="h-8 w-8 text-blue-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">CSV Datei</h3>
-                                            <p className="text-sm text-gray-500">Laden Sie eine CSV-Datei mit Bewertungen hoch</p>
+                                            <h3 className="font-semibold mb-2">Datei Upload</h3>
+                                            <p className="text-sm text-gray-500">CSV, Excel oder Numbers Datei hochladen</p>
                                         </div>
 
                                         <div
@@ -954,28 +963,36 @@ export default function ReviewsPage() {
                                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors relative">
                                                     <Upload className="h-10 w-10 text-gray-400 mx-auto mb-4" />
                                                     <p className="text-sm text-gray-600 mb-2">
-                                                        CSV Datei hier ablegen oder klicken zum Auswählen
+                                                        Datei hier ablegen oder klicken zum Auswählen
                                                     </p>
                                                     <p className="text-xs text-gray-400">
-                                                        Max. 5MB
+                                                        Unterstützt CSV, Excel (.xlsx, .xls) und Numbers
                                                     </p>
                                                     <input
                                                         type="file"
-                                                        accept=".csv"
+                                                        accept=".csv, .xlsx, .xls, .numbers"
                                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                        onChange={handleCsvUpload}
+                                                        onChange={handleFileUpload}
                                                     />
-                                                    {isUploadingCsv ? (
-                                                        <div className="flex flex-col items-center">
-                                                            <Loader2 className="h-6 w-6 animate-spin text-blue-600 mt-2" />
-                                                            <span className="text-xs text-blue-600 mt-1">Wird hochgeladen...</span>
+                                                    {isUploadingCsv && (
+                                                        <div className="flex flex-col items-center mt-4">
+                                                            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                                            <span className="text-xs text-blue-600 mt-1">Wird verarbeitet...</span>
                                                         </div>
-                                                    ) : null}
+                                                    )}
                                                 </div>
-                                                <div className="flex justify-between items-center">
-                                                    <Button variant="link" className="text-blue-600 p-0" onClick={downloadCsvTemplate}>
+                                                <div className="flex justify-center">
+                                                    <Button variant="link" className="text-blue-600" onClick={() => {
+                                                        const csvContent = "rating,title,content,customer_name,date\n5,Tolles Produkt,Bin sehr zufrieden!,Max Mustermann,2024-01-01"
+                                                        const blob = new Blob([csvContent], { type: 'text/csv' })
+                                                        const url = window.URL.createObjectURL(blob)
+                                                        const a = document.createElement('a')
+                                                        a.href = url
+                                                        a.download = 'beispiel_bewertungen.csv'
+                                                        a.click()
+                                                    }}>
                                                         <Download className="h-4 w-4 mr-2" />
-                                                        Beispiel-CSV herunterladen
+                                                        Beispiel-Datei herunterladen
                                                     </Button>
                                                 </div>
                                             </div>
