@@ -49,6 +49,14 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -139,27 +147,69 @@ export default function ReviewsPage() {
     })
     const [loadingStats, setLoadingStats] = useState(false)
 
-    useEffect(() => {
-        if (activeTab === 'overview') {
-            fetchStats()
-        } else if (activeTab === 'reviews') {
-            fetchAllReviews()
-        }
-    }, [activeTab])
+    // Product Grouping State
+    const [viewMode, setViewMode] = useState<'products' | 'details'>('products')
+    const [productStats, setProductStats] = useState<any[]>([])
+    const [selectedProductStat, setSelectedProductStat] = useState<any>(null)
+    const [productSearch, setProductSearch] = useState('')
+    const [loadingProductStats, setLoadingProductStats] = useState(false)
 
     // All Reviews State
     const [allReviews, setAllReviews] = useState<any[]>([])
     const [loadingAllReviews, setLoadingAllReviews] = useState(false)
     const [reviewsPage, setReviewsPage] = useState(1)
     const [reviewsTotal, setReviewsTotal] = useState(0)
+    // Filter states for details view
+    const [filterRating, setFilterRating] = useState<number | null>(null)
+    const [filterStatus, setFilterStatus] = useState<string | null>(null)
+    const [reviewSearch, setReviewSearch] = useState('')
+
+    useEffect(() => {
+        if (activeTab === 'overview') {
+            fetchStats()
+        } else if (activeTab === 'reviews') {
+            // If we are in product view, fetch product stats
+            if (viewMode === 'products') {
+                fetchProductStats()
+            } else {
+                // If we are in details view, fetch reviews for that product
+                fetchAllReviews()
+            }
+        }
+    }, [activeTab, viewMode, selectedProductStat, filterStatus, reviewsPage])
 
     const fetchAllReviews = async () => {
         setLoadingAllReviews(true)
         try {
-            const res = await fetch(`/api/reviews?page=${reviewsPage}&limit=20`)
+            let url = `/api/reviews?page=${reviewsPage}&limit=20`
+            if (selectedProductStat) {
+                url += `&productId=${selectedProductStat.productId}`
+            }
+            if (filterStatus) {
+                url += `&status=${filterStatus}`
+            }
+            // Note: API might not support rating/search filtering yet, but we can add it later or filter client-side if needed
+            // For now, let's assume basic filtering is handled or we add query params
+
+            const res = await fetch(url)
             const data = await res.json()
             if (data.reviews) {
-                setAllReviews(data.reviews)
+                let filteredReviews = data.reviews
+
+                // Client-side filtering for things API might not support yet
+                if (filterRating) {
+                    filteredReviews = filteredReviews.filter((r: any) => r.rating === filterRating)
+                }
+                if (reviewSearch) {
+                    const searchLower = reviewSearch.toLowerCase()
+                    filteredReviews = filteredReviews.filter((r: any) =>
+                        (r.content && r.content.toLowerCase().includes(searchLower)) ||
+                        (r.title && r.title.toLowerCase().includes(searchLower)) ||
+                        (r.customerName && r.customerName.toLowerCase().includes(searchLower))
+                    )
+                }
+
+                setAllReviews(filteredReviews)
                 setReviewsTotal(data.pagination.total)
             }
         } catch (error) {
@@ -167,6 +217,21 @@ export default function ReviewsPage() {
             toast.error('Fehler beim Laden der Bewertungen')
         } finally {
             setLoadingAllReviews(false)
+        }
+    }
+
+    const fetchProductStats = async () => {
+        setLoadingProductStats(true)
+        try {
+            const res = await fetch('/api/reviews/products-stats')
+            const data = await res.json()
+            if (!data.error) {
+                setProductStats(data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch product stats', error)
+        } finally {
+            setLoadingProductStats(false)
         }
     }
 
@@ -754,100 +819,198 @@ export default function ReviewsPage() {
 
                     {/* REVIEWS LIST TAB */}
                     <TabsContent value="reviews">
-                        <Card>
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <CardTitle>Alle Bewertungen</CardTitle>
-                                        <CardDescription>Verwalten Sie alle Kundenbewertungen</CardDescription>
-                                    </div>
-                                    <div className="flex gap-2">
+                        {viewMode === 'products' ? (
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <CardTitle>Produkte mit Bewertungen</CardTitle>
+                                            <CardDescription>Wählen Sie ein Produkt, um dessen Bewertungen zu verwalten</CardDescription>
+                                        </div>
                                         <div className="relative">
                                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                                            <Input placeholder="Suchen..." className="pl-9 w-[200px]" />
+                                            <Input
+                                                placeholder="Produkt suchen..."
+                                                className="pl-9 w-[250px]"
+                                                value={productSearch}
+                                                onChange={(e) => setProductSearch(e.target.value)}
+                                            />
                                         </div>
-                                        <Button variant="outline">
-                                            <Filter className="h-4 w-4 mr-2" />
-                                            Filter
-                                        </Button>
                                     </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                {loadingAllReviews ? (
-                                    <div className="flex justify-center py-12">
-                                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                                    </div>
-                                ) : allReviews.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {allReviews.map((review: any) => (
-                                            <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors group">
-                                                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
-                                                    {review.customerName?.charAt(0) || '?'}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex justify-between">
-                                                        <div>
-                                                            <h4 className="font-medium">{review.customerName}</h4>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <div className="flex">
-                                                                    {[...Array(5)].map((_, i) => (
-                                                                        <Star
-                                                                            key={i}
-                                                                            className={`h-3 w-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
-                                                                        />
-                                                                    ))}
+                                </CardHeader>
+                                <CardContent>
+                                    {loadingProductStats ? (
+                                        <div className="flex justify-center py-12">
+                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                        </div>
+                                    ) : productStats.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {productStats
+                                                .filter(stat => stat.productTitle.toLowerCase().includes(productSearch.toLowerCase()))
+                                                .map((stat) => (
+                                                    <div
+                                                        key={stat.productId}
+                                                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer flex gap-4 items-start"
+                                                        onClick={() => {
+                                                            setSelectedProductStat(stat)
+                                                            setViewMode('details')
+                                                        }}
+                                                    >
+                                                        <div className="h-16 w-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                                                            {stat.productImage ? (
+                                                                <img src={stat.productImage} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                                    <ImageIcon className="h-6 w-6" />
                                                                 </div>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {timeAgo(review.createdAt)}
-                                                                </span>
-                                                            </div>
+                                                            )}
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
-                                                                {review.status === 'APPROVED' ? 'Genehmigt' : review.status === 'PENDING' ? 'Ausstehend' : review.status === 'REJECTED' ? 'Abgelehnt' : review.status}
-                                                            </Badge>
-
-                                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <Button variant="ghost" size="icon" onClick={() => setEditingReview(review)}>
-                                                                    <PenTool className="h-4 w-4 text-gray-500" />
-                                                                </Button>
-                                                                <Button variant="ghost" size="icon" onClick={() => setDeletingReviewId(review.id)}>
-                                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                                </Button>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-medium truncate mb-1" title={stat.productTitle}>{stat.productTitle}</h4>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="flex text-yellow-400">
+                                                                    <Star className="h-4 w-4 fill-current" />
+                                                                </div>
+                                                                <span className="font-bold">{stat.averageRating.toFixed(1)}</span>
+                                                                <span className="text-gray-500 text-sm">({stat.reviewCount})</span>
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                                <Clock className="h-3 w-3" />
+                                                                {new Date(stat.lastReviewDate).toLocaleDateString()}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mt-2">{review.content}</p>
-                                                    <div className="flex items-center gap-4 mt-2">
-                                                        {review.productTitle && (
-                                                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                                <LinkIcon className="h-3 w-3" />
-                                                                {review.productTitle}
-                                                            </div>
-                                                        )}
-                                                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                            <ThumbsUp className="h-3 w-3" />
-                                                            {review.helpful || 0}
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                            <h3 className="text-lg font-medium text-gray-900">Keine Bewertungen gefunden</h3>
+                                            <p className="text-gray-500 mt-1">Es wurden noch keine Bewertungen für Produkte abgegeben.</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="space-y-4">
+                                <Button variant="ghost" onClick={() => {
+                                    setViewMode('products')
+                                    setSelectedProductStat(null)
+                                    setAllReviews([])
+                                }} className="pl-0 hover:pl-2 transition-all">
+                                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                                    Zurück zur Übersicht
+                                </Button>
+
+                                <Card>
+                                    <CardHeader>
+                                        <div className="flex flex-col md:flex-row justify-between gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="h-16 w-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                                                    {selectedProductStat?.productImage && (
+                                                        <img src={selectedProductStat.productImage} alt="" className="h-full w-full object-cover" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <CardTitle>{selectedProductStat?.productTitle}</CardTitle>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <div className="flex text-yellow-400">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    className={`h-4 w-4 ${i < Math.round(selectedProductStat?.averageRating || 0) ? 'fill-current' : 'text-gray-300'}`}
+                                                                />
+                                                            ))}
                                                         </div>
-                                                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                            <ThumbsDown className="h-3 w-3" />
-                                                            {review.notHelpful || 0}
-                                                        </div>
+                                                        <span className="font-bold text-lg">{selectedProductStat?.averageRating.toFixed(1)}</span>
+                                                        <span className="text-gray-500">({selectedProductStat?.reviewCount} Bewertungen)</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12">
-                                        <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                        <h3 className="text-lg font-medium text-gray-900">Keine Bewertungen gefunden</h3>
-                                        <p className="text-gray-500 mt-1">Es wurden noch keine Bewertungen abgegeben.</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                            <div className="flex gap-2">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                                    <Input
+                                                        placeholder="Bewertungen durchsuchen..."
+                                                        className="pl-9 w-[200px]"
+                                                        value={reviewSearch}
+                                                        onChange={(e) => setReviewSearch(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {loadingAllReviews ? (
+                                            <div className="flex justify-center py-12">
+                                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                            </div>
+                                        ) : allReviews.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {allReviews.map((review: any) => (
+                                                    <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors group">
+                                                        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
+                                                            {review.customerName?.charAt(0) || '?'}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between">
+                                                                <div>
+                                                                    <h4 className="font-medium">{review.customerName}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <div className="flex">
+                                                                            {[...Array(5)].map((_, i) => (
+                                                                                <Star
+                                                                                    key={i}
+                                                                                    className={`h-3 w-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                        <span className="text-xs text-gray-500">
+                                                                            {timeAgo(review.createdAt)}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
+                                                                        {review.status === 'APPROVED' ? 'Genehmigt' : review.status === 'PENDING' ? 'Ausstehend' : review.status === 'REJECTED' ? 'Abgelehnt' : review.status}
+                                                                    </Badge>
+
+                                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <Button variant="ghost" size="icon" onClick={() => setEditingReview(review)}>
+                                                                            <PenTool className="h-4 w-4 text-gray-500" />
+                                                                        </Button>
+                                                                        <Button variant="ghost" size="icon" onClick={() => setDeletingReviewId(review.id)}>
+                                                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 mt-2">{review.content}</p>
+                                                            <div className="flex items-center gap-4 mt-2">
+                                                                <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                                    <ThumbsUp className="h-3 w-3" />
+                                                                    {review.helpful || 0}
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                                    <ThumbsDown className="h-3 w-3" />
+                                                                    {review.notHelpful || 0}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12">
+                                                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                                <h3 className="text-lg font-medium text-gray-900">Keine Bewertungen gefunden</h3>
+                                                <p className="text-gray-500 mt-1">Es wurden noch keine Bewertungen abgegeben.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
                     </TabsContent>
 
                     {/* IMPORT TAB */}
