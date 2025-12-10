@@ -102,7 +102,7 @@
         function injectStyles(primaryColor) {
             const style = document.createElement('style');
             style.textContent = `
-                .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; max-width: 1200px; margin: 0; padding: 0; }
+                .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
                 .rp-header { display: flex; align-items: flex-start; gap: 40px; padding-bottom: 30px; margin-bottom: 0; flex-wrap: wrap; }
                 .rp-divider { height: 1px; background-color: #e5e7eb; margin: 0 0 30px 0; width: 100%; }
                 .rp-summary { text-align: center; min-width: 120px; }
