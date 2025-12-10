@@ -161,6 +161,12 @@
                 .rp-star-input label:hover ~ label,
                 .rp-star-input input:checked ~ label { color: #fbbf24; }
 
+                .rp-helpful-section { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6; }
+                .rp-helpful-text { font-size: 13px; color: #6b7280; }
+                .rp-helpful-btn { display: flex; align-items: center; gap: 6px; background: none; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 16px; cursor: pointer; color: #4b5563; font-size: 13px; transition: all 0.2s; }
+                .rp-helpful-btn:hover { background-color: #f9fafb; border-color: #d1d5db; }
+                .rp-helpful-btn svg { width: 14px; height: 14px; }
+                
                 @media (max-width: 600px) {
                     .rp-header { flex-direction: column; gap: 20px; align-items: center; text-align: center; }
                     .rp-bars { width: 100%; }
@@ -241,6 +247,14 @@
                                 ${review.videos.map(vid => `<video src="${vid}" controls style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;"></video>`).join('')}
                             </div>
                         ` : ''}
+                        ` : ''}
+                    </div>
+                    <div class="rp-helpful-section">
+                        <span class="rp-helpful-text">Fanden Sie diese Bewertung hilfreich?</span>
+                        <button id="rp-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpHelpful('${review.id}')" ${sessionStorage.getItem(`rp-helpful-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                            <span id="rp-helpful-count-${review.id}">${review.helpful || 0}</span>
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -398,6 +412,30 @@
             renderWidget();
             // Scroll to top of widget
             widgetContainer.scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.rpHelpful = function (reviewId) {
+            // Check if already voted in this session (simple prevention)
+            if (sessionStorage.getItem(`rp-helpful-${reviewId}`)) return;
+
+            const countSpan = document.getElementById(`rp-helpful-count-${reviewId}`);
+            if (countSpan) {
+                const current = parseInt(countSpan.innerText);
+                countSpan.innerText = current + 1;
+            }
+
+            // Disable button visually
+            const btn = document.getElementById(`rp-helpful-btn-${reviewId}`);
+            if (btn) {
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'default';
+            }
+
+            sessionStorage.setItem(`rp-helpful-${reviewId}`, 'true');
+
+            fetch(`${BASE_URL}/api/reviews/${reviewId}/helpful`, {
+                method: 'POST'
+            }).catch(err => console.error('Failed to mark helpful:', err));
         };
 
         function attachEventListeners() {

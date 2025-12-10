@@ -43,7 +43,8 @@ export async function GET(request: NextRequest) {
                 videos: true,
                 isVerified: true,
                 reply: true,
-                repliedAt: true
+                repliedAt: true,
+                helpful: true
             }
         })
 

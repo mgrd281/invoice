@@ -600,6 +600,7 @@ model Review {
   source         String       @default("web")     // web, email, import, loox, judgeme, amazon
   isVerified     Boolean      @default(false)
   isFeatured     Boolean      @default(false)
+  helpful        Int          @default(0)
   
   // Admin Reply
   reply          String?      @db.Text
