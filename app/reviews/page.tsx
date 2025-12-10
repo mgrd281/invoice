@@ -172,6 +172,14 @@ export default function ReviewsPage() {
         layout: 'list' // 'list' | 'grid'
     })
 
+    // Email Settings State
+    const [emailSettings, setEmailSettings] = useState({
+        enabled: false,
+        delayDays: 3,
+        subject: 'Ihre Meinung ist uns wichtig! 🌟',
+        body: 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team'
+    })
+
     // Edit/Delete State
     const [editingReview, setEditingReview] = useState<any>(null)
     const [isUpdating, setIsUpdating] = useState(false)
@@ -280,12 +288,6 @@ export default function ReviewsPage() {
     }
 
     // Email Settings State
-    const [emailSettings, setEmailSettings] = useState({
-        enabled: false,
-        delayDays: 3,
-        subject: 'Ihre Meinung ist uns wichtig! 🌟',
-        body: 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team'
-    })
     const [isSavingEmailSettings, setIsSavingEmailSettings] = useState(false)
 
     const saveEmailSettings = async () => {
