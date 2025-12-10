@@ -167,10 +167,17 @@
                 .rp-helpful-btn:hover { background-color: #f9fafb; border-color: #d1d5db; }
                 .rp-helpful-btn svg { width: 14px; height: 14px; }
                 
+                /* Grid Layout Styles */
+                .rp-layout-grid .rp-review-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+                .rp-layout-grid .rp-review-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; }
+                .rp-layout-grid .rp-review-card:last-child { border-bottom: 1px solid #e5e7eb; }
+                .rp-layout-grid .rp-content { flex: 1; }
+                
                 @media (max-width: 600px) {
                     .rp-header { flex-direction: column; gap: 20px; align-items: center; text-align: center; }
                     .rp-bars { width: 100%; }
                     .rp-write-btn { width: 100%; margin: 10px 0 0 0; }
+                    .rp-layout-grid .rp-review-list { grid-template-columns: 1fr; }
                 }
             `;
             document.head.appendChild(style);
@@ -246,7 +253,6 @@
                             <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
                                 ${review.videos.map(vid => `<video src="${vid}" controls style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;"></video>`).join('')}
                             </div>
-                        ` : ''}
                         ` : ''}
                     </div>
                     <div class="rp-helpful-section">
@@ -370,7 +376,7 @@
             `;
 
             widgetContainer.innerHTML = `
-                <div class="rp-widget">
+                <div class="rp-widget ${widgetSettings.layout === 'grid' ? 'rp-layout-grid' : ''}">
                     <div class="rp-header">
                         <div class="rp-summary">
                             <div class="rp-big-rating">${stats.average}</div>
