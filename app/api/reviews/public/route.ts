@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export async function OPTIONS(request: NextRequest) {
+    return new NextResponse(null, {
+        status: 200,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+    })
+}
+
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams
@@ -8,7 +19,10 @@ export async function GET(request: NextRequest) {
         const shopDomain = searchParams.get('shop')
 
         if (!productId) {
-            return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+            return NextResponse.json({ error: 'Product ID is required' }, {
+                status: 400,
+                headers: { 'Access-Control-Allow-Origin': '*' }
+            })
         }
 
         // Fetch approved reviews for this product
@@ -16,8 +30,6 @@ export async function GET(request: NextRequest) {
             where: {
                 productId: productId,
                 status: 'APPROVED', // Only show approved reviews publicly
-                // If you have multiple organizations, you might want to filter by shopDomain here too
-                // organization: { shopifyShopDomain: shopDomain } 
             },
             orderBy: { createdAt: 'desc' },
             select: {
@@ -47,11 +59,19 @@ export async function GET(request: NextRequest) {
                 average: parseFloat(averageRating.toFixed(1))
             },
             reviews
+        }, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            }
         })
 
     } catch (error) {
         console.error('Error fetching public reviews:', error)
-        return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to fetch reviews' }, {
+            status: 500,
+            headers: { 'Access-Control-Allow-Origin': '*' }
+        })
     }
 }
 
@@ -61,7 +81,10 @@ export async function POST(request: NextRequest) {
 
         // Basic validation
         if (!body.productId || !body.rating || !body.customerName) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+            return NextResponse.json({ error: 'Missing required fields' }, {
+                status: 400,
+                headers: { 'Access-Control-Allow-Origin': '*' }
+            })
         }
 
         // Create the review
@@ -75,10 +98,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: 'Review submitted successfully (Pending Approval)'
+        }, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            }
         })
 
     } catch (error) {
         console.error('Error submitting review:', error)
-        return NextResponse.json({ error: 'Failed to submit review' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to submit review' }, {
+            status: 500,
+            headers: { 'Access-Control-Allow-Origin': '*' }
+        })
     }
 }
