@@ -69,6 +69,23 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ShoppingBag, Globe, Info } from 'lucide-react'
 
 function timeAgo(dateString: string) {
     const date = new Date(dateString)
@@ -180,6 +197,24 @@ export default function ReviewsPage() {
     const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
     const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
+    // Google Integration State
+    const [googleTab, setGoogleTab] = useState('shopping')
+    const [googleShoppingSettings, setGoogleShoppingSettings] = useState({
+        productSelection: 'all', // 'all' | 'some'
+        selectedProducts: [] as string[],
+        filterCustomerReviews: true,
+        filterImportedReviews: true,
+        filterEmptyComments: false,
+        countryFilter: 'all',
+        keywordFilter: '',
+        productIdentification: 'gtin'
+    })
+    const [googleSnippetSettings, setGoogleSnippetSettings] = useState({
+        schemaEnabled: true,
+        pushInterval: 'daily'
+    })
+    const [googleProductStatus, setGoogleProductStatus] = useState<Record<string, boolean>>({})
+
     useEffect(() => {
         if (activeTab === 'overview') {
             fetchStats()
@@ -191,6 +226,8 @@ export default function ReviewsPage() {
                 // If we are in details view, fetch reviews for that product
                 fetchAllReviews()
             }
+        } else if (activeTab === 'google-integration') {
+            fetchProductStats()
         }
     }, [activeTab, viewMode, selectedProductStat, filterStatus, reviewsPage])
 
@@ -848,6 +885,7 @@ export default function ReviewsPage() {
                         <TabsTrigger value="widgets" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Widgets & Design</TabsTrigger>
                         <TabsTrigger value="auto-reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Auto-Reviews</TabsTrigger>
                         <TabsTrigger value="emails" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">E-Mail Automation</TabsTrigger>
+                        <TabsTrigger value="google-integration" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Google Integration</TabsTrigger>
                     </TabsList>
 
                     {/* OVERVIEW TAB */}
@@ -2054,6 +2092,316 @@ export default function ReviewsPage() {
                                 </Card>
                             </div>
                         </div>
+                    </TabsContent>
+
+                    {/* GOOGLE INTEGRATION TAB */}
+                    <TabsContent value="google-integration" className="space-y-6">
+                        <Tabs value={googleTab} onValueChange={setGoogleTab} className="space-y-6">
+                            <TabsList className="bg-white border p-1 h-10 rounded-lg shadow-sm w-auto inline-flex">
+                                <TabsTrigger value="shopping" className="h-8 px-4 text-sm">Google Shopping</TabsTrigger>
+                                <TabsTrigger value="snippets" className="h-8 px-4 text-sm">Google Search Rating / Review Snippet</TabsTrigger>
+                            </TabsList>
+
+                            {/* GOOGLE SHOPPING TAB */}
+                            <TabsContent value="shopping" className="space-y-6">
+                                {/* Info Banner */}
+                                <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                                    <ShoppingBag className="h-4 w-4" />
+                                    <AlertTitle>Google Shopping Integration</AlertTitle>
+                                    <AlertDescription className="flex justify-between items-center mt-2">
+                                        <span>Synchronisieren Sie Ihre Bewertungen mit Google Shopping, um Sterne in Google-Shopping-Anzeigen anzuzeigen.</span>
+                                        <Button variant="outline" size="sm" className="bg-white hover:bg-blue-50 text-blue-700 border-blue-200">
+                                            Mehr erfahren <ArrowRight className="h-3 w-3 ml-1" />
+                                        </Button>
+                                    </AlertDescription>
+                                </Alert>
+
+                                {/* Product Settings */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Product settings</CardTitle>
+                                        <CardDescription>Wählen Sie aus, welche Produkte im Feed enthalten sein sollen.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center space-x-2">
+                                                <input
+                                                    type="radio"
+                                                    id="all-products"
+                                                    name="product-selection"
+                                                    checked={googleShoppingSettings.productSelection === 'all'}
+                                                    onChange={() => setGoogleShoppingSettings({ ...googleShoppingSettings, productSelection: 'all' })}
+                                                    className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                                />
+                                                <Label htmlFor="all-products">Alle Produkte</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <input
+                                                    type="radio"
+                                                    id="some-products"
+                                                    name="product-selection"
+                                                    checked={googleShoppingSettings.productSelection === 'some'}
+                                                    onChange={() => setGoogleShoppingSettings({ ...googleShoppingSettings, productSelection: 'some' })}
+                                                    className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                                />
+                                                <Label htmlFor="some-products">Einige Produkte</Label>
+                                            </div>
+                                        </div>
+
+                                        {googleShoppingSettings.productSelection === 'some' && (
+                                            <div className="pl-6">
+                                                <Button variant="outline" size="sm">
+                                                    <PenTool className="h-3 w-3 mr-2" />
+                                                    Produkte auswählen
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Review Filter */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Review filter</CardTitle>
+                                        <CardDescription>Filtern Sie, welche Bewertungen an Google gesendet werden.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="space-y-3">
+                                            <Label className="text-base font-medium">Quellen</Label>
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id="customer-reviews"
+                                                    checked={googleShoppingSettings.filterCustomerReviews}
+                                                    onCheckedChange={(checked) => setGoogleShoppingSettings({ ...googleShoppingSettings, filterCustomerReviews: !!checked })}
+                                                />
+                                                <Label htmlFor="customer-reviews">Customer Reviews</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id="imported-reviews"
+                                                    checked={googleShoppingSettings.filterImportedReviews}
+                                                    onCheckedChange={(checked) => setGoogleShoppingSettings({ ...googleShoppingSettings, filterImportedReviews: !!checked })}
+                                                />
+                                                <Label htmlFor="imported-reviews">Importierte Reviews</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id="empty-comments"
+                                                    checked={googleShoppingSettings.filterEmptyComments}
+                                                    onCheckedChange={(checked) => setGoogleShoppingSettings({ ...googleShoppingSettings, filterEmptyComments: !!checked })}
+                                                />
+                                                <Label htmlFor="empty-comments">Leere Kommentare filtern</Label>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label>Country Filter</Label>
+                                                <Select
+                                                    value={googleShoppingSettings.countryFilter}
+                                                    onValueChange={(val) => setGoogleShoppingSettings({ ...googleShoppingSettings, countryFilter: val })}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select country" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">All countries</SelectItem>
+                                                        <SelectItem value="de">Germany</SelectItem>
+                                                        <SelectItem value="us">United States</SelectItem>
+                                                        <SelectItem value="gb">United Kingdom</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Keyword exception filter (comma separated)</Label>
+                                                <Input
+                                                    placeholder="e.g. spam, fake"
+                                                    value={googleShoppingSettings.keywordFilter}
+                                                    onChange={(e) => setGoogleShoppingSettings({ ...googleShoppingSettings, keywordFilter: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Product Identification */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Product identification</CardTitle>
+                                        <CardDescription>Wie sollen Produkte bei Google identifiziert werden?</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="max-w-md space-y-2">
+                                            <Label>Matching Method</Label>
+                                            <Select
+                                                value={googleShoppingSettings.productIdentification}
+                                                onValueChange={(val) => setGoogleShoppingSettings({ ...googleShoppingSettings, productIdentification: val })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select method" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="gtin">GTIN</SelectItem>
+                                                    <SelectItem value="mpn">MPN + Brand</SelectItem>
+                                                    <SelectItem value="sku">SKU</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="p-4 bg-gray-50 rounded-lg border text-sm text-gray-600">
+                                            <p>Das System wird versuchen, das gewählte Feld aus Ihren Shopify-Produktdaten zu extrahieren und im Feed bereitzustellen.</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Feed Generation */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Feed Generierung</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <Button className="bg-blue-600 hover:bg-blue-700">
+                                            <Globe className="h-4 w-4 mr-2" />
+                                            Google Shopping Feed erzeugen
+                                        </Button>
+
+                                        <div className="space-y-2">
+                                            <Label>Feed URL</Label>
+                                            <div className="flex gap-2">
+                                                <Input readOnly value="https://invoice-app.com/api/feeds/google-shopping.xml" className="bg-gray-50 font-mono text-sm" />
+                                                <Button variant="outline" size="icon">
+                                                    <CheckCircle className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-gray-500">
+                                                Letzte Aktualisierung: Vor 2 Stunden • 124 Produkte • 850 Reviews
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            {/* GOOGLE SNIPPETS TAB */}
+                            <TabsContent value="snippets" className="space-y-6">
+                                {/* Info Banner */}
+                                <Alert className="bg-green-50 border-green-200 text-green-800">
+                                    <Info className="h-4 w-4" />
+                                    <AlertTitle>Google Review Snippets</AlertTitle>
+                                    <AlertDescription>
+                                        Aktivieren Sie Google Review Snippets, damit Ihre Sterne in den Google-Suchergebnissen angezeigt werden.
+                                    </AlertDescription>
+                                </Alert>
+
+                                {/* Filter Bar */}
+                                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                    <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+                                        <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700 border-blue-200">All</Button>
+                                        <Button variant="ghost" size="sm">One star</Button>
+                                        <Button variant="ghost" size="sm">Two star</Button>
+                                        <Button variant="ghost" size="sm">Three star</Button>
+                                        <Button variant="ghost" size="sm">Four star</Button>
+                                        <Button variant="ghost" size="sm">Five star</Button>
+                                    </div>
+                                    <div className="relative w-full md:w-64">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                        <Input placeholder="Produkt suchen..." className="pl-9" />
+                                    </div>
+                                </div>
+
+                                {/* Product Table */}
+                                <Card>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Produkt</TableHead>
+                                                <TableHead>Bewertungsinfo</TableHead>
+                                                <TableHead>Google Ratings Display</TableHead>
+                                                <TableHead>Check it on Google</TableHead>
+                                                <TableHead className="text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {productStats.slice(0, 5).map((stat) => {
+                                                const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
+                                                const productImage = shopifyProduct?.images?.[0]?.src || stat.productImage
+
+                                                return (
+                                                    <TableRow key={stat.productId}>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-10 w-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                                                                    {productImage ? (
+                                                                        <img src={productImage} alt="" className="h-full w-full object-cover" />
+                                                                    ) : (
+                                                                        <ImageIcon className="h-5 w-5 m-auto text-gray-400" />
+                                                                    )}
+                                                                </div>
+                                                                <span className="font-medium text-sm line-clamp-1 max-w-[200px]">{stat.productTitle}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-col text-sm">
+                                                                <div className="flex items-center gap-1">
+                                                                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                                                    <span className="font-bold">{stat.averageRating.toFixed(1)}</span>
+                                                                </div>
+                                                                <span className="text-gray-500">{stat.reviewCount} Reviews</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <Switch
+                                                                    checked={googleProductStatus[stat.productId] !== false}
+                                                                    onCheckedChange={(checked) => setGoogleProductStatus({ ...googleProductStatus, [stat.productId]: checked })}
+                                                                />
+                                                                <span className="text-sm text-gray-600">
+                                                                    {googleProductStatus[stat.productId] !== false ? 'Aktiv' : 'Inaktiv'}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <a
+                                                                href={`https://www.google.com/search?q=${encodeURIComponent(stat.productTitle)}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                                                            >
+                                                                Check now <LinkIcon className="h-3 w-3" />
+                                                            </a>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="sm">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </Card>
+
+                                {/* Settings */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Google Rating Settings</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-base">Strukturierte Daten (Schema.org)</Label>
+                                                <p className="text-sm text-gray-500">
+                                                    Automatisch JSON-LD Markup für Bewertungen in Ihren Store injecten.
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={googleSnippetSettings.schemaEnabled}
+                                                onCheckedChange={(checked) => setGoogleSnippetSettings({ ...googleSnippetSettings, schemaEnabled: checked })}
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
                     </TabsContent>
                 </Tabs>
             </main>
