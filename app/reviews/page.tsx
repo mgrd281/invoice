@@ -144,7 +144,14 @@ export default function ReviewsPage() {
         averageRating: 0,
         photoReviews: 0,
         pendingReviews: 0,
-        recentReviews: [] as any[]
+        recentReviews: [] as any[],
+        negativeReviews: [] as any[],
+        analysis: {
+            trend: 0,
+            trendDirection: 'stable',
+            negativeReasons: [] as any[],
+            negativePercentage: 0
+        }
     })
     const [loadingStats, setLoadingStats] = useState(false)
 
@@ -816,13 +823,13 @@ export default function ReviewsPage() {
                                 <CardDescription>Die letzten eingegangenen Bewertungen</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
-                                    {loadingStats ? (
-                                        <div className="flex justify-center py-8">
-                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                                        </div>
-                                    ) : stats.recentReviews.length > 0 ? (
-                                        stats.recentReviews.map((review: any) => (
+                                {loadingStats ? (
+                                    <div className="flex justify-center py-8">
+                                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                    </div>
+                                ) : stats.recentReviews.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {stats.recentReviews.map((review: any) => (
                                             <div key={review.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border">
                                                 <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
                                                     {review.customerName?.charAt(0) || '?'}
@@ -868,13 +875,13 @@ export default function ReviewsPage() {
                                                     )}
                                                 </div>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center py-8 text-gray-500">
-                                            Keine Bewertungen vorhanden
-                                        </div>
-                                    )}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                        Keine Bewertungen vorhanden
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

@@ -87,6 +87,7 @@ model Organization {
   digitalProducts   DigitalProduct[]
   supportTickets    SupportTicket[]
   responseTemplates ResponseTemplate[]
+  replyTemplates    ReplyTemplate[]
   dunningSettings DunningSettings?
   dunningTemplates DunningTemplate[]
   marketingSettings MarketingSettings?
@@ -629,7 +630,18 @@ model Review {
   // Admin Reply
   reply          String?
   repliedAt      DateTime?
+  handlingStatus String       @default("OPEN") // OPEN, REPLIED, RESOLVED
   
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model ReplyTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  title          String
+  content        String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
