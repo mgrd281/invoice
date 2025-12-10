@@ -531,19 +531,17 @@ Viel Spaß!`
                                                 </CardDescription>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {variants.length > 0 && (
-                                                    <select
-                                                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                                        value={keysFilterVariant}
-                                                        onChange={e => setKeysFilterVariant(e.target.value)}
-                                                    >
-                                                        <option value="all">Alle Varianten</option>
-                                                        <option value="none">Keine spezifische</option>
-                                                        {variants.map(v => (
-                                                            <option key={v.id} value={v.id}>{v.title}</option>
-                                                        ))}
-                                                    </select>
-                                                )}
+                                                <select
+                                                    className="h-9 w-[200px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                    value={keysFilterVariant}
+                                                    onChange={e => setKeysFilterVariant(e.target.value)}
+                                                >
+                                                    <option value="all">Alle Varianten</option>
+                                                    <option value="none">Keine spezifische</option>
+                                                    {variants.map(v => (
+                                                        <option key={v.id} value={v.id}>{v.title}</option>
+                                                    ))}
+                                                </select>
                                                 <div className="flex bg-gray-100 p-1 rounded-lg">
                                                     <button
                                                         onClick={() => setActiveKeyTab('history')}
