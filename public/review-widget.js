@@ -102,8 +102,9 @@
         function injectStyles(primaryColor) {
             const style = document.createElement('style');
             style.textContent = `
-                .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; }
-                .rp-header { display: flex; align-items: flex-start; gap: 40px; padding-bottom: 30px; border-bottom: 1px solid #e5e7eb; margin-bottom: 30px; }
+                .rp-widget { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+                .rp-header { display: flex; align-items: flex-start; gap: 40px; padding-bottom: 30px; margin-bottom: 0; }
+                .rp-divider { height: 1px; background-color: #e5e7eb; margin: 0 0 30px 0; width: 100%; }
                 .rp-summary { text-align: center; min-width: 120px; }
                 .rp-big-rating { font-size: 48px; font-weight: 700; line-height: 1; color: ${primaryColor}; margin-bottom: 8px; }
                 .rp-total-count { font-size: 14px; color: #6b7280; margin-top: 4px; }
@@ -369,6 +370,7 @@
                         </div>
                         <button class="rp-write-btn" id="rp-open-modal">Bewertung schreiben</button>
                     </div>
+                    <div class="rp-divider"></div>
                     <div class="rp-review-list">
                         ${reviewsHTML.length > 0 ? reviewsHTML : '<div style="text-align:center; color:#6b7280; padding:20px;">Keine Bewertungen gefunden.</div>'}
                     </div>
