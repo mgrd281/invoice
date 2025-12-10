@@ -6,14 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Building2, Palette, Bell, Shield, Save, Loader2, ArrowLeft, Settings, Trash2, Gift } from 'lucide-react'
+import { Building2, Shield, Save, Loader2, ArrowLeft, Settings, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { setCompanySettingsClient } from '@/lib/company-settings'
-import { useTheme } from '@/components/theme-provider'
-import { type Theme } from '@/lib/theme'
 
 interface CompanySettings {
   companyName: string
@@ -31,22 +27,12 @@ interface CompanySettings {
 }
 
 interface AppSettings {
-  // Notifications
-  emailNotifications: boolean
-  invoiceReminders: boolean
-  paymentAlerts: boolean
-
   // Security
   twoFactorAuth: boolean
   sessionTimeout: number
-
-  // Display
-  theme: string
-  compactMode: boolean
 }
 
 export default function SettingsPage() {
-  const { setTheme } = useTheme()
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
     companyName: '',
     taxNumber: '',
@@ -61,18 +47,9 @@ export default function SettingsPage() {
   })
 
   const [settings, setSettings] = useState<AppSettings>({
-    // Notifications
-    emailNotifications: true,
-    invoiceReminders: true,
-    paymentAlerts: true,
-
     // Security
     twoFactorAuth: false,
-    sessionTimeout: 60,
-
-    // Display
-    theme: 'light',
-    compactMode: false
+    sessionTimeout: 60
   })
 
   const [loading, setLoading] = useState(true)
@@ -104,9 +81,6 @@ export default function SettingsPage() {
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json()
         setSettings(settingsData)
-        if (settingsData.theme) {
-          setTheme(settingsData.theme as Theme)
-        }
       }
     } catch (error) {
       console.error('Error loading settings:', error)
@@ -487,99 +461,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Display Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Palette className="h-5 w-5 mr-2 text-purple-600" />
-              Anzeige-Einstellungen
-            </CardTitle>
-            <CardDescription>
-              Personalisieren Sie das Aussehen der Anwendung
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Design-Theme</Label>
-                <p className="text-sm text-muted-foreground">
-                  Wählen Sie zwischen hellem und dunklem Design
-                </p>
-              </div>
-              <Select
-                value={settings.theme}
-                onValueChange={(value: string) => {
-                  setSettings(prev => ({ ...prev, theme: value }))
-                  setTheme(value as Theme) // Apply immediately
-                }}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Hell</SelectItem>
-                  <SelectItem value="dark">Dunkel</SelectItem>
-                  <SelectItem value="auto">Automatisch</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Kompakter Modus</Label>
-                <p className="text-sm text-muted-foreground">
-                  Reduziert Abstände für mehr Inhalte auf dem Bildschirm
-                </p>
-              </div>
-              <Switch
-                checked={settings.compactMode}
-                onCheckedChange={(checked: boolean) => setSettings(prev => ({ ...prev, compactMode: checked }))}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bell className="h-5 w-5 mr-2 text-yellow-600" />
-              Benachrichtigungen
-            </CardTitle>
-            <CardDescription>
-              Verwalten Sie Ihre Benachrichtigungseinstellungen
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>E-Mail-Benachrichtigungen</Label>
-                <p className="text-sm text-muted-foreground">
-                  Erhalten Sie wichtige Updates per E-Mail
-                </p>
-              </div>
-              <Switch
-                checked={settings.emailNotifications}
-                onCheckedChange={(checked: boolean) => setSettings(prev => ({ ...prev, emailNotifications: checked }))}
-              />
-            </div>
-
-
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Zahlungsbenachrichtigungen</Label>
-                <p className="text-sm text-muted-foreground">
-                  Benachrichtigungen bei eingehenden Zahlungen
-                </p>
-              </div>
-              <Switch
-                checked={settings.paymentAlerts}
-                onCheckedChange={(checked: boolean) => setSettings(prev => ({ ...prev, paymentAlerts: checked }))}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
 
 
