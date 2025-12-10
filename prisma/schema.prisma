@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "cockroachdb"
   url      = env("DATABASE_URL")
 }
 
@@ -110,7 +110,7 @@ model WidgetSettings {
   emailEnabled   Boolean      @default(false)
   emailDelayDays Int          @default(3)
   emailSubject   String       @default("Ihre Meinung ist uns wichtig! 🌟")
-  emailBody      String       @db.Text @default("Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team")
+  emailBody      String       @default("Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team")
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -250,8 +250,8 @@ model Invoice {
   
   // New fields for custom invoice text and settings
   headerSubject   String?
-  headerText      String?       @db.Text
-  footerText      String?       @db.Text
+  headerText      String?
+  footerText      String?
   settings        Json?         // Stores currency, skonto, internalContact, etc.
 
   @@unique([organizationId, invoiceNumber])
@@ -365,7 +365,7 @@ model DigitalProduct {
   organization   Organization @relation(fields: [organizationId], references: [id])
   shopifyProductId String @unique
   title          String
-  emailTemplate  String?  @db.Text
+  emailTemplate  String?
   
   // Download Button Configuration
   downloadUrl     String?
@@ -419,7 +419,7 @@ model TicketMessage {
   ticketId        String
   ticket          SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   sender          String        // "AGENT" or "CUSTOMER" or "SYSTEM"
-  content         String        @db.Text
+  content         String
   createdAt       DateTime      @default(now())
 }
 
@@ -427,7 +427,7 @@ model CustomerNote {
   id             String    @id @default(uuid())
   customerId     String
   customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  content        String    @db.Text
+  content        String
   author         String    // Name of the user who created it
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -441,7 +441,7 @@ model EmailMessage {
   ticket         SupportTicket? @relation(fields: [ticketId], references: [id])
   gmailId        String?   @unique
   subject        String?
-  content        String    @db.Text
+  content        String
   snippet        String?
   from           String
   to             String
@@ -455,7 +455,7 @@ model ResponseTemplate {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   title          String
-  content        String       @db.Text
+  content        String
   category       String?      // e.g., "Technical", "Refund", "General"
   autoReplyKeywords String?   // Comma separated keywords to trigger auto-reply
   createdAt      DateTime     @default(now())
@@ -489,7 +489,7 @@ model DunningTemplate {
   organization   Organization @relation(fields: [organizationId], references: [id])
   level          String       // REMINDER, WARNING1, WARNING2, FINAL
   subject        String
-  content        String       @db.Text
+  content        String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -515,7 +515,7 @@ model MarketingSettings {
   fpdPercentage    Int     @default(10)
   fpdValidityDays  Int     @default(30)
   fpdEmailSubject  String  @default("Ihr persönlicher 10%-Rabattcode als Dankeschön 🎁")
-  fpdEmailBody     String  @db.Text 
+  fpdEmailBody     String 
   
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -591,7 +591,7 @@ model Review {
   // Review Content
   rating         Int          // 1-5
   title          String?
-  content        String?      @db.Text
+  content        String?
   
   // Media
   images         String[]     // Array of image URLs
@@ -605,7 +605,7 @@ model Review {
   helpful        Int          @default(0)
   
   // Admin Reply
-  reply          String?      @db.Text
+  reply          String?
   repliedAt      DateTime?
   
   createdAt      DateTime     @default(now())
@@ -639,6 +639,6 @@ model TelegramLog {
   telegramUserId String
   command        String
   status         String
-  response       String?  @db.Text
+  response       String?
   createdAt      DateTime @default(now())
 }
