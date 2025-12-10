@@ -42,3 +42,27 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 })
     }
 }
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const body = await request.json()
+        const { ids } = body
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+        }
+
+        await prisma.review.deleteMany({
+            where: {
+                id: {
+                    in: ids
+                }
+            }
+        })
+
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('Error deleting reviews:', error)
+        return NextResponse.json({ error: 'Failed to delete reviews' }, { status: 500 })
+    }
+}

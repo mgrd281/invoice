@@ -39,6 +39,7 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
+
 import { Switch } from '@/components/ui/switch'
 import {
     Dialog,
@@ -172,6 +173,11 @@ export default function ReviewsPage() {
     const [filterRating, setFilterRating] = useState<number | null>(null)
     const [filterStatus, setFilterStatus] = useState<string | null>(null)
     const [reviewSearch, setReviewSearch] = useState('')
+
+    // Bulk Delete State
+    const [selectedReviews, setSelectedReviews] = useState<string[]>([])
+    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
     useEffect(() => {
         if (activeTab === 'overview') {
@@ -413,6 +419,48 @@ export default function ReviewsPage() {
         } catch (error) {
             console.error('Delete error:', error)
             toast.error('Fehler beim Löschen')
+        }
+    }
+
+
+
+    const toggleReviewSelection = (id: string) => {
+        setSelectedReviews(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        )
+    }
+
+    const toggleAllReviews = () => {
+        if (selectedReviews.length === allReviews.length) {
+            setSelectedReviews([])
+        } else {
+            setSelectedReviews(allReviews.map(r => r.id))
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        setIsBulkDeleting(true)
+        try {
+            const res = await fetch('/api/reviews', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedReviews })
+            })
+
+            if (res.ok) {
+                toast.success('Die ausgewählten Bewertungen wurden erfolgreich gelöscht.')
+                setSelectedReviews([])
+                setShowBulkDeleteDialog(false)
+                fetchAllReviews()
+                fetchStats()
+            } else {
+                toast.error('Fehler beim Löschen der Bewertungen')
+            }
+        } catch (error) {
+            console.error('Bulk delete error:', error)
+            toast.error('Fehler beim Löschen der Bewertungen')
+        } finally {
+            setIsBulkDeleting(false)
         }
     }
 
@@ -695,6 +743,37 @@ export default function ReviewsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
+            {/* Bulk Delete Confirm Dialog */}
+            <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Möchten Sie die ausgewählten Bewertungen wirklich löschen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Es werden {selectedReviews.length} Bewertungen gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isBulkDeleting}>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault()
+                                handleBulkDelete()
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={isBulkDeleting}
+                        >
+                            {isBulkDeleting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Löschen...
+                                </>
+                            ) : (
+                                'Löschen'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <header className="bg-white border-b sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
@@ -1120,39 +1199,67 @@ export default function ReviewsPage() {
 
                                 <Card>
                                     <CardHeader>
-                                        <div className="flex flex-col md:flex-row justify-between gap-4">
-                                            <div className="flex items-start gap-4">
-                                                <div className="h-16 w-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                                                    {selectedProductStat?.productImage && (
-                                                        <img src={selectedProductStat.productImage} alt="" className="h-full w-full object-cover" />
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <CardTitle>{selectedProductStat?.productTitle}</CardTitle>
-                                                    <div className="flex items-center gap-2 mt-2">
-                                                        <div className="flex text-yellow-400">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star
-                                                                    key={i}
-                                                                    className={`h-4 w-4 ${i < Math.round(selectedProductStat?.averageRating || 0) ? 'fill-current' : 'text-gray-300'}`}
-                                                                />
-                                                            ))}
+                                        <div className="flex flex-col gap-6">
+                                            <div className="flex flex-col md:flex-row justify-between gap-4">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="h-16 w-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                                                        {selectedProductStat?.productImage && (
+                                                            <img src={selectedProductStat.productImage} alt="" className="h-full w-full object-cover" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle>{selectedProductStat?.productTitle}</CardTitle>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <div className="flex text-yellow-400">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <Star
+                                                                        key={i}
+                                                                        className={`h-4 w-4 ${i < Math.round(selectedProductStat?.averageRating || 0) ? 'fill-current' : 'text-gray-300'}`}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                            <span className="font-bold text-lg">{selectedProductStat?.averageRating.toFixed(1)}</span>
+                                                            <span className="text-gray-500">({selectedProductStat?.reviewCount} Bewertungen)</span>
                                                         </div>
-                                                        <span className="font-bold text-lg">{selectedProductStat?.averageRating.toFixed(1)}</span>
-                                                        <span className="text-gray-500">({selectedProductStat?.reviewCount} Bewertungen)</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                                        <Input
+                                                            placeholder="Bewertungen durchsuchen..."
+                                                            className="pl-9 w-[200px]"
+                                                            value={reviewSearch}
+                                                            onChange={(e) => setReviewSearch(e.target.value)}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <div className="relative">
-                                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                                                    <Input
-                                                        placeholder="Bewertungen durchsuchen..."
-                                                        className="pl-9 w-[200px]"
-                                                        value={reviewSearch}
-                                                        onChange={(e) => setReviewSearch(e.target.value)}
+
+                                            {/* Bulk Actions Toolbar */}
+                                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                                                <div className="flex items-center gap-3">
+                                                    <Checkbox
+                                                        checked={allReviews.length > 0 && selectedReviews.length === allReviews.length}
+                                                        onCheckedChange={toggleAllReviews}
+                                                        id="select-all-reviews"
                                                     />
+                                                    <Label htmlFor="select-all-reviews" className="text-sm font-medium cursor-pointer">
+                                                        Alle auswählen
+                                                    </Label>
                                                 </div>
+
+                                                {selectedReviews.length > 0 && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => setShowBulkDeleteDialog(true)}
+                                                        className="animate-in fade-in zoom-in duration-200"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        {selectedReviews.length} Bewertungen löschen
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     </CardHeader>
@@ -1164,7 +1271,13 @@ export default function ReviewsPage() {
                                         ) : allReviews.length > 0 ? (
                                             <div className="space-y-4">
                                                 {allReviews.map((review: any) => (
-                                                    <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors group">
+                                                    <div key={review.id} className={`flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors group ${selectedReviews.includes(review.id) ? 'bg-blue-50 border-blue-200' : ''}`}>
+                                                        <div className="pt-2">
+                                                            <Checkbox
+                                                                checked={selectedReviews.includes(review.id)}
+                                                                onCheckedChange={() => toggleReviewSelection(review.id)}
+                                                            />
+                                                        </div>
                                                         <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
                                                             {review.customerName?.charAt(0) || '?'}
                                                         </div>
@@ -2439,6 +2552,10 @@ function AutoReviewsSettings() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+
+
+
+        </div >
     )
 }
+
