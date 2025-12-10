@@ -89,6 +89,7 @@ export default function DashboardPage() {
     cancelledInvoicesAmount: 0
   })
   const [loading, setLoading] = useState(true)
+  const [featuresLoading, setFeaturesLoading] = useState(true)
   const [features, setFeatures] = useState(DEFAULT_FEATURES)
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -105,7 +106,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadFeatureOrder = async () => {
-      if (!isAuthenticated || !user) return
+      if (!isAuthenticated || !user) {
+        setFeaturesLoading(false)
+        return
+      }
       try {
         const response = await authenticatedFetch('/api/user/feature-order')
         if (response.ok) {
@@ -125,6 +129,8 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error('Error loading feature order:', error)
+      } finally {
+        setFeaturesLoading(false)
       }
     }
     loadFeatureOrder()
@@ -216,7 +222,7 @@ export default function DashboardPage() {
     logout() // This will redirect to landing page automatically
   }
 
-  if (loading || authLoading) {
+  if (loading || authLoading || featuresLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
