@@ -99,6 +99,7 @@ model Organization {
   telegramSettings  TelegramSettings?
   telegramLogs      TelegramLog[]
   autoReviewSettings AutoReviewSettings?
+  googleShoppingSettings GoogleShoppingSettings?
 }
 
 model WidgetSettings {
@@ -710,4 +711,21 @@ model AutoReviewTemplate {
   
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+}
+
+model GoogleShoppingSettings {
+  id                    String       @id @default(uuid())
+  organizationId        String       @unique
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  
+  productSelection      String       @default("all") // all, some
+  filterCustomerReviews Boolean      @default(true)
+  filterImportedReviews Boolean      @default(true)
+  filterEmptyComments   Boolean      @default(false)
+  countryFilter         String       @default("all")
+  keywordFilter         String?      // Comma separated
+  productIdentification String       @default("gtin") // gtin, mpn, sku
+  
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 }

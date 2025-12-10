@@ -214,6 +214,13 @@ export default function ReviewsPage() {
         pushInterval: 'daily'
     })
     const [googleProductStatus, setGoogleProductStatus] = useState<Record<string, boolean>>({})
+    const [feedUrl, setFeedUrl] = useState('')
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setFeedUrl(`${window.location.origin}/api/feeds/google-shopping.xml`)
+        }
+    }, [])
 
     useEffect(() => {
         if (activeTab === 'overview') {
@@ -228,8 +235,33 @@ export default function ReviewsPage() {
             }
         } else if (activeTab === 'google-integration') {
             fetchProductStats()
+            fetch('/api/reviews/google-settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && !data.error) {
+                        setGoogleShoppingSettings(prev => ({
+                            ...prev,
+                            ...data
+                        }))
+                    }
+                })
+                .catch(err => console.error('Failed to load Google Shopping settings:', err))
         }
     }, [activeTab, viewMode, selectedProductStat, filterStatus, reviewsPage])
+
+    const saveGoogleSettings = async () => {
+        try {
+            await fetch('/api/reviews/google-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(googleShoppingSettings)
+            })
+            toast.success('Google Shopping Einstellungen gespeichert')
+        } catch (err) {
+            console.error('Failed to save Google Shopping settings:', err)
+            toast.error('Fehler beim Speichern')
+        }
+    }
 
     const fetchAllReviews = async () => {
         setLoadingAllReviews(true)
@@ -2278,16 +2310,22 @@ export default function ReviewsPage() {
                                         <CardTitle>Feed Generierung</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <Button className="bg-blue-600 hover:bg-blue-700">
-                                            <Globe className="h-4 w-4 mr-2" />
-                                            Google Shopping Feed erzeugen
+                                        <Button
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                            onClick={saveGoogleSettings}
+                                        >
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            Einstellungen speichern
                                         </Button>
 
                                         <div className="space-y-2">
                                             <Label>Feed URL</Label>
                                             <div className="flex gap-2">
-                                                <Input readOnly value="https://invoice-app.com/api/feeds/google-shopping.xml" className="bg-gray-50 font-mono text-sm" />
-                                                <Button variant="outline" size="icon">
+                                                <Input readOnly value={feedUrl || "https://invoice-app.com/api/feeds/google-shopping.xml"} className="bg-gray-50 font-mono text-sm" />
+                                                <Button variant="outline" size="icon" onClick={() => {
+                                                    navigator.clipboard.writeText(feedUrl)
+                                                    toast.success('URL kopiert')
+                                                }}>
                                                     <CheckCircle className="h-4 w-4" />
                                                 </Button>
                                             </div>
