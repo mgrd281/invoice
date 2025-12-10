@@ -52,13 +52,18 @@ export async function GET(request: NextRequest) {
             ? reviews.reduce((acc, rev) => acc + rev.rating, 0) / totalReviews
             : 0
 
+        // Get widget settings
+        const { getWidgetSettings } = await import('@/lib/widget-settings')
+        const widgetSettings = getWidgetSettings()
+
         return NextResponse.json({
             success: true,
             stats: {
                 total: totalReviews,
                 average: parseFloat(averageRating.toFixed(1))
             },
-            reviews
+            reviews,
+            settings: widgetSettings
         }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
