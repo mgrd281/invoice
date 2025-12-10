@@ -1085,15 +1085,42 @@ export default function ReviewsPage() {
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label>Primärfarbe</Label>
-                                        <div className="flex gap-2">
-                                            {['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#000000'].map((color) => (
+                                        <div className="flex gap-2 items-center flex-wrap">
+                                            {['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#000000', '#2C5147'].map((color) => (
                                                 <div
                                                     key={color}
                                                     className={`h-8 w-8 rounded-full cursor-pointer border-2 ring-1 ring-gray-200 transition-all ${widgetSettings.primaryColor === color ? 'border-gray-900 scale-110' : 'border-white hover:scale-105'}`}
                                                     style={{ backgroundColor: color }}
                                                     onClick={() => setWidgetSettings({ ...widgetSettings, primaryColor: color })}
+                                                    title={color}
                                                 />
                                             ))}
+                                            <div className="relative ml-2">
+                                                <Label htmlFor="custom-color" className="sr-only">Benutzerdefinierte Farbe</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-8 w-8 rounded-full overflow-hidden border-2 ring-1 ring-gray-200 cursor-pointer relative">
+                                                        <Input
+                                                            id="custom-color"
+                                                            type="color"
+                                                            value={widgetSettings.primaryColor}
+                                                            onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
+                                                            className="absolute inset-0 w-full h-full p-0 border-none opacity-0 cursor-pointer"
+                                                        />
+                                                        <div
+                                                            className="w-full h-full"
+                                                            style={{
+                                                                backgroundColor: widgetSettings.primaryColor,
+                                                                backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                                                                backgroundSize: '8px 8px',
+                                                                backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
+                                                            }}
+                                                        >
+                                                            <div className="w-full h-full" style={{ backgroundColor: widgetSettings.primaryColor }}></div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs text-gray-500 font-mono">{widgetSettings.primaryColor}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
