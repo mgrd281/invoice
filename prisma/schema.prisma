@@ -97,6 +97,7 @@ model Organization {
   widgetSettings    WidgetSettings?
   telegramSettings  TelegramSettings?
   telegramLogs      TelegramLog[]
+  autoReviewSettings AutoReviewSettings?
 }
 
 model WidgetSettings {
@@ -653,6 +654,7 @@ model TelegramAllowedUser {
   createdAt          DateTime         @default(now())
 }
 
+
 model TelegramLog {
   id             String   @id @default(uuid())
   organizationId String
@@ -662,4 +664,34 @@ model TelegramLog {
   status         String
   response       String?
   createdAt      DateTime @default(now())
+}
+
+model AutoReviewSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(false)
+  delayMinutes   Int          @default(0) // Delay after order creation
+  percentage     Int          @default(100) // Percentage of orders to generate reviews for (0-100)
+  minRating      Int          @default(4)
+  maxRating      Int          @default(5)
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  templates      AutoReviewTemplate[]
+}
+
+model AutoReviewTemplate {
+  id             String             @id @default(uuid())
+  settingsId     String
+  settings       AutoReviewSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  
+  title          String?
+  content        String
+  rating         Int?               // If null, use random between min/max from settings
+  
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 }

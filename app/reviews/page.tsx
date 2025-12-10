@@ -558,6 +558,7 @@ export default function ReviewsPage() {
                         <TabsTrigger value="reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Alle Bewertungen</TabsTrigger>
                         <TabsTrigger value="import" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Import & Export</TabsTrigger>
                         <TabsTrigger value="widgets" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Widgets & Design</TabsTrigger>
+                        <TabsTrigger value="auto-reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Auto-Reviews</TabsTrigger>
                         <TabsTrigger value="emails" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">E-Mail Automation</TabsTrigger>
                     </TabsList>
 
@@ -1104,21 +1105,10 @@ export default function ReviewsPage() {
                                                             type="color"
                                                             value={widgetSettings.primaryColor}
                                                             onChange={(e) => setWidgetSettings({ ...widgetSettings, primaryColor: e.target.value })}
-                                                            className="absolute inset-0 w-full h-full p-0 border-none opacity-0 cursor-pointer"
+                                                            className="h-full w-full opacity-0 cursor-pointer"
                                                         />
-                                                        <div
-                                                            className="w-full h-full"
-                                                            style={{
-                                                                backgroundColor: widgetSettings.primaryColor,
-                                                                backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
-                                                                backgroundSize: '8px 8px',
-                                                                backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
-                                                            }}
-                                                        >
-                                                            <div className="w-full h-full" style={{ backgroundColor: widgetSettings.primaryColor }}></div>
-                                                        </div>
                                                     </div>
-                                                    <span className="text-xs text-gray-500 font-mono">{widgetSettings.primaryColor}</span>
+                                                    <span className="text-sm text-gray-500">{widgetSettings.primaryColor}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1131,16 +1121,19 @@ export default function ReviewsPage() {
                                                 className={`border-2 rounded-lg p-4 cursor-pointer text-center transition-all ${widgetSettings.layout === 'list' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
                                                 onClick={() => setWidgetSettings({ ...widgetSettings, layout: 'list' })}
                                             >
-                                                <div className="h-12 bg-white rounded mb-2 border border-gray-100"></div>
+                                                <div className="space-y-2 mb-2">
+                                                    <div className="h-2 bg-gray-200 rounded w-full"></div>
+                                                    <div className="h-2 bg-gray-200 rounded w-3/4"></div>
+                                                </div>
                                                 <span className={`text-sm font-medium ${widgetSettings.layout === 'list' ? 'text-blue-700' : 'text-gray-600'}`}>Liste</span>
                                             </div>
                                             <div
                                                 className={`border-2 rounded-lg p-4 cursor-pointer text-center transition-all ${widgetSettings.layout === 'grid' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
                                                 onClick={() => setWidgetSettings({ ...widgetSettings, layout: 'grid' })}
                                             >
-                                                <div className="grid grid-cols-2 gap-1 mb-2">
-                                                    <div className="h-12 bg-gray-100 rounded"></div>
-                                                    <div className="h-12 bg-gray-100 rounded"></div>
+                                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                                    <div className="h-4 bg-gray-200 rounded"></div>
+                                                    <div className="h-4 bg-gray-200 rounded"></div>
                                                 </div>
                                                 <span className={`text-sm font-medium ${widgetSettings.layout === 'grid' ? 'text-blue-700' : 'text-gray-600'}`}>Raster</span>
                                             </div>
@@ -1148,8 +1141,14 @@ export default function ReviewsPage() {
                                     </div>
                                     <div className="pt-4 flex justify-end">
                                         <Button onClick={() => updateWidgetSettings(widgetSettings)} disabled={isSavingSettings}>
-                                            {isSavingSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                            Speichern
+                                            {isSavingSettings ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Speichern...
+                                                </>
+                                            ) : (
+                                                'Speichern'
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>
