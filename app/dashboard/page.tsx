@@ -27,8 +27,28 @@ import {
   Package,
   Gift,
   Globe,
-  Star
+  Star,
+  RotateCcw
 } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  DragEndEvent
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { DEFAULT_FEATURES } from './features-data'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { ProtectedRoute } from '@/components/protected-route'
@@ -69,6 +89,86 @@ export default function DashboardPage() {
     cancelledInvoicesAmount: 0
   })
   const [loading, setLoading] = useState(true)
+  const [features, setFeatures] = useState(DEFAULT_FEATURES)
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  useEffect(() => {
+    const loadFeatureOrder = async () => {
+      if (!isAuthenticated || !user) return
+      try {
+        const response = await authenticatedFetch('/api/user/feature-order')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.featureOrder && Array.isArray(data.featureOrder)) {
+            const savedOrder = data.featureOrder
+            const reordered = [...DEFAULT_FEATURES].sort((a, b) => {
+              const indexA = savedOrder.indexOf(a.id)
+              const indexB = savedOrder.indexOf(b.id)
+              if (indexA !== -1 && indexB !== -1) return indexA - indexB
+              if (indexA !== -1) return -1
+              if (indexB !== -1) return 1
+              return 0
+            })
+            setFeatures(reordered)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading feature order:', error)
+      }
+    }
+    loadFeatureOrder()
+  }, [isAuthenticated, user, authenticatedFetch])
+
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    setActiveId(null)
+
+    if (over && active.id !== over.id) {
+      setFeatures((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+        const newItems = arrayMove(items, oldIndex, newIndex)
+
+        // Save new order
+        const newOrder = newItems.map(item => item.id)
+        authenticatedFetch('/api/user/feature-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featureOrder: newOrder })
+        }).catch(err => console.error('Failed to save order:', err))
+
+        return newItems
+      })
+    }
+  }
+
+  const resetOrder = async () => {
+    setFeatures(DEFAULT_FEATURES)
+    try {
+      await authenticatedFetch('/api/user/feature-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featureOrder: DEFAULT_FEATURES.map(f => f.id) })
+      })
+    } catch (error) {
+      console.error('Failed to reset order:', error)
+    }
+  }
 
   // Memoize the data loading function to prevent infinite loops
   const loadDashboardData = useCallback(async () => {
@@ -330,256 +430,35 @@ export default function DashboardPage() {
 
           {/* Features Grid */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Alle Funktionen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Link href="/upload">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
-                      <Upload className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">CSV-Import</CardTitle>
-                    <CardDescription>
-                      Shopify-Bestellungen importieren
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/products/import">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 relative">
-                      <Globe className="h-6 w-6 text-white" />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                      </span>
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Produkt Import
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Produkte von URL importieren (Shopify & mehr)
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/shopify">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4">
-                      <ShoppingBag className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">Shopify Integration</CardTitle>
-                    <CardDescription>
-                      Shop direkt verbinden
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/buchhaltung">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
-                      <Calculator className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">Buchhaltung</CardTitle>
-                    <CardDescription>
-                      Vollständige Buchführung für Steuerberater
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/chat">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-purple-300 bg-gradient-to-br from-white to-purple-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 relative">
-                      <Bot className="h-6 w-6 text-white" />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                      </span>
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      AI-Assistent
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Intelligente Verkaufsanalyse mit GPT-4
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/digital-products">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
-                      <Package className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">Digitale Produkte</CardTitle>
-                    <CardDescription>
-                      Lizenzschlüssel und Downloads verwalten
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/reviews">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-yellow-300 bg-gradient-to-br from-white to-yellow-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mb-4 relative">
-                      <Star className="h-6 w-6 text-white" />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
-                      </span>
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Produkt Reviews
-                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Bewertungen sammeln & verwalten (Loox Style)
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/support">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 relative">
-                      <MessageSquare className="h-6 w-6 text-white" />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                      </span>
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Support Center
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Kundenanfragen und Tickets verwalten
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/dashboard/telegram">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-sky-300 bg-gradient-to-br from-white to-sky-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 relative">
-                      <MessageSquare className="h-6 w-6 text-white" />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-                      </span>
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Telegram Bot
-                      <span className="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Berichte & Steuerung per Chat
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/analytics/customers">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-orange-300 bg-gradient-to-br from-white to-orange-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4">
-                      <TrendingUp className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Kundenanalyse
-                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">BETA</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Top Kunden, Produkte & Warenkörbe
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/dunning">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-white to-red-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-rose-600 rounded-xl flex items-center justify-center mb-4">
-                      <AlertCircle className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Mahnwesen
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">AUTO</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Automatische Zahlungserinnerungen & Mahnungen
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/ustva">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center mb-4 relative">
-                      <Shield className="h-6 w-6 text-white" />
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                      </span>
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      UStVA Elster
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">NEU</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Umsatzsteuervoranmeldung direkt an Finanzamt
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/settings/marketing">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-pink-300 bg-gradient-to-br from-white to-pink-50">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mb-4">
-                      <Gift className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      Marketing
-                      <span className="text-xs bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">AUTO</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Automatische Rabatte und Kundenbindung
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/settings">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl flex items-center justify-center mb-4">
-                      <Settings className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">Einstellungen</CardTitle>
-                    <CardDescription>
-                      Konto und Firma konfigurieren
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Alle Funktionen</h3>
+              <Button variant="ghost" size="sm" onClick={resetOrder} className="text-gray-500 hover:text-gray-900">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset
+              </Button>
             </div>
+
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={features.map(f => f.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {features.map((feature) => (
+                    <SortableFeature key={feature.id} feature={feature} />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay>
+                {activeId ? (
+                  <SortableFeature feature={features.find(f => f.id === activeId)!} />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </div>
+
 
           {/* Admin Section */}
           {user?.isAdmin && (
@@ -679,7 +558,60 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </ProtectedRoute>
+      </div >
+    </ProtectedRoute >
+  )
+}
+
+function SortableFeature({ feature }: { feature: any }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: feature.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
+    scale: isDragging ? 1.05 : 1,
+  }
+
+  const Icon = feature.icon
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="h-full touch-none">
+      <Link href={feature.href} onClick={(e) => {
+        // Prevent navigation if we are dragging
+        if (isDragging) e.preventDefault()
+      }}>
+        <Card className={`${feature.cardClass} h-full`}>
+          <CardHeader>
+            <div className={`w-12 h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-4 relative ${feature.iconShadow || ''}`}>
+              <Icon className={`h-6 w-6 ${feature.iconColor || 'text-white'}`} />
+              {feature.hasPing && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${feature.pingColor} opacity-75`}></span>
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${feature.pingDotColor}`}></span>
+                </span>
+              )}
+            </div>
+            <CardTitle className="text-xl flex items-center gap-2">
+              {feature.title}
+              {feature.badge && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${feature.badgeClass}`}>{feature.badge}</span>
+              )}
+            </CardTitle>
+            <CardDescription>
+              {feature.description}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </Link>
+    </div>
   )
 }
