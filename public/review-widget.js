@@ -214,8 +214,15 @@
                     <div class="rp-user-row">
                         <div class="rp-avatar">${review.customerName ? review.customerName.charAt(0).toUpperCase() : '?'}</div>
                         <span class="rp-username">${review.customerName}</span>
-                        ${review.isVerified ? '<span class="rp-verified">✓ Verifizierter Kauf</span>' : ''}
-                        <span class="rp-date" style="margin-left: auto;">${timeAgo(review.createdAt)}</span>
+                        ${review.isVerified ? `
+                            <span class="rp-verified">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px">
+                                    <path d="M12 0a12 12 0 1 0 12 12A12.014 12.014 0 0 0 12 0Zm6.927 8.2-6.845 9.289a1.011 1.011 0 0 1-1.43.188l-4.888-3.908a1 1 0 1 1 1.25-1.562l4.076 3.261 6.227-8.451a1 1 0 1 1 1.61 1.183Z"/>
+                                </svg>
+                                Verifizierter Kauf
+                            </span>
+                        ` : ''}
+                        <span class="rp-date" style="color: #9ca3af; font-size: 12px;">• ${timeAgo(review.createdAt)}</span>
                     </div>
                     <div class="rp-stars">
                         ${getStarsHTML(review.rating)}
