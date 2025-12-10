@@ -100,6 +100,7 @@ model Organization {
   telegramLogs      TelegramLog[]
   autoReviewSettings AutoReviewSettings?
   googleShoppingSettings GoogleShoppingSettings?
+  reviewIncentiveSettings ReviewIncentiveSettings?
 }
 
 model WidgetSettings {
@@ -728,4 +729,31 @@ model GoogleShoppingSettings {
   
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
+}
+
+model ProductReviewSummary {
+  id          String   @id @default(uuid())
+  productId   String   @unique // Shopify Product ID
+  summary     String   // General summary
+  pros        String   // JSON string or text
+  cons        String   // JSON string or text
+  lastUpdated DateTime @default(now())
+}
+
+model ReviewIncentiveSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(false)
+  discountType   String       @default("percentage") // percentage, fixed_amount
+  discountValue  Float        @default(10)
+  minRating      Int          @default(1) 
+  requirePhoto   Boolean      @default(false)
+  validityDays   Int          @default(30)
+  emailSubject   String       @default("Danke für Ihre Bewertung! Hier ist Ihr Gutschein")
+  emailBody      String       @default("Vielen Dank für Ihre Bewertung. Als Dankeschön erhalten Sie einen Rabatt auf Ihre nächste Bestellung.")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }

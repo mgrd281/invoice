@@ -34,7 +34,9 @@ import {
     FileText,
     TrendingUp,
     Clock,
-    AlertTriangle
+    AlertTriangle,
+    X,
+    Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -437,6 +439,23 @@ export default function ReviewsPage() {
         body: 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team'
     })
 
+    // Incentive Settings State
+    const [incentiveSettings, setIncentiveSettings] = useState({
+        enabled: false,
+        discountType: 'percentage',
+        discountValue: 10,
+        minRating: 4,
+        requirePhoto: false,
+        validityDays: 30,
+        emailSubject: 'Danke für Ihre Bewertung! Hier ist Ihr Gutschein',
+        emailBody: 'Vielen Dank für Ihre Bewertung. Als Dankeschön erhalten Sie einen Rabatt auf Ihre nächste Bestellung.'
+    })
+    const [isIncentiveSaving, setIsIncentiveSaving] = useState(false)
+
+    // AI Summary State
+    const [summaryLoading, setSummaryLoading] = useState(false)
+    const [productSummary, setProductSummary] = useState<any>(null)
+
     // Edit/Delete State
     const [editingReview, setEditingReview] = useState<any>(null)
     const [isUpdating, setIsUpdating] = useState(false)
@@ -590,6 +609,15 @@ export default function ReviewsPage() {
                 }
             })
             .catch(err => console.error('Failed to load widget settings:', err))
+
+        fetch('/api/reviews/incentive-settings', { cache: 'no-store' })
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.error) {
+                    setIncentiveSettings(data)
+                }
+            })
+            .catch(err => console.error('Failed to load incentive settings:', err))
     }, [])
 
     const [isSavingSettings, setIsSavingSettings] = useState(false)
@@ -613,9 +641,53 @@ export default function ReviewsPage() {
             toast.success('Einstellungen gespeichert')
         } catch (err) {
             console.error('Failed to save widget settings:', err)
-            toast.error('Fehler beim Speichern')
+            toast.error('Fehler beim Speichern der Einstellungen')
         } finally {
             setIsSavingSettings(false)
+        }
+    }
+
+    const saveIncentiveSettings = async () => {
+        setIsIncentiveSaving(true)
+        try {
+            const res = await fetch('/api/reviews/incentive-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(incentiveSettings)
+            })
+            if (res.ok) {
+                toast.success('Anreiz-Einstellungen gespeichert')
+            } else {
+                toast.error('Fehler beim Speichern')
+            }
+        } catch (error) {
+            console.error('Save error:', error)
+            toast.error('Fehler beim Speichern')
+        } finally {
+            setIsIncentiveSaving(false)
+        }
+    }
+
+    const generateAiSummary = async (productId: string) => {
+        setSummaryLoading(true)
+        try {
+            const res = await fetch('/api/reviews/generate-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setProductSummary(data.summary)
+                toast.success('KI-Zusammenfassung erstellt')
+            } else {
+                toast.error(data.error || 'Fehler beim Erstellen')
+            }
+        } catch (error) {
+            console.error('Summary error:', error)
+            toast.error('Fehler beim Erstellen der Zusammenfassung')
+        } finally {
+            setSummaryLoading(false)
         }
     }
 
@@ -920,6 +992,7 @@ export default function ReviewsPage() {
                         <TabsTrigger value="auto-reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Auto-Reviews</TabsTrigger>
                         <TabsTrigger value="emails" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">E-Mail Automation</TabsTrigger>
                         <TabsTrigger value="google-integration" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Google Integration</TabsTrigger>
+                        <TabsTrigger value="incentives" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Anreize (Coupons)</TabsTrigger>
                     </TabsList>
 
                     {/* OVERVIEW TAB */}
@@ -1361,6 +1434,23 @@ export default function ReviewsPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => generateAiSummary(selectedProductStat.productId)}
+                                                        disabled={summaryLoading}
+                                                    >
+                                                        {summaryLoading ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                Generiere...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Sparkles className="h-4 w-4 mr-2 text-purple-600" />
+                                                                KI-Zusammenfassung
+                                                            </>
+                                                        )}
+                                                    </Button>
                                                     <div className="relative">
                                                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                                                         <Input
@@ -1372,6 +1462,44 @@ export default function ReviewsPage() {
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {/* AI Summary Display */}
+                                            {productSummary && (
+                                                <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
+                                                    <div className="flex items-center gap-2 mb-2 text-purple-800 font-medium">
+                                                        <Sparkles className="h-4 w-4" />
+                                                        KI-Zusammenfassung der Bewertungen
+                                                    </div>
+                                                    <p className="text-gray-700 text-sm mb-4 leading-relaxed">
+                                                        {productSummary.text}
+                                                    </p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <h5 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-2">Vorteile</h5>
+                                                            <ul className="space-y-1">
+                                                                {productSummary.pros.map((pro: string, i: number) => (
+                                                                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                                                                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                                                        {pro}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="text-xs font-bold text-red-700 uppercase tracking-wider mb-2">Nachteile</h5>
+                                                            <ul className="space-y-1">
+                                                                {productSummary.cons.map((con: string, i: number) => (
+                                                                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                                                                        <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                                                        {con}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
 
                                             {/* Bulk Actions Toolbar */}
                                             <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
@@ -2333,6 +2461,106 @@ export default function ReviewsPage() {
                                                 Letzte Aktualisierung: Vor 2 Stunden • 124 Produkte • 850 Reviews
                                             </p>
                                         </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="incentives" className="space-y-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Anreize für Bewertungen (Coupons)</CardTitle>
+                                        <CardDescription>
+                                            Senden Sie automatisch Rabattcodes an Kunden, die eine positive Bewertung abgeben.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                checked={incentiveSettings.enabled}
+                                                onCheckedChange={(checked) => setIncentiveSettings({ ...incentiveSettings, enabled: checked })}
+                                            />
+                                            <Label>Automatische Coupons aktivieren</Label>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label>Rabatt-Typ</Label>
+                                                <Select
+                                                    value={incentiveSettings.discountType}
+                                                    onValueChange={(val) => setIncentiveSettings({ ...incentiveSettings, discountType: val })}
+                                                >
+                                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="percentage">Prozentual (%)</SelectItem>
+                                                        <SelectItem value="fixed_amount">Fester Betrag (€)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Wert</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={incentiveSettings.discountValue}
+                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, discountValue: parseFloat(e.target.value) })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Mindestbewertung (Sterne)</Label>
+                                                <Select
+                                                    value={String(incentiveSettings.minRating)}
+                                                    onValueChange={(val) => setIncentiveSettings({ ...incentiveSettings, minRating: parseInt(val) })}
+                                                >
+                                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="1">1 Stern</SelectItem>
+                                                        <SelectItem value="2">2 Sterne</SelectItem>
+                                                        <SelectItem value="3">3 Sterne</SelectItem>
+                                                        <SelectItem value="4">4 Sterne</SelectItem>
+                                                        <SelectItem value="5">5 Sterne</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Gültigkeit (Tage)</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={incentiveSettings.validityDays}
+                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, validityDays: parseInt(e.target.value) })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                checked={incentiveSettings.requirePhoto}
+                                                onCheckedChange={(checked) => setIncentiveSettings({ ...incentiveSettings, requirePhoto: checked })}
+                                            />
+                                            <Label>Nur bei Bewertungen mit Foto/Video</Label>
+                                        </div>
+
+                                        <div className="space-y-4 pt-4 border-t">
+                                            <h3 className="font-medium">E-Mail Vorlage</h3>
+                                            <div className="space-y-2">
+                                                <Label>Betreff</Label>
+                                                <Input
+                                                    value={incentiveSettings.emailSubject}
+                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, emailSubject: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Nachricht</Label>
+                                                <Textarea
+                                                    value={incentiveSettings.emailBody}
+                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, emailBody: e.target.value })}
+                                                    rows={4}
+                                                />
+                                                <p className="text-xs text-gray-500">Der Gutscheincode wird automatisch angehängt.</p>
+                                            </div>
+                                        </div>
+
+                                        <Button onClick={saveIncentiveSettings} disabled={isIncentiveSaving}>
+                                            {isIncentiveSaving ? 'Speichert...' : 'Einstellungen speichern'}
+                                        </Button>
                                     </CardContent>
                                 </Card>
                             </TabsContent>

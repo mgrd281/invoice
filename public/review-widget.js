@@ -99,6 +99,7 @@
         const reviewsPerPage = 5;
         let widgetSettings = { primaryColor: '#2563eb', layout: 'list' };
         let stats = { total: 0, average: 0 };
+        let activeTab = 'reviews'; // 'reviews' | 'gallery'
 
         fetch(`${BASE_URL}/api/reviews/public?productId=${productId}&t=${Date.now()}`)
             .then(res => res.json())
@@ -212,6 +213,9 @@
                 ? allReviews.filter(r => Math.round(r.rating) === currentFilter)
                 : allReviews;
 
+            // Filter for Gallery
+            const galleryItems = allReviews.filter(r => (r.images && r.images.length > 0) || (r.videos && r.videos.length > 0));
+
             // Pagination
             const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
             const startIndex = (currentPage - 1) * reviewsPerPage;
@@ -245,164 +249,157 @@
                 `;
             }
 
-            // Generate Reviews HTML
-            const reviewsHTML = displayedReviews.map(review => `
-                <div class="rp-review-card">
-                    <div class="rp-user-row">
-                        <div class="rp-avatar">${review.customerName ? review.customerName.charAt(0).toUpperCase() : '?'}</div>
-                        <span class="rp-username">${review.customerName}</span>
-                        ${review.isVerified ? `
-                            <span class="rp-verified">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px">
-                                    <path d="M12 0a12 12 0 1 0 12 12A12.014 12.014 0 0 0 12 0Zm6.927 8.2-6.845 9.289a1.011 1.011 0 0 1-1.43.188l-4.888-3.908a1 1 0 1 1 1.25-1.562l4.076 3.261 6.227-8.451a1 1 0 1 1 1.61 1.183Z"/>
-                                </svg>
-                                Verifizierter Kauf
-                            </span>
-                        ` : ''}
-                        <span class="rp-date" style="color: #9ca3af; font-size: 12px;">• ${timeAgo(review.createdAt)}</span>
-                    </div>
-                    <div class="rp-stars">
-                        ${getStarsHTML(review.rating)}
-                    </div>
-                    <div class="rp-content">
-                        ${review.title ? `<span class="rp-title">${review.title}</span>` : ''}
-                        ${review.content}
-                        ${(review.images && review.images.length > 0) ? `
-                            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-                                ${review.images.map(img => `<img src="${img}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer;" onclick="window.open(this.src, '_blank')">`).join('')}
+            // AI Summary HTML
+            let summaryHTML = '';
+            if (data.summary) {
+                summaryHTML = `
+                    <div class="rp-ai-summary" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #0369a1; font-weight: 600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10h-10V2z"/><path d="m9 22 3-8 3 8"/><path d="M8 22h8"/></svg>
+                            KI-Zusammenfassung
+                        </div>
+                        <p style="margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${data.summary.text}</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">Vorteile</div>
+                                <ul style="margin: 0; padding-left: 20px; color: #334155;">
+                                    ${data.summary.pros.map(p => `<li style="margin-bottom: 4px;">${p}</li>`).join('')}
+                                </ul>
                             </div>
-                        ` : ''}
-                        ${(review.videos && review.videos.length > 0) ? `
-                            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-                                ${review.videos.map(vid => `<video src="${vid}" controls style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;"></video>`).join('')}
+                            <div>
+                                <div style="font-weight: 600; color: #991b1b; margin-bottom: 8px;">Nachteile</div>
+                                <ul style="margin: 0; padding-left: 20px; color: #334155;">
+                                    ${data.summary.cons.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')}
+                                </ul>
                             </div>
-                        ` : ''}
-                    </div>
-                    <div class="rp-helpful-section">
-                        <span class="rp-helpful-text">War diese Bewertung hilfreich?</span>
-                        <div style="display:flex; gap:8px;">
-                            <button id="rp-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpVote('${review.id}', 'helpful')" ${sessionStorage.getItem(`rp-vote-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-                                <span id="rp-helpful-count-${review.id}">${review.helpful || 0}</span>
-                            </button>
-                            <button id="rp-not-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpVote('${review.id}', 'notHelpful')" ${sessionStorage.getItem(`rp-vote-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-                                <span id="rp-not-helpful-count-${review.id}">${review.notHelpful || 0}</span>
-                            </button>
                         </div>
                     </div>
-                </div>
-            `).join('');
-
-            // Generate Pagination HTML
-            let paginationHTML = '';
-            if (totalPages > 1) {
-                paginationHTML += `<div class="rp-pagination">`;
-
-                // Prev Button
-                paginationHTML += `
-                    <button class="rp-page-btn" 
-                        onclick="window.rpPage(${currentPage - 1})"
-                        ${currentPage === 1 ? 'disabled' : ''}>
-                        &lt;
-                    </button>
                 `;
-
-                // Page Numbers
-                // Simple logic: show all if <= 7 pages, otherwise show simplified range
-                // For now, let's implement a simple range: 1, 2, 3 ... last
-
-                if (totalPages <= 7) {
-                    for (let i = 1; i <= totalPages; i++) {
-                        paginationHTML += `
-                            <button class="rp-page-btn ${currentPage === i ? 'active' : ''}" 
-                                onclick="window.rpPage(${i})">
-                                ${i}
-                            </button>
-                        `;
-                    }
-                } else {
-                    // Complex pagination logic (1 2 3 ... 10)
-                    if (currentPage <= 4) {
-                        for (let i = 1; i <= 5; i++) {
-                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
-                        }
-                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
-                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(${totalPages})">${totalPages}</button>`;
-                    } else if (currentPage >= totalPages - 3) {
-                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(1)">1</button>`;
-                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
-                        for (let i = totalPages - 4; i <= totalPages; i++) {
-                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
-                        }
-                    } else {
-                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(1)">1</button>`;
-                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
-                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
-                        }
-                        paginationHTML += `<span style="color:#9ca3af">...</span>`;
-                        paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(${totalPages})">${totalPages}</button>`;
-                    }
-                }
-
-                // Next Button
-                paginationHTML += `
-                    <button class="rp-page-btn" 
-                        onclick="window.rpPage(${currentPage + 1})"
-                        ${currentPage === totalPages ? 'disabled' : ''}>
-                        &gt;
-                    </button>
-                `;
-
-                paginationHTML += `</div>`;
             }
 
-            // Modal HTML (Static)
-            const modalHTML = `
-                <div class="rp-modal-overlay" id="rp-modal-overlay">
-                    <div class="rp-modal">
-                        <div class="rp-modal-header">
-                            <h3 class="rp-modal-title">Bewertung schreiben</h3>
-                            <button class="rp-close-btn" id="rp-close-modal">&times;</button>
-                        </div>
-                        <form id="rp-review-form">
-                            <div class="rp-form-group">
-                                <label class="rp-label">Bewertung</label>
-                                <div class="rp-star-input">
-                                    <input type="radio" name="rating" id="star5" value="5" required><label for="star5">★</label>
-                                    <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
-                                    <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
-                                    <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
-                                    <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
-                                </div>
-                            </div>
-                            <div class="rp-form-group">
-                                <label class="rp-label">Name</label>
-                                <input type="text" class="rp-input" name="customerName" required placeholder="Ihr Name">
-                            </div>
-                            <div class="rp-form-group">
-                                <label class="rp-label">E-Mail</label>
-                                <input type="email" class="rp-input" name="customerEmail" required placeholder="ihre@email.com">
-                            </div>
-                            <div class="rp-form-group">
-                                <label class="rp-label">Titel (Optional)</label>
-                                <input type="text" class="rp-input" name="title" placeholder="Zusammenfassung Ihrer Erfahrung">
-                            </div>
-                            <div class="rp-form-group">
-                                <label class="rp-label">Bewertung</label>
-                                <textarea class="rp-textarea" name="content" required placeholder="Wie hat Ihnen das Produkt gefallen?"></textarea>
-                            </div>
-                            <div class="rp-form-group">
-                                <label class="rp-label">Fotos/Videos hinzufügen (Optional)</label>
-                                <input type="file" class="rp-input" name="media" accept="image/*,video/*" multiple style="padding: 6px;">
-                                <p style="font-size: 11px; color: #6b7280; margin-top: 4px;">Max. 5MB pro Datei. Unterstützt: JPG, PNG, MP4</p>
-                            </div>
-                            <button type="submit" class="rp-submit-btn">Bewertung absenden</button>
-                        </form>
-                    </div>
+            // Tabs HTML
+            const tabsHTML = `
+                <div class="rp-tabs" style="display: flex; gap: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px;">
+                    <button onclick="window.rpTab('reviews')" class="rp-tab-btn ${activeTab === 'reviews' ? 'active' : ''}" style="padding: 10px 0; background: none; border: none; border-bottom: 2px solid ${activeTab === 'reviews' ? widgetSettings.primaryColor : 'transparent'}; color: ${activeTab === 'reviews' ? widgetSettings.primaryColor : '#6b7280'}; font-weight: 600; cursor: pointer;">
+                        Bewertungen (${stats.total})
+                    </button>
+                    <button onclick="window.rpTab('gallery')" class="rp-tab-btn ${activeTab === 'gallery' ? 'active' : ''}" style="padding: 10px 0; background: none; border: none; border-bottom: 2px solid ${activeTab === 'gallery' ? widgetSettings.primaryColor : 'transparent'}; color: ${activeTab === 'gallery' ? widgetSettings.primaryColor : '#6b7280'}; font-weight: 600; cursor: pointer;">
+                        Galerie (${galleryItems.length})
+                    </button>
                 </div>
             `;
+
+            // Content based on Tab
+            let contentHTML = '';
+
+            if (activeTab === 'reviews') {
+                const reviewsHTML = displayedReviews.map(review => `
+                    <div class="rp-review-card">
+                        <div class="rp-user-row">
+                            <div class="rp-avatar">${review.customerName ? review.customerName.charAt(0).toUpperCase() : '?'}</div>
+                            <span class="rp-username">${review.customerName}</span>
+                            ${review.isVerified ? `
+                                <span class="rp-verified">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px">
+                                        <path d="M12 0a12 12 0 1 0 12 12A12.014 12.014 0 0 0 12 0Zm6.927 8.2-6.845 9.289a1.011 1.011 0 0 1-1.43.188l-4.888-3.908a1 1 0 1 1 1.25-1.562l4.076 3.261 6.227-8.451a1 1 0 1 1 1.61 1.183Z"/>
+                                    </svg>
+                                    Verifizierter Kauf
+                                </span>
+                            ` : ''}
+                            <span class="rp-date" style="color: #9ca3af; font-size: 12px;">• ${timeAgo(review.createdAt)}</span>
+                        </div>
+                        <div class="rp-stars">
+                            ${getStarsHTML(review.rating)}
+                        </div>
+                        <div class="rp-content">
+                            ${review.title ? `<span class="rp-title">${review.title}</span>` : ''}
+                            ${review.content}
+                            ${(review.images && review.images.length > 0) ? `
+                                <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                                    ${review.images.map(img => `<img src="${img}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer;" onclick="window.open(this.src, '_blank')">`).join('')}
+                                </div>
+                            ` : ''}
+                            ${(review.videos && review.videos.length > 0) ? `
+                                <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                                    ${review.videos.map(vid => `<video src="${vid}" controls style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;"></video>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="rp-helpful-section">
+                            <span class="rp-helpful-text">War diese Bewertung hilfreich?</span>
+                            <div style="display:flex; gap:8px;">
+                                <button id="rp-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpVote('${review.id}', 'helpful')" ${sessionStorage.getItem(`rp-vote-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                    <span id="rp-helpful-count-${review.id}">${review.helpful || 0}</span>
+                                </button>
+                                <button id="rp-not-helpful-btn-${review.id}" class="rp-helpful-btn" onclick="window.rpVote('${review.id}', 'notHelpful')" ${sessionStorage.getItem(`rp-vote-${review.id}`) ? 'style="opacity:0.5;cursor:default;"' : ''}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+                                    <span id="rp-not-helpful-count-${review.id}">${review.notHelpful || 0}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Pagination HTML
+                let paginationHTML = '';
+                if (totalPages > 1) {
+                    paginationHTML += `<div class="rp-pagination">`;
+                    // Prev Button
+                    paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&lt;</button>`;
+
+                    // Simplified Pagination Logic for brevity
+                    for (let i = 1; i <= totalPages; i++) {
+                        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                            paginationHTML += `<button class="rp-page-btn ${currentPage === i ? 'active' : ''}" onclick="window.rpPage(${i})">${i}</button>`;
+                        } else if (i === currentPage - 2 || i === currentPage + 2) {
+                            paginationHTML += `<span style="color:#9ca3af">...</span>`;
+                        }
+                    }
+
+                    // Next Button
+                    paginationHTML += `<button class="rp-page-btn" onclick="window.rpPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&gt;</button>`;
+                    paginationHTML += `</div>`;
+                }
+
+                contentHTML = `
+                    <div class="rp-review-list">
+                        ${reviewsHTML.length > 0 ? reviewsHTML : '<div style="text-align:center; color:#6b7280; padding:20px;">Keine Bewertungen gefunden.</div>'}
+                    </div>
+                    ${paginationHTML}
+                `;
+            } else {
+                // Gallery View
+                if (galleryItems.length === 0) {
+                    contentHTML = '<div style="text-align:center; color:#6b7280; padding:40px;">Noch keine Fotos oder Videos vorhanden.</div>';
+                } else {
+                    const galleryGrid = galleryItems.map(r => {
+                        const media = [...(r.images || []), ...(r.videos || [])];
+                        // Just show first media item as thumbnail
+                        const first = media[0];
+                        const isVideo = r.videos && r.videos.includes(first);
+
+                        return `
+                            <div style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;" onclick="window.open('${first}', '_blank')">
+                                ${isVideo
+                                ? `<video src="${first}" style="width:100%; height:100%; object-fit:cover;"></video><div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:white; background:rgba(0,0,0,0.5); padding:10px; border-radius:50%;">▶</div>`
+                                : `<img src="${first}" style="width:100%; height:100%; object-fit:cover;">`
+                            }
+                                <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.7)); padding:10px; color:white; font-size:12px;">
+                                    ${getStarsHTML(r.rating).replace(/width="16"/g, 'width="12"').replace(/height="16"/g, 'height="12"')}
+                                    <div style="margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.customerName}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    contentHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
+                            ${galleryGrid}
+                        </div>
+                    `;
+                }
+            }
 
             widgetContainer.innerHTML = `
                 <div class="rp-widget ${widgetSettings.layout === 'grid' ? 'rp-layout-grid' : ''}">
@@ -419,11 +416,12 @@
                         </div>
                         <button class="rp-write-btn" id="rp-open-modal">Bewertung schreiben</button>
                     </div>
-                    <div class="rp-divider"></div>
-                    <div class="rp-review-list">
-                        ${reviewsHTML.length > 0 ? reviewsHTML : '<div style="text-align:center; color:#6b7280; padding:20px;">Keine Bewertungen gefunden.</div>'}
-                    </div>
-                    ${paginationHTML}
+                    
+                    ${summaryHTML}
+                    ${tabsHTML}
+                    
+                    ${contentHTML}
+                    
                     ${modalHTML}
                 </div>
             `;
@@ -439,6 +437,11 @@
                 currentFilter = rating;
             }
             currentPage = 1;
+            renderWidget();
+        };
+
+        window.rpTab = function (tab) {
+            activeTab = tab;
             renderWidget();
         };
 
