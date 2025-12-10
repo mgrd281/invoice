@@ -507,6 +507,20 @@ export class ShopifyAPI {
   }
 
   /**
+   * Get a single product by ID
+   */
+  async getProduct(productId: number | string): Promise<ShopifyProduct | null> {
+    try {
+      const response = await this.makeRequest(`/products/${productId}.json`)
+      const data = await response.json()
+      return data.product || null
+    } catch (error) {
+      console.error(`Error fetching product ${productId}:`, error)
+      return null
+    }
+  }
+
+  /**
    * Get collections from Shopify
    */
   async getCollections(params: {

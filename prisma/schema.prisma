@@ -391,6 +391,7 @@ model LicenseKey {
   isUsed           Boolean        @default(false)
   orderId          String?
   shopifyOrderId   String?
+  shopifyVariantId String?        // If set, this key is only for this specific variant
   usedAt           DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt

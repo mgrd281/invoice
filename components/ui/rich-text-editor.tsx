@@ -53,7 +53,7 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
     };
 
     return (
-        <div className={cn("border border-gray-200 rounded-md overflow-hidden bg-white flex flex-col", className, isFocused && "ring-2 ring-blue-500 border-transparent")}>
+        <div className={cn("relative border border-gray-200 rounded-md overflow-hidden bg-white flex flex-col", className, isFocused && "ring-2 ring-blue-500 border-transparent")}>
             {/* Toolbar */}
             <div className="flex items-center gap-1 p-2 border-b border-gray-100 bg-gray-50 flex-wrap">
                 <ToolbarButton onClick={() => execCommand('bold')} icon={<Bold className="w-4 h-4" />} title="Fett (Ctrl+B)" />
@@ -76,13 +76,13 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 suppressContentEditableWarning={true}
-
-                {/* Placeholder overlay if needed, though CSS :empty is better */}
-                {value === '' && !isFocused && (
-                    <div className="absolute top-[50px] left-4 text-gray-400 pointer-events-none text-sm">
-                        {placeholder || 'Nachricht hier schreiben...'}
-                    </div>
-                )}
+            />
+            {/* Placeholder overlay */}
+            {(!value || value === '<p><br></p>') && !isFocused && (
+                <div className="absolute top-[50px] left-4 text-gray-400 pointer-events-none text-sm">
+                    {placeholder || 'Nachricht hier schreiben...'}
+                </div>
+            )}
         </div>
     );
 }

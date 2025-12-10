@@ -39,6 +39,9 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const [activeKeyTab, setActiveKeyTab] = useState<'history' | 'inventory'>('history')
 
 
+    const [selectedVariant, setSelectedVariant] = useState<string>('any')
+    const [variants, setVariants] = useState<any[]>([])
+
     useEffect(() => {
         loadData()
     }, [params.id])
@@ -56,6 +59,10 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
 
             if (prodData.success) {
                 setProduct(prodData.data)
+                if (prodData.data.shopifyProduct && prodData.data.shopifyProduct.variants) {
+                    setVariants(prodData.data.shopifyProduct.variants)
+                }
+
                 setTemplate(prodData.data.emailTemplate || getDefaultTemplate())
                 setDownloadUrl(prodData.data.downloadUrl || '')
                 setButtonText(prodData.data.buttonText || 'Download')
@@ -112,7 +119,10 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                     const res = await fetch(`/api/digital-products/${params.id}/keys`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ keys: chunk })
+                        body: JSON.stringify({
+                            keys: chunk,
+                            shopifyVariantId: selectedVariant !== 'any' ? selectedVariant : null
+                        })
                     })
 
                     if (!res.ok) {
@@ -170,7 +180,6 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
 
 
 
-
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -195,7 +204,10 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                     await fetch(`/api/digital-products/${params.id}/keys`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ keys: chunk })
+                        body: JSON.stringify({
+                            keys: chunk,
+                            shopifyVariantId: selectedVariant !== 'any' ? selectedVariant : null
+                        })
                     })
 
                     processed += chunk.length
@@ -260,7 +272,7 @@ Viel Spaß!`
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/dashboard">
+                        <Link href="/digital-products">
                             <Button variant="ghost" size="sm" className="flex items-center">
                                 <ArrowLeft className="w-4 h-4 mr-2" />
                                 Zurück
@@ -357,6 +369,24 @@ Viel Spaß!`
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {variants.length > 1 && (
+                                    <div>
+                                        <Label className="mb-2 block">Variante wählen</Label>
+                                        <select
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            value={selectedVariant}
+                                            onChange={e => setSelectedVariant(e.target.value)}
+                                        >
+                                            <option value="any">Alle Varianten / Keine spezifische</option>
+                                            {variants.map(v => (
+                                                <option key={v.id} value={v.id}>
+                                                    {v.title}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
                                 <div>
                                     <Label className="mb-2 block">Text-Eingabe (kleine Mengen)</Label>
                                     <Textarea
@@ -436,6 +466,7 @@ Viel Spaß!`
                                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                                     <tr>
                                                         <th className="px-4 py-3">Key</th>
+                                                        {variants.length > 0 && <th className="px-4 py-3">Variante</th>}
                                                         <th className="px-4 py-3">Status</th>
                                                         {activeKeyTab === 'history' && (
                                                             <>
@@ -455,7 +486,7 @@ Viel Spaß!`
                                                         if (displayedKeys.length === 0) {
                                                             return (
                                                                 <tr>
-                                                                    <td colSpan={activeKeyTab === 'history' ? 5 : 3} className="px-4 py-8 text-center text-gray-500">
+                                                                    <td colSpan={activeKeyTab === 'history' ? (variants.length > 0 ? 6 : 5) : (variants.length > 0 ? 4 : 3)} className="px-4 py-8 text-center text-gray-500">
                                                                         {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
                                                                     </td>
                                                                 </tr>
@@ -465,6 +496,15 @@ Viel Spaß!`
                                                         return displayedKeys.map((key) => (
                                                             <tr key={key.id} className="border-b hover:bg-gray-50">
                                                                 <td className="px-4 py-3 font-mono">{key.key}</td>
+                                                                {variants.length > 0 && (
+                                                                    <td className="px-4 py-3 text-gray-500">
+                                                                        {key.shopifyVariantId ? (
+                                                                            variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
+                                                                        ) : (
+                                                                            <span className="text-gray-400 italic">Alle</span>
+                                                                        )}
+                                                                    </td>
+                                                                )}
                                                                 <td className="px-4 py-3">
                                                                     {key.isUsed ? (
                                                                         <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">Verbraucht</span>

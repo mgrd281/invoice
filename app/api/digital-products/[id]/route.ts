@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ShopifyAPI } from '@/lib/shopify-api'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     try {
@@ -17,7 +18,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             return NextResponse.json({ error: 'Product not found' }, { status: 404 })
         }
 
-        return NextResponse.json({ success: true, data: product })
+        let shopifyProduct = null
+        try {
+            const api = new ShopifyAPI()
+            shopifyProduct = await api.getProduct(product.shopifyProductId)
+        } catch (e) {
+            console.error("Failed to fetch shopify product", e)
+        }
+
+        return NextResponse.json({ success: true, data: { ...product, shopifyProduct } })
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 })
     }

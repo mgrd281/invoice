@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     try {
         const body = await req.json()
-        const { keys } = body // Expecting array of strings
+        const { keys, shopifyVariantId } = body // Expecting array of strings
 
         if (!Array.isArray(keys) || keys.length === 0) {
             return NextResponse.json({ error: 'Invalid keys data' }, { status: 400 })
@@ -28,7 +28,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             data: keys.map((key: string) => ({
                 digitalProductId: params.id,
                 key: key,
-                isUsed: false
+                isUsed: false,
+                shopifyVariantId: shopifyVariantId || null
             }))
         })
 

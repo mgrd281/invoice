@@ -78,7 +78,8 @@ export async function POST(req: Request) {
                   payload.name || String(payload.order_number) || String(payload.id), // Pass visible order number
                   payload.email || payload.customer?.email,
                   payload.shipping_address?.first_name || payload.customer?.first_name || 'Kunde',
-                  item.title
+                  item.title,
+                  item.variant_id ? String(item.variant_id) : undefined
                 )
               } catch (err) {
                 log(`❌ Error processing digital product ${item.product_id}:`, err)

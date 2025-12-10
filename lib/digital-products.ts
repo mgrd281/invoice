@@ -34,11 +34,28 @@ export async function addLicenseKeys(digitalProductId: string, keys: string[]) {
     })
 }
 
-export async function getAvailableKey(digitalProductId: string) {
+export async function getAvailableKey(digitalProductId: string, shopifyVariantId?: string) {
+    // 1. If variantId is provided, try to find a key SPECIFIC to that variant
+    if (shopifyVariantId) {
+        const variantKey = await prisma.licenseKey.findFirst({
+            where: {
+                digitalProductId,
+                isUsed: false,
+                shopifyVariantId: shopifyVariantId
+            },
+            orderBy: { createdAt: 'asc' }
+        })
+
+        if (variantKey) return variantKey
+    }
+
+    // 2. Fallback (or default): Find a key with NO variant assigned (null)
+    // This allows "general" keys to be used for any variant (or if no variant is specified)
     return prisma.licenseKey.findFirst({
         where: {
             digitalProductId,
-            isUsed: false
+            isUsed: false,
+            shopifyVariantId: null
         },
         orderBy: { createdAt: 'asc' }
     })
@@ -62,7 +79,8 @@ export async function processDigitalProductOrder(
     orderNumber: string,
     customerEmail: string,
     customerName: string,
-    productTitle: string
+    productTitle: string,
+    shopifyVariantId?: string
 ) {
     const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
 
@@ -84,17 +102,17 @@ export async function processDigitalProductOrder(
         return { success: true, key: existingKey.key, message: 'Key already assigned' }
     }
 
-    const key = await getAvailableKey(digitalProduct.id)
+    const key = await getAvailableKey(digitalProduct.id, shopifyVariantId)
 
     if (!key) {
-        console.error(`No keys available for product: ${digitalProduct.title} (${digitalProduct.id})`)
+        console.error(`No keys available for product: ${digitalProduct.title} (${digitalProduct.id}) [Variant: ${shopifyVariantId || 'Any'}]`)
 
         // Notify Admin
         const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@example.com'
         await sendEmail({
             to: adminEmail,
             subject: `⚠️ KEINE KEYS MEHR: ${digitalProduct.title}`,
-            html: `<p>Achtung,</p><p>Für das Produkt <strong>${digitalProduct.title}</strong> (Shopify ID: ${shopifyProductId}) sind keine Lizenzschlüssel mehr verfügbar!</p><p>Eine Bestellung konnte nicht bedient werden.</p>`
+            html: `<p>Achtung,</p><p>Für das Produkt <strong>${digitalProduct.title}</strong> (Shopify ID: ${shopifyProductId}, Variante: ${shopifyVariantId || 'Alle'}) sind keine Lizenzschlüssel mehr verfügbar!</p><p>Eine Bestellung konnte nicht bedient werden.</p>`
         })
 
         return { success: false, error: 'No keys available' }
