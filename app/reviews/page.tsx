@@ -1834,6 +1834,8 @@ function AutoReviewsSettings() {
 
     // Template Form State
     const [newTemplate, setNewTemplate] = useState({ content: '', title: '', rating: 5 })
+    const [editingTemplateIndex, setEditingTemplateIndex] = useState<number | null>(null)
+    const [deletingTemplateIndex, setDeletingTemplateIndex] = useState<number | null>(null)
 
     useEffect(() => {
         fetch('/api/reviews/auto-settings')
@@ -1847,13 +1849,13 @@ function AutoReviewsSettings() {
             .finally(() => setLoading(false))
     }, [])
 
-    const handleSave = async () => {
+    const handleSave = async (updatedSettings = settings) => {
         setSaving(true)
         try {
             await fetch('/api/reviews/auto-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
+                body: JSON.stringify(updatedSettings)
             })
             toast.success('Einstellungen gespeichert')
         } catch (error) {
@@ -1863,19 +1865,63 @@ function AutoReviewsSettings() {
         }
     }
 
-    const addTemplate = () => {
+    const addTemplate = async () => {
         if (!newTemplate.content) return
-        setSettings({
-            ...settings,
-            templates: [...settings.templates, { ...newTemplate, productId: selectedProductId }]
-        })
+
+        let newTemplates = [...settings.templates]
+
+        if (editingTemplateIndex !== null) {
+            // Update existing
+            newTemplates[editingTemplateIndex] = {
+                ...newTemplates[editingTemplateIndex],
+                ...newTemplate,
+                productId: selectedProductId // Ensure it stays with the current product view
+            }
+            toast.success('Vorlage aktualisiert')
+        } else {
+            // Add new
+            newTemplates.push({ ...newTemplate, productId: selectedProductId })
+            toast.success('Vorlage hinzugefügt')
+        }
+
+        const newSettings = { ...settings, templates: newTemplates }
+        setSettings(newSettings)
         setNewTemplate({ content: '', title: '', rating: 5 })
+        setEditingTemplateIndex(null)
+
+        // Auto-save changes
+        await handleSave(newSettings)
     }
 
-    const removeTemplate = (index: number) => {
+    const startEdit = (index: number) => {
+        const template = settings.templates[index]
+        setNewTemplate({
+            content: template.content,
+            title: template.title || '',
+            rating: template.rating || 5
+        })
+        setEditingTemplateIndex(index)
+    }
+
+    const cancelEdit = () => {
+        setNewTemplate({ content: '', title: '', rating: 5 })
+        setEditingTemplateIndex(null)
+    }
+
+    const confirmDeleteTemplate = async () => {
+        if (deletingTemplateIndex === null) return
+
         const newTemplates = [...settings.templates]
-        newTemplates.splice(index, 1)
-        setSettings({ ...settings, templates: newTemplates })
+        newTemplates.splice(deletingTemplateIndex, 1)
+
+        const newSettings = { ...settings, templates: newTemplates }
+        setSettings(newSettings)
+        setDeletingTemplateIndex(null)
+
+        toast.success('Vorlage gelöscht')
+
+        // Auto-save changes
+        await handleSave(newSettings)
     }
 
     // Filter templates based on selection
@@ -1908,7 +1954,7 @@ function AutoReviewsSettings() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label>Verzögerung (Minuten)</Label>
                             <Input
@@ -1917,37 +1963,49 @@ function AutoReviewsSettings() {
                                 value={settings.delayMinutes}
                                 onChange={(e) => setSettings({ ...settings, delayMinutes: parseInt(e.target.value) || 0 })}
                             />
+                            <p className="text-xs text-gray-500">Zeit nach Bestelleingang bis zur Bewertungserstellung.</p>
                         </div>
                         <div className="space-y-2">
                             <Label>Wahrscheinlichkeit (%)</Label>
-                            <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={settings.percentage}
-                                onChange={(e) => setSettings({ ...settings, percentage: parseInt(e.target.value) || 100 })}
-                            />
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={settings.percentage}
+                                    onChange={(e) => setSettings({ ...settings, percentage: parseInt(e.target.value) || 100 })}
+                                />
+                                <span className="text-sm text-gray-500">%</span>
+                            </div>
+                            <p className="text-xs text-gray-500">Prozentsatz der Bestellungen, die eine Bewertung erhalten.</p>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label>Bewertung (Sterne)</Label>
+                            <Label>Min. Bewertung</Label>
                             <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
                                     min="1"
                                     max="5"
                                     value={settings.minRating}
-                                    onChange={(e) => setSettings({ ...settings, minRating: parseInt(e.target.value) || 1 })}
-                                    className="w-20"
+                                    onChange={(e) => setSettings({ ...settings, minRating: parseInt(e.target.value) || 4 })}
                                 />
-                                <span>bis</span>
+                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Max. Bewertung</Label>
+                            <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
                                     min="1"
                                     max="5"
                                     value={settings.maxRating}
                                     onChange={(e) => setSettings({ ...settings, maxRating: parseInt(e.target.value) || 5 })}
-                                    className="w-20"
                                 />
+                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
                             </div>
                         </div>
                     </div>
@@ -1965,7 +2023,10 @@ function AutoReviewsSettings() {
                         <div className="max-h-[600px] overflow-y-auto">
                             <div
                                 className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedProductId === null ? 'bg-blue-50 border-blue-200' : ''}`}
-                                onClick={() => setSelectedProductId(null)}
+                                onClick={() => {
+                                    setSelectedProductId(null)
+                                    cancelEdit()
+                                }}
                             >
                                 <h3 className="font-medium">Allgemeine Vorlagen</h3>
                                 <p className="text-xs text-gray-500">Werden genutzt wenn keine spezifischen Vorlagen existieren</p>
@@ -1974,7 +2035,10 @@ function AutoReviewsSettings() {
                                 <div
                                     key={product.id}
                                     className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-3 ${selectedProductId === String(product.id) ? 'bg-blue-50 border-blue-200' : ''}`}
-                                    onClick={() => setSelectedProductId(String(product.id))}
+                                    onClick={() => {
+                                        setSelectedProductId(String(product.id))
+                                        cancelEdit()
+                                    }}
                                 >
                                     {product.images && product.images[0] && (
                                         <div className="h-10 w-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">
@@ -2011,7 +2075,9 @@ function AutoReviewsSettings() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                            <h4 className="font-medium text-sm">Neue Vorlage hinzufügen</h4>
+                            <h4 className="font-medium text-sm">
+                                {editingTemplateIndex !== null ? 'Vorlage bearbeiten' : 'Neue Vorlage hinzufügen'}
+                            </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input
                                     placeholder="Titel (Optional)"
@@ -2035,10 +2101,17 @@ function AutoReviewsSettings() {
                                 value={newTemplate.content}
                                 onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
                             />
-                            <Button onClick={addTemplate} disabled={!newTemplate.content}>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Vorlage hinzufügen
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button onClick={addTemplate} disabled={!newTemplate.content || saving}>
+                                    {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                    {editingTemplateIndex !== null ? 'Änderungen speichern' : 'Vorlage hinzufügen'}
+                                </Button>
+                                {editingTemplateIndex !== null && (
+                                    <Button variant="outline" onClick={cancelEdit}>
+                                        Abbrechen
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -2048,10 +2121,10 @@ function AutoReviewsSettings() {
                                 </div>
                             ) : (
                                 displayedTemplates.map((template, index) => {
-                                    // Find the actual index in the main settings.templates array to remove correctly
+                                    // Find the actual index in the main settings.templates array to remove/edit correctly
                                     const realIndex = settings.templates.indexOf(template)
                                     return (
-                                        <div key={index} className="flex items-start justify-between p-4 border rounded-lg bg-white">
+                                        <div key={index} className={`flex items-start justify-between p-4 border rounded-lg bg-white ${editingTemplateIndex === realIndex ? 'border-blue-500 ring-1 ring-blue-500' : ''}`}>
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <div className="flex text-yellow-400">
@@ -2061,11 +2134,16 @@ function AutoReviewsSettings() {
                                                     </div>
                                                     {template.title && <span className="font-medium text-sm">{template.title}</span>}
                                                 </div>
-                                                <p className="text-sm text-gray-600">{template.content}</p>
+                                                <p className="text-sm text-gray-600 line-clamp-2">{template.content}</p>
                                             </div>
-                                            <Button variant="ghost" size="sm" onClick={() => removeTemplate(realIndex)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex gap-1">
+                                                <Button variant="ghost" size="sm" onClick={() => startEdit(realIndex)}>
+                                                    <PenTool className="h-4 w-4 text-gray-500" />
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setDeletingTemplateIndex(realIndex)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     )
                                 })
@@ -2073,7 +2151,7 @@ function AutoReviewsSettings() {
                         </div>
 
                         <div className="pt-4 flex justify-end border-t">
-                            <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                            <Button onClick={() => handleSave()} disabled={saving} className="bg-green-600 hover:bg-green-700">
                                 {saving ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -2087,6 +2165,24 @@ function AutoReviewsSettings() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Delete Template Alert */}
+            <AlertDialog open={deletingTemplateIndex !== null} onOpenChange={(open) => !open && setDeletingTemplateIndex(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Möchten Sie diese Vorlage wirklich löschen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Diese Aktion löscht die Vorlage dauerhaft aus der Datenbank.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDeleteTemplate} className="bg-red-600 hover:bg-red-700">
+                            Löschen
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
