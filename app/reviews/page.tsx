@@ -2465,105 +2465,7 @@ export default function ReviewsPage() {
                                 </Card>
                             </TabsContent>
 
-                            <TabsContent value="incentives" className="space-y-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Anreize für Bewertungen (Coupons)</CardTitle>
-                                        <CardDescription>
-                                            Senden Sie automatisch Rabattcodes an Kunden, die eine positive Bewertung abgeben.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                checked={incentiveSettings.enabled}
-                                                onCheckedChange={(checked) => setIncentiveSettings({ ...incentiveSettings, enabled: checked })}
-                                            />
-                                            <Label>Automatische Coupons aktivieren</Label>
-                                        </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <Label>Rabatt-Typ</Label>
-                                                <Select
-                                                    value={incentiveSettings.discountType}
-                                                    onValueChange={(val) => setIncentiveSettings({ ...incentiveSettings, discountType: val })}
-                                                >
-                                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="percentage">Prozentual (%)</SelectItem>
-                                                        <SelectItem value="fixed_amount">Fester Betrag (€)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Wert</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={incentiveSettings.discountValue}
-                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, discountValue: parseFloat(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Mindestbewertung (Sterne)</Label>
-                                                <Select
-                                                    value={String(incentiveSettings.minRating)}
-                                                    onValueChange={(val) => setIncentiveSettings({ ...incentiveSettings, minRating: parseInt(val) })}
-                                                >
-                                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="1">1 Stern</SelectItem>
-                                                        <SelectItem value="2">2 Sterne</SelectItem>
-                                                        <SelectItem value="3">3 Sterne</SelectItem>
-                                                        <SelectItem value="4">4 Sterne</SelectItem>
-                                                        <SelectItem value="5">5 Sterne</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Gültigkeit (Tage)</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={incentiveSettings.validityDays}
-                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, validityDays: parseInt(e.target.value) })}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                checked={incentiveSettings.requirePhoto}
-                                                onCheckedChange={(checked) => setIncentiveSettings({ ...incentiveSettings, requirePhoto: checked })}
-                                            />
-                                            <Label>Nur bei Bewertungen mit Foto/Video</Label>
-                                        </div>
-
-                                        <div className="space-y-4 pt-4 border-t">
-                                            <h3 className="font-medium">E-Mail Vorlage</h3>
-                                            <div className="space-y-2">
-                                                <Label>Betreff</Label>
-                                                <Input
-                                                    value={incentiveSettings.emailSubject}
-                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, emailSubject: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Nachricht</Label>
-                                                <Textarea
-                                                    value={incentiveSettings.emailBody}
-                                                    onChange={(e) => setIncentiveSettings({ ...incentiveSettings, emailBody: e.target.value })}
-                                                    rows={4}
-                                                />
-                                                <p className="text-xs text-gray-500">Der Gutscheincode wird automatisch angehängt.</p>
-                                            </div>
-                                        </div>
-
-                                        <Button onClick={saveIncentiveSettings} disabled={isIncentiveSaving}>
-                                            {isIncentiveSaving ? 'Speichert...' : 'Einstellungen speichern'}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
 
                             {/* GOOGLE SNIPPETS TAB */}
                             <TabsContent value="snippets" className="space-y-6">
@@ -2687,6 +2589,106 @@ export default function ReviewsPage() {
                                 </Card>
                             </TabsContent>
                         </Tabs>
+                    </TabsContent>
+
+                    <TabsContent value="incentives" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Anreize für Bewertungen (Coupons)</CardTitle>
+                                <CardDescription>
+                                    Senden Sie automatisch Rabattcodes an Kunden, die eine positive Bewertung abgeben.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex items-center space-x-2">
+                                    <Switch
+                                        checked={incentiveSettings.enabled}
+                                        onCheckedChange={(checked) => setIncentiveSettings({ ...incentiveSettings, enabled: checked })}
+                                    />
+                                    <Label>Automatische Coupons aktivieren</Label>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label>Rabatt-Typ</Label>
+                                        <Select
+                                            value={incentiveSettings.discountType}
+                                            onValueChange={(val) => setIncentiveSettings({ ...incentiveSettings, discountType: val })}
+                                        >
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="percentage">Prozentual (%)</SelectItem>
+                                                <SelectItem value="fixed_amount">Fester Betrag (€)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Wert</Label>
+                                        <Input
+                                            type="number"
+                                            value={incentiveSettings.discountValue}
+                                            onChange={(e) => setIncentiveSettings({ ...incentiveSettings, discountValue: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Mindestbewertung (Sterne)</Label>
+                                        <Select
+                                            value={String(incentiveSettings.minRating)}
+                                            onValueChange={(val) => setIncentiveSettings({ ...incentiveSettings, minRating: parseInt(val) })}
+                                        >
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">1 Stern</SelectItem>
+                                                <SelectItem value="2">2 Sterne</SelectItem>
+                                                <SelectItem value="3">3 Sterne</SelectItem>
+                                                <SelectItem value="4">4 Sterne</SelectItem>
+                                                <SelectItem value="5">5 Sterne</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Gültigkeit (Tage)</Label>
+                                        <Input
+                                            type="number"
+                                            value={incentiveSettings.validityDays}
+                                            onChange={(e) => setIncentiveSettings({ ...incentiveSettings, validityDays: parseInt(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Switch
+                                        checked={incentiveSettings.requirePhoto}
+                                        onCheckedChange={(checked) => setIncentiveSettings({ ...incentiveSettings, requirePhoto: checked })}
+                                    />
+                                    <Label>Nur bei Bewertungen mit Foto/Video</Label>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t">
+                                    <h3 className="font-medium">E-Mail Vorlage</h3>
+                                    <div className="space-y-2">
+                                        <Label>Betreff</Label>
+                                        <Input
+                                            value={incentiveSettings.emailSubject}
+                                            onChange={(e) => setIncentiveSettings({ ...incentiveSettings, emailSubject: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Nachricht</Label>
+                                        <Textarea
+                                            value={incentiveSettings.emailBody}
+                                            onChange={(e) => setIncentiveSettings({ ...incentiveSettings, emailBody: e.target.value })}
+                                            rows={4}
+                                        />
+                                        <p className="text-xs text-gray-500">Der Gutscheincode wird automatisch angehängt.</p>
+                                    </div>
+                                </div>
+
+                                <Button onClick={saveIncentiveSettings} disabled={isIncentiveSaving}>
+                                    {isIncentiveSaving ? 'Speichert...' : 'Einstellungen speichern'}
+                                </Button>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </main>
