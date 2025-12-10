@@ -29,7 +29,7 @@
                                 ${getStarsHTML(average)}
                             </div>
                             <span style="font-size: 14px; color: #6b7280;">
-                                (${total} Reviews)
+                                (${total} Bewertungen)
                             </span>
                         </div>
                     `;
@@ -363,7 +363,7 @@
                             <div class="rp-stars" style="justify-content:center; margin-bottom:4px;">
                                 ${getStarsHTML(stats.average)}
                             </div>
-                            <div class="rp-total-count">${stats.total} Rezensionen</div>
+                            <div class="rp-total-count">${stats.total} Bewertungen</div>
                         </div>
                         <div class="rp-bars">
                             ${barsHTML}

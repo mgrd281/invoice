@@ -473,7 +473,7 @@ export default function ReviewsPage() {
                             <span className="text-gray-300">/</span>
                             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                                Product Reviews
+                                Produktbewertungen
                             </h1>
                         </div>
                         <div className="flex items-center gap-3">
@@ -493,7 +493,7 @@ export default function ReviewsPage() {
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="bg-white border p-1 h-12 rounded-lg shadow-sm w-full justify-start overflow-x-auto">
                         <TabsTrigger value="overview" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Übersicht</TabsTrigger>
-                        <TabsTrigger value="reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Alle Reviews</TabsTrigger>
+                        <TabsTrigger value="reviews" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Alle Bewertungen</TabsTrigger>
                         <TabsTrigger value="import" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Import & Export</TabsTrigger>
                         <TabsTrigger value="widgets" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Widgets & Design</TabsTrigger>
                         <TabsTrigger value="emails" className="h-10 px-6 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">E-Mail Automation</TabsTrigger>
