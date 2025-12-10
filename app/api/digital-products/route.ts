@@ -20,6 +20,33 @@ export async function GET(req: Request) {
             orderBy: { createdAt: 'desc' }
         })
 
+        // Fetch Shopify details for images
+        try {
+            const { ShopifyAPI } = await import('@/lib/shopify-api')
+            const api = new ShopifyAPI()
+
+            const shopifyIds = products.map(p => p.shopifyProductId).filter(Boolean).join(',')
+
+            if (shopifyIds) {
+                const shopifyProducts = await api.getProducts({ ids: shopifyIds, limit: 250 })
+
+                // Merge data
+                const mergedProducts = products.map(p => {
+                    const shopifyProd = shopifyProducts.find(sp => String(sp.id) === String(p.shopifyProductId))
+                    return {
+                        ...p,
+                        image: shopifyProd?.images?.[0]?.src || null,
+                        shopifyTitle: shopifyProd?.title || null
+                    }
+                })
+
+                return NextResponse.json({ success: true, data: mergedProducts })
+            }
+        } catch (shopifyError) {
+            console.error('Error fetching Shopify details:', shopifyError)
+            // Fallback to just local data if Shopify fails
+        }
+
         return NextResponse.json({ success: true, data: products })
     } catch (error) {
         console.error('Error fetching digital products:', error)

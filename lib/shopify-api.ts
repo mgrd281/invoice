@@ -482,6 +482,7 @@ export class ShopifyAPI {
     limit?: number
     product_type?: string
     tags?: string
+    ids?: string
     fetchOptions?: RequestInit
   } = {}): Promise<ShopifyProduct[]> {
     try {
@@ -494,6 +495,10 @@ export class ShopifyAPI {
 
       if (params.tags) {
         searchParams.set('tags', params.tags)
+      }
+
+      if (params.ids) {
+        searchParams.set('ids', params.ids)
       }
 
       const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
