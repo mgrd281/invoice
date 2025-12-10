@@ -106,6 +106,7 @@ interface Product {
     title: string
     images: { src: string }[]
     handle: string
+    vendor?: string
 }
 
 function useShopifyProducts() {
@@ -257,6 +258,29 @@ export default function ReviewsPage() {
     const [importStep, setImportStep] = useState(1) // 1: Select Products, 2: Choose Source
     const [importSource, setImportSource] = useState<'csv' | 'url' | 'manual' | null>(null)
     const [importUrl, setImportUrl] = useState('')
+    const [productImportSearch, setProductImportSearch] = useState('')
+
+    // Filter and Group Products for Import
+    const filteredImportProducts = products.filter(p => {
+        if (!productImportSearch) return true
+        const search = productImportSearch.toLowerCase()
+        return (
+            p.title.toLowerCase().includes(search) ||
+            (p.vendor && p.vendor.toLowerCase().includes(search)) ||
+            p.id.toString().includes(search)
+        )
+    })
+
+    const productsByVendor = filteredImportProducts.reduce((acc, product) => {
+        const vendor = product.vendor || 'Andere'
+        if (!acc[vendor]) {
+            acc[vendor] = []
+        }
+        acc[vendor].push(product)
+        return acc
+    }, {} as Record<string, Product[]>)
+
+    const sortedVendors = Object.keys(productsByVendor).sort()
 
     // Manual Review State
     const [manualReview, setManualReview] = useState({
@@ -1029,7 +1053,18 @@ export default function ReviewsPage() {
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
-                                            <div className="flex justify-between items-center mb-4">
+                                            {/* Search Input */}
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                                <Input
+                                                    placeholder="Produktname, Marke oder ID suchen..."
+                                                    className="pl-10 rounded-full bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                                                    value={productImportSearch}
+                                                    onChange={(e) => setProductImportSearch(e.target.value)}
+                                                />
+                                            </div>
+
+                                            <div className="flex justify-between items-center mb-2">
                                                 <div className="text-sm text-gray-500">
                                                     {selectedProducts.length} Produkte ausgewählt
                                                 </div>
@@ -1037,24 +1072,45 @@ export default function ReviewsPage() {
                                                     {selectedProducts.length === products.length ? 'Alle abwählen' : 'Alle auswählen'}
                                                 </Button>
                                             </div>
-                                            <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
-                                                {products.map(product => (
-                                                    <div key={product.id} className="flex items-center p-3 hover:bg-gray-50">
-                                                        <Checkbox
-                                                            checked={selectedProducts.includes(product.id)}
-                                                            onCheckedChange={() => toggleProduct(product.id)}
-                                                            className="mr-4"
-                                                        />
-                                                        <div className="h-10 w-10 bg-gray-100 rounded-md mr-4 overflow-hidden">
-                                                            {product.images[0] && (
-                                                                <img src={product.images[0].src} alt="" className="h-full w-full object-cover" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="text-sm font-medium">{product.title}</h4>
-                                                        </div>
+
+                                            <div className="border rounded-lg max-h-[400px] overflow-y-auto bg-white">
+                                                {filteredImportProducts.length === 0 ? (
+                                                    <div className="p-8 text-center text-gray-500">
+                                                        Keine Produkte gefunden.
                                                     </div>
-                                                ))}
+                                                ) : (
+                                                    sortedVendors.map(vendor => (
+                                                        <div key={vendor}>
+                                                            <div className="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider sticky top-0 z-10 border-b border-t first:border-t-0">
+                                                                {vendor}
+                                                            </div>
+                                                            <div className="divide-y">
+                                                                {productsByVendor[vendor].map(product => (
+                                                                    <div key={product.id} className="flex items-center p-3 hover:bg-gray-50 transition-colors">
+                                                                        <Checkbox
+                                                                            checked={selectedProducts.includes(product.id)}
+                                                                            onCheckedChange={() => toggleProduct(product.id)}
+                                                                            className="mr-4"
+                                                                        />
+                                                                        <div className="h-10 w-10 bg-gray-100 rounded-md mr-4 overflow-hidden flex-shrink-0 border border-gray-200">
+                                                                            {product.images[0] ? (
+                                                                                <img src={product.images[0].src} alt="" className="h-full w-full object-cover" />
+                                                                            ) : (
+                                                                                <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                                                    <ImageIcon className="h-4 w-4" />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h4 className="text-sm font-medium truncate" title={product.title}>{product.title}</h4>
+                                                                            <p className="text-xs text-gray-400 truncate">ID: {product.id}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
                                             <div className="flex justify-end pt-4">
                                                 <Button
