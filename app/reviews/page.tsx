@@ -1380,11 +1380,10 @@ export default function ReviewsPage() {
                                 <Label>Fotos/Videos</Label>
                                 <div className="flex flex-wrap gap-3 mb-3">
                                     {editingReview.images?.map((img: string, idx: number) => (
-                                        <div key={`img-${idx}`} className="relative group w-20 h-20 flex-shrink-0">
+                                        <div key={`img-${idx}`} className="relative group w-24 h-24 flex-shrink-0 bg-gray-50 rounded-md border border-gray-200 flex items-center justify-center overflow-hidden">
                                             <img
                                                 src={img}
-                                                className="w-full h-full object-cover rounded-md border border-gray-200"
-                                                style={{ width: '80px', height: '80px' }}
+                                                className="max-w-full max-h-full object-contain"
                                             />
                                             <button
                                                 type="button"
@@ -1393,7 +1392,7 @@ export default function ReviewsPage() {
                                                     newImages.splice(idx, 1);
                                                     setEditingReview({ ...editingReview, images: newImages });
                                                 }}
-                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center shadow-sm transition-all"
+                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center shadow-sm transition-all z-10"
                                                 title="Löschen"
                                             >
                                                 <span className="text-xs font-bold">×</span>
@@ -1401,11 +1400,10 @@ export default function ReviewsPage() {
                                         </div>
                                     ))}
                                     {editingReview.videos?.map((vid: string, idx: number) => (
-                                        <div key={`vid-${idx}`} className="relative group w-20 h-20 flex-shrink-0">
+                                        <div key={`vid-${idx}`} className="relative group w-24 h-24 flex-shrink-0 bg-gray-50 rounded-md border border-gray-200 flex items-center justify-center overflow-hidden">
                                             <video
                                                 src={vid}
-                                                className="w-full h-full object-cover rounded-md border border-gray-200"
-                                                style={{ width: '80px', height: '80px' }}
+                                                className="max-w-full max-h-full object-contain"
                                             />
                                             <button
                                                 type="button"
@@ -1414,7 +1412,7 @@ export default function ReviewsPage() {
                                                     newVideos.splice(idx, 1);
                                                     setEditingReview({ ...editingReview, videos: newVideos });
                                                 }}
-                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center shadow-sm transition-all"
+                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center shadow-sm transition-all z-10"
                                                 title="Löschen"
                                             >
                                                 <span className="text-xs font-bold">×</span>
