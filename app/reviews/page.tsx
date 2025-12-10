@@ -243,12 +243,14 @@ export default function ReviewsPage() {
             const data = await res.json()
             if (!data.error) {
                 setProductStats(data)
+                return data
             }
         } catch (error) {
             console.error('Failed to fetch product stats', error)
         } finally {
             setLoadingProductStats(false)
         }
+        return null
     }
 
     const fetchStats = async () => {
@@ -414,6 +416,22 @@ export default function ReviewsPage() {
                 setDeletingReviewId(null)
                 fetchAllReviews() // Refresh list
                 fetchStats() // Refresh stats
+
+                // Update product stats immediately
+                const newStats = await fetchProductStats()
+                if (selectedProductStat) {
+                    const updatedStat = newStats?.find((s: any) => s.productId === selectedProductStat.productId)
+                    if (updatedStat) {
+                        setSelectedProductStat(updatedStat)
+                    } else {
+                        // If product not found in stats, it means 0 reviews left
+                        setSelectedProductStat((prev: any) => ({
+                            ...prev,
+                            reviewCount: 0,
+                            averageRating: 0
+                        }))
+                    }
+                }
             } else {
                 toast.error('Fehler beim Löschen')
             }
@@ -454,6 +472,22 @@ export default function ReviewsPage() {
                 setShowBulkDeleteDialog(false)
                 fetchAllReviews()
                 fetchStats()
+
+                // Update product stats immediately
+                const newStats = await fetchProductStats()
+                if (selectedProductStat) {
+                    const updatedStat = newStats?.find((s: any) => s.productId === selectedProductStat.productId)
+                    if (updatedStat) {
+                        setSelectedProductStat(updatedStat)
+                    } else {
+                        // If product not found in stats, it means 0 reviews left
+                        setSelectedProductStat((prev: any) => ({
+                            ...prev,
+                            reviewCount: 0,
+                            averageRating: 0
+                        }))
+                    }
+                }
             } else {
                 toast.error('Fehler beim Löschen der Bewertungen')
             }
