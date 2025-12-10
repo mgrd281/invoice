@@ -428,6 +428,52 @@ export default function ReviewsPage() {
         }
     }
 
+    const [isImportingUrl, setIsImportingUrl] = useState(false)
+
+    const handleUrlImport = async () => {
+        if (!importUrl) {
+            toast.error('Bitte geben Sie eine URL ein')
+            return
+        }
+
+        if (selectedProducts.length === 0) {
+            toast.error('Bitte wählen Sie zuerst mindestens ein Produkt aus (Schritt 1)')
+            return
+        }
+
+        setIsImportingUrl(true)
+        try {
+            const res = await fetch('/api/reviews/import-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: importUrl,
+                    productIds: selectedProducts
+                })
+            })
+
+            const data = await res.json()
+
+            if (data.success) {
+                toast.success(`${data.count} Bewertungen erfolgreich importiert!`)
+                setImportStep(1)
+                setImportSource(null)
+                setImportUrl('')
+                setSelectedProducts([])
+                setActiveTab('reviews')
+                fetchAllReviews()
+                fetchStats()
+            } else {
+                toast.error(data.error || 'Fehler beim Importieren')
+            }
+        } catch (error) {
+            console.error('Import error:', error)
+            toast.error('Fehler beim Importieren der URL')
+        } finally {
+            setIsImportingUrl(false)
+        }
+    }
+
     const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -881,8 +927,19 @@ export default function ReviewsPage() {
                                                         value={importUrl}
                                                         onChange={(e) => setImportUrl(e.target.value)}
                                                     />
-                                                    <Button className="bg-purple-600 hover:bg-purple-700">
-                                                        Importieren
+                                                    <Button
+                                                        className="bg-purple-600 hover:bg-purple-700"
+                                                        onClick={handleUrlImport}
+                                                        disabled={isImportingUrl}
+                                                    >
+                                                        {isImportingUrl ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                Importiere...
+                                                            </>
+                                                        ) : (
+                                                            'Importieren'
+                                                        )}
                                                     </Button>
                                                 </div>
                                                 <p className="text-sm text-gray-500">
