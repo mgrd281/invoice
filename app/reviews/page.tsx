@@ -229,12 +229,22 @@ export default function ReviewsPage() {
     }
 
     // Fetch settings on mount
+    // Fetch settings on mount
     useEffect(() => {
         fetch('/api/reviews/settings')
             .then(res => res.json())
             .then(data => {
                 if (data && !data.error) {
-                    setWidgetSettings(data)
+                    setWidgetSettings({
+                        primaryColor: data.primaryColor || '#2563eb',
+                        layout: data.layout || 'list'
+                    })
+                    setEmailSettings({
+                        enabled: data.emailEnabled || false,
+                        delayDays: data.emailDelayDays || 3,
+                        subject: data.emailSubject || 'Ihre Meinung ist uns wichtig! 🌟',
+                        body: data.emailBody || 'Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team'
+                    })
                 }
             })
             .catch(err => console.error('Failed to load widget settings:', err))
@@ -242,14 +252,21 @@ export default function ReviewsPage() {
 
     const [isSavingSettings, setIsSavingSettings] = useState(false)
 
-    const updateWidgetSettings = async (newSettings: any) => {
-        setWidgetSettings(newSettings)
+    const updateWidgetSettings = async (newWidgetSettings: any) => {
+        setWidgetSettings(newWidgetSettings)
         setIsSavingSettings(true)
         try {
+            const payload = {
+                ...newWidgetSettings,
+                emailEnabled: emailSettings.enabled,
+                emailDelayDays: emailSettings.delayDays,
+                emailSubject: emailSettings.subject,
+                emailBody: emailSettings.body
+            }
             await fetch('/api/reviews/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newSettings)
+                body: JSON.stringify(payload)
             })
             toast.success('Einstellungen gespeichert')
         } catch (err) {
@@ -271,10 +288,26 @@ export default function ReviewsPage() {
 
     const saveEmailSettings = async () => {
         setIsSavingEmailSettings(true)
-        // Simulate API call for now, or implement real one later
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        toast.success('E-Mail Einstellungen gespeichert')
-        setIsSavingEmailSettings(false)
+        try {
+            const payload = {
+                ...widgetSettings,
+                emailEnabled: emailSettings.enabled,
+                emailDelayDays: emailSettings.delayDays,
+                emailSubject: emailSettings.subject,
+                emailBody: emailSettings.body
+            }
+            await fetch('/api/reviews/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            toast.success('E-Mail Einstellungen gespeichert')
+        } catch (err) {
+            console.error('Failed to save email settings:', err)
+            toast.error('Fehler beim Speichern')
+        } finally {
+            setIsSavingEmailSettings(false)
+        }
     }
 
     useEffect(() => {
