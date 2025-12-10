@@ -776,6 +776,10 @@ export default function ReviewsPage() {
         reader.readAsBinaryString(file)
     }
 
+    const filteredProducts = productStats
+        .filter(stat => stat.productTitle.toLowerCase().includes(productSearch.toLowerCase()))
+        .sort((a, b) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime())
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Bulk Delete Confirm Dialog */}
@@ -1142,7 +1146,12 @@ export default function ReviewsPage() {
                                 <CardHeader className="pb-6 border-b border-gray-100 bg-white/50 backdrop-blur-sm">
                                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                                         <div>
-                                            <CardTitle className="text-2xl font-bold text-gray-900">Produkte mit Bewertungen</CardTitle>
+                                            <div className="flex items-center gap-3">
+                                                <CardTitle className="text-2xl font-bold text-gray-900">Produkte mit Bewertungen</CardTitle>
+                                                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium border border-blue-100">
+                                                    {filteredProducts.length} Produkte
+                                                </span>
+                                            </div>
                                             <CardDescription className="text-base text-gray-500 mt-1">
                                                 Wählen Sie ein Produkt, um dessen Bewertungen zu verwalten
                                             </CardDescription>
@@ -1165,11 +1174,9 @@ export default function ReviewsPage() {
                                         <div className="flex justify-center py-20">
                                             <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                                         </div>
-                                    ) : productStats.length > 0 ? (
+                                    ) : filteredProducts.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {productStats
-                                                .filter(stat => stat.productTitle.toLowerCase().includes(productSearch.toLowerCase()))
-                                                .sort((a, b) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime())
+                                            {filteredProducts
                                                 .map((stat) => {
                                                     const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
                                                     const productImage = shopifyProduct?.images?.[0]?.src || stat.productImage
