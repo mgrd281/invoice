@@ -1286,7 +1286,10 @@ export default function ReviewsPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* EMAILS TAB */}
+                    {/* AUTO REVIEWS TAB */}
+                    <TabsContent value="auto-reviews">
+                        <AutoReviewsSettings />
+                    </TabsContent>
 
                     {/* EMAIL AUTOMATION TAB */}
                     <TabsContent value="emails" className="space-y-6">
@@ -1606,5 +1609,224 @@ export default function ReviewsPage() {
                 </AlertDialogContent>
             </AlertDialog>
         </div >
+    )
+}
+
+function AutoReviewsSettings() {
+    const [settings, setSettings] = useState({
+        enabled: false,
+        delayMinutes: 0,
+        percentage: 100,
+        minRating: 4,
+        maxRating: 5,
+        templates: [] as { content: string, title: string, rating: number }[]
+    })
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+
+    // Template Form State
+    const [newTemplate, setNewTemplate] = useState({ content: '', title: '', rating: 5 })
+
+    useEffect(() => {
+        fetch('/api/reviews/auto-settings')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) {
+                    setSettings(data)
+                }
+            })
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false))
+    }, [])
+
+    const handleSave = async () => {
+        setSaving(true)
+        try {
+            await fetch('/api/reviews/auto-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
+            toast.success('Einstellungen gespeichert')
+        } catch (error) {
+            toast.error('Fehler beim Speichern')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const addTemplate = () => {
+        if (!newTemplate.content) return
+        setSettings({
+            ...settings,
+            templates: [...settings.templates, newTemplate]
+        })
+        setNewTemplate({ content: '', title: '', rating: 5 })
+    }
+
+    const removeTemplate = (index: number) => {
+        const newTemplates = [...settings.templates]
+        newTemplates.splice(index, 1)
+        setSettings({ ...settings, templates: newTemplates })
+    }
+
+    if (loading) return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></div>
+
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Automatische Bewertungen (Auto-Review)</CardTitle>
+                    <CardDescription>
+                        Generieren Sie automatisch Bewertungen für neue Bestellungen basierend auf Vorlagen.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Auto-Review aktivieren</Label>
+                            <p className="text-sm text-gray-500">
+                                Erstellt automatisch Bewertungen, wenn eine neue Bestellung eingeht.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={settings.enabled}
+                            onCheckedChange={(checked) => setSettings({ ...settings, enabled: checked })}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <Label>Verzögerung (Minuten)</Label>
+                            <Input
+                                type="number"
+                                min="0"
+                                value={settings.delayMinutes}
+                                onChange={(e) => setSettings({ ...settings, delayMinutes: parseInt(e.target.value) || 0 })}
+                            />
+                            <p className="text-xs text-gray-500">
+                                Wartezeit nach Bestellung bevor Bewertung erstellt wird.
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Wahrscheinlichkeit (%)</Label>
+                            <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={settings.percentage}
+                                onChange={(e) => setSettings({ ...settings, percentage: parseInt(e.target.value) || 100 })}
+                            />
+                            <p className="text-xs text-gray-500">
+                                Prozentsatz der Bestellungen, die eine Bewertung erhalten.
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Bewertung (Sterne)</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="5"
+                                    value={settings.minRating}
+                                    onChange={(e) => setSettings({ ...settings, minRating: parseInt(e.target.value) || 1 })}
+                                    className="w-20"
+                                />
+                                <span>bis</span>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="5"
+                                    value={settings.maxRating}
+                                    onChange={(e) => setSettings({ ...settings, maxRating: parseInt(e.target.value) || 5 })}
+                                    className="w-20"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Bewertungs-Vorlagen</CardTitle>
+                    <CardDescription>
+                        Das System wählt zufällig eine dieser Vorlagen für jede automatische Bewertung aus.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                        <h4 className="font-medium text-sm">Neue Vorlage hinzufügen</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                                placeholder="Titel (Optional)"
+                                value={newTemplate.title}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, title: e.target.value })}
+                            />
+                            <div className="flex items-center gap-2">
+                                <Label>Sterne:</Label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="5"
+                                    value={newTemplate.rating}
+                                    onChange={(e) => setNewTemplate({ ...newTemplate, rating: parseInt(e.target.value) || 5 })}
+                                    className="w-20"
+                                />
+                            </div>
+                        </div>
+                        <Textarea
+                            placeholder="Bewertungstext..."
+                            value={newTemplate.content}
+                            onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                        />
+                        <Button onClick={addTemplate} disabled={!newTemplate.content}>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Vorlage hinzufügen
+                        </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                        {settings.templates.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                Keine Vorlagen vorhanden. Fügen Sie oben welche hinzu.
+                            </div>
+                        ) : (
+                            settings.templates.map((template, index) => (
+                                <div key={index} className="flex items-start justify-between p-4 border rounded-lg bg-white">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="flex text-yellow-400">
+                                                {[...Array(template.rating)].map((_, i) => (
+                                                    <Star key={i} className="h-3 w-3 fill-current" />
+                                                ))}
+                                            </div>
+                                            {template.title && <span className="font-medium text-sm">{template.title}</span>}
+                                        </div>
+                                        <p className="text-sm text-gray-600">{template.content}</p>
+                                    </div>
+                                    <Button variant="ghost" size="sm" onClick={() => removeTemplate(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="pt-4 flex justify-end border-t">
+                        <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                            {saving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Speichern...
+                                </>
+                            ) : (
+                                'Alle Einstellungen speichern'
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
