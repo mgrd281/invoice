@@ -6,6 +6,7 @@ export async function getDigitalProductByShopifyId(shopifyProductId: string) {
     return prisma.digitalProduct.findUnique({
         where: { shopifyProductId },
         include: {
+            variantSettings: true,
             _count: {
                 select: { keys: { where: { isUsed: false } } }
             }
@@ -122,16 +123,27 @@ export async function processDigitalProductOrder(
     // Mark key as used
     await markKeyAsUsed(key.id, orderNumber, shopifyOrderId)
 
-    // Send Email
-    const template = digitalProduct.emailTemplate || getDefaultTemplate()
+    // Determine Variant Settings (if any)
+    let template = digitalProduct.emailTemplate || getDefaultTemplate()
+    let buttons = digitalProduct.downloadButtons as any[] | null;
+    let btnAlignment = digitalProduct.buttonAlignment || 'left';
+
+    // Check if we have specific settings for this variant
+    if (shopifyVariantId && digitalProduct.variantSettings) {
+        const variantSetting = digitalProduct.variantSettings.find(s => s.shopifyVariantId === shopifyVariantId)
+        if (variantSetting) {
+            if (variantSetting.emailTemplate) {
+                template = variantSetting.emailTemplate
+            }
+            if (variantSetting.downloadButtons && Array.isArray(variantSetting.downloadButtons) && variantSetting.downloadButtons.length > 0) {
+                buttons = variantSetting.downloadButtons as any[]
+            }
+        }
+    }
 
     // Generate Download Button HTML
     let downloadButtonHtml = '';
-    const btnAlignment = digitalProduct.buttonAlignment || 'left';
     const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
-
-    // Check for multiple buttons (new schema)
-    const buttons = digitalProduct.downloadButtons;
 
     if (Array.isArray(buttons) && buttons.length > 0) {
         // Generate HTML for multiple buttons
@@ -146,7 +158,15 @@ export async function processDigitalProductOrder(
 
         downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
     } else if (digitalProduct.downloadUrl) {
-        // Fallback to legacy single button
+        // Fallback to legacy single button (ONLY if no variant override buttons were found, and main product has legacy url)
+        // Note: If variant overrides buttons, 'buttons' array will be populated and we won't reach here.
+        // If variant has NO buttons but main product has legacy URL, we might want to use legacy URL?
+        // Current logic: if variant has buttons, use them. If not, check main product buttons. If not, check legacy.
+        // My code above sets 'buttons' to main product buttons initially.
+        // So if variant has NO buttons defined, it falls back to main product buttons.
+        // If main product has NO buttons defined, 'buttons' is null/empty.
+        // Then we check legacy downloadUrl.
+
         const btnText = digitalProduct.buttonText || 'Download';
         const btnColor = digitalProduct.buttonColor || '#000000';
         const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';

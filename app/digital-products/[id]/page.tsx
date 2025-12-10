@@ -44,6 +44,11 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
     const [variants, setVariants] = useState<any[]>([])
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
 
+    // Variant Settings State
+    const [variantSettings, setVariantSettings] = useState<any[]>([])
+    const [selectedTemplateVariant, setSelectedTemplateVariant] = useState<string>('default')
+    const [keysFilterVariant, setKeysFilterVariant] = useState<string>('all')
+
     useEffect(() => {
         loadData()
     }, [params.id])
@@ -63,6 +68,11 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                 setProduct(prodData.data)
                 if (prodData.data.shopifyProduct && prodData.data.shopifyProduct.variants) {
                     setVariants(prodData.data.shopifyProduct.variants)
+                }
+
+                // Load Variant Settings
+                if (prodData.data.variantSettings) {
+                    setVariantSettings(prodData.data.variantSettings)
                 }
 
                 setTemplate((prodData.data.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
@@ -157,15 +167,35 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    emailTemplate: template,
-                    downloadUrl, // Keep sending legacy for now, or maybe just send empty? Let's keep it synced with first button if exists
+                    emailTemplate: selectedTemplateVariant === 'default' ? template : undefined,
+                    downloadUrl,
                     buttonText,
                     buttonColor,
                     buttonTextColor,
                     buttonAlignment,
-                    downloadButtons: buttons
+                    downloadButtons: selectedTemplateVariant === 'default' ? buttons : undefined,
+                    variantSettings: selectedTemplateVariant !== 'default' ? [{
+                        shopifyVariantId: selectedTemplateVariant,
+                        emailTemplate: template,
+                        downloadButtons: buttons
+                    }] : undefined
                 })
             })
+
+            // If we are saving a variant, we should also update our local state to reflect that
+            if (selectedTemplateVariant !== 'default') {
+                const newSettings = [...variantSettings]
+                const existingIndex = newSettings.findIndex(s => s.shopifyVariantId === selectedTemplateVariant)
+                if (existingIndex >= 0) {
+                    newSettings[existingIndex] = { ...newSettings[existingIndex], emailTemplate: template, downloadButtons: buttons }
+                } else {
+                    newSettings.push({ shopifyVariantId: selectedTemplateVariant, emailTemplate: template, downloadButtons: buttons })
+                }
+                setVariantSettings(newSettings)
+            } else {
+                // Reload data to ensure main product is synced if we saved default
+                // Actually we can just wait for the alert
+            }
 
             if (res.ok) {
                 alert('Einstellungen gespeichert')
@@ -251,8 +281,14 @@ Viel Spaß!`
     if (loading) return <div className="p-8 text-center">Laden...</div>
     if (!product) return <div className="p-8 text-center">Produkt nicht gefunden</div>
 
-    const availableKeys = keys.filter(k => !k.isUsed).length
-    const usedKeys = keys.filter(k => k.isUsed).length
+    const filteredKeys = keys.filter(k => {
+        if (keysFilterVariant === 'all') return true
+        if (keysFilterVariant === 'none') return k.shopifyVariantId === null
+        return String(k.shopifyVariantId) === String(keysFilterVariant)
+    })
+
+    const availableKeys = filteredKeys.filter(k => !k.isUsed).length
+    const usedKeys = filteredKeys.filter(k => k.isUsed).length
 
     const handleDeleteKey = async (keyId: string) => {
         if (!confirm('Möchten Sie diesen Key wirklich löschen?')) return
@@ -405,7 +441,7 @@ Viel Spaß!`
                                 </div>
                                 <div className="pt-4 border-t">
                                     <p className="text-sm text-gray-500">
-                                        Gesamt: {keys.length} Keys
+                                        Gesamt: {filteredKeys.length} Keys
                                     </p>
                                 </div>
                             </CardContent>
@@ -494,19 +530,34 @@ Viel Spaß!`
                                                     Verwalten Sie Ihre Keys und sehen Sie die Verkaufshistorie ein.
                                                 </CardDescription>
                                             </div>
-                                            <div className="flex bg-gray-100 p-1 rounded-lg">
-                                                <button
-                                                    onClick={() => setActiveKeyTab('history')}
-                                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'history' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-                                                >
-                                                    Verkaufshistorie
-                                                </button>
-                                                <button
-                                                    onClick={() => setActiveKeyTab('inventory')}
-                                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'inventory' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-                                                >
-                                                    Verfügbare Keys
-                                                </button>
+                                            <div className="flex items-center gap-2">
+                                                {variants.length > 0 && (
+                                                    <select
+                                                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                        value={keysFilterVariant}
+                                                        onChange={e => setKeysFilterVariant(e.target.value)}
+                                                    >
+                                                        <option value="all">Alle Varianten</option>
+                                                        <option value="none">Keine spezifische</option>
+                                                        {variants.map(v => (
+                                                            <option key={v.id} value={v.id}>{v.title}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                                <div className="flex bg-gray-100 p-1 rounded-lg">
+                                                    <button
+                                                        onClick={() => setActiveKeyTab('history')}
+                                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'history' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                                    >
+                                                        Verkaufshistorie
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setActiveKeyTab('inventory')}
+                                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeKeyTab === 'inventory' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                                    >
+                                                        Verfügbare Keys
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </CardHeader>
@@ -555,8 +606,8 @@ Viel Spaß!`
                                                 <tbody>
                                                     {(() => {
                                                         const displayedKeys = activeKeyTab === 'history'
-                                                            ? keys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
-                                                            : keys.filter(k => !k.isUsed);
+                                                            ? filteredKeys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
+                                                            : filteredKeys.filter(k => !k.isUsed);
 
                                                         if (displayedKeys.length === 0) {
                                                             return (
@@ -640,6 +691,84 @@ Viel Spaß!`
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>
+                                        <div className="flex justify-end mb-6">
+                                            <div className="flex items-center gap-2">
+                                                <Label>Vorlage bearbeiten für:</Label>
+                                                <select
+                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-[250px]"
+                                                    value={selectedTemplateVariant}
+                                                    onChange={e => {
+                                                        const newVariant = e.target.value
+                                                        setSelectedTemplateVariant(newVariant)
+
+                                                        // Load settings for this variant
+                                                        if (newVariant === 'default') {
+                                                            setTemplate((product.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                            if (product.downloadButtons && Array.isArray(product.downloadButtons)) {
+                                                                setButtons(product.downloadButtons)
+                                                            } else {
+                                                                setButtons([])
+                                                            }
+                                                        } else {
+                                                            const setting = variantSettings.find(s => s.shopifyVariantId === newVariant)
+                                                            if (setting) {
+                                                                setTemplate((setting.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                                if (setting.downloadButtons && Array.isArray(setting.downloadButtons)) {
+                                                                    setButtons(setting.downloadButtons)
+                                                                } else {
+                                                                    setButtons([])
+                                                                }
+                                                            } else {
+                                                                // No setting yet, maybe copy from default or empty?
+                                                                // Let's copy from default for better UX, but maybe user wants empty?
+                                                                // User asked for "Copy from default" button. So start empty or with default?
+                                                                // Let's start with default content but mark as new
+                                                                setTemplate((product.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                                if (product.downloadButtons && Array.isArray(product.downloadButtons)) {
+                                                                    setButtons(product.downloadButtons)
+                                                                } else {
+                                                                    setButtons([])
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="default">Standard (Alle Varianten)</option>
+                                                    {variants.map(v => (
+                                                        <option key={v.id} value={v.id}>Variante: {v.title}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {selectedTemplateVariant !== 'default' && (
+                                            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md mb-6 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm">
+                                                        Sie bearbeiten die Vorlage für <strong>{variants.find(v => String(v.id) === selectedTemplateVariant)?.title}</strong>.
+                                                        Falls keine spezifische Vorlage gespeichert wird, wird die Standard-Vorlage verwendet.
+                                                    </span>
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        // Copy from default
+                                                        setTemplate((product.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                        if (product.downloadButtons && Array.isArray(product.downloadButtons)) {
+                                                            setButtons(product.downloadButtons)
+                                                        } else {
+                                                            setButtons([])
+                                                        }
+                                                        alert('Inhalte von Standard-Vorlage übernommen.')
+                                                    }}
+                                                >
+                                                    <Copy className="w-3 h-3 mr-2" />
+                                                    Von Standard übernehmen
+                                                </Button>
+                                            </div>
+                                        )}
+
                                         <div className="space-y-8">
                                             <div className="space-y-4">
                                                 <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">

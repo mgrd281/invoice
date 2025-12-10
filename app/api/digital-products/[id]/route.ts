@@ -8,6 +8,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         const product = await prisma.digitalProduct.findUnique({
             where: { id: params.id },
             include: {
+                variantSettings: true,
                 _count: {
                     select: { keys: { where: { isUsed: false } } }
                 }
@@ -35,8 +36,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     try {
         const body = await req.json()
-        const { emailTemplate, title, downloadUrl, buttonText, buttonColor, buttonTextColor, buttonAlignment, downloadButtons } = body
+        const { emailTemplate, title, downloadUrl, buttonText, buttonColor, buttonTextColor, buttonAlignment, downloadButtons, variantSettings } = body
 
+        // Update main product
         const product = await prisma.digitalProduct.update({
             where: { id: params.id },
             data: {
@@ -51,8 +53,35 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             }
         })
 
+        // Update variant settings if provided
+        if (variantSettings && Array.isArray(variantSettings)) {
+            for (const setting of variantSettings) {
+                if (setting.shopifyVariantId) {
+                    await prisma.digitalProductVariantSetting.upsert({
+                        where: {
+                            digitalProductId_shopifyVariantId: {
+                                digitalProductId: params.id,
+                                shopifyVariantId: setting.shopifyVariantId
+                            }
+                        },
+                        create: {
+                            digitalProductId: params.id,
+                            shopifyVariantId: setting.shopifyVariantId,
+                            emailTemplate: setting.emailTemplate,
+                            downloadButtons: setting.downloadButtons
+                        },
+                        update: {
+                            emailTemplate: setting.emailTemplate,
+                            downloadButtons: setting.downloadButtons
+                        }
+                    })
+                }
+            }
+        }
+
         return NextResponse.json({ success: true, data: product })
     } catch (error) {
+        console.error('Error updating product:', error)
         return NextResponse.json({ error: 'Failed to update product' }, { status: 500 })
     }
 }
