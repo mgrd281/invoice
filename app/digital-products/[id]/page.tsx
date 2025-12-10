@@ -63,7 +63,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                     setVariants(prodData.data.shopifyProduct.variants)
                 }
 
-                setTemplate(prodData.data.emailTemplate || getDefaultTemplate())
+                setTemplate((prodData.data.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
                 setDownloadUrl(prodData.data.downloadUrl || '')
                 setButtonText(prodData.data.buttonText || 'Download')
                 setButtonColor(prodData.data.buttonColor || '#000000')
@@ -230,16 +230,19 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
 
     const getDefaultTemplate = () => {
         return `Hallo {{ customer_name }},
-
+<br/><br/>
 Vielen Dank für Ihre Bestellung!
-
+<br/><br/>
 Hier ist Ihr Produktschlüssel für {{ product_title }}:
+<br/>
 {{ license_key }}
-
+<br/><br/>
 Anleitung:
+<br/>
 1. ...
+<br/>
 2. ...
-
+<br/><br/>
 Viel Spaß!`
     }
 
@@ -754,7 +757,9 @@ Viel Spaß!`
                                                                             borderRadius: '6px',
                                                                             textDecoration: 'none',
                                                                             fontWeight: 'bold',
-                                                                            display: 'inline-block'
+                                                                            display: 'inline-block',
+                                                                            width: '280px',
+                                                                            textAlign: 'center'
                                                                         }}
                                                                         onClick={e => e.preventDefault()}
                                                                     >
