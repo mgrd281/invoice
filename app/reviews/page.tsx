@@ -842,7 +842,7 @@ export default function ReviewsPage() {
                                                     key={color}
                                                     className={`h-8 w-8 rounded-full cursor-pointer border-2 ring-1 ring-gray-200 transition-all ${widgetSettings.primaryColor === color ? 'border-gray-900 scale-110' : 'border-white hover:scale-105'}`}
                                                     style={{ backgroundColor: color }}
-                                                    onClick={() => updateWidgetSettings({ ...widgetSettings, primaryColor: color })}
+                                                    onClick={() => setWidgetSettings({ ...widgetSettings, primaryColor: color })}
                                                 />
                                             ))}
                                         </div>
@@ -853,14 +853,14 @@ export default function ReviewsPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div
                                                 className={`border-2 rounded-lg p-4 cursor-pointer text-center transition-all ${widgetSettings.layout === 'list' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
-                                                onClick={() => updateWidgetSettings({ ...widgetSettings, layout: 'list' })}
+                                                onClick={() => setWidgetSettings({ ...widgetSettings, layout: 'list' })}
                                             >
                                                 <div className="h-12 bg-white rounded mb-2 border border-gray-100"></div>
                                                 <span className={`text-sm font-medium ${widgetSettings.layout === 'list' ? 'text-blue-700' : 'text-gray-600'}`}>Liste</span>
                                             </div>
                                             <div
                                                 className={`border-2 rounded-lg p-4 cursor-pointer text-center transition-all ${widgetSettings.layout === 'grid' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
-                                                onClick={() => updateWidgetSettings({ ...widgetSettings, layout: 'grid' })}
+                                                onClick={() => setWidgetSettings({ ...widgetSettings, layout: 'grid' })}
                                             >
                                                 <div className="grid grid-cols-2 gap-1 mb-2">
                                                     <div className="h-12 bg-gray-100 rounded"></div>
@@ -869,6 +869,11 @@ export default function ReviewsPage() {
                                                 <span className={`text-sm font-medium ${widgetSettings.layout === 'grid' ? 'text-blue-700' : 'text-gray-600'}`}>Raster</span>
                                             </div>
                                         </div>
+                                    </div>
+                                    <div className="pt-4 flex justify-end">
+                                        <Button onClick={() => updateWidgetSettings(widgetSettings)}>
+                                            Speichern
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
