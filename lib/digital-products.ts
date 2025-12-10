@@ -137,7 +137,7 @@ export async function processDigitalProductOrder(
         // This generates a SINGLE block containing ALL buttons
         const buttonsHtml = buttons.map((btn: any) => `
                 <div style="margin-bottom: 12px;">
-                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center;">
+                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">
                         ${btn.text || 'Download'}
                     </a>
                 </div>
@@ -150,7 +150,7 @@ export async function processDigitalProductOrder(
         const btnColor = digitalProduct.buttonColor || '#000000';
         const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
 
-        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center;">${btnText}</a></div>`;
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">${btnText}</a></div>`;
     }
 
     // Convert newlines to HTML breaks in the template BEFORE injecting variables

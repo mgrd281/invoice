@@ -745,7 +745,7 @@ Viel Spaß!`
                                                     {buttons.length > 0 && (
                                                         <div className="p-4 border rounded-lg bg-gray-50 mt-4">
                                                             <Label className="mb-2 block text-gray-500">Vorschau:</Label>
-                                                            <div className={`flex flex-wrap gap-2 ${buttonAlignment === 'center' ? 'justify-center' : (buttonAlignment === 'right' ? 'justify-end' : 'justify-start')}`}>
+                                                            <div className={`flex flex-col gap-3 ${buttonAlignment === 'center' ? 'items-center' : (buttonAlignment === 'right' ? 'items-end' : 'items-start')}`}>
                                                                 {buttons.map((btn, i) => (
                                                                     <a
                                                                         key={i}
@@ -759,7 +759,10 @@ Viel Spaß!`
                                                                             fontWeight: 'bold',
                                                                             display: 'inline-block',
                                                                             width: '280px',
-                                                                            textAlign: 'center'
+                                                                            textAlign: 'center',
+                                                                            boxSizing: 'border-box',
+                                                                            whiteSpace: 'normal',
+                                                                            wordWrap: 'break-word'
                                                                         }}
                                                                         onClick={e => e.preventDefault()}
                                                                     >
@@ -808,7 +811,7 @@ Viel Spaß!`
                                                                     if (buttons.length > 0) {
                                                                         const btns = buttons.map(btn => `
                                                                             <div style="margin-bottom: 12px;">
-                                                                                <a href="#" style="background-color: ${btn.color}; color: ${btn.textColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+                                                                                <a href="#" style="background-color: ${btn.color}; color: ${btn.textColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">
                                                                                     ${btn.text}
                                                                                 </a>
                                                                             </div>
