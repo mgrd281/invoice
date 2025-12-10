@@ -883,17 +883,17 @@ export default function ReviewsPage() {
                     <TabsContent value="reviews">
                         {viewMode === 'products' ? (
                             <Card>
-                                <CardHeader>
-                                    <div className="flex justify-between items-center">
+                                <CardHeader className="pb-4">
+                                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                         <div>
-                                            <CardTitle>Produkte mit Bewertungen</CardTitle>
+                                            <CardTitle className="text-xl">Produkte mit Bewertungen</CardTitle>
                                             <CardDescription>Wählen Sie ein Produkt, um dessen Bewertungen zu verwalten</CardDescription>
                                         </div>
-                                        <div className="relative">
-                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                        <div className="relative w-full md:w-auto">
+                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                                             <Input
                                                 placeholder="Produkt suchen..."
-                                                className="pl-9 w-[250px]"
+                                                className="pl-10 rounded-full bg-gray-50 border-gray-200 focus:bg-white transition-colors w-full md:w-[300px]"
                                                 value={productSearch}
                                                 onChange={(e) => setProductSearch(e.target.value)}
                                             />
@@ -906,39 +906,51 @@ export default function ReviewsPage() {
                                             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                                         </div>
                                     ) : productStats.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                                             {productStats
                                                 .filter(stat => stat.productTitle.toLowerCase().includes(productSearch.toLowerCase()))
+                                                .sort((a, b) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime())
                                                 .map((stat) => (
                                                     <div
                                                         key={stat.productId}
-                                                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer flex gap-4 items-start"
+                                                        className="group bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row gap-5 items-start hover:scale-[1.01]"
                                                         onClick={() => {
                                                             setSelectedProductStat(stat)
                                                             setViewMode('details')
                                                         }}
                                                     >
-                                                        <div className="h-16 w-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                                                        {/* Product Image */}
+                                                        <div className="h-20 w-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm">
                                                             {stat.productImage ? (
-                                                                <img src={stat.productImage} alt="" className="h-full w-full object-cover" />
+                                                                <img src={stat.productImage} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                             ) : (
-                                                                <div className="h-full w-full flex items-center justify-center text-gray-400">
-                                                                    <ImageIcon className="h-6 w-6" />
+                                                                <div className="h-full w-full flex items-center justify-center text-gray-300">
+                                                                    <ImageIcon className="h-8 w-8" />
                                                                 </div>
                                                             )}
                                                         </div>
+
+                                                        {/* Product Info */}
                                                         <div className="flex-1 min-w-0">
-                                                            <h4 className="font-medium truncate mb-1" title={stat.productTitle}>{stat.productTitle}</h4>
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="flex text-yellow-400">
-                                                                    <Star className="h-4 w-4 fill-current" />
+                                                            <h4 className="text-base font-semibold text-gray-900 leading-tight mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                                                {stat.productTitle}
+                                                            </h4>
+
+                                                            <div className="flex flex-col gap-1.5">
+                                                                {/* Rating & Count */}
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="flex text-yellow-400">
+                                                                        <Star className="h-4 w-4 fill-current" />
+                                                                    </div>
+                                                                    <span className="font-bold text-gray-900">{stat.averageRating.toFixed(1)}</span>
+                                                                    <span className="text-gray-500 text-sm">({stat.reviewCount})</span>
                                                                 </div>
-                                                                <span className="font-bold">{stat.averageRating.toFixed(1)}</span>
-                                                                <span className="text-gray-500 text-sm">({stat.reviewCount})</span>
-                                                            </div>
-                                                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                                <Clock className="h-3 w-3" />
-                                                                {new Date(stat.lastReviewDate).toLocaleDateString()}
+
+                                                                {/* Last Review Date */}
+                                                                <div className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
+                                                                    <Clock className="h-3.5 w-3.5" />
+                                                                    {new Date(stat.lastReviewDate).toLocaleDateString()}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
