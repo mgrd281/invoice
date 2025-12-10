@@ -1378,77 +1378,94 @@ export default function ReviewsPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Fotos/Videos</Label>
-                                <div className="flex flex-wrap gap-2 mb-2">
+                                <div className="flex flex-wrap gap-3 mb-3">
                                     {editingReview.images?.map((img: string, idx: number) => (
-                                        <div key={idx} className="relative group">
-                                            <img src={img} className="w-20 h-20 object-cover rounded border" />
+                                        <div key={`img-${idx}`} className="relative group w-20 h-20 flex-shrink-0">
+                                            <img
+                                                src={img}
+                                                className="w-full h-full object-cover rounded-md border border-gray-200"
+                                                style={{ width: '80px', height: '80px' }}
+                                            />
                                             <button
+                                                type="button"
                                                 onClick={() => {
                                                     const newImages = [...editingReview.images];
                                                     newImages.splice(idx, 1);
                                                     setEditingReview({ ...editingReview, images: newImages });
                                                 }}
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center shadow-sm transition-all"
+                                                title="Löschen"
                                             >
-                                                ×
+                                                <span className="text-xs font-bold">×</span>
                                             </button>
                                         </div>
                                     ))}
                                     {editingReview.videos?.map((vid: string, idx: number) => (
-                                        <div key={idx} className="relative group">
-                                            <video src={vid} className="w-20 h-20 object-cover rounded border" />
+                                        <div key={`vid-${idx}`} className="relative group w-20 h-20 flex-shrink-0">
+                                            <video
+                                                src={vid}
+                                                className="w-full h-full object-cover rounded-md border border-gray-200"
+                                                style={{ width: '80px', height: '80px' }}
+                                            />
                                             <button
+                                                type="button"
                                                 onClick={() => {
                                                     const newVideos = [...editingReview.videos];
                                                     newVideos.splice(idx, 1);
                                                     setEditingReview({ ...editingReview, videos: newVideos });
                                                 }}
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center shadow-sm transition-all"
+                                                title="Löschen"
                                             >
-                                                ×
+                                                <span className="text-xs font-bold">×</span>
                                             </button>
                                         </div>
                                     ))}
                                 </div>
-                                <Input
-                                    type="file"
-                                    accept="image/*,video/*"
-                                    multiple
-                                    onChange={async (e) => {
-                                        const files = e.target.files;
-                                        if (!files) return;
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="file"
+                                        accept="image/*,video/*"
+                                        multiple
+                                        className="cursor-pointer"
+                                        onChange={async (e) => {
+                                            const files = e.target.files;
+                                            if (!files) return;
 
-                                        const newImages = [...(editingReview.images || [])];
-                                        const newVideos = [...(editingReview.videos || [])];
+                                            const newImages = [...(editingReview.images || [])];
+                                            const newVideos = [...(editingReview.videos || [])];
 
-                                        for (let i = 0; i < files.length; i++) {
-                                            const file = files[i];
-                                            if (file.size > 5 * 1024 * 1024) {
-                                                toast.error(`Datei ${file.name} ist zu groß (Max 5MB)`);
-                                                continue;
-                                            }
-
-                                            try {
-                                                const base64 = await new Promise((resolve, reject) => {
-                                                    const reader = new FileReader();
-                                                    reader.onload = () => resolve(reader.result);
-                                                    reader.onerror = reject;
-                                                    reader.readAsDataURL(file);
-                                                });
-
-                                                if (file.type.startsWith('image/')) {
-                                                    newImages.push(base64);
-                                                } else if (file.type.startsWith('video/')) {
-                                                    newVideos.push(base64);
+                                            for (let i = 0; i < files.length; i++) {
+                                                const file = files[i];
+                                                if (file.size > 5 * 1024 * 1024) {
+                                                    toast.error(`Datei ${file.name} ist zu groß (Max 5MB)`);
+                                                    continue;
                                                 }
-                                            } catch (err) {
-                                                console.error('Error reading file:', err);
+
+                                                try {
+                                                    const base64 = await new Promise((resolve, reject) => {
+                                                        const reader = new FileReader();
+                                                        reader.onload = () => resolve(reader.result);
+                                                        reader.onerror = reject;
+                                                        reader.readAsDataURL(file);
+                                                    });
+
+                                                    if (file.type.startsWith('image/')) {
+                                                        newImages.push(base64);
+                                                    } else if (file.type.startsWith('video/')) {
+                                                        newVideos.push(base64);
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Error reading file:', err);
+                                                }
                                             }
-                                        }
-                                        setEditingReview({ ...editingReview, images: newImages, videos: newVideos });
-                                    }}
-                                />
-                                <p className="text-xs text-muted-foreground">Max. 5MB pro Datei. JPG, PNG, MP4.</p>
+                                            setEditingReview({ ...editingReview, images: newImages, videos: newVideos });
+                                            // Reset input
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">Max. 5MB pro Datei. Unterstützt: JPG, PNG, MP4.</p>
                             </div>
                         </div>
                     )}
