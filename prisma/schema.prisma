@@ -691,6 +691,7 @@ model AutoReviewTemplate {
   title          String?
   content        String
   rating         Int?               // If null, use random between min/max from settings
+  productId      String?            // Optional: if set, this template is for a specific product
   
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt

@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
                     settingsId: settings.id,
                     content: t.content,
                     title: t.title,
-                    rating: t.rating
+                    rating: t.rating,
+                    productId: t.productId || null // Handle productId
                 }))
             })
         }

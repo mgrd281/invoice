@@ -100,6 +100,32 @@ interface Product {
     handle: string
 }
 
+function useShopifyProducts() {
+    const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            setLoading(true)
+            try {
+                const res = await fetch('/api/shopify/products')
+                const data = await res.json()
+                if (data.success) {
+                    setProducts(data.data)
+                }
+            } catch (error) {
+                console.error('Failed to fetch products', error)
+                toast.error('Fehler beim Laden der Produkte')
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchProducts()
+    }, [])
+
+    return { products, loading }
+}
+
 export default function ReviewsPage() {
     const [activeTab, setActiveTab] = useState('overview')
 
@@ -1630,16 +1656,18 @@ export default function ReviewsPage() {
 }
 
 function AutoReviewsSettings() {
+    const { products } = useShopifyProducts()
     const [settings, setSettings] = useState({
         enabled: false,
         delayMinutes: 0,
         percentage: 100,
         minRating: 4,
         maxRating: 5,
-        templates: [] as { content: string, title: string, rating: number }[]
+        templates: [] as { content: string, title: string, rating: number, productId?: string | null }[]
     })
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
 
     // Template Form State
     const [newTemplate, setNewTemplate] = useState({ content: '', title: '', rating: 5 })
@@ -1676,7 +1704,7 @@ function AutoReviewsSettings() {
         if (!newTemplate.content) return
         setSettings({
             ...settings,
-            templates: [...settings.templates, newTemplate]
+            templates: [...settings.templates, { ...newTemplate, productId: selectedProductId }]
         })
         setNewTemplate({ content: '', title: '', rating: 5 })
     }
@@ -1687,6 +1715,11 @@ function AutoReviewsSettings() {
         setSettings({ ...settings, templates: newTemplates })
     }
 
+    // Filter templates based on selection
+    const displayedTemplates = settings.templates.filter(t =>
+        selectedProductId ? t.productId === selectedProductId : !t.productId
+    )
+
     if (loading) return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></div>
 
     return (
@@ -1695,7 +1728,7 @@ function AutoReviewsSettings() {
                 <CardHeader>
                     <CardTitle>Automatische Bewertungen (Auto-Review)</CardTitle>
                     <CardDescription>
-                        Generieren Sie automatisch Bewertungen für neue Bestellungen basierend auf Vorlagen.
+                        Generieren Sie automatisch Bewertungen für neue Bestellungen.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -1721,9 +1754,6 @@ function AutoReviewsSettings() {
                                 value={settings.delayMinutes}
                                 onChange={(e) => setSettings({ ...settings, delayMinutes: parseInt(e.target.value) || 0 })}
                             />
-                            <p className="text-xs text-gray-500">
-                                Wartezeit nach Bestellung bevor Bewertung erstellt wird.
-                            </p>
                         </div>
                         <div className="space-y-2">
                             <Label>Wahrscheinlichkeit (%)</Label>
@@ -1734,9 +1764,6 @@ function AutoReviewsSettings() {
                                 value={settings.percentage}
                                 onChange={(e) => setSettings({ ...settings, percentage: parseInt(e.target.value) || 100 })}
                             />
-                            <p className="text-xs text-gray-500">
-                                Prozentsatz der Bestellungen, die eine Bewertung erhalten.
-                            </p>
                         </div>
                         <div className="space-y-2">
                             <Label>Bewertung (Sterne)</Label>
@@ -1764,86 +1791,139 @@ function AutoReviewsSettings() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Bewertungs-Vorlagen</CardTitle>
-                    <CardDescription>
-                        Das System wählt zufällig eine dieser Vorlagen für jede automatische Bewertung aus.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                        <h4 className="font-medium text-sm">Neue Vorlage hinzufügen</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input
-                                placeholder="Titel (Optional)"
-                                value={newTemplate.title}
-                                onChange={(e) => setNewTemplate({ ...newTemplate, title: e.target.value })}
-                            />
-                            <div className="flex items-center gap-2">
-                                <Label>Sterne:</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    max="5"
-                                    value={newTemplate.rating}
-                                    onChange={(e) => setNewTemplate({ ...newTemplate, rating: parseInt(e.target.value) || 5 })}
-                                    className="w-20"
-                                />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Product List */}
+                <Card className="lg:col-span-1 h-fit">
+                    <CardHeader>
+                        <CardTitle>Produkte</CardTitle>
+                        <CardDescription>Wählen Sie ein Produkt für spezifische Vorlagen</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="max-h-[600px] overflow-y-auto">
+                            <div
+                                className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedProductId === null ? 'bg-blue-50 border-blue-200' : ''}`}
+                                onClick={() => setSelectedProductId(null)}
+                            >
+                                <h3 className="font-medium">Allgemeine Vorlagen</h3>
+                                <p className="text-xs text-gray-500">Werden genutzt wenn keine spezifischen Vorlagen existieren</p>
                             </div>
-                        </div>
-                        <Textarea
-                            placeholder="Bewertungstext..."
-                            value={newTemplate.content}
-                            onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                        />
-                        <Button onClick={addTemplate} disabled={!newTemplate.content}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Vorlage hinzufügen
-                        </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                        {settings.templates.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                Keine Vorlagen vorhanden. Fügen Sie oben welche hinzu.
-                            </div>
-                        ) : (
-                            settings.templates.map((template, index) => (
-                                <div key={index} className="flex items-start justify-between p-4 border rounded-lg bg-white">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="flex text-yellow-400">
-                                                {[...Array(template.rating)].map((_, i) => (
-                                                    <Star key={i} className="h-3 w-3 fill-current" />
-                                                ))}
-                                            </div>
-                                            {template.title && <span className="font-medium text-sm">{template.title}</span>}
+                            {products.map(product => (
+                                <div
+                                    key={product.id}
+                                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-3 ${selectedProductId === String(product.id) ? 'bg-blue-50 border-blue-200' : ''}`}
+                                    onClick={() => setSelectedProductId(String(product.id))}
+                                >
+                                    {product.images && product.images[0] && (
+                                        <div className="h-10 w-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                                            <img src={product.images[0].src} alt="" className="h-full w-full object-cover" />
                                         </div>
-                                        <p className="text-sm text-gray-600">{template.content}</p>
+                                    )}
+                                    <div className="min-w-0">
+                                        <h3 className="font-medium text-sm truncate">{product.title}</h3>
+                                        <p className="text-xs text-gray-500">
+                                            {settings.templates.filter(t => t.productId === String(product.id)).length} Vorlagen
+                                        </p>
                                     </div>
-                                    <Button variant="ghost" size="sm" onClick={() => removeTemplate(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <div className="pt-4 flex justify-end border-t">
-                        <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
-                            {saving ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Speichern...
-                                </>
+                {/* Templates Manager */}
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>
+                            {selectedProductId
+                                ? `Vorlagen für "${products.find(p => String(p.id) === selectedProductId)?.title}"`
+                                : "Allgemeine Vorlagen"
+                            }
+                        </CardTitle>
+                        <CardDescription>
+                            {selectedProductId
+                                ? "Diese Vorlagen werden NUR für dieses Produkt verwendet."
+                                : "Diese Vorlagen werden für alle Produkte verwendet, die keine eigenen Vorlagen haben."
+                            }
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                            <h4 className="font-medium text-sm">Neue Vorlage hinzufügen</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input
+                                    placeholder="Titel (Optional)"
+                                    value={newTemplate.title}
+                                    onChange={(e) => setNewTemplate({ ...newTemplate, title: e.target.value })}
+                                />
+                                <div className="flex items-center gap-2">
+                                    <Label>Sterne:</Label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="5"
+                                        value={newTemplate.rating}
+                                        onChange={(e) => setNewTemplate({ ...newTemplate, rating: parseInt(e.target.value) || 5 })}
+                                        className="w-20"
+                                    />
+                                </div>
+                            </div>
+                            <Textarea
+                                placeholder="Bewertungstext..."
+                                value={newTemplate.content}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                            />
+                            <Button onClick={addTemplate} disabled={!newTemplate.content}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Vorlage hinzufügen
+                            </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                            {displayedTemplates.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    Keine Vorlagen für diese Auswahl vorhanden.
+                                </div>
                             ) : (
-                                'Alle Einstellungen speichern'
+                                displayedTemplates.map((template, index) => {
+                                    // Find the actual index in the main settings.templates array to remove correctly
+                                    const realIndex = settings.templates.indexOf(template)
+                                    return (
+                                        <div key={index} className="flex items-start justify-between p-4 border rounded-lg bg-white">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="flex text-yellow-400">
+                                                        {[...Array(template.rating)].map((_, i) => (
+                                                            <Star key={i} className="h-3 w-3 fill-current" />
+                                                        ))}
+                                                    </div>
+                                                    {template.title && <span className="font-medium text-sm">{template.title}</span>}
+                                                </div>
+                                                <p className="text-sm text-gray-600">{template.content}</p>
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={() => removeTemplate(realIndex)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    )
+                                })
                             )}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                        </div>
+
+                        <div className="pt-4 flex justify-end border-t">
+                            <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Speichern...
+                                    </>
+                                ) : (
+                                    'Alle Einstellungen speichern'
+                                )}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
