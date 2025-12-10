@@ -92,17 +92,38 @@ export async function POST(request: NextRequest) {
             })
         }
 
-        // Create the review
-        // Note: In a real app, you'd want to link this to a specific Organization based on the API key or Origin
-        // For now, we'll need a way to identify the organization. 
-        // A simple way for this demo is to pass organizationId or find it via shop domain.
+        // Find Organization (Fallback to first one if no specific logic yet)
+        // In a real multi-tenant app, you'd verify the origin or API key.
+        const organization = await prisma.organization.findFirst()
 
-        // For this demo, we will just return success to simulate submission if we can't link org yet
-        // In production, you MUST link to an Organization.
+        if (!organization) {
+            return NextResponse.json({ error: 'Organization not found' }, {
+                status: 404,
+                headers: { 'Access-Control-Allow-Origin': '*' }
+            })
+        }
+
+        // Create the review
+        const review = await prisma.review.create({
+            data: {
+                organizationId: organization.id,
+                productId: body.productId.toString(),
+                productTitle: body.productTitle || '',
+                customerName: body.customerName,
+                customerEmail: body.customerEmail || 'anonymous@example.com', // Fallback if not provided
+                rating: parseInt(body.rating),
+                title: body.title || '',
+                content: body.content || '',
+                status: 'PENDING', // Always pending initially
+                isVerified: false, // Can be updated if we verify purchase later
+                source: 'web'
+            }
+        })
 
         return NextResponse.json({
             success: true,
-            message: 'Review submitted successfully (Pending Approval)'
+            message: 'Review submitted successfully (Pending Approval)',
+            review
         }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',

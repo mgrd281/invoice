@@ -35,6 +35,44 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+function timeAgo(dateString: string) {
+    const date = new Date(dateString)
+    const now = new Date()
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    let interval = seconds / 31536000
+    if (interval > 1) return "vor " + Math.floor(interval) + " Jahren"
+    interval = seconds / 2592000
+    if (interval > 1) return "vor " + Math.floor(interval) + " Monaten"
+    interval = seconds / 86400
+    if (interval > 1) return "vor " + Math.floor(interval) + " Tagen"
+    interval = seconds / 3600
+    if (interval > 1) return "vor " + Math.floor(interval) + " Stunden"
+    interval = seconds / 60
+    if (interval > 1) return "vor " + Math.floor(interval) + " Minuten"
+    return "vor wenigen Sekunden"
+}
 
 interface Product {
     id: number
@@ -131,6 +169,62 @@ export default function ReviewsPage() {
         primaryColor: '#2563eb',
         layout: 'list' // 'list' | 'grid'
     })
+
+    // Edit/Delete State
+    const [editingReview, setEditingReview] = useState<any>(null)
+    const [isUpdating, setIsUpdating] = useState(false)
+    const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
+
+    const handleUpdateReview = async () => {
+        if (!editingReview) return
+        setIsUpdating(true)
+        try {
+            const res = await fetch(`/api/reviews/${editingReview.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rating: editingReview.rating,
+                    title: editingReview.title,
+                    content: editingReview.content,
+                    customerName: editingReview.customerName,
+                    status: editingReview.status
+                })
+            })
+            if (res.ok) {
+                toast.success('Bewertung aktualisiert')
+                setEditingReview(null)
+                fetchAllReviews() // Refresh list
+                fetchStats() // Refresh stats
+            } else {
+                toast.error('Fehler beim Aktualisieren')
+            }
+        } catch (error) {
+            console.error('Update error:', error)
+            toast.error('Fehler beim Aktualisieren')
+        } finally {
+            setIsUpdating(false)
+        }
+    }
+
+    const handleDeleteReview = async () => {
+        if (!deletingReviewId) return
+        try {
+            const res = await fetch(`/api/reviews/${deletingReviewId}`, {
+                method: 'DELETE'
+            })
+            if (res.ok) {
+                toast.success('Bewertung gelöscht')
+                setDeletingReviewId(null)
+                fetchAllReviews() // Refresh list
+                fetchStats() // Refresh stats
+            } else {
+                toast.error('Fehler beim Löschen')
+            }
+        } catch (error) {
+            console.error('Delete error:', error)
+            toast.error('Fehler beim Löschen')
+        }
+    }
 
     // Fetch settings on mount
     useEffect(() => {
@@ -523,7 +617,7 @@ export default function ReviewsPage() {
                                 ) : allReviews.length > 0 ? (
                                     <div className="space-y-4">
                                         {allReviews.map((review: any) => (
-                                            <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div key={review.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors group">
                                                 <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
                                                     {review.customerName?.charAt(0) || '?'}
                                                 </div>
@@ -541,7 +635,7 @@ export default function ReviewsPage() {
                                                                     ))}
                                                                 </div>
                                                                 <span className="text-xs text-gray-500">
-                                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                                    {timeAgo(review.createdAt)}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -549,9 +643,15 @@ export default function ReviewsPage() {
                                                             <Badge variant={review.status === 'APPROVED' ? 'default' : 'secondary'}>
                                                                 {review.status}
                                                             </Badge>
-                                                            <Button variant="ghost" size="icon">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
+
+                                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Button variant="ghost" size="icon" onClick={() => setEditingReview(review)}>
+                                                                    <PenTool className="h-4 w-4 text-gray-500" />
+                                                                </Button>
+                                                                <Button variant="ghost" size="icon" onClick={() => setDeletingReviewId(review.id)}>
+                                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mt-2">{review.content}</p>
@@ -1028,6 +1128,108 @@ export default function ReviewsPage() {
                     </TabsContent>
                 </Tabs>
             </main>
+
+            {/* Edit Dialog */}
+            <Dialog open={!!editingReview} onOpenChange={(open) => !open && setEditingReview(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Bewertung bearbeiten</DialogTitle>
+                        <DialogDescription>Ändern Sie die Details der Bewertung hier.</DialogDescription>
+                    </DialogHeader>
+                    {editingReview && (
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Status</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant={editingReview.status === 'APPROVED' ? 'default' : 'outline'}
+                                        onClick={() => setEditingReview({ ...editingReview, status: 'APPROVED' })}
+                                    >
+                                        Genehmigt
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={editingReview.status === 'PENDING' ? 'default' : 'outline'}
+                                        onClick={() => setEditingReview({ ...editingReview, status: 'PENDING' })}
+                                    >
+                                        Ausstehend
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant={editingReview.status === 'REJECTED' ? 'default' : 'outline'}
+                                        onClick={() => setEditingReview({ ...editingReview, status: 'REJECTED' })}
+                                    >
+                                        Abgelehnt
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Kundenname</Label>
+                                <Input
+                                    value={editingReview.customerName}
+                                    onChange={(e) => setEditingReview({ ...editingReview, customerName: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Bewertung (Sterne)</Label>
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            onClick={() => setEditingReview({ ...editingReview, rating: star })}
+                                            className="focus:outline-none"
+                                        >
+                                            <Star
+                                                className={`h-6 w-6 ${star <= editingReview.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Titel</Label>
+                                <Input
+                                    value={editingReview.title || ''}
+                                    onChange={(e) => setEditingReview({ ...editingReview, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Inhalt</Label>
+                                <Textarea
+                                    value={editingReview.content || ''}
+                                    onChange={(e) => setEditingReview({ ...editingReview, content: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditingReview(null)}>Abbrechen</Button>
+                        <Button onClick={handleUpdateReview} disabled={isUpdating}>
+                            {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Speichern
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Alert */}
+            <AlertDialog open={!!deletingReviewId} onOpenChange={(open) => !open && setDeletingReviewId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Die Bewertung wird dauerhaft gelöscht.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteReview} className="bg-red-600 hover:bg-red-700">
+                            Löschen
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div >
     )
 }

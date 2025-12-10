@@ -43,6 +43,24 @@
         });
     }
 
+    function timeAgo(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        let interval = seconds / 31536000;
+        if (interval > 1) return "vor " + Math.floor(interval) + " Jahren";
+        interval = seconds / 2592000;
+        if (interval > 1) return "vor " + Math.floor(interval) + " Monaten";
+        interval = seconds / 86400;
+        if (interval > 1) return "vor " + Math.floor(interval) + " Tagen";
+        interval = seconds / 3600;
+        if (interval > 1) return "vor " + Math.floor(interval) + " Stunden";
+        interval = seconds / 60;
+        if (interval > 1) return "vor " + Math.floor(interval) + " Minuten";
+        return "vor wenigen Sekunden";
+    }
+
     function initReviewsWidget() {
         const widgetContainer = document.getElementById('rechnung-profi-reviews-widget');
         if (!widgetContainer) return;
@@ -93,6 +111,26 @@
                     .rp-content { font-size: 15px; line-height: 1.6; color: #374151; }
                     .rp-title { font-weight: 600; display: block; margin-bottom: 4px; color: #111827; }
 
+                    /* Modal Styles */
+                    .rp-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; }
+                    .rp-modal { background: white; width: 90%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; max-height: 90vh; overflow-y: auto; }
+                    .rp-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                    .rp-modal-title { font-size: 20px; font-weight: bold; margin: 0; }
+                    .rp-close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; }
+                    .rp-form-group { margin-bottom: 16px; }
+                    .rp-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #374151; }
+                    .rp-input, .rp-textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+                    .rp-textarea { min-height: 100px; resize: vertical; }
+                    .rp-submit-btn { width: 100%; background-color: ${primaryColor}; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+                    .rp-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+                    
+                    .rp-star-input { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
+                    .rp-star-input input { display: none; }
+                    .rp-star-input label { cursor: pointer; color: #d1d5db; font-size: 24px; transition: color 0.2s; }
+                    .rp-star-input label:hover,
+                    .rp-star-input label:hover ~ label,
+                    .rp-star-input input:checked ~ label { color: #fbbf24; }
+
                     @media (max-width: 600px) {
                         .rp-header { flex-direction: column; gap: 20px; align-items: center; text-align: center; }
                         .rp-bars { width: 100%; }
@@ -100,19 +138,6 @@
                     }
                 `;
                 document.head.appendChild(style);
-
-                if (!data.reviews || data.reviews.length === 0) {
-                    widgetContainer.innerHTML = `
-                        <div class="rp-widget">
-                            <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
-                                <h3 style="margin: 0 0 8px 0; color: #374151;">Noch keine Bewertungen</h3>
-                                <p style="margin: 0 0 16px 0; color: #6b7280;">Seien Sie der Erste, der dieses Produkt bewertet!</p>
-                                <button class="rp-write-btn">Bewertung schreiben</button>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
 
                 // Calculate distribution
                 const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -146,7 +171,7 @@
                             <div class="rp-avatar">${review.customerName ? review.customerName.charAt(0).toUpperCase() : '?'}</div>
                             <span class="rp-username">${review.customerName}</span>
                             ${review.isVerified ? '<span class="rp-verified">✓ Verifizierter Kauf</span>' : ''}
-                            <span class="rp-date" style="margin-left: auto;">${new Date(review.createdAt).toLocaleDateString('de-DE')}</span>
+                            <span class="rp-date" style="margin-left: auto;">${timeAgo(review.createdAt)}</span>
                         </div>
                         <div class="rp-stars">
                             ${getStarsHTML(review.rating)}
@@ -157,6 +182,47 @@
                         </div>
                     </div>
                 `).join('');
+
+                // Modal HTML
+                const modalHTML = `
+                    <div class="rp-modal-overlay" id="rp-modal-overlay">
+                        <div class="rp-modal">
+                            <div class="rp-modal-header">
+                                <h3 class="rp-modal-title">Bewertung schreiben</h3>
+                                <button class="rp-close-btn" id="rp-close-modal">&times;</button>
+                            </div>
+                            <form id="rp-review-form">
+                                <div class="rp-form-group">
+                                    <label class="rp-label">Bewertung</label>
+                                    <div class="rp-star-input">
+                                        <input type="radio" name="rating" id="star5" value="5" required><label for="star5">★</label>
+                                        <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
+                                        <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
+                                        <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
+                                        <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
+                                    </div>
+                                </div>
+                                <div class="rp-form-group">
+                                    <label class="rp-label">Name</label>
+                                    <input type="text" class="rp-input" name="customerName" required placeholder="Ihr Name">
+                                </div>
+                                <div class="rp-form-group">
+                                    <label class="rp-label">E-Mail</label>
+                                    <input type="email" class="rp-input" name="customerEmail" required placeholder="ihre@email.com">
+                                </div>
+                                <div class="rp-form-group">
+                                    <label class="rp-label">Titel (Optional)</label>
+                                    <input type="text" class="rp-input" name="title" placeholder="Zusammenfassung Ihrer Erfahrung">
+                                </div>
+                                <div class="rp-form-group">
+                                    <label class="rp-label">Bewertung</label>
+                                    <textarea class="rp-textarea" name="content" required placeholder="Wie hat Ihnen das Produkt gefallen?"></textarea>
+                                </div>
+                                <button type="submit" class="rp-submit-btn">Bewertung absenden</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
 
                 widgetContainer.innerHTML = `
                     <div class="rp-widget">
@@ -171,13 +237,73 @@
                             <div class="rp-bars">
                                 ${barsHTML}
                             </div>
-                            <button class="rp-write-btn">Bewertung schreiben</button>
+                            <button class="rp-write-btn" id="rp-open-modal">Bewertung schreiben</button>
                         </div>
                         <div class="rp-review-list">
-                            ${reviewsHTML}
+                            ${reviewsHTML.length > 0 ? reviewsHTML : '<div style="text-align:center; color:#6b7280; padding:20px;">Noch keine Bewertungen.</div>'}
                         </div>
+                        ${modalHTML}
                     </div>
                 `;
+
+                // Event Listeners
+                const modal = document.getElementById('rp-modal-overlay');
+                const openBtn = document.getElementById('rp-open-modal');
+                const closeBtn = document.getElementById('rp-close-modal');
+                const form = document.getElementById('rp-review-form');
+
+                if (openBtn) openBtn.onclick = () => modal.style.display = 'flex';
+                if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+                if (modal) modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+                if (form) {
+                    form.onsubmit = (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(form);
+                        const submitBtn = form.querySelector('.rp-submit-btn');
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = 'Wird gesendet...';
+
+                        const payload = {
+                            productId: productId,
+                            rating: formData.get('rating'),
+                            customerName: formData.get('customerName'),
+                            customerEmail: formData.get('customerEmail'),
+                            title: formData.get('title'),
+                            content: formData.get('content')
+                        };
+
+                        fetch(`${BASE_URL}/api/reviews/public`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        })
+                            .then(res => res.json())
+                            .then(response => {
+                                if (response.success) {
+                                    modal.innerHTML = `
+                                    <div class="rp-modal" style="text-align:center;">
+                                        <div style="color: #16a34a; font-size: 48px; margin-bottom: 16px;">✓</div>
+                                        <h3 style="margin-bottom: 8px;">Vielen Dank!</h3>
+                                        <p style="color: #6b7280; margin-bottom: 24px;">Ihre Bewertung wurde eingereicht und wird nach Prüfung veröffentlicht.</p>
+                                        <button onclick="document.getElementById('rp-modal-overlay').style.display='none'" class="rp-submit-btn">Schließen</button>
+                                    </div>
+                                `;
+                                } else {
+                                    alert('Fehler beim Senden: ' + (response.error || 'Unbekannter Fehler'));
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = 'Bewertung absenden';
+                                }
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                alert('Ein Fehler ist aufgetreten.');
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Bewertung absenden';
+                            });
+                    };
+                }
+
             })
             .catch(err => {
                 console.error('Failed to load reviews widget:', err);
