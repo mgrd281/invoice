@@ -10,6 +10,8 @@ import { ArrowLeft, Search, Check, Loader2, ShoppingBag } from 'lucide-react'
 interface ShopifyProduct {
     id: number
     title: string
+    vendor?: string
+    product_type?: string
     image?: { src: string }
 }
 
@@ -124,9 +126,26 @@ export default function NewDigitalProductPage() {
         }
     }
 
+    const isMicrosoftProduct = (product: ShopifyProduct) => {
+        const term = 'microsoft'
+        const vendor = product.vendor?.toLowerCase() || ''
+        const type = product.product_type?.toLowerCase() || ''
+        const title = product.title.toLowerCase()
+
+        return vendor === term || type.includes(term) || title.includes(term)
+    }
+
     const filteredProducts = products
         .filter(p => !existingProductIds.has(String(p.id)))
         .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
+        .sort((a, b) => {
+            const isMicrosoftA = isMicrosoftProduct(a)
+            const isMicrosoftB = isMicrosoftProduct(b)
+
+            if (isMicrosoftA && !isMicrosoftB) return -1
+            if (!isMicrosoftA && isMicrosoftB) return 1
+            return 0
+        })
 
     return (
         <div className="min-h-screen bg-gray-50">
