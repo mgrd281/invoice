@@ -88,12 +88,12 @@
                     .rp-big-rating { font-size: 48px; font-weight: 700; line-height: 1; color: ${primaryColor}; margin-bottom: 8px; }
                     .rp-total-count { font-size: 14px; color: #6b7280; margin-top: 4px; }
                     
-                    .rp-bars { flex: 1; max-width: 400px; }
+                    .rp-bars { flex: 0 1 400px; width: 100%; }
                     .rp-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; font-size: 13px; color: #4b5563; }
                     .rp-bar-bg { flex: 1; height: 8px; background-color: #f3f4f6; border-radius: 4px; overflow: hidden; }
                     .rp-bar-fill { height: 100%; background-color: ${primaryColor}; border-radius: 4px; }
                     
-                    .rp-write-btn { margin-left: auto; background-color: ${primaryColor}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+                    .rp-write-btn { background-color: ${primaryColor}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
                     .rp-write-btn:hover { opacity: 0.9; }
                     
                     .rp-review-list { display: flex; flex-direction: column; gap: 24px; }
