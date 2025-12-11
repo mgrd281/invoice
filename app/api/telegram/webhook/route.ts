@@ -343,12 +343,12 @@ ANWEISUNGEN FÜR INTELLIGENZ:
 
 Nutzerfrage: "${userMessage}"`
 
-        // 3. Call OpenAI
+        // 3. Call OpenAI (Using GPT-4o for maximum intelligence)
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4o",
             messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
-            max_tokens: 500
+            max_tokens: 1000
         })
 
         const reply = completion.choices[0]?.message?.content || "Entschuldigung, ich konnte darauf keine Antwort finden."
