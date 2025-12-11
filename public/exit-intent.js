@@ -2,8 +2,9 @@
     const BASE_URL = 'https://invoice-kohl-five.vercel.app'; // Updated to actual deployed URL
 
     function initExitIntent() {
+        console.log('Exit Intent Script Loaded');
         // Check if already shown in this session
-        if (sessionStorage.getItem('rp-exit-intent-shown')) return;
+        // if (sessionStorage.getItem('rp-exit-intent-shown')) return;
 
         // Check if user is on checkout or cart page (optional, but good practice)
         // For now, we enable it everywhere or let the user decide where to include the script
