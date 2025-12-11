@@ -131,7 +131,7 @@ export async function POST(req: Request) {
             }
         })
 
-        console.log(`[Webhook] Saved abandoned cart for ${data.email}`)
+        console.log(`[Webhook] Saved abandoned cart for ${customerEmail}`)
 
         return NextResponse.json({ success: true })
     } catch (error) {

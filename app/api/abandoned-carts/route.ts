@@ -20,10 +20,12 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'No organization found' }, { status: 404 })
         }
 
+        // Allow admins to see ALL carts, otherwise filter by user's organization
+        const isAdmin = (session.user as any).isAdmin
+        const whereClause = isAdmin ? {} : { organizationId: user.organizationId }
+
         const carts = await prisma.abandonedCart.findMany({
-            where: {
-                organizationId: user.organizationId
-            },
+            where: whereClause,
             orderBy: {
                 updatedAt: 'desc'
             }
