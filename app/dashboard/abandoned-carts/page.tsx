@@ -154,10 +154,17 @@ export default function AbandonedCartsPage() {
                                                         {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-1">
-                                                        {/* Try to parse line items if available */}
-                                                        {cart.lineItems && Array.isArray(cart.lineItems)
-                                                            ? `${cart.lineItems.length} Artikel`
-                                                            : 'Details laden...'}
+                                                        {cart.lineItems && Array.isArray(cart.lineItems) ? (
+                                                            <div className="flex flex-col gap-1">
+                                                                {cart.lineItems.map((item: any, i: number) => (
+                                                                    <span key={i} className="block truncate max-w-[250px]" title={item.title}>
+                                                                        {item.quantity}x {item.title}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            'Details laden...'
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
