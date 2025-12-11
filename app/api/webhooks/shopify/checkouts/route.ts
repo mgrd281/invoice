@@ -19,10 +19,25 @@ export async function POST(req: Request) {
         }
 
         // 1. Verify Organization
-        const connection = await prisma.shopifyConnection.findFirst({
+        // Try to find the connection with flexible matching
+        let connection = await prisma.shopifyConnection.findFirst({
             where: { shopName: shopDomain },
             include: { organization: true }
         })
+
+        // If not found, try matching without .myshopify.com or vice versa
+        if (!connection) {
+            const domainPart = shopDomain.replace('.myshopify.com', '')
+            connection = await prisma.shopifyConnection.findFirst({
+                where: {
+                    OR: [
+                        { shopName: domainPart },
+                        { shopName: `${domainPart}.myshopify.com` }
+                    ]
+                },
+                include: { organization: true }
+            })
+        }
 
         if (!connection) {
             console.error(`[Webhook] No connection found for shop: ${shopDomain}`)
