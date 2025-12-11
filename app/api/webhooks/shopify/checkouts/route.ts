@@ -39,29 +39,59 @@ export async function POST(req: Request) {
             })
         }
 
+        // If still not found, try SELF-HEALING using Environment Variables
+        if (!connection) {
+            const envDomain = process.env.SHOPIFY_SHOP_DOMAIN
+            const envToken = process.env.SHOPIFY_ACCESS_TOKEN || process.env.SHOPIFY_API_KEY
+
+            // Check if Env Var matches the incoming shop (fuzzy match)
+            if (envDomain && (shopDomain.includes(envDomain) || envDomain.includes(shopDomain))) {
+                console.log('[Webhook] Connection missing in DB, attempting self-healing with Env Vars...')
+
+                // Find default org
+                const org = await prisma.organization.findFirst({
+                    where: {
+                        OR: [
+                            { id: 'default-org' },
+                            { slug: 'default' }
+                        ]
+                    }
+                }) || await prisma.organization.findFirst()
+
+                if (org && envToken) {
+                    try {
+                        connection = await prisma.shopifyConnection.create({
+                            data: {
+                                organizationId: org.id,
+                                shopName: shopDomain,
+                                accessToken: envToken,
+                                scopes: process.env.SCOPES || 'read_orders,write_orders',
+                                isActive: true
+                            },
+                            include: { organization: true }
+                        })
+                        console.log('[Webhook] Self-healing successful! Created connection.')
+                    } catch (err) {
+                        console.error('[Webhook] Self-healing failed:', err)
+                    }
+                }
+            }
+        }
+
         if (!connection) {
             console.error(`[Webhook] No connection found for shop: ${shopDomain}`)
             return NextResponse.json({ error: 'Shop not connected' }, { status: 404 })
         }
 
-        // 2. Verify HMAC (Security)
-        // Note: In a real production app, you MUST verify the HMAC.
-        // For this demo/dev environment, we might skip strict verification if the secret isn't set,
-        // but it's highly recommended to implement it.
-        // const secret = process.env.SHOPIFY_WEBHOOK_SECRET
-        // if (secret) {
-        //     const hash = crypto.createHmac('sha256', secret).update(body).digest('base64')
-        //     if (hash !== hmac) {
-        //         return NextResponse.json({ error: 'Invalid HMAC' }, { status: 401 })
-        //     }
-        // }
+        // 2. Verify HMAC (Security) - Skipped for now as per previous logic
 
         const data = JSON.parse(body)
 
-        // We are interested in checkouts that have an email (so we can contact them)
-        if (!data.email) {
-            console.log('[Webhook] Checkout has no email yet, skipping.')
-            return NextResponse.json({ message: 'No email, skipped' })
+        // Handle Anonymous Carts (No Email)
+        let customerEmail = data.email
+        if (!customerEmail) {
+            console.log('[Webhook] Anonymous cart detected. Saving with placeholder for visibility.')
+            customerEmail = `anonymous-${data.id}@hidden.com`
         }
 
         // 3. Save or Update Abandoned Cart
@@ -82,7 +112,7 @@ export async function POST(req: Request) {
                 organizationId: connection.organizationId,
                 checkoutId: checkoutId,
                 checkoutToken: data.token,
-                email: data.email,
+                email: customerEmail,
                 cartUrl: cartUrl,
                 totalPrice: totalPrice,
                 currency: currency,
@@ -93,7 +123,7 @@ export async function POST(req: Request) {
             },
             update: {
                 // Update details if they changed
-                email: data.email,
+                email: customerEmail,
                 cartUrl: cartUrl,
                 totalPrice: totalPrice,
                 lineItems: lineItems,
