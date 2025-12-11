@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -423,6 +423,70 @@ export default function ReviewsPage() {
     // CSV State
     const [csvFile, setCsvFile] = useState<File | null>(null)
     const [isUploadingCsv, setIsUploadingCsv] = useState(false)
+
+    // Image Upload State
+    const [uploadedImages, setUploadedImages] = useState<{ file: File, url: string, name: string }[]>([])
+    const [isUploadingImages, setIsUploadingImages] = useState(false)
+
+    const handleImageUpload = async (files: File[]) => {
+        setIsUploadingImages(true)
+        const newImages: { file: File, url: string, name: string }[] = []
+
+        for (const file of files) {
+            // Validate
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error(`Datei ${file.name} ist zu groß (max 5MB)`)
+                continue
+            }
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                toast.error(`Datei ${file.name} hat ein falsches Format (nur JPG, PNG, WebP)`)
+                continue
+            }
+
+            // Upload
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('type', 'review-image')
+
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                const data = await res.json()
+
+                if (data.success) {
+                    newImages.push({
+                        file,
+                        url: data.url,
+                        name: file.name
+                    })
+                } else {
+                    toast.error(`Fehler beim Hochladen von ${file.name}`)
+                }
+            } catch (error) {
+                console.error('Upload error:', error)
+                toast.error(`Fehler beim Hochladen von ${file.name}`)
+            }
+        }
+
+        setUploadedImages(prev => [...prev, ...newImages])
+        setIsUploadingImages(false)
+    }
+
+    const handleImageDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files)
+            handleImageUpload(files)
+        }
+    }
+
+    const removeUploadedImage = (index: number) => {
+        setUploadedImages(prev => prev.filter((_, i) => i !== index))
+    }
 
     // Widget Settings State
     const [widgetSettings, setWidgetSettings] = useState({
@@ -877,15 +941,42 @@ export default function ReviewsPage() {
                 const worksheet = workbook.Sheets[firstSheetName]
                 const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
-                const reviews = jsonData.map((row: any) => ({
-                    rating: row.rating || row.Rating || row.sterne || 5,
-                    title: row.title || row.Title || row.titel || '',
-                    content: row.content || row.Content || row.inhalt || row.text || '',
-                    customer_name: row.customer_name || row.CustomerName || row.name || row.Name || 'Kunde',
-                    customer_email: row.customer_email || row.CustomerEmail || row.email || row.Email || '',
-                    date: row.date || row.Date || row.datum || new Date().toISOString(),
-                    images: row.images ? row.images.split(',').map((img: string) => img.trim()) : []
-                }))
+                const reviews = jsonData.map((row: any) => {
+                    // Handle images
+                    let reviewImages: string[] = []
+
+                    // 1. Check for images in CSV (filenames or URLs)
+                    const rawImages = row.image_files || row.images || row.Bilder || ''
+                    if (rawImages) {
+                        const imageFiles = rawImages.toString().split('|').map((s: string) => s.trim())
+
+                        // Map filenames to uploaded URLs
+                        reviewImages = imageFiles.map((filename: string) => {
+                            // Try to find exact match
+                            const uploaded = uploadedImages.find(img => img.name === filename)
+                            if (uploaded) return uploaded.url
+
+                            // Try to find match without extension if CSV has no extension but upload does, or vice versa
+                            // This is a bit risky but helpful. Let's stick to exact match for now or basic fuzzy.
+                            return filename // Assume it's a URL if not found in uploads
+                        })
+
+                        // Limit to max 10 images per review
+                        if (reviewImages.length > 10) {
+                            reviewImages = reviewImages.slice(0, 10)
+                        }
+                    }
+
+                    return {
+                        rating: row.rating || row.Rating || row.sterne || 5,
+                        title: row.title || row.Title || row.titel || '',
+                        content: row.content || row.Content || row.inhalt || row.text || '',
+                        customer_name: row.customer_name || row.CustomerName || row.name || row.Name || 'Kunde',
+                        customer_email: row.customer_email || row.CustomerEmail || row.email || row.Email || '',
+                        date: row.date || row.Date || row.datum || new Date().toISOString(),
+                        images: reviewImages
+                    }
+                })
 
                 if (reviews.length === 0) {
                     toast.error('Keine gültigen Daten gefunden')
@@ -907,6 +998,7 @@ export default function ReviewsPage() {
                 setImportStep(1)
                 setImportSource(null)
                 setSelectedProducts([])
+                setUploadedImages([]) // Clear images after import
                 setActiveTab('reviews')
             } catch (error) {
                 console.error('Import Error:', error)
@@ -1803,6 +1895,71 @@ export default function ReviewsPage() {
                                                             <span className="text-xs text-blue-600 mt-1">Wird verarbeitet...</span>
                                                         </div>
                                                     )}
+                                                </div>
+
+                                                {/* Image Upload Area */}
+                                                <div className="mt-6 border-t pt-6">
+                                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                                        <ImageIcon className="h-4 w-4 text-gray-500" />
+                                                        Bilder für Bewertungen (Optional)
+                                                    </h4>
+                                                    <div
+                                                        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors relative"
+                                                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                        onDrop={handleImageDrop}
+                                                    >
+                                                        <ImageIcon className="h-10 w-10 text-gray-400 mx-auto mb-4" />
+                                                        <p className="text-sm text-gray-600 mb-2">
+                                                            Bilder hier ablegen oder klicken zum Hochladen
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            JPG, PNG, WebP (Max. 5MB)
+                                                        </p>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/jpeg,image/png,image/webp"
+                                                            multiple
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                            onChange={(e) => {
+                                                                if (e.target.files && e.target.files.length > 0) {
+                                                                    handleImageUpload(Array.from(e.target.files))
+                                                                }
+                                                            }}
+                                                        />
+                                                        {isUploadingImages && (
+                                                            <div className="flex flex-col items-center mt-4">
+                                                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                                                <span className="text-xs text-blue-600 mt-1">Bilder werden hochgeladen...</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Uploaded Images Preview */}
+                                                    {uploadedImages.length > 0 && (
+                                                        <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-4">
+                                                            {uploadedImages.map((img, idx) => (
+                                                                <div key={idx} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border">
+                                                                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                        <button
+                                                                            onClick={() => removeUploadedImage(idx)}
+                                                                            className="p-1 bg-white rounded-full text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] p-1 truncate px-2">
+                                                                        {img.name}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-3 rounded border border-blue-100">
+                                                        <p className="font-medium text-blue-700 mb-1">So ordnen Sie Bilder zu:</p>
+                                                        Fügen Sie in Ihrer CSV-Datei eine Spalte <code>image_files</code> hinzu und tragen Sie dort die Dateinamen ein (z.B. <code>bild1.jpg|bild2.jpg</code>). Das System verknüpft diese automatisch mit den hier hochgeladenen Bildern.
+                                                    </div>
                                                 </div>
                                                 <div className="flex justify-center">
                                                     <Button variant="link" className="text-blue-600" onClick={() => {
