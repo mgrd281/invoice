@@ -255,21 +255,37 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
         const allInvoices = await prisma.invoice.findMany({
             where: {
                 createdAt: { gte: lastMonthStart },
-                status: { notIn: ['CANCELLED', 'DRAFT'] } // Exclude cancelled and drafts
+                status: { notIn: ['CANCELLED', 'DRAFT'] }
             },
-            include: { items: true, customer: true }
+            include: {
+                items: true,
+                customer: true,
+                payments: true // Include payments to check for refunds
+            }
         })
 
         // --- ANALYSIS ---
 
-        // Helper to calculate real revenue (minus refunds)
+        // Helper to calculate real revenue (STRICT MODE)
         const getRealRevenue = (inv: any) => {
+            // 1. Check if explicitly cancelled in status
+            if (inv.status === 'CANCELLED') return 0;
+
+            // 2. Check if any payment is marked as REFUNDED
+            const hasRefundedPayment = inv.payments?.some((p: any) => p.status === 'REFUNDED' || p.method === 'REFUND');
+            if (hasRefundedPayment) return 0;
+
+            // 3. Calculate based on refundAmount field
             const gross = Number(inv.totalGross) || 0
             const refund = Number(inv.refundAmount) || 0
+
+            // If refund equals or exceeds gross, it's fully refunded
+            if (refund >= gross) return 0;
+
             return Math.max(0, gross - refund)
         }
 
-        // Filter out fully refunded invoices
+        // Filter out fully refunded invoices AND items with 0 revenue
         const validInvoices = allInvoices.filter(inv => getRealRevenue(inv) > 0)
 
         // 1. Time Periods
@@ -297,11 +313,16 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
         const productMap = new Map<string, { count: number, rev: number }>()
         validInvoices.filter(inv => new Date(inv.createdAt) >= thirtyDaysAgo).forEach(inv => {
             inv.items.forEach(item => {
-                const current = productMap.get(item.description) || { count: 0, rev: 0 }
-                productMap.set(item.description, {
-                    count: current.count + Number(item.quantity),
-                    rev: current.rev + Number(item.grossAmount || 0)
-                })
+                // Calculate item share of revenue (proportional to total invoice revenue)
+                // This prevents refunded items from counting fully if the invoice is partial
+                const itemTotal = Number(item.grossAmount)
+                if (itemTotal > 0) {
+                    const current = productMap.get(item.description) || { count: 0, rev: 0 }
+                    productMap.set(item.description, {
+                        count: current.count + Number(item.quantity),
+                        rev: current.rev + itemTotal
+                    })
+                }
             })
         })
         const topProducts = Array.from(productMap.entries())
