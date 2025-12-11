@@ -253,25 +253,38 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
 
         // Fetch ALL relevant data (optimized)
         const allInvoices = await prisma.invoice.findMany({
-            where: { createdAt: { gte: lastMonthStart } }, // Fetch last ~2 months
+            where: {
+                createdAt: { gte: lastMonthStart },
+                status: { notIn: ['CANCELLED', 'DRAFT'] } // Exclude cancelled and drafts
+            },
             include: { items: true, customer: true }
         })
 
         // --- ANALYSIS ---
 
+        // Helper to calculate real revenue (minus refunds)
+        const getRealRevenue = (inv: any) => {
+            const gross = Number(inv.totalGross) || 0
+            const refund = Number(inv.refundAmount) || 0
+            return Math.max(0, gross - refund)
+        }
+
+        // Filter out fully refunded invoices
+        const validInvoices = allInvoices.filter(inv => getRealRevenue(inv) > 0)
+
         // 1. Time Periods
-        const todayInvoices = allInvoices.filter(inv => new Date(inv.createdAt) >= startOfDay)
-        const yesterdayInvoices = allInvoices.filter(inv => {
+        const todayInvoices = validInvoices.filter(inv => new Date(inv.createdAt) >= startOfDay)
+        const yesterdayInvoices = validInvoices.filter(inv => {
             const d = new Date(inv.createdAt)
             return d >= startOfYesterday && d <= endOfYesterday
         })
-        const monthInvoices = allInvoices.filter(inv => new Date(inv.createdAt) >= startOfMonth)
-        const lastMonthInvoices = allInvoices.filter(inv => {
+        const monthInvoices = validInvoices.filter(inv => new Date(inv.createdAt) >= startOfMonth)
+        const lastMonthInvoices = validInvoices.filter(inv => {
             const d = new Date(inv.createdAt)
             return d >= lastMonthStart && d <= lastMonthEnd
         })
 
-        const calcRevenue = (invs: any[]) => invs.reduce((sum, inv) => sum + Number(inv.totalGross), 0)
+        const calcRevenue = (invs: any[]) => invs.reduce((sum, inv) => sum + getRealRevenue(inv), 0)
 
         const stats = {
             today: { rev: calcRevenue(todayInvoices), count: todayInvoices.length },
@@ -280,9 +293,9 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
             lastMonth: { rev: calcRevenue(lastMonthInvoices), count: lastMonthInvoices.length }
         }
 
-        // 2. Top Products (30 Days)
+        // 2. Top Products (30 Days) - Only from valid invoices
         const productMap = new Map<string, { count: number, rev: number }>()
-        allInvoices.filter(inv => new Date(inv.createdAt) >= thirtyDaysAgo).forEach(inv => {
+        validInvoices.filter(inv => new Date(inv.createdAt) >= thirtyDaysAgo).forEach(inv => {
             inv.items.forEach(item => {
                 const current = productMap.get(item.description) || { count: 0, rev: 0 }
                 productMap.set(item.description, {
@@ -299,9 +312,9 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
 
         // 3. Top Customers (All time in selection)
         const customerMap = new Map<string, number>()
-        allInvoices.forEach(inv => {
+        validInvoices.forEach(inv => {
             const name = inv.customer?.name || 'Gast'
-            customerMap.set(name, (customerMap.get(name) || 0) + Number(inv.totalGross))
+            customerMap.set(name, (customerMap.get(name) || 0) + getRealRevenue(inv))
         })
         const topCustomers = Array.from(customerMap.entries())
             .sort((a, b) => b[1] - a[1])
@@ -310,36 +323,40 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
             .join('\n')
 
         // 4. Recent Orders
-        const recentOrders = allInvoices
+        const recentOrders = validInvoices
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 5)
-            .map(inv => `- ${new Date(inv.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}: €${inv.totalGross} (${inv.customer?.name || 'Gast'})`)
+            .map(inv => `- ${new Date(inv.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}: €${getRealRevenue(inv).toFixed(2)} (${inv.customer?.name || 'Gast'})`)
             .join('\n')
 
         // 2. Build System Prompt
         const systemPrompt = `Du bist der "RechnungsProfi Business Analyst" - ein hochintelligenter KI-Berater für den Shop-Besitzer.
 
-📊 FINANZ-ANALYSE:
-- Heute: €${stats.today.rev.toFixed(2)} (${stats.today.count} Best.) vs. Gestern: €${stats.yesterday.rev.toFixed(2)} (${stats.yesterday.count} Best.)
+📊 **FINANZ-ANALYSE (Netto-Verkäufe):**
+- **Heute:** €${stats.today.rev.toFixed(2)} (${stats.today.count} Best.) vs. Gestern: €${stats.yesterday.rev.toFixed(2)}
   -> Trend: ${stats.today.rev >= stats.yesterday.rev ? '📈 Steigend' : '📉 Fallend'}
-- Dieser Monat: €${stats.month.rev.toFixed(2)} vs. Letzter Monat: €${stats.lastMonth.rev.toFixed(2)}
-  -> Prognose: ${stats.month.rev > stats.lastMonth.rev ? 'Sehr gut, wir schlagen den Vormonat!' : 'Wir müssen aufholen.'}
+- **Dieser Monat:** €${stats.month.rev.toFixed(2)} vs. Letzter Monat: €${stats.lastMonth.rev.toFixed(2)}
 
-🏆 PRODUKT-PERFORMANCE (Top 5 nach Umsatz):
+🏆 **TOP PRODUKTE (letzte 30 Tage):**
 ${topProducts || 'Keine Daten'}
 
-💎 TOP KUNDEN (VIPs):
+💎 **TOP KUNDEN (VIPs):**
 ${topCustomers}
 
-⏱️ LETZTE 5 BESTELLUNGEN:
+⏱️ **LETZTE 5 BESTELLUNGEN:**
 ${recentOrders}
 
-ANWEISUNGEN FÜR INTELLIGENZ:
-1. **Analysiere, nicht nur berichten:** Wenn der Nutzer fragt "Wie läuft's?", gib nicht nur Zahlen. Sage z.B. "Gut! Wir liegen 20% über gestern" oder "Achtung, heute ist es ruhig."
-2. **Erkenne Zusammenhänge:** Wenn ein Produkt oft verkauft wird, erwähne es als Wachstumstreiber.
-3. **Sei ein Berater:** Gib kurze Empfehlungen (z.B. "Vielleicht sollten wir Produkt X mehr bewerben?").
+**WICHTIGE ANWEISUNGEN:**
+1. **Daten-Integrität:** Diese Daten beinhalten NUR erfolgreiche Verkäufe. Stornierte oder erstattete Bestellungen sind bereits herausgefiltert.
+2. **Formatierung:**
+   - Nutze **fette Schrift** für wichtige Zahlen.
+   - Nutze Listen und Absätze für Lesbarkeit.
+   - Sei **elegant, modern und professionell**.
+   - Keine langen Textwüsten. Kurz, knackig, auf den Punkt.
+3. **Intelligenz:**
+   - Analysiere die Daten. Gib nicht nur wieder, was oben steht.
+   - Wenn der Nutzer fragt "Wie läuft es?", gib eine qualifizierte Einschätzung (z.B. "Exzellent, wir liegen über dem Vormonat" oder "Ruhiger Tag heute").
 4. **Sprache:** Antworte IMMER in der Sprache des Nutzers (DE/AR/UA/EN).
-5. **Stil:** Professionell, scharfsinnig, aber kurz und prägnant für Chat.
 
 Nutzerfrage: "${userMessage}"`
 
