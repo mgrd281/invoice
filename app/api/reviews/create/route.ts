@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
                     source: review.source || 'import',
                     isVerified: true,
                     images: review.images || [],
+                    videos: review.videos || [],
                     createdAt: review.date ? new Date(review.date) : new Date()
                 }
             })

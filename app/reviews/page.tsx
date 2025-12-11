@@ -36,7 +36,8 @@ import {
     Clock,
     AlertTriangle,
     X,
-    Sparkles
+    Sparkles,
+    Video
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -424,29 +425,32 @@ export default function ReviewsPage() {
     const [csvFile, setCsvFile] = useState<File | null>(null)
     const [isUploadingCsv, setIsUploadingCsv] = useState(false)
 
-    // Image Upload State
-    const [uploadedImages, setUploadedImages] = useState<{ file: File, url: string, name: string }[]>([])
-    const [isUploadingImages, setIsUploadingImages] = useState(false)
+    // Image/Video Upload State
+    const [uploadedMedia, setUploadedMedia] = useState<{ file: File, url: string, name: string, type: 'image' | 'video' }[]>([])
+    const [isUploadingMedia, setIsUploadingMedia] = useState(false)
 
-    const handleImageUpload = async (files: File[]) => {
-        setIsUploadingImages(true)
-        const newImages: { file: File, url: string, name: string }[] = []
+    const handleMediaUpload = async (files: File[]) => {
+        setIsUploadingMedia(true)
+        const newMedia: { file: File, url: string, name: string, type: 'image' | 'video' }[] = []
 
         for (const file of files) {
+            const isImage = file.type.startsWith('image/')
+            const isVideo = file.type.startsWith('video/')
+
             // Validate
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error(`Datei ${file.name} ist zu groß (max 5MB)`)
+            if (file.size > (isVideo ? 50 : 5) * 1024 * 1024) { // 50MB for video, 5MB for image
+                toast.error(`Datei ${file.name} ist zu groß (Max: 5MB Bild, 50MB Video)`)
                 continue
             }
-            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-                toast.error(`Datei ${file.name} hat ein falsches Format (nur JPG, PNG, WebP)`)
+            if (!isImage && !isVideo) {
+                toast.error(`Datei ${file.name} hat ein falsches Format`)
                 continue
             }
 
             // Upload
             const formData = new FormData()
             formData.append('file', file)
-            formData.append('type', 'review-image')
+            formData.append('type', isVideo ? 'review-video' : 'review-image')
 
             try {
                 const res = await fetch('/api/upload', {
@@ -456,10 +460,11 @@ export default function ReviewsPage() {
                 const data = await res.json()
 
                 if (data.success) {
-                    newImages.push({
+                    newMedia.push({
                         file,
                         url: data.url,
-                        name: file.name
+                        name: file.name,
+                        type: isVideo ? 'video' : 'image'
                     })
                 } else {
                     toast.error(`Fehler beim Hochladen von ${file.name}`)
@@ -470,22 +475,22 @@ export default function ReviewsPage() {
             }
         }
 
-        setUploadedImages(prev => [...prev, ...newImages])
-        setIsUploadingImages(false)
+        setUploadedMedia(prev => [...prev, ...newMedia])
+        setIsUploadingMedia(false)
     }
 
-    const handleImageDrop = (e: React.DragEvent) => {
+    const handleMediaDrop = (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
 
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const files = Array.from(e.dataTransfer.files)
-            handleImageUpload(files)
+            handleMediaUpload(files)
         }
     }
 
-    const removeUploadedImage = (index: number) => {
-        setUploadedImages(prev => prev.filter((_, i) => i !== index))
+    const removeUploadedMedia = (index: number) => {
+        setUploadedMedia(prev => prev.filter((_, i) => i !== index))
     }
 
     // Widget Settings State
@@ -819,8 +824,8 @@ export default function ReviewsPage() {
     }
 
     const downloadCsvTemplate = () => {
-        const headers = ['rating', 'title', 'content', 'customer_name', 'customer_email', 'date', 'images']
-        const example = ['5', 'Tolles Produkt', 'Bin sehr zufrieden mit der Qualität.', 'Max Mustermann', 'max@example.com', '2023-10-01', '']
+        const headers = ['rating', 'title', 'content', 'customer_name', 'customer_email', 'date', 'image_files', 'video_files']
+        const example = ['5', 'Tolles Produkt', 'Bin sehr zufrieden mit der Qualität.', 'Max Mustermann', 'max@example.com', '2023-10-01', 'bild1.jpg|bild2.jpg', 'video1.mp4']
         const csvContent = [headers.join(','), example.join(',')].join('\n')
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -944,6 +949,7 @@ export default function ReviewsPage() {
                 const reviews = jsonData.map((row: any) => {
                     // Handle images
                     let reviewImages: string[] = []
+                    let reviewVideos: string[] = []
 
                     // 1. Check for images in CSV (filenames or URLs)
                     const rawImages = row.image_files || row.images || row.Bilder || ''
@@ -953,11 +959,8 @@ export default function ReviewsPage() {
                         // Map filenames to uploaded URLs
                         reviewImages = imageFiles.map((filename: string) => {
                             // Try to find exact match
-                            const uploaded = uploadedImages.find(img => img.name === filename)
+                            const uploaded = uploadedMedia.find(m => m.name === filename && m.type === 'image')
                             if (uploaded) return uploaded.url
-
-                            // Try to find match without extension if CSV has no extension but upload does, or vice versa
-                            // This is a bit risky but helpful. Let's stick to exact match for now or basic fuzzy.
                             return filename // Assume it's a URL if not found in uploads
                         })
 
@@ -967,6 +970,20 @@ export default function ReviewsPage() {
                         }
                     }
 
+                    // 2. Check for videos in CSV
+                    const rawVideos = row.video_files || row.videos || row.Videos || ''
+                    if (rawVideos) {
+                        const videoFiles = rawVideos.toString().split('|').map((s: string) => s.trim())
+
+                        // Map filenames to uploaded URLs
+                        reviewVideos = videoFiles.map((filename: string) => {
+                            // Try to find exact match
+                            const uploaded = uploadedMedia.find(m => m.name === filename && m.type === 'video')
+                            if (uploaded) return uploaded.url
+                            return filename // Assume it's a URL if not found in uploads
+                        })
+                    }
+
                     return {
                         rating: row.rating || row.Rating || row.sterne || 5,
                         title: row.title || row.Title || row.titel || '',
@@ -974,7 +991,8 @@ export default function ReviewsPage() {
                         customer_name: row.customer_name || row.CustomerName || row.name || row.Name || 'Kunde',
                         customer_email: row.customer_email || row.CustomerEmail || row.email || row.Email || '',
                         date: row.date || row.Date || row.datum || new Date().toISOString(),
-                        images: reviewImages
+                        images: reviewImages,
+                        videos: reviewVideos
                     }
                 })
 
@@ -998,7 +1016,7 @@ export default function ReviewsPage() {
                 setImportStep(1)
                 setImportSource(null)
                 setSelectedProducts([])
-                setUploadedImages([]) // Clear images after import
+                setUploadedMedia([]) // Clear media after import
                 setActiveTab('reviews')
             } catch (error) {
                 console.error('Import Error:', error)
@@ -1897,59 +1915,69 @@ export default function ReviewsPage() {
                                                     )}
                                                 </div>
 
-                                                {/* Image Upload Area */}
+                                                {/* Image/Video Upload Area */}
                                                 <div className="mt-6 border-t pt-6">
                                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                                         <ImageIcon className="h-4 w-4 text-gray-500" />
-                                                        Bilder für Bewertungen (Optional)
+                                                        Bilder & Videos für Bewertungen (Optional)
                                                     </h4>
                                                     <div
                                                         className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors relative"
                                                         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                                        onDrop={handleImageDrop}
+                                                        onDrop={handleMediaDrop}
                                                     >
-                                                        <ImageIcon className="h-10 w-10 text-gray-400 mx-auto mb-4" />
+                                                        <div className="flex justify-center gap-4 mb-4">
+                                                            <ImageIcon className="h-10 w-10 text-gray-400" />
+                                                            <div className="h-10 w-px bg-gray-200"></div>
+                                                            <Video className="h-10 w-10 text-gray-400" />
+                                                        </div>
                                                         <p className="text-sm text-gray-600 mb-2">
-                                                            Bilder hier ablegen oder klicken zum Hochladen
+                                                            Dateien hier ablegen oder klicken zum Hochladen
                                                         </p>
                                                         <p className="text-xs text-gray-400">
-                                                            JPG, PNG, WebP (Max. 5MB)
+                                                            JPG, PNG, WebP (Max. 5MB) | MP4, WebM (Max. 50MB)
                                                         </p>
                                                         <input
                                                             type="file"
-                                                            accept="image/jpeg,image/png,image/webp"
+                                                            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
                                                             multiple
                                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                             onChange={(e) => {
                                                                 if (e.target.files && e.target.files.length > 0) {
-                                                                    handleImageUpload(Array.from(e.target.files))
+                                                                    handleMediaUpload(Array.from(e.target.files))
                                                                 }
                                                             }}
                                                         />
-                                                        {isUploadingImages && (
+                                                        {isUploadingMedia && (
                                                             <div className="flex flex-col items-center mt-4">
                                                                 <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                                                                <span className="text-xs text-blue-600 mt-1">Bilder werden hochgeladen...</span>
+                                                                <span className="text-xs text-blue-600 mt-1">Medien werden hochgeladen...</span>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    {/* Uploaded Images Preview */}
-                                                    {uploadedImages.length > 0 && (
+                                                    {/* Uploaded Media Preview */}
+                                                    {uploadedMedia.length > 0 && (
                                                         <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-4">
-                                                            {uploadedImages.map((img, idx) => (
+                                                            {uploadedMedia.map((media, idx) => (
                                                                 <div key={idx} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border">
-                                                                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                                                                    {media.type === 'image' ? (
+                                                                        <img src={media.url} alt={media.name} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white">
+                                                                            <Video className="h-8 w-8" />
+                                                                        </div>
+                                                                    )}
                                                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                         <button
-                                                                            onClick={() => removeUploadedImage(idx)}
+                                                                            onClick={() => removeUploadedMedia(idx)}
                                                                             className="p-1 bg-white rounded-full text-red-600 hover:bg-red-50"
                                                                         >
                                                                             <Trash2 className="h-4 w-4" />
                                                                         </button>
                                                                     </div>
                                                                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] p-1 truncate px-2">
-                                                                        {img.name}
+                                                                        {media.name}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1957,8 +1985,8 @@ export default function ReviewsPage() {
                                                     )}
 
                                                     <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-3 rounded border border-blue-100">
-                                                        <p className="font-medium text-blue-700 mb-1">So ordnen Sie Bilder zu:</p>
-                                                        Fügen Sie in Ihrer CSV-Datei eine Spalte <code>image_files</code> hinzu und tragen Sie dort die Dateinamen ein (z.B. <code>bild1.jpg|bild2.jpg</code>). Das System verknüpft diese automatisch mit den hier hochgeladenen Bildern.
+                                                        <p className="font-medium text-blue-700 mb-1">So ordnen Sie Medien zu:</p>
+                                                        Fügen Sie in Ihrer CSV-Datei die Spalten <code>image_files</code> und <code>video_files</code> hinzu. Tragen Sie dort die Dateinamen ein (z.B. <code>bild1.jpg|bild2.jpg</code> oder <code>video1.mp4</code>).
                                                     </div>
                                                 </div>
                                                 <div className="flex justify-center">

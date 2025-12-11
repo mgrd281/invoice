@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
 import { getCompanySettings } from '@/lib/company-settings'
-import { 
-  DocumentKind, 
-  DocumentStatus, 
+import {
+  DocumentKind,
+  DocumentStatus,
   DocumentData,
   getDocumentPrefix,
   getStatusColor,
@@ -49,15 +49,15 @@ function parseCSVLine(line: string, delimiter?: string): string[] {
     const semicolonCount = (line.match(/;/g) || []).length
     delimiter = semicolonCount > commaCount ? ';' : ','
   }
-  
+
   const result: string[] = []
   let current = ''
   let inQuotes = false
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i]
     const nextChar = line[i + 1]
-    
+
     if (char === '"') {
       if (inQuotes && nextChar === '"') {
         // Escaped quote
@@ -75,7 +75,7 @@ function parseCSVLine(line: string, delimiter?: string): string[] {
       current += char
     }
   }
-  
+
   // Add last field
   result.push(current.trim())
   return result
@@ -116,19 +116,25 @@ export async function POST(request: NextRequest) {
     // Handle file uploads (receipts, documents, etc.) - non-CSV files
     if (type && type !== 'csv') {
       // Validate file type and size
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
-      const maxSize = 10 * 1024 * 1024 // 10MB
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+        'video/mp4', 'video/webm', 'video/quicktime'
+      ]
+
+      const isVideo = file.type.startsWith('video/')
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024 // 50MB for video, 10MB for others
 
       if (!allowedTypes.includes(file.type)) {
         return NextResponse.json(
-          { error: 'Unsupported file type. Please upload PDF, JPG, or PNG files.' },
+          { error: 'Unsupported file type. Please upload PDF, JPG, PNG, WebP, MP4, or WebM files.' },
           { status: 400 }
         )
       }
 
       if (file.size > maxSize) {
         return NextResponse.json(
-          { error: 'File too large. Maximum size is 10MB.' },
+          { error: `File too large. Maximum size is ${isVideo ? '50MB' : '10MB'}.` },
           { status: 400 }
         )
       }
@@ -151,7 +157,7 @@ export async function POST(request: NextRequest) {
       const filePath = join(uploadsDir, fileName)
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
-      
+
       await writeFile(filePath, buffer)
 
       // Return file URL
@@ -177,7 +183,7 @@ export async function POST(request: NextRequest) {
     // Read file content
     const fileContent = await file.text()
     const lines = fileContent.split('\n').filter(line => line.trim())
-    
+
     if (lines.length < 2) {
       return NextResponse.json(
         { error: 'CSV-Datei ist leer oder hat keine Daten' },
@@ -189,7 +195,7 @@ export async function POST(request: NextRequest) {
     const headers = parseCSVLine(lines[0])
     console.log('CSV Headers:', headers)
     console.log('Number of headers:', headers.length)
-    
+
     // Process CSV data
     let recordsProcessed = 0
     let invoicesCreated = 0
@@ -202,13 +208,13 @@ export async function POST(request: NextRequest) {
     for (let i = 1; i < lines.length; i++) {
       try {
         const values = parseCSVLine(lines[i])
-        
+
         // Allow some flexibility in column count (±2 columns)
         if (Math.abs(values.length - headers.length) > 2) {
           errors.push(`Zeile ${i + 1}: Anzahl der Spalten stimmt nicht überein (${values.length} vs ${headers.length})`)
           continue
         }
-        
+
         // Pad values array if it's shorter than headers
         while (values.length < headers.length) {
           values.push('')
@@ -291,7 +297,7 @@ export async function POST(request: NextRequest) {
     orderGroups.forEach((orders, key) => {
       try {
         const firstOrder = orders[0]
-        
+
         // Create or find customer in global storage
         let customer = global.csvCustomers!.find((c: any) => c.email === firstOrder.customerEmail)
         if (!customer) {
@@ -325,13 +331,13 @@ export async function POST(request: NextRequest) {
 
         const documentKind = determineDocumentKind(csvData)
         const documentStatus = determineDocumentStatus(csvData, documentKind)
-        
+
         // Calculate totals with correct signs - unitPrice already includes tax (Brutto)
         // For each item: extract netto price first, then calculate totals
         let total = 0
         let subtotal = 0
         let taxAmount = 0
-        
+
         orders.forEach((order: ShopifyOrder) => {
           // unitPrice is brutto (includes 19% tax already)
           const bruttoItemTotal = order.unitPrice * order.quantity
@@ -339,12 +345,12 @@ export async function POST(request: NextRequest) {
           const nettoItemTotal = bruttoItemTotal / (1 + firstOrder.taxRate / 100)
           // Tax for this item
           const taxItemTotal = bruttoItemTotal - nettoItemTotal
-          
+
           total += bruttoItemTotal
           subtotal += nettoItemTotal
           taxAmount += taxItemTotal
         })
-        
+
         // Apply correct signs for Storno/Gutschrift
         if (documentKind === DocumentKind.CANCELLATION || documentKind === DocumentKind.CREDIT_NOTE) {
           if (total > 0) {
@@ -357,7 +363,7 @@ export async function POST(request: NextRequest) {
         // Generate document number
         const prefix = getDocumentPrefix(documentKind)
         let documentNumber = firstOrder.orderNumber
-        
+
         if (!documentNumber || documentNumber.startsWith('ORD-') || !documentNumber.startsWith(prefix)) {
           const count = global.csvInvoices!.filter((inv: any) => inv.number?.startsWith(prefix)).length + 1
           documentNumber = `${prefix}-2024-${String(count).padStart(3, '0')}`
@@ -365,7 +371,7 @@ export async function POST(request: NextRequest) {
 
         // Get status color
         const statusColor = getStatusColor(documentStatus)
-        
+
         // Additional fields
         const grund = firstOrder.grund || ''
         const originalRechnung = firstOrder.originalRechnung || ''
