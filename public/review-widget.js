@@ -120,7 +120,10 @@
             })
             .catch(err => {
                 console.error('Failed to load reviews widget:', err);
-                widgetContainer.innerHTML = '<p style="color:red">Failed to load reviews.</p>';
+                widgetContainer.innerHTML = `<div style="color:red; padding:20px; border:1px solid red; border-radius:8px; background:#fff0f0;">
+                    <strong>Failed to load reviews.</strong><br>
+                    <small>${err.message}</small>
+                </div>`;
             });
 
         function injectStyles(primaryColor) {
