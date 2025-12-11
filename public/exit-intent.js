@@ -52,6 +52,9 @@
                             <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                                 <span style="font-family: 'Courier New', monospace; font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px;">SAVE10</span>
                             </div>
+                            <div style="margin-top: 10px; font-size: 13px; color: #9ca3af;">
+                                Läuft ab in: <span id="rp-timer" style="color: #ef4444; font-weight: 700; font-variant-numeric: tabular-nums;">--:--</span>
+                            </div>
                             <div style="position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 40%; height: 1px; background: linear-gradient(90deg, transparent, #D4AF37, transparent);"></div>
                         </div>
 
@@ -72,6 +75,31 @@
         div.innerHTML = modalHTML;
         document.body.appendChild(div);
 
+        // Timer Logic
+        const timerElement = document.getElementById('rp-timer');
+        // Random duration between 13 and 25 minutes (in seconds)
+        let duration = Math.floor(Math.random() * (25 * 60 - 13 * 60 + 1)) + 13 * 60;
+
+        const updateTimer = () => {
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (duration > 0) {
+                duration--;
+            } else {
+                clearInterval(timerInterval);
+                timerElement.textContent = "00:00";
+                timerElement.style.color = "#6b7280";
+            }
+        };
+
+        updateTimer(); // Initial call
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        // Store interval ID on the modal element to clear it later
+        document.getElementById('rp-exit-modal').dataset.timerId = timerInterval;
+
         // Animate In
         requestAnimationFrame(() => {
             const overlay = document.getElementById('rp-exit-modal-overlay');
@@ -81,10 +109,15 @@
         });
 
         // Event Listeners
-        document.getElementById('rp-exit-close').onclick = closeExitPopup;
-        document.getElementById('rp-exit-decline').onclick = closeExitPopup;
+        const closeWithTimer = () => {
+            clearInterval(timerInterval);
+            closeExitPopup();
+        };
+
+        document.getElementById('rp-exit-close').onclick = closeWithTimer;
+        document.getElementById('rp-exit-decline').onclick = closeWithTimer;
         document.getElementById('rp-exit-modal-overlay').onclick = (e) => {
-            if (e.target.id === 'rp-exit-modal-overlay') closeExitPopup();
+            if (e.target.id === 'rp-exit-modal-overlay') closeWithTimer();
         };
 
         document.getElementById('rp-exit-cta').onclick = () => {
@@ -92,12 +125,11 @@
             navigator.clipboard.writeText('SAVE10').then(() => {
                 const btn = document.getElementById('rp-exit-cta');
                 btn.textContent = 'Code kopiert! Weiter zum Checkout...';
-                btn.style.backgroundColor = '#16a34a';
+                btn.style.background = '#16a34a'; // Green success
+                btn.style.color = 'white';
 
                 setTimeout(() => {
-                    // Redirect to checkout or cart if needed, or just close
-                    // window.location.href = '/checkout'; 
-                    closeExitPopup();
+                    closeWithTimer();
                 }, 1000);
             });
         };
