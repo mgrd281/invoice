@@ -101,6 +101,7 @@ model Organization {
   autoReviewSettings AutoReviewSettings?
   googleShoppingSettings GoogleShoppingSettings?
   reviewIncentiveSettings ReviewIncentiveSettings?
+  abandonedCarts    AbandonedCart[]
 }
 
 model WidgetSettings {
@@ -756,4 +757,27 @@ model ReviewIncentiveSettings {
   
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model AbandonedCart {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  checkoutId     String       @unique // Shopify Checkout ID
+  checkoutToken  String?      // Shopify Checkout Token
+  email          String
+  cartUrl        String
+  lineItems      Json?        // Store cart items for email display
+  totalPrice     Decimal?     @db.Decimal(10, 2)
+  currency       String       @default("EUR")
+  
+  isRecovered    Boolean      @default(false)
+  recoverySent   Boolean      @default(false)
+  recoverySentAt DateTime?
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, checkoutId])
 }

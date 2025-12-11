@@ -194,6 +194,20 @@ export const DEFAULT_FEATURES = [
         badgeClass: 'bg-pink-100 text-pink-700'
     },
     {
+        id: 'abandoned-carts',
+        href: '/dashboard/abandoned-carts',
+        title: 'Warenkorb Wiederherstellung',
+        description: 'Verlorene Warenkörbe retten & Umsatz steigern',
+        icon: ShoppingBag,
+        iconBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-emerald-300 bg-gradient-to-br from-white to-emerald-50',
+        badge: 'NEU',
+        badgeClass: 'bg-emerald-100 text-emerald-700',
+        hasPing: true,
+        pingColor: 'bg-emerald-400',
+        pingDotColor: 'bg-emerald-500'
+    },
+    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',

@@ -765,6 +765,68 @@ export class ShopifyAPI {
       throw error
     }
   }
+  /**
+   * Create a discount code for abandoned cart recovery
+   */
+  async createDiscountCode(code: string, percentage: number): Promise<string | null> {
+    try {
+      console.log(`🎟️ Creating discount code ${code} (${percentage}%)...`)
+
+      // 1. Create Price Rule
+      const priceRulePayload = {
+        price_rule: {
+          title: `Recovery Discount ${code}`,
+          target_type: "line_item",
+          target_selection: "all",
+          allocation_method: "across",
+          value_type: "percentage",
+          value: `-${percentage}.0`,
+          customer_selection: "all",
+          starts_at: new Date().toISOString(),
+          once_per_customer: true,
+          usage_limit: 1
+        }
+      }
+
+      const ruleResponse = await this.makeRequest('/price_rules.json', {
+        method: 'POST',
+        body: JSON.stringify(priceRulePayload)
+      })
+
+      const ruleData = await ruleResponse.json()
+
+      if (!ruleData.price_rule) {
+        throw new Error('Failed to create price rule')
+      }
+
+      const priceRuleId = ruleData.price_rule.id
+
+      // 2. Create Discount Code
+      const codePayload = {
+        discount_code: {
+          code: code
+        }
+      }
+
+      const codeResponse = await this.makeRequest(`/price_rules/${priceRuleId}/discount_codes.json`, {
+        method: 'POST',
+        body: JSON.stringify(codePayload)
+      })
+
+      const codeData = await codeResponse.json()
+
+      if (codeData.discount_code) {
+        console.log('✅ Discount code created successfully')
+        return codeData.discount_code.code
+      }
+
+      return null
+
+    } catch (error) {
+      console.error('Error creating discount code:', error)
+      return null
+    }
+  }
 }
 
 // ========================================
