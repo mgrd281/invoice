@@ -282,6 +282,52 @@
                 `;
             }
 
+            // Modal HTML
+            const modalHTML = `
+                <div id="rp-modal-overlay" class="rp-modal-overlay">
+                    <div class="rp-modal">
+                        <div class="rp-modal-header">
+                            <h3 class="rp-modal-title">Bewertung schreiben</h3>
+                            <button id="rp-close-modal" class="rp-close-btn">&times;</button>
+                        </div>
+                        <form id="rp-review-form">
+                            <div class="rp-form-group">
+                                <label class="rp-label">Ihre Bewertung</label>
+                                <div class="rp-star-input">
+                                    <input type="radio" id="star5" name="rating" value="5" required /><label for="star5">★</label>
+                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4">★</label>
+                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3">★</label>
+                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2">★</label>
+                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1">★</label>
+                                </div>
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label" for="rp-name">Name</label>
+                                <input type="text" id="rp-name" name="customerName" class="rp-input" required placeholder="Ihr Name">
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label" for="rp-email">E-Mail</label>
+                                <input type="email" id="rp-email" name="customerEmail" class="rp-input" required placeholder="ihre@email.de">
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label" for="rp-title">Titel (Optional)</label>
+                                <input type="text" id="rp-title" name="title" class="rp-input" placeholder="Zusammenfassung Ihrer Erfahrung">
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label" for="rp-content">Bewertung</label>
+                                <textarea id="rp-content" name="content" class="rp-textarea" required placeholder="Teilen Sie Ihre Erfahrung mit diesem Produkt..."></textarea>
+                            </div>
+                            <div class="rp-form-group">
+                                <label class="rp-label">Fotos/Videos hinzufügen (Optional)</label>
+                                <input type="file" name="media" multiple accept="image/*,video/*" class="rp-input">
+                                <small style="color:#6b7280; display:block; margin-top:4px;">Max. 5MB pro Datei</small>
+                            </div>
+                            <button type="submit" class="rp-submit-btn">Bewertung absenden</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+
             // Tabs HTML
             const tabsHTML = `
                 <div class="rp-tabs" style="display: flex; gap: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px;">
