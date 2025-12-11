@@ -20,7 +20,8 @@ import {
     Package,
     Gift,
     Globe,
-    Star
+    Star,
+    Zap
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -78,6 +79,20 @@ export const DEFAULT_FEATURES = [
         hasPing: true,
         pingColor: 'bg-green-400',
         pingDotColor: 'bg-green-500'
+    },
+    {
+        id: 'automation',
+        href: '/automation',
+        title: 'Automation Hub',
+        description: 'Workflows & Prozesse automatisieren',
+        icon: Zap,
+        iconBg: 'bg-gradient-to-r from-amber-500 to-orange-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-amber-300 bg-gradient-to-br from-white to-amber-50',
+        badge: 'NEU',
+        badgeClass: 'bg-amber-100 text-amber-800',
+        hasPing: true,
+        pingColor: 'bg-amber-400',
+        pingDotColor: 'bg-amber-500'
     },
     {
         id: 'digital-products',
