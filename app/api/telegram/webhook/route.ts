@@ -191,23 +191,30 @@ export async function POST(request: NextRequest) {
         // Route Commands
         const lowerText = text.toLowerCase()
 
-        if (lowerText.includes('مبيعات اليوم') || lowerText.includes('umsatz heute')) {
+        if (lowerText.includes('umsatz heute')) {
             await handleSalesToday(settings.botToken, chatId)
         }
-        else if (lowerText.includes('فواتير pdf') || lowerText.includes('rechnungen pdf')) {
+        else if (lowerText.includes('rechnungen pdf')) {
             await handlePdfInvoices(settings.botToken, chatId)
         }
-        else if (lowerText.includes('افضل مبيعات') || lowerText.includes('top produkte')) {
+        else if (lowerText.includes('top produkte')) {
             await handleTopProducts(settings.botToken, chatId)
         }
+        else if (lowerText === '/start' || lowerText === 'start') {
+            await sendTelegramMessage(settings.botToken, chatId, `🤖 *RechnungsProfi Bot*
+
+Verfügbare Befehle:
+🔹 *Umsatz heute* (Zeigt den heutigen Umsatz)
+🔹 *Rechnungen PDF* (Sendet die letzten Rechnungen als PDF)
+🔹 *Top Produkte* (Zeigt die Bestseller der letzten 30 Tage)
+
+💡 *Du kannst mir auch normale Fragen stellen!*
+Z.B. "Wie lief der letzte Monat?" oder "Welches Produkt verkauft sich am schlechtesten?"
+`)
+        }
         else {
-            await sendTelegramMessage(settings.botToken, chatId,
-                "🤖 *RechnungsProfi Bot*\n\n" +
-                "Verfügbare Befehle:\n" +
-                "🔹 *Umsatz heute* (ارسل لي مبيعات اليوم)\n" +
-                "🔹 *Rechnungen PDF* (ارسل لي فواتير pdf)\n" +
-                "🔹 *Top Produkte* (ما افضل مبيعات اخر ٣٠ يوم)"
-            )
+            // Intelligent AI Response for everything else
+            await handleAiChat(settings.botToken, chatId, text)
         }
 
     } catch (error) {
@@ -215,4 +222,141 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ ok: true })
+}
+
+// AI Chat Handler
+import OpenAI from 'openai'
+
+async function handleAiChat(token: string, chatId: number | string, userMessage: string) {
+    try {
+        if (!process.env.OPENAI_API_KEY) {
+            await sendTelegramMessage(token, chatId, "⚠️ *Fehler:* OpenAI API Key ist nicht konfiguriert.")
+            return
+        }
+
+        // 1. Gather Context Data - DEEP INSIGHTS
+        const today = new Date()
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0))
+
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        const startOfYesterday = new Date(yesterday.setHours(0, 0, 0, 0))
+        const endOfYesterday = new Date(yesterday.setHours(23, 59, 59, 999))
+
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+
+        const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+
+        const thirtyDaysAgo = new Date(today)
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+        // Fetch ALL relevant data (optimized)
+        const allInvoices = await prisma.invoice.findMany({
+            where: { createdAt: { gte: lastMonthStart } }, // Fetch last ~2 months
+            include: { items: true, customer: true }
+        })
+
+        // --- ANALYSIS ---
+
+        // 1. Time Periods
+        const todayInvoices = allInvoices.filter(inv => new Date(inv.createdAt) >= startOfDay)
+        const yesterdayInvoices = allInvoices.filter(inv => {
+            const d = new Date(inv.createdAt)
+            return d >= startOfYesterday && d <= endOfYesterday
+        })
+        const monthInvoices = allInvoices.filter(inv => new Date(inv.createdAt) >= startOfMonth)
+        const lastMonthInvoices = allInvoices.filter(inv => {
+            const d = new Date(inv.createdAt)
+            return d >= lastMonthStart && d <= lastMonthEnd
+        })
+
+        const calcRevenue = (invs: any[]) => invs.reduce((sum, inv) => sum + Number(inv.totalGross), 0)
+
+        const stats = {
+            today: { rev: calcRevenue(todayInvoices), count: todayInvoices.length },
+            yesterday: { rev: calcRevenue(yesterdayInvoices), count: yesterdayInvoices.length },
+            month: { rev: calcRevenue(monthInvoices), count: monthInvoices.length },
+            lastMonth: { rev: calcRevenue(lastMonthInvoices), count: lastMonthInvoices.length }
+        }
+
+        // 2. Top Products (30 Days)
+        const productMap = new Map<string, { count: number, rev: number }>()
+        allInvoices.filter(inv => new Date(inv.createdAt) >= thirtyDaysAgo).forEach(inv => {
+            inv.items.forEach(item => {
+                const current = productMap.get(item.description) || { count: 0, rev: 0 }
+                productMap.set(item.description, {
+                    count: current.count + Number(item.quantity),
+                    rev: current.rev + Number(item.grossAmount || 0)
+                })
+            })
+        })
+        const topProducts = Array.from(productMap.entries())
+            .sort((a, b) => b[1].rev - a[1].rev)
+            .slice(0, 5)
+            .map(([name, data]) => `- ${name}: ${data.count}x (€${data.rev.toFixed(2)})`)
+            .join('\n')
+
+        // 3. Top Customers (All time in selection)
+        const customerMap = new Map<string, number>()
+        allInvoices.forEach(inv => {
+            const name = inv.customer?.name || 'Gast'
+            customerMap.set(name, (customerMap.get(name) || 0) + Number(inv.totalGross))
+        })
+        const topCustomers = Array.from(customerMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([name, total]) => `- ${name}: €${total.toFixed(2)}`)
+            .join('\n')
+
+        // 4. Recent Orders
+        const recentOrders = allInvoices
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5)
+            .map(inv => `- ${new Date(inv.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}: €${inv.totalGross} (${inv.customer?.name || 'Gast'})`)
+            .join('\n')
+
+        // 2. Build System Prompt
+        const systemPrompt = `Du bist der "RechnungsProfi Business Analyst" - ein hochintelligenter KI-Berater für den Shop-Besitzer.
+
+📊 FINANZ-ANALYSE:
+- Heute: €${stats.today.rev.toFixed(2)} (${stats.today.count} Best.) vs. Gestern: €${stats.yesterday.rev.toFixed(2)} (${stats.yesterday.count} Best.)
+  -> Trend: ${stats.today.rev >= stats.yesterday.rev ? '📈 Steigend' : '📉 Fallend'}
+- Dieser Monat: €${stats.month.rev.toFixed(2)} vs. Letzter Monat: €${stats.lastMonth.rev.toFixed(2)}
+  -> Prognose: ${stats.month.rev > stats.lastMonth.rev ? 'Sehr gut, wir schlagen den Vormonat!' : 'Wir müssen aufholen.'}
+
+🏆 PRODUKT-PERFORMANCE (Top 5 nach Umsatz):
+${topProducts || 'Keine Daten'}
+
+💎 TOP KUNDEN (VIPs):
+${topCustomers}
+
+⏱️ LETZTE 5 BESTELLUNGEN:
+${recentOrders}
+
+ANWEISUNGEN FÜR INTELLIGENZ:
+1. **Analysiere, nicht nur berichten:** Wenn der Nutzer fragt "Wie läuft's?", gib nicht nur Zahlen. Sage z.B. "Gut! Wir liegen 20% über gestern" oder "Achtung, heute ist es ruhig."
+2. **Erkenne Zusammenhänge:** Wenn ein Produkt oft verkauft wird, erwähne es als Wachstumstreiber.
+3. **Sei ein Berater:** Gib kurze Empfehlungen (z.B. "Vielleicht sollten wir Produkt X mehr bewerben?").
+4. **Sprache:** Antworte IMMER in der Sprache des Nutzers (DE/AR/UA/EN).
+5. **Stil:** Professionell, scharfsinnig, aber kurz und prägnant für Chat.
+
+Nutzerfrage: "${userMessage}"`
+
+        // 3. Call OpenAI
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
+            max_tokens: 500
+        })
+
+        const reply = completion.choices[0]?.message?.content || "Entschuldigung, ich konnte darauf keine Antwort finden."
+
+        await sendTelegramMessage(token, chatId, reply)
+
+    } catch (error) {
+        console.error('AI Chat Error:', error)
+        await sendTelegramMessage(token, chatId, "🤯 Entschuldigung, ich bin gerade überlastet. Versuch es später nochmal.")
+    }
 }
