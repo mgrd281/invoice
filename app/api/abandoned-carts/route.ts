@@ -12,19 +12,27 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Get organization ID from user
-        const user = await prisma.user.findUnique({
-            where: { email: session.user?.email! },
-            include: { organization: true }
-        })
-
-        if (!user?.organizationId) {
-            return NextResponse.json({ error: 'No organization found' }, { status: 404 })
-        }
-
-        // Allow admins to see ALL carts, otherwise filter by user's organization
+        // Check if admin from session
         const isAdmin = (session.user as any).isAdmin
-        const whereClause = isAdmin ? {} : { organizationId: user.organizationId }
+
+        let whereClause = {}
+
+        if (isAdmin) {
+            // Admins see all
+            whereClause = {}
+        } else {
+            // Non-admins need an organization
+            const user = await prisma.user.findUnique({
+                where: { email: session.user?.email! },
+                include: { organization: true }
+            })
+
+            if (!user?.organizationId) {
+                console.error(`[AbandonedCarts] User ${session.user?.email} has no organization`)
+                return NextResponse.json({ error: 'No organization found' }, { status: 404 })
+            }
+            whereClause = { organizationId: user.organizationId }
+        }
 
         const carts = await prisma.abandonedCart.findMany({
             where: whereClause,
