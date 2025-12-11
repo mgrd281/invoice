@@ -32,33 +32,35 @@
 
         // Create Modal HTML
         const modalHTML = `
-            <div id="rp-exit-modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 999999; opacity: 0; transition: opacity 0.3s ease;">
-                <div id="rp-exit-modal" style="background: white; width: 90%; max-width: 450px; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: scale(0.9); transition: transform 0.3s ease; overflow: hidden; position: relative;">
+            <div id="rp-exit-modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 999999; opacity: 0; transition: opacity 0.4s ease;">
+                <div id="rp-exit-modal" style="background: #111111; width: 90%; max-width: 420px; border-radius: 20px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); transform: scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; position: relative; border: 1px solid #333;">
                     
-                    <button id="rp-exit-close" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10;">&times;</button>
+                    <button id="rp-exit-close" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; color: #fff; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">&times;</button>
                     
-                    <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 30px 20px; text-align: center; color: white;">
-                        <div style="font-size: 40px; margin-bottom: 10px;">🎁</div>
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 800;">Warten Sie kurz!</h2>
-                        <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Verlassen Sie uns nicht mit leeren Händen.</p>
+                    <div style="padding: 40px 30px 30px 30px; text-align: center; color: white;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);">
+                            <span style="font-size: 30px;">🎁</span>
+                        </div>
+                        
+                        <h2 style="margin: 0 0 10px 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #ccc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Ein Geschenk für Sie</h2>
+                        <p style="margin: 0; color: #9ca3af; font-size: 15px; line-height: 1.6;">Bevor Sie gehen: Sichern Sie sich jetzt Ihren exklusiven Vorteil für diese Bestellung.</p>
                     </div>
 
-                    <div style="padding: 30px 25px; text-align: center;">
-                        <p style="color: #374151; font-size: 16px; margin-bottom: 20px; line-height: 1.5;">
-                            Schließen Sie Ihre Bestellung jetzt ab und erhalten Sie <strong style="color: #4f46e5;">kostenlosen Versand</strong> oder <strong style="color: #4f46e5;">10% Rabatt</strong>!
-                        </p>
-
-                        <div style="background: #f3f4f6; border: 2px dashed #d1d5db; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-                            <span style="display: block; font-size: 12px; color: #6b7280; margin-bottom: 5px;">Ihr Gutscheincode:</span>
-                            <span style="font-family: monospace; font-size: 24px; font-weight: bold; color: #111827; letter-spacing: 2px;">SAVE10</span>
+                    <div style="padding: 0 30px 40px 30px; text-align: center;">
+                        <div style="background: #1a1a1a; border: 1px solid #333; padding: 20px; border-radius: 12px; margin-bottom: 25px; position: relative;">
+                            <span style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #D4AF37; margin-bottom: 8px; font-weight: 600;">Ihr Gutscheincode</span>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <span style="font-family: 'Courier New', monospace; font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px;">SAVE10</span>
+                            </div>
+                            <div style="position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 40%; height: 1px; background: linear-gradient(90deg, transparent, #D4AF37, transparent);"></div>
                         </div>
 
-                        <button id="rp-exit-cta" style="width: 100%; background-color: #4f46e5; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background-color 0.2s;">
-                            Jetzt Rabatt einlösen
+                        <button id="rp-exit-cta" style="width: 100%; background: linear-gradient(135deg, #D4AF37 0%, #B4941F 100%); color: #000; border: none; padding: 16px; border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);">
+                            Code kopieren & Sparen
                         </button>
                         
-                        <button id="rp-exit-decline" style="background: none; border: none; color: #9ca3af; font-size: 13px; margin-top: 15px; cursor: pointer; text-decoration: underline;">
-                            Nein danke, ich möchte voll bezahlen
+                        <button id="rp-exit-decline" style="background: none; border: none; color: #6b7280; font-size: 13px; margin-top: 20px; cursor: pointer; transition: color 0.2s;">
+                            Nein danke, ich möchte den vollen Preis zahlen
                         </button>
                     </div>
                 </div>
