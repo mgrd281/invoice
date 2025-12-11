@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
@@ -27,8 +29,11 @@ export default function AbandonedCartsPage() {
     const authenticatedFetch = useAuthenticatedFetch()
     const [carts, setCarts] = useState<AbandonedCart[]>([])
     const [loading, setLoading] = useState(true)
+    const [exitIntentEnabled, setExitIntentEnabled] = useState(false)
+    const [settingsLoading, setSettingsLoading] = useState(true)
 
     const fetchCarts = async () => {
+        // ... existing fetchCarts logic
         setLoading(true)
         try {
             const response = await authenticatedFetch('/api/abandoned-carts')
@@ -43,8 +48,38 @@ export default function AbandonedCartsPage() {
         }
     }
 
+    const fetchSettings = async () => {
+        try {
+            const response = await authenticatedFetch('/api/marketing/settings')
+            if (response.ok) {
+                const data = await response.json()
+                setExitIntentEnabled(data.exitIntentEnabled)
+            }
+        } catch (error) {
+            console.error('Failed to fetch settings:', error)
+        } finally {
+            setSettingsLoading(false)
+        }
+    }
+
+    const toggleExitIntent = async (checked: boolean) => {
+        setExitIntentEnabled(checked)
+        try {
+            await authenticatedFetch('/api/marketing/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ exitIntentEnabled: checked })
+            })
+        } catch (error) {
+            console.error('Failed to save settings:', error)
+            // Revert on error
+            setExitIntentEnabled(!checked)
+        }
+    }
+
     useEffect(() => {
         fetchCarts()
+        fetchSettings()
         // Auto-refresh every 30 seconds to show "real-time" updates
         const interval = setInterval(fetchCarts, 30000)
         return () => clearInterval(interval)
@@ -76,8 +111,34 @@ export default function AbandonedCartsPage() {
                     </Button>
                 </div>
 
+                {/* Settings Card */}
+                <Card className="mb-8 border-emerald-100 bg-emerald-50/50">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <h3 className="font-medium text-emerald-900">Exit-Intent Popup</h3>
+                                <p className="text-sm text-emerald-700">
+                                    Zeigt Besuchern ein Popup mit Rabattcode, wenn sie versuchen, die Seite zu verlassen.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    id="exit-intent-mode"
+                                    checked={exitIntentEnabled}
+                                    onCheckedChange={toggleExitIntent}
+                                    disabled={settingsLoading}
+                                />
+                                <Label htmlFor="exit-intent-mode" className="text-emerald-900 font-medium">
+                                    {exitIntentEnabled ? 'Aktiviert' : 'Deaktiviert'}
+                                </Label>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {/* ... existing stats cards ... */}
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-medium text-gray-500">Gefundene Warenkörbe</CardTitle>

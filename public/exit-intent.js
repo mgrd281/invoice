@@ -5,25 +5,26 @@
         // Check if already shown in this session
         if (sessionStorage.getItem('rp-exit-intent-shown')) return;
 
-        // Check if user is on checkout or cart page (optional, but good practice)
-        // For now, we enable it everywhere or let the user decide where to include the script
+        // Fetch settings from API
+        fetch(`${BASE_URL}/api/marketing/public`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.exitIntentEnabled) {
+                    console.log('Exit Intent Popup is disabled in settings.');
+                    return;
+                }
 
-        let mouseLeft = false;
+                // Initialize Exit Intent Listeners
+                let mouseLeft = false;
 
-        document.addEventListener('mouseleave', (e) => {
-            if (e.clientY < 0 && !mouseLeft) {
-                mouseLeft = true;
-                showExitPopup();
-            }
-        });
-
-        // Mobile: Show when switching tabs or hitting back (less reliable, but worth a try)
-        // document.addEventListener('visibilitychange', () => {
-        //     if (document.visibilityState === 'hidden') {
-        //         // Can't show popup when hidden, but can set a flag to show when they return?
-        //         // Mobile exit intent is tricky.
-        //     }
-        // });
+                document.addEventListener('mouseleave', (e) => {
+                    if (e.clientY < 0 && !mouseLeft) {
+                        mouseLeft = true;
+                        showExitPopup();
+                    }
+                });
+            })
+            .catch(err => console.error('Failed to load exit intent settings:', err));
     }
 
     function showExitPopup() {

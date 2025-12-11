@@ -545,6 +545,9 @@ model MarketingSettings {
   fpdEmailSubject  String  @default("Ihr persönlicher 10%-Rabattcode als Dankeschön 🎁")
   fpdEmailBody     String 
   
+  // Exit Intent Popup
+  exitIntentEnabled Boolean @default(false)
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
