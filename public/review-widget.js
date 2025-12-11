@@ -99,6 +99,7 @@
         const reviewsPerPage = 5;
         let widgetSettings = { primaryColor: '#2563eb', layout: 'list' };
         let stats = { total: 0, average: 0 };
+        let summary = null;
         let activeTab = 'reviews'; // 'reviews' | 'gallery'
 
         fetch(`${BASE_URL}/api/reviews/public?productId=${productId}&t=${Date.now()}`)
@@ -111,6 +112,7 @@
                 widgetSettings = data.settings || widgetSettings;
                 allReviews = data.reviews || [];
                 stats = data.stats || { total: 0, average: 0 };
+                summary = data.summary || null;
 
                 // Inject CSS
                 injectStyles(widgetSettings.primaryColor);
@@ -254,25 +256,25 @@
 
             // AI Summary HTML
             let summaryHTML = '';
-            if (data.summary) {
+            if (summary) {
                 summaryHTML = `
                     <div class="rp-ai-summary" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #0369a1; font-weight: 600;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10h-10V2z"/><path d="m9 22 3-8 3 8"/><path d="M8 22h8"/></svg>
                             KI-Zusammenfassung
                         </div>
-                        <p style="margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${data.summary.text}</p>
+                        <p style="margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${summary.text}</p>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             <div>
                                 <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">Vorteile</div>
                                 <ul style="margin: 0; padding-left: 20px; color: #334155;">
-                                    ${data.summary.pros.map(p => `<li style="margin-bottom: 4px;">${p}</li>`).join('')}
+                                    ${summary.pros.map(p => `<li style="margin-bottom: 4px;">${p}</li>`).join('')}
                                 </ul>
                             </div>
                             <div>
                                 <div style="font-weight: 600; color: #991b1b; margin-bottom: 8px;">Nachteile</div>
                                 <ul style="margin: 0; padding-left: 20px; color: #334155;">
-                                    ${data.summary.cons.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')}
+                                    ${summary.cons.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')}
                                 </ul>
                             </div>
                         </div>
