@@ -19,18 +19,18 @@ export async function GET(req: Request) {
 
         // 1. Find eligible carts
         // Criteria:
-        // - Created/Updated more than 1 hour ago
+        // - Created/Updated more than 30 minutes ago
         // - Created/Updated less than 24 hours ago (don't spam old carts)
         // - Not recovered (customer hasn't bought yet)
         // - Recovery email NOT sent yet
 
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
         const eligibleCarts = await prisma.abandonedCart.findMany({
             where: {
                 updatedAt: {
-                    lt: oneHourAgo,
+                    lt: thirtyMinutesAgo,
                     gt: twentyFourHoursAgo
                 },
                 isRecovered: false,
