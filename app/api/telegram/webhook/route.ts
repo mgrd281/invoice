@@ -634,7 +634,7 @@ export async function POST(request: NextRequest) {
         } else if (lowerText.includes('top produkte')) {
             await handleTopProducts(settings.botToken, chatId)
         } else if (lowerText.includes('suche jetzt starten')) {
-            await sendTelegramMessage(settings.botToken, chatId, "🚀 Suche wird gestartet... Bitte warten.")
+            await sendTelegramMessage(settings.botToken, chatId, "🚀 Suche wird gestartet (v2)... Bitte warten.")
 
             try {
                 // Execute search directly
