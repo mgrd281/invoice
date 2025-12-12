@@ -5,12 +5,13 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2 } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -29,11 +30,15 @@ export default function UploadPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editIndex, setEditIndex] = useState<number>(-1)
 
+  // Selection State
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
       setUploadStatus({ type: 'idle' })
       setPreviewInvoices([])
+      setSelectedIndices(new Set())
     }
   }
 
@@ -63,6 +68,7 @@ export default function UploadPage() {
         setFile(droppedFile)
         setUploadStatus({ type: 'idle' })
         setPreviewInvoices([])
+        setSelectedIndices(new Set())
       } else {
         setUploadStatus({
           type: 'error',
@@ -78,6 +84,7 @@ export default function UploadPage() {
     setUploading(true)
     setUploadStatus({ type: 'idle' })
     setPreviewInvoices([])
+    setSelectedIndices(new Set())
 
     try {
       const formData = new FormData()
@@ -105,8 +112,8 @@ export default function UploadPage() {
     }
   }
 
-  const handleConfirm = async () => {
-    if (previewInvoices.length === 0) return
+  const saveInvoices = async (invoicesToSave: any[], indicesToRemove: number[]) => {
+    if (invoicesToSave.length === 0) return
 
     setSaving(true)
     try {
@@ -115,15 +122,28 @@ export default function UploadPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ invoices: previewInvoices }),
+        body: JSON.stringify({ invoices: invoicesToSave }),
       })
 
       if (response.ok) {
-        setUploadStatus({ type: 'success', message: 'Alle Rechnungen wurden erfolgreich gespeichert!' })
-        setPreviewInvoices([])
-        setFile(null)
-        // Redirect or show success
-        window.location.href = '/invoices'
+        const result = await response.json()
+
+        // Remove saved invoices from preview
+        const newInvoices = previewInvoices.filter((_, idx) => !indicesToRemove.includes(idx))
+        setPreviewInvoices(newInvoices)
+
+        // Clear selection
+        setSelectedIndices(new Set())
+
+        if (newInvoices.length === 0) {
+          setUploadStatus({ type: 'success', message: 'Alle Rechnungen wurden erfolgreich gespeichert!' })
+          setFile(null)
+          // Redirect or show success
+          window.location.href = '/invoices'
+        } else {
+          setUploadStatus({ type: 'success', message: `${result.count} Rechnungen erfolgreich gespeichert.` })
+        }
+
       } else {
         const error = await response.json()
         setUploadStatus({ type: 'error', message: error.error || 'Fehler beim Speichern der Rechnungen' })
@@ -135,10 +155,29 @@ export default function UploadPage() {
     }
   }
 
+  const handleConfirmAll = () => {
+    const allIndices = previewInvoices.map((_, idx) => idx)
+    saveInvoices(previewInvoices, allIndices)
+  }
+
+  const handleConfirmSelected = () => {
+    const selectedList = Array.from(selectedIndices).sort((a, b) => a - b)
+    const invoicesToSave = selectedList.map(idx => previewInvoices[idx])
+    saveInvoices(invoicesToSave, selectedList)
+  }
+
+  const handleConfirmSingle = (index: number) => {
+    saveInvoices([previewInvoices[index]], [index])
+  }
+
   const handleDelete = (index: number) => {
     const newInvoices = [...previewInvoices]
     newInvoices.splice(index, 1)
     setPreviewInvoices(newInvoices)
+
+    // Update selection indices - this is tricky, simpler to just clear selection or re-calculate
+    // For simplicity, let's clear selection if we delete something to avoid index mismatch
+    setSelectedIndices(new Set())
   }
 
   const handleDeleteAll = () => {
@@ -146,6 +185,7 @@ export default function UploadPage() {
       setPreviewInvoices([])
       setFile(null)
       setUploadStatus({ type: 'idle' })
+      setSelectedIndices(new Set())
     }
   }
 
@@ -163,6 +203,25 @@ export default function UploadPage() {
       setIsEditOpen(false)
       setEditingInvoice(null)
       setEditIndex(-1)
+    }
+  }
+
+  const toggleSelect = (index: number) => {
+    const newSelected = new Set(selectedIndices)
+    if (newSelected.has(index)) {
+      newSelected.delete(index)
+    } else {
+      newSelected.add(index)
+    }
+    setSelectedIndices(newSelected)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIndices.size === previewInvoices.length) {
+      setSelectedIndices(new Set())
+    } else {
+      const allIndices = new Set(previewInvoices.map((_, idx) => idx))
+      setSelectedIndices(allIndices)
     }
   }
 
@@ -207,26 +266,49 @@ export default function UploadPage() {
                     <Trash2 className="h-4 w-4 mr-2" />
                     Alle löschen
                   </Button>
-                  <Button onClick={handleConfirm} disabled={saving} className="bg-green-600 hover:bg-green-700">
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Speichere...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Alle Bestätigen & Speichern
-                      </>
-                    )}
-                  </Button>
+
+                  {selectedIndices.size > 0 ? (
+                    <Button onClick={handleConfirmSelected} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                      {saving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Speichere...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {selectedIndices.size} Ausgewählte speichern
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button onClick={handleConfirmAll} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                      {saving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Speichere...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Alle Bestätigen & Speichern
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nr.</TableHead>
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={previewInvoices.length > 0 && selectedIndices.size === previewInvoices.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead>Bestellnummer</TableHead>
                       <TableHead>Kunde</TableHead>
                       <TableHead>Datum</TableHead>
                       <TableHead>Betrag</TableHead>
@@ -238,6 +320,12 @@ export default function UploadPage() {
                   <TableBody>
                     {previewInvoices.map((inv, idx) => (
                       <TableRow key={idx}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIndices.has(idx)}
+                            onCheckedChange={() => toggleSelect(idx)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{inv.number}</TableCell>
                         <TableCell>
                           <div className="flex flex-col">
@@ -259,10 +347,13 @@ export default function UploadPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(idx)}>
+                            <Button variant="ghost" size="icon" onClick={() => handleConfirmSingle(idx)} title="Speichern">
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(idx)} title="Bearbeiten">
                               <Edit2 className="h-4 w-4 text-blue-600" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(idx)}>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(idx)} title="Löschen">
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
                           </div>
@@ -311,8 +402,8 @@ export default function UploadPage() {
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragActive
-                        ? 'border-blue-400 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
+                      ? 'border-blue-400 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
                       }`}
                   >
                     <Upload className={`h-8 w-8 mx-auto mb-2 ${dragActive ? 'text-blue-500' : 'text-gray-400'
@@ -422,7 +513,7 @@ export default function UploadPage() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="number" className="text-right">
-                    Nr.
+                    Bestellnummer
                   </Label>
                   <Input
                     id="number"
