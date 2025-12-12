@@ -5,9 +5,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2 } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -20,6 +23,11 @@ export default function UploadPage() {
   const [dragActive, setDragActive] = useState(false)
   const [previewInvoices, setPreviewInvoices] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
+
+  // Edit State
+  const [editingInvoice, setEditingInvoice] = useState<any>(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editIndex, setEditIndex] = useState<number>(-1)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -127,6 +135,37 @@ export default function UploadPage() {
     }
   }
 
+  const handleDelete = (index: number) => {
+    const newInvoices = [...previewInvoices]
+    newInvoices.splice(index, 1)
+    setPreviewInvoices(newInvoices)
+  }
+
+  const handleDeleteAll = () => {
+    if (confirm('Sind Sie sicher, dass Sie alle importierten Rechnungen löschen möchten?')) {
+      setPreviewInvoices([])
+      setFile(null)
+      setUploadStatus({ type: 'idle' })
+    }
+  }
+
+  const handleEdit = (index: number) => {
+    setEditingInvoice({ ...previewInvoices[index] })
+    setEditIndex(index)
+    setIsEditOpen(true)
+  }
+
+  const handleSaveEdit = () => {
+    if (editIndex > -1 && editingInvoice) {
+      const newInvoices = [...previewInvoices]
+      newInvoices[editIndex] = editingInvoice
+      setPreviewInvoices(newInvoices)
+      setIsEditOpen(false)
+      setEditingInvoice(null)
+      setEditIndex(-1)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -164,8 +203,9 @@ export default function UploadPage() {
                   </CardDescription>
                 </div>
                 <div className="flex space-x-4">
-                  <Button variant="outline" onClick={() => setPreviewInvoices([])}>
-                    Abbrechen
+                  <Button variant="destructive" onClick={handleDeleteAll}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Alle löschen
                   </Button>
                   <Button onClick={handleConfirm} disabled={saving} className="bg-green-600 hover:bg-green-700">
                     {saving ? (
@@ -192,6 +232,7 @@ export default function UploadPage() {
                       <TableHead>Betrag</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Typ</TableHead>
+                      <TableHead className="text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -215,6 +256,16 @@ export default function UploadPage() {
                           <Badge variant="secondary">
                             {inv.document_kind}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(idx)}>
+                              <Edit2 className="h-4 w-4 text-blue-600" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(idx)}>
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -360,6 +411,86 @@ export default function UploadPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Rechnung bearbeiten</DialogTitle>
+            </DialogHeader>
+            {editingInvoice && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="number" className="text-right">
+                    Nr.
+                  </Label>
+                  <Input
+                    id="number"
+                    value={editingInvoice.number}
+                    onChange={(e) => setEditingInvoice({ ...editingInvoice, number: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Kunde
+                  </Label>
+                  <Input
+                    id="name"
+                    value={editingInvoice.customerName}
+                    onChange={(e) => setEditingInvoice({ ...editingInvoice, customerName: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    value={editingInvoice.customerEmail}
+                    onChange={(e) => setEditingInvoice({ ...editingInvoice, customerEmail: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="date" className="text-right">
+                    Datum
+                  </Label>
+                  <Input
+                    id="date"
+                    value={editingInvoice.date}
+                    onChange={(e) => setEditingInvoice({ ...editingInvoice, date: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="status" className="text-right">
+                    Status
+                  </Label>
+                  <Select
+                    value={editingInvoice.status}
+                    onValueChange={(value) => setEditingInvoice({ ...editingInvoice, status: value })}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Status wählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bezahlt">Bezahlt</SelectItem>
+                      <SelectItem value="Offen">Offen</SelectItem>
+                      <SelectItem value="Überfällig">Überfällig</SelectItem>
+                      <SelectItem value="Storniert">Storniert</SelectItem>
+                      <SelectItem value="Gutschrift">Gutschrift</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button type="submit" onClick={handleSaveEdit}>Speichern</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )
