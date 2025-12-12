@@ -30,8 +30,7 @@ export async function GET(request: NextRequest) {
                 slug: 'rechnungsprofi-' + Date.now(),
                 address: 'Musterstraße 1',
                 zipCode: '12345',
-                city: 'Musterstadt',
-                email: email // Assuming email field exists or just skip
+                city: 'Musterstadt'
             }
         })
 
