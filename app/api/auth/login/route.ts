@@ -3,19 +3,8 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { ensureUserDirectory } from '@/lib/file-manager'
 
-// Mock-Datenbank - in echter Anwendung echte Datenbank verwenden
-// Passwort: Mkarina321@ (bereits verschlüsselt)
-const users = [
-  {
-    id: 1,
-    email: 'mgrdegh@web.de',
-    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBdXwtGtrKxQ7O', // Mkarina321@
-    isActive: true,
-    role: 'admin',
-    name: 'Admin User',
-    createdAt: new Date().toISOString()
-  }
-]
+import { prisma } from '@/lib/prisma'
+
 
 // Funktion zum Verschlüsseln des Passworts (für Dateneinrichtung)
 async function hashPassword(password: string): Promise<string> {
@@ -29,7 +18,7 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
 }
 
 // Funktion zur JWT-Token-Erstellung
-function generateToken(userId: number, email: string, role: string): string {
+function generateToken(userId: string, email: string, role: string): string {
   const secret = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
   const payload = {
     userId,
@@ -38,7 +27,7 @@ function generateToken(userId: number, email: string, role: string): string {
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // läuft in 24 Stunden ab
   }
-  
+
   return jwt.sign(payload, secret)
 }
 
@@ -57,8 +46,8 @@ export async function POST(request: NextRequest) {
     // Überprüfung der erforderlichen Daten
     if (!email || !password) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'E-Mail und Passwort sind erforderlich',
           field: !email ? 'email' : 'password'
         },
@@ -69,8 +58,8 @@ export async function POST(request: NextRequest) {
     // E-Mail-Format überprüfen
     if (!isValidEmail(email)) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'E-Mail-Format ist ungültig',
           field: 'email'
         },
@@ -81,8 +70,8 @@ export async function POST(request: NextRequest) {
     // Passwortlänge überprüfen
     if (password.length < 6) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'Passwort muss mindestens 6 Zeichen lang sein',
           field: 'password'
         },
@@ -91,13 +80,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 2️⃣ Benutzer in der Datenbank suchen
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase())
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      include: { organization: true }
+    })
 
     // 4️⃣ Benutzerexistenz überprüfen
     if (!user) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'Kein Konto mit dieser E-Mail registriert. Bitte zuerst registrieren',
           field: 'email'
         },
@@ -106,11 +98,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 7️⃣ Kontostatus überprüfen (aktiv/inaktiv)
-    if (!user.isActive) {
+    // Note: isSuspended is the field in schema, defaulting to false. 
+    // If you want to check active status, ensure logic matches schema.
+    if (user.isSuspended) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Ihr Konto ist nicht aktiviert. Bitte aktivieren Sie Ihr Konto zuerst per E-Mail',
+        {
+          success: false,
+          message: 'Ihr Konto ist gesperrt. Bitte kontaktieren Sie den Support.',
           field: 'account'
         },
         { status: 403 }
@@ -122,24 +116,36 @@ export async function POST(request: NextRequest) {
     console.log('Login-Versuch:', {
       email: email,
       userFound: !!user,
-      isActive: user?.isActive,
+      isSuspended: user.isSuspended,
       passwordLength: password.length
     })
 
     // 3️⃣ Passwortüberprüfung
-    const isPasswordValid = await verifyPassword(password, user.password)
-    
+    // Note: user.passwordHash is the field in schema
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Passwort nicht gesetzt. Bitte Passwort zurücksetzen.',
+          field: 'password'
+        },
+        { status: 400 }
+      )
+    }
+
+    const isPasswordValid = await verifyPassword(password, user.passwordHash)
+
     console.log('Passwortüberprüfungsergebnis:', {
       isPasswordValid,
       inputPassword: password,
-      hashedPassword: user.password.substring(0, 20) + '...'
+      hashedPassword: user.passwordHash ? user.passwordHash.substring(0, 20) + '...' : 'undefined'
     })
 
     // 5️⃣ Passwortüberprüfung
     if (!isPasswordValid) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: 'Anmeldedaten sind falsch. Bitte überprüfen Sie Ihr Passwort',
           field: 'password'
         },
@@ -175,7 +181,7 @@ export async function POST(request: NextRequest) {
           lastLogin: loginTime
         },
         token,
-        redirectTo: user.role === 'admin' ? '/' : '/'
+        redirectTo: user.role === 'ADMIN' ? '/' : '/'
       },
       { status: 200 }
     )
@@ -207,10 +213,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Fehler beim Anmelden:', error)
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Serverfehler aufgetreten. Bitte versuchen Sie es erneut',
         error: process.env.NODE_ENV === 'development' ? error : undefined
       },

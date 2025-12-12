@@ -6,18 +6,18 @@ import crypto from 'crypto'
 const STORAGE_BASE_PATH = path.join(process.cwd(), 'user-storage')
 
 // Sicheren Hash für User-ID erstellen
-function createUserHash(userId: number): string {
+function createUserHash(userId: string): string {
   return crypto.createHash('sha256').update(`user_${userId}`).digest('hex').substring(0, 16)
 }
 
 // Benutzerverzeichnispfad erstellen
-export function getUserStoragePath(userId: number): string {
+export function getUserStoragePath(userId: string): string {
   const userHash = createUserHash(userId)
   return path.join(STORAGE_BASE_PATH, userHash)
 }
 
 // Benutzerverzeichnis erstellen, falls nicht vorhanden
-export async function ensureUserDirectory(userId: number): Promise<string> {
+export async function ensureUserDirectory(userId: string): Promise<string> {
   const userPath = getUserStoragePath(userId)
 
   try {
@@ -48,7 +48,7 @@ export async function ensureUserDirectory(userId: number): Promise<string> {
 }
 
 // Prüfen, ob Datei dem Benutzer gehört
-export function validateFileAccess(userId: number, filePath: string): boolean {
+export function validateFileAccess(userId: string, filePath: string): boolean {
   const userPath = getUserStoragePath(userId)
   const resolvedFilePath = path.resolve(filePath)
   const resolvedUserPath = path.resolve(userPath)
@@ -58,7 +58,7 @@ export function validateFileAccess(userId: number, filePath: string): boolean {
 }
 
 // Dateiinformationen sicher abrufen
-export async function getFileInfo(userId: number, fileName: string, subDirectory?: string) {
+export async function getFileInfo(userId: string, fileName: string, subDirectory?: string) {
   const userPath = getUserStoragePath(userId)
   const filePath = subDirectory
     ? path.join(userPath, subDirectory, fileName)
@@ -84,7 +84,7 @@ export async function getFileInfo(userId: number, fileName: string, subDirectory
 }
 
 // Benutzerdateien auflisten
-export async function listUserFiles(userId: number, subDirectory?: string) {
+export async function listUserFiles(userId: string, subDirectory?: string) {
   const userPath = getUserStoragePath(userId)
   const targetPath = subDirectory
     ? path.join(userPath, subDirectory)
@@ -124,7 +124,7 @@ export async function listUserFiles(userId: number, subDirectory?: string) {
 }
 
 // Benutzerdatei sicher löschen
-export async function deleteUserFile(userId: number, fileName: string, subDirectory?: string): Promise<boolean> {
+export async function deleteUserFile(userId: string, fileName: string, subDirectory?: string): Promise<boolean> {
   const userPath = getUserStoragePath(userId)
   const filePath = subDirectory
     ? path.join(userPath, subDirectory, fileName)
@@ -148,7 +148,7 @@ export async function deleteUserFile(userId: number, fileName: string, subDirect
 }
 
 // Größe des Benutzerverzeichnisses berechnen
-export async function getUserStorageSize(userId: number): Promise<number> {
+export async function getUserStorageSize(userId: string): Promise<number> {
   const userPath = getUserStoragePath(userId)
 
   if (!fs.existsSync(userPath)) {
@@ -182,7 +182,7 @@ export async function getUserStorageSize(userId: number): Promise<number> {
 }
 
 // Alte temporäre Dateien bereinigen
-export async function cleanupTempFiles(userId: number, olderThanHours: number = 24): Promise<number> {
+export async function cleanupTempFiles(userId: string, olderThanHours: number = 24): Promise<number> {
   const tempPath = path.join(getUserStoragePath(userId), 'temp')
 
   if (!fs.existsSync(tempPath)) {
@@ -214,7 +214,7 @@ export async function cleanupTempFiles(userId: number, olderThanHours: number = 
 }
 
 // Backup der Benutzerdateien erstellen
-export async function createUserBackup(userId: number): Promise<string> {
+export async function createUserBackup(userId: string): Promise<string> {
   const userPath = getUserStoragePath(userId)
   const backupFileName = `backup_${userId}_${Date.now()}.tar.gz`
   const backupPath = path.join(STORAGE_BASE_PATH, 'backups', backupFileName)
