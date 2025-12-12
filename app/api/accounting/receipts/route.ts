@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export async function GET(request: NextRequest) {
     try {
-        const auth = await getServerAuth()
-        if (!auth.isAuthenticated || !auth.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const authResult = requireAuth(request)
+        if ('error' in authResult) {
+            return authResult.error
         }
+        const { user } = authResult
 
         const { searchParams } = new URL(request.url)
         const startDate = searchParams.get('startDate')
         const endDate = searchParams.get('endDate')
 
         const organization = await prisma.organization.findFirst({
-            where: { users: { some: { id: String(auth.user.id) } } }
+            where: { users: { some: { id: user.id } } }
         }) || await prisma.organization.findFirst()
 
         if (!organization) {
@@ -46,16 +47,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const auth = await getServerAuth()
-        if (!auth.isAuthenticated || !auth.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const authResult = requireAuth(request)
+        if ('error' in authResult) {
+            return authResult.error
         }
+        const { user } = authResult
 
         const body = await request.json()
         const { filename, url, date, description, category, mimeType, size } = body
 
         const organization = await prisma.organization.findFirst({
-            where: { users: { some: { id: String(auth.user.id) } } }
+            where: { users: { some: { id: user.id } } }
         }) || await prisma.organization.findFirst()
 
         if (!organization) {
