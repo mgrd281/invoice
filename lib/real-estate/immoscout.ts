@@ -77,11 +77,7 @@ export class ImmoscoutProvider implements RealEstateProvider {
             if (!response.ok) {
                 const text = await response.text()
                 console.error('ImmoScout API Error:', response.status, text)
-                // Fallback to mock if API fails (e.g. 401 Unauthorized or Quota exceeded)
-                // But since user wants REAL data, we should probably return empty or throw, 
-                // but keeping mock for safety if auth fails is better than silence.
-                // However, I will log it clearly.
-                return this.getMockData(filter)
+                throw new Error(`ImmoScout API Error: ${response.status} - ${text}`)
             }
 
             const data = await response.json()
@@ -89,7 +85,7 @@ export class ImmoscoutProvider implements RealEstateProvider {
 
         } catch (error) {
             console.error('ImmoScout Search Exception:', error)
-            return this.getMockData(filter)
+            throw error // Re-throw to let the caller handle it (and notify user)
         }
     }
 

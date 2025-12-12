@@ -716,9 +716,10 @@ _Anbieter: ${listing.provider}_`
                         await sendTelegramMessage(settings.botToken, chatId, `✅ Suche abgeschlossen. ${foundCount} neue Angebote gefunden!`)
                     }
                 }
-            } catch (e) {
+            } catch (e: any) {
                 console.error('Direct search failed:', e)
-                await sendTelegramMessage(settings.botToken, chatId, "❌ Fehler beim Ausführen der Suche.")
+                const errorMessage = e.message || 'Unbekannter Fehler'
+                await sendTelegramMessage(settings.botToken, chatId, `❌ Fehler bei der Suche:\n${errorMessage}`)
             }
 
         } else if (lowerText.includes('status prüfen')) {
