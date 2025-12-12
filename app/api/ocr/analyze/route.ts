@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
 import OpenAI from 'openai'
-import pdf from 'pdf-parse'
 
-// Initialize OpenAI
-// Note: This requires OPENAI_API_KEY env variable to be set
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+    // Initialize OpenAI inside handler to avoid build-time errors if env is missing
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    })
+
+    // @ts-ignore
+    const pdf = require('pdf-parse');
+
     try {
         const authResult = requireAuth(request)
         if ('error' in authResult) {
@@ -31,12 +34,6 @@ export async function POST(request: NextRequest) {
             try {
                 const data = await pdf(buffer)
                 text = data.text
-                // If text is too short, it might be a scanned PDF (image only)
-                if (text.trim().length < 50) {
-                    // Fallback: We can't easily handle scanned PDFs without OCR library like Tesseract
-                    // For now, we return a message or try to use Vision if we could convert it (but we can't easily on server)
-                    // We'll proceed with what we have, maybe the LLM can infer something or return empty
-                }
             } catch (e) {
                 console.error('PDF parse error:', e)
                 return NextResponse.json({ error: 'Failed to parse PDF' }, { status: 500 })
@@ -44,8 +41,6 @@ export async function POST(request: NextRequest) {
         } else if (file.type.startsWith('image/')) {
             isImage = true
         } else {
-            // Try to parse as text for other formats or return error
-            // For now, only support PDF and Images
             return NextResponse.json({ error: 'Unsupported file type. Please upload PDF or Image.' }, { status: 400 })
         }
 
