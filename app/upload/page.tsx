@@ -130,42 +130,97 @@ export default function UploadPage() {
     if (invoicesToSave.length === 0) return
 
     setSaving(true)
-    try {
-      const response = await fetch('/api/invoices/batch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ invoices: invoicesToSave }),
+    const totalToSave = invoicesToSave.length
+    let savedCount = 0
+    const chunkSize = 50 // Process 50 invoices at a time
+    const failedInvoices: any[] = []
+
+    // Sort indices in descending order to remove from end first (though we'll rebuild the list anyway)
+    // Actually, better to just track IDs or keep the ones NOT in the saved set.
+    // Since indices change as we remove items, it's tricky to remove incrementally by index if we don't handle it carefully.
+    // Strategy: We will process the *invoicesToSave* array. For each successful chunk, we will filter them out of *previewInvoices*.
+    // To identify them reliably, we might need a unique ID. If not available, we can rely on object reference or index from the original list.
+    // Given the current setup, let's process chunks and then update the main list.
+
+    // However, the user wants them to disappear *immediately*.
+    // So we should update `previewInvoices` after each chunk.
+
+    // Let's create a Set of indices to remove for efficient lookup
+    const indicesToRemoveSet = new Set(indicesToRemove)
+
+    // We need to map the original indices to the actual invoice objects to know what we are saving.
+    // invoicesToSave is already passed in.
+
+    // Let's iterate through chunks of invoicesToSave
+    for (let i = 0; i < totalToSave; i += chunkSize) {
+      const chunk = invoicesToSave.slice(i, i + chunkSize)
+
+      setUploadStatus({
+        type: 'idle',
+        message: `Speichere ${Math.min(i + chunkSize, totalToSave)} von ${totalToSave} Rechnungen...`
       })
 
-      if (response.ok) {
-        const result = await response.json()
+      try {
+        const response = await fetch('/api/invoices/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ invoices: chunk }),
+        })
 
-        // Remove saved invoices from preview
-        const newInvoices = previewInvoices.filter((_, idx) => !indicesToRemove.includes(idx))
-        setPreviewInvoices(newInvoices)
+        if (response.ok) {
+          const result = await response.json()
+          savedCount += chunk.length
 
-        // Clear selection
-        setSelectedIndices(new Set())
+          // Remove these specific invoices from previewInvoices
+          // We can't rely on indices anymore because the array might have changed (if we did this async/parallel, but here it's sequential).
+          // But to be safe and simple: We know `chunk` contains the exact objects we just saved.
+          setPreviewInvoices(prev => prev.filter(inv => !chunk.includes(inv)))
 
-        if (newInvoices.length === 0) {
-          setUploadStatus({ type: 'success', message: 'Alle Rechnungen wurden erfolgreich gespeichert!' })
-          setFile(null)
-          // Redirect or show success
-          window.location.href = '/invoices'
+          // Also update selectedIndices. This is harder because indices shift.
+          // Easiest is to just clear selection or re-calculate. 
+          // If we are saving "Selected", we probably want to clear them as they are saved.
+          setSelectedIndices(prev => {
+            const newSet = new Set(prev)
+            // We don't easily know the *original* index of these items in the *current* previewInvoices 
+            // without searching. 
+            // Since we are removing them, we can just clear the selection of the ones we removed.
+            // Actually, if we remove them from the list, the indices of remaining items change.
+            // It's safest to clear selection if we are doing a bulk action, or just reset it.
+            // But if we only save *some* selected, we want to keep others selected?
+            // For now, let's just clear selection as items are removed.
+            return new Set()
+          })
+
         } else {
-          setUploadStatus({ type: 'success', message: `${result.count} Rechnungen erfolgreich gespeichert.` })
+          console.error('Chunk failed', await response.json())
+          failedInvoices.push(...chunk)
+          // If a chunk fails, we might want to stop or continue? 
+          // User said: "If a problem occurs... only remaining invoices should stay".
+          // So we continue to the next chunk? Or stop?
+          // Usually better to try next chunks.
         }
-
-      } else {
-        const error = await response.json()
-        setUploadStatus({ type: 'error', message: error.error || 'Fehler beim Speichern der Rechnungen' })
+      } catch (error) {
+        console.error('Chunk error', error)
+        failedInvoices.push(...chunk)
       }
-    } catch (error) {
-      setUploadStatus({ type: 'error', message: 'Netzwerkfehler beim Speichern' })
-    } finally {
-      setSaving(false)
+    }
+
+    setSaving(false)
+
+    if (failedInvoices.length === 0) {
+      setUploadStatus({ type: 'success', message: `${savedCount} Rechnungen erfolgreich gespeichert!` })
+      if (previewInvoices.length === 0) { // Check if all are gone
+        setFile(null)
+        // Optional: Redirect
+        // window.location.href = '/invoices'
+      }
+    } else {
+      setUploadStatus({
+        type: 'error',
+        message: `${savedCount} gespeichert. ${failedInvoices.length} konnten nicht gespeichert werden.`
+      })
     }
   }
 
@@ -459,8 +514,8 @@ export default function UploadPage() {
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragActive
-                        ? 'border-blue-400 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
+                      ? 'border-blue-400 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
                       }`}
                   >
                     <Upload className={`h-8 w-8 mx-auto mb-2 ${dragActive ? 'text-blue-500' : 'text-gray-400'
