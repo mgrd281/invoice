@@ -66,6 +66,11 @@ export async function GET(request: NextRequest) {
                 }
             }
 
+            // Notify start (Debugging)
+            for (const user of settings.allowedUsers) {
+                await sendTelegramMessage(settings.botToken, user.telegramUserId, `🔎 Prüfe Angebote für: ${profile.name}...`)
+            }
+
             // 6. Send Notifications & Mark as Seen
             if (newListings.length > 0) {
                 for (const listing of newListings) {
@@ -94,6 +99,11 @@ _Anbieter: ${listing.provider}_`
                     })
                 }
                 totalSent += newListings.length
+            } else {
+                // Notify no results (Debugging)
+                for (const user of settings.allowedUsers) {
+                    await sendTelegramMessage(settings.botToken, user.telegramUserId, `✅ Keine neuen Angebote für ${profile.name} gefunden.`)
+                }
             }
 
             // 7. Update Last Run
