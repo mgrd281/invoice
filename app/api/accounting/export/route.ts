@@ -60,10 +60,10 @@ async function generateCSVExport(
   // Summary
   csvLines.push('ZUSAMMENFASSUNG')
   csvLines.push('Kategorie,Betrag (EUR)')
-  csvLines.push(`Einnahmen,${summary.totalRevenue.toFixed(2)}`)
-  csvLines.push(`Ausgaben,${summary.totalExpenses.toFixed(2)}`)
-  csvLines.push(`Nettoeinkommen,${summary.netIncome.toFixed(2)}`)
-  csvLines.push(`Umsatzsteuer,${summary.totalTax.toFixed(2)}`)
+  csvLines.push(`Einnahmen,${summary?.totalRevenue?.toFixed(2) || '0.00'}`)
+  csvLines.push(`Ausgaben,${summary?.totalExpenses?.toFixed(2) || '0.00'}`)
+  csvLines.push(`Nettoeinkommen,${summary?.netIncome?.toFixed(2) || '0.00'}`)
+  csvLines.push(`Umsatzsteuer,${summary?.totalTax?.toFixed(2) || '0.00'}`)
   csvLines.push('')
 
   // Invoices

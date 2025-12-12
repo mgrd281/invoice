@@ -177,36 +177,56 @@ export default function BuchhaltungPage() {
     }
   }
 
+  const [uploadProgress, setUploadProgress] = useState(0)
+
   const handleUploadReceipt = async () => {
     try {
       if (uploadFiles.length === 0) return
 
       setLoading(true)
+      setUploadProgress(0)
 
-      // Upload each file
-      for (const file of uploadFiles) {
-        const response = await authenticatedFetch('/api/accounting/receipts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: file.name,
-            url: `/uploads/${file.name}`, // Mock URL
-            size: file.size,
-            mimeType: file.type,
-            ...uploadMeta,
-            description: uploadMeta.description || file.name // Use filename if no description
-          })
-        })
+      // Upload files in parallel batches to avoid browser limits but speed up process
+      const BATCH_SIZE = 5
+      const totalFiles = uploadFiles.length
+      let processedCount = 0
+
+      for (let i = 0; i < totalFiles; i += BATCH_SIZE) {
+        const batch = uploadFiles.slice(i, i + BATCH_SIZE)
+
+        await Promise.all(batch.map(async (file) => {
+          try {
+            await authenticatedFetch('/api/accounting/receipts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                filename: file.name,
+                url: `/uploads/${file.name}`, // Mock URL
+                size: file.size,
+                mimeType: file.type,
+                ...uploadMeta,
+                description: uploadMeta.description || file.name
+              })
+            })
+          } catch (e) {
+            console.error(`Failed to upload ${file.name}`, e)
+          }
+        }))
+
+        processedCount += batch.length
+        setUploadProgress(Math.round((processedCount / totalFiles) * 100))
       }
 
       setUploadFiles([])
       setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+      setUploadProgress(0)
       loadAccountingData()
 
     } catch (error) {
       console.error('Error uploading receipts:', error)
     } finally {
       setLoading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -898,8 +918,8 @@ export default function BuchhaltungPage() {
                               </SelectContent>
                             </Select>
                           </div>
-                          <Button onClick={handleUploadReceipt} className="w-full bg-blue-600 hover:bg-blue-700">
-                            {uploadFiles.length} Dateien hochladen
+                          <Button onClick={handleUploadReceipt} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+                            {loading ? `Wird hochgeladen... ${uploadProgress}%` : `${uploadFiles.length} Dateien hochladen`}
                           </Button>
                         </div>
                       )}
