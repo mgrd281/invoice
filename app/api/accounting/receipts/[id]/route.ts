@@ -37,6 +37,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             data: {
                 description,
                 category,
+                amount: amount ? parseFloat(amount) : undefined,
                 date: date ? new Date(date) : undefined
             }
         })

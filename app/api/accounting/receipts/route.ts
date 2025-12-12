@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
                 date: new Date(date),
                 description,
                 category,
+                amount: amount ? parseFloat(amount) : null,
                 mimeType,
                 size
             }

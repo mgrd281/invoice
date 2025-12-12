@@ -65,6 +65,7 @@ interface Receipt {
   description: string
   category: string
   url: string
+  amount?: number
 }
 
 export default function BuchhaltungPage() {
@@ -956,7 +957,7 @@ export default function BuchhaltungPage() {
                       <TableHead>Datei</TableHead>
                       <TableHead>Datum</TableHead>
                       <TableHead>Kategorie</TableHead>
-                      <TableHead>Beschreibung</TableHead>
+                      <TableHead className="text-right">Betrag</TableHead>
                       <TableHead className="text-right">Aktion</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -979,11 +980,17 @@ export default function BuchhaltungPage() {
                         </TableCell>
                         <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="text-xs">
-                            {receipt.category === 'EXPENSE' ? 'Ausgabe' : receipt.category === 'INCOME' ? 'Einnahme' : 'Sonstiges'}
-                          </Badge>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${receipt.category === 'INCOME' ? 'bg-green-100 text-green-700' :
+                            receipt.category === 'EXPENSE' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                            {receipt.category === 'INCOME' ? 'Einnahme' :
+                              receipt.category === 'EXPENSE' ? 'Ausgabe' : 'Sonstiges'}
+                          </span>
                         </TableCell>
-                        <TableCell className="text-gray-500">{receipt.description}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {receipt.amount ? `€${parseFloat(receipt.amount.toString()).toFixed(2)}` : '-'}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={() => handleEditReceipt(receipt)}>
                             <Pencil className="h-4 w-4" />
