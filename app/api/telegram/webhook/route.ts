@@ -719,7 +719,16 @@ _Anbieter: ${listing.provider}_`
             } catch (e: any) {
                 console.error('Direct search failed:', e)
                 const errorMessage = e.message || 'Unbekannter Fehler'
-                await sendTelegramMessage(settings.botToken, chatId, `❌ Fehler bei der Suche:\n${errorMessage}`)
+
+                if (errorMessage.includes('403') || errorMessage.includes('ACCESS_DENIED')) {
+                    await sendTelegramMessage(settings.botToken, chatId,
+                        `⚠️ *Verbindung erfolgreich, aber Zugriff verweigert (403)*\n\n` +
+                        `Deine API-Keys sind korrekt, aber dein ImmoScout-Account hat noch keine Berechtigung für die Suche.\n\n` +
+                        `👉 Bitte logge dich im *ImmoScout Developer Portal* ein und beantrage den *"Production Access"* für deine App.`
+                    )
+                } else {
+                    await sendTelegramMessage(settings.botToken, chatId, `❌ Fehler bei der Suche:\n${errorMessage}`)
+                }
             }
 
         } else if (lowerText.includes('status prüfen')) {

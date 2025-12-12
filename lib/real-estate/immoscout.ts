@@ -56,8 +56,8 @@ export class ImmoscoutProvider implements RealEstateProvider {
             const type = this.mapType(filter)
             const radius = 10 // 10km radius
 
-            // ImmoScout API Endpoint (SWITCHED TO SANDBOX FOR VERIFICATION)
-            const url = `https://rest.sandbox-immobilienscout24.de/restapi/api/search/v1.0/search/radius?realestatetype=${type}&geocoordinates=${coords.lat};${coords.lon};${radius}`
+            // ImmoScout API Endpoint
+            const url = `https://rest.immobilienscout24.de/restapi/api/search/v1.0/search/radius?realestatetype=${type}&geocoordinates=${coords.lat};${coords.lon};${radius}`
 
             // 4. Sign Request
             const requestData = {
