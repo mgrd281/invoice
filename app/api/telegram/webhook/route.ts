@@ -389,33 +389,17 @@ async function handleAiChat(token: string, chatId: number | string, userMessage:
             .join('\n')
 
         // 2. Build System Prompt
-        const systemPrompt = `Du bist der "RechnungsProfi Business Analyst" - ein hochintelligenter KI-Berater für den Shop-Besitzer.
+        const systemPrompt = `Du bist der "Immo-Alarm Pro Assistent" - ein intelligenter KI-Berater für Immobilien-Suche.
 
-📊 **FINANZ-ANALYSE (Netto-Verkäufe):**
-- **Heute:** €${stats.today.rev.toFixed(2)} (${stats.today.count} Best.) vs. Gestern: €${stats.yesterday.rev.toFixed(2)}
-  -> Trend: ${stats.today.rev >= stats.yesterday.rev ? '📈 Steigend' : '📉 Fallend'}
-- **Dieser Monat:** €${stats.month.rev.toFixed(2)} vs. Letzter Monat: €${stats.lastMonth.rev.toFixed(2)}
+Deine Aufgaben:
+1. Hilf dem Nutzer, den Status seiner Suchaufträge zu verstehen.
+2. Erkläre, wie er neue Suchprofile im Dashboard anlegt.
+3. Analysiere Immobilien-Angebote, falls der Nutzer Details fragt.
 
-🏆 **TOP PRODUKTE (letzte 30 Tage):**
-${topProducts || 'Keine Daten'}
-
-💎 **TOP KUNDEN (VIPs):**
-${topCustomers}
-
-⏱️ **LETZTE 5 BESTELLUNGEN:**
-${recentOrders}
-
-**WICHTIGE ANWEISUNGEN:**
-1. **Daten-Integrität:** Diese Daten beinhalten NUR erfolgreiche Verkäufe. Stornierte oder erstattete Bestellungen sind bereits herausgefiltert.
-2. **Formatierung:**
-   - Nutze **fette Schrift** für wichtige Zahlen.
-   - Nutze Listen und Absätze für Lesbarkeit.
-   - Sei **elegant, modern und professionell**.
-   - Keine langen Textwüsten. Kurz, knackig, auf den Punkt.
-3. **Intelligenz:**
-   - Analysiere die Daten. Gib nicht nur wieder, was oben steht.
-   - Wenn der Nutzer fragt "Wie läuft es?", gib eine qualifizierte Einschätzung (z.B. "Exzellent, wir liegen über dem Vormonat" oder "Ruhiger Tag heute").
-4. **Sprache:** Antworte IMMER in der Sprache des Nutzers (DE/AR/UA/EN).
+WICHTIG:
+- Sei höflich, professionell und präzise.
+- Antworte immer auf DEUTSCH.
+- Wenn du nicht weiterweißt, verweise auf das Web-Dashboard.
 
 Nutzerfrage: "${userMessage}"`
 
@@ -646,16 +630,65 @@ export async function POST(request: NextRequest) {
             await handlePdfInvoices(settings.botToken, chatId)
         } else if (lowerText.includes('top produkte')) {
             await handleTopProducts(settings.botToken, chatId)
+        } else if (lowerText.includes('status prüfen')) {
+            // Handle Status Check
+            const profiles = await (prisma as any).realEstateSearchProfile.findMany({
+                where: { organizationId: settings.organizationId, isActive: true }
+            })
+
+            let msg = `📊 *System-Status*\n\n`
+            msg += `✅ *Bot ist aktiv*\n`
+            msg += `🔎 *Aktive Suchprofile:* ${profiles.length}\n\n`
+
+            if (profiles.length > 0) {
+                const lastRun = profiles[0].lastRunAt
+                    ? new Date(profiles[0].lastRunAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+                    : 'Noch nie'
+                msg += `🕒 Letzter Check: ${lastRun} Uhr\n`
+                msg += `🔜 Nächster Check: Automatisch alle 10-60 Min.`
+            } else {
+                msg += `⚠️ Du hast noch keine aktiven Suchprofile. Bitte erstelle welche im Dashboard.`
+            }
+
+            await sendTelegramMessage(settings.botToken, chatId, msg)
+
+        } else if (lowerText.includes('meine suchprofile')) {
+            // List Profiles
+            const profiles = await (prisma as any).realEstateSearchProfile.findMany({
+                where: { organizationId: settings.organizationId }
+            })
+
+            if (profiles.length === 0) {
+                await sendTelegramMessage(settings.botToken, chatId, "📭 Keine Suchprofile gefunden.")
+            } else {
+                let msg = `📋 *Deine Suchprofile:*\n\n`
+                profiles.forEach((p: any) => {
+                    const status = p.isActive ? '✅' : '⏸️'
+                    msg += `${status} *${p.name}*\n`
+                    msg += `   📍 ${p.city || p.zipCode} (${p.transactionType === 'RENT' ? 'Miete' : 'Kauf'})\n`
+                    msg += `   💰 bis ${p.priceMax?.toLocaleString('de-DE')}€\n\n`
+                })
+                await sendTelegramMessage(settings.botToken, chatId, msg)
+            }
+
         } else if (lowerText === '/start' || lowerText === 'start') {
+            const menu = {
+                keyboard: [
+                    [{ text: "🔍 Status prüfen" }, { text: "📋 Meine Suchprofile" }],
+                    [{ text: "🆘 Hilfe" }]
+                ],
+                resize_keyboard: true,
+                persistent: true
+            }
+
             await sendTelegramMessage(settings.botToken, chatId,
-                `👋 Hallo Chef! Ich bin dein RechnungsProfi AI.\n` +
+                `👋 *Willkommen beim Immobilien-Alarm Pro!*\n\n` +
+                `Ich bin dein persönlicher Assistent für die Immobiliensuche.\n` +
+                `Ich überwache den Markt rund um die Uhr für dich.\n\n` +
                 `🆔 Deine ID: \`${chatId}\`\n\n` +
-                "Befehle:\n" +
-                "📊 'Umsatz heute'\n" +
-                "📄 'Rechnungen PDF'\n" +
-                "🏆 'Top Produkte'\n" +
-                "🆘 '/support [Anfrage]' -> KI schreibt Antwort\n" +
-                "📸 *Sende ein Foto* für Beleg-Scan!"
+                `👇 Wähle eine Option aus dem Menü:`,
+                'Markdown',
+                { reply_markup: menu }
             )
         } else {
             // Intelligent AI Response for everything else

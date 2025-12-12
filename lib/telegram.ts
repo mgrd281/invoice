@@ -1,16 +1,19 @@
 import { prisma } from '@/lib/prisma'
 
-export async function sendTelegramMessage(token: string, chatId: number | string, text: string, parseMode: 'Markdown' | 'HTML' | undefined = 'Markdown') {
+export async function sendTelegramMessage(token: string, chatId: number | string, text: string, parseMode: 'Markdown' | 'HTML' | undefined = 'Markdown', options: any = {}) {
     const url = `https://api.telegram.org/bot${token}/sendMessage`
     try {
+        const body = {
+            chat_id: chatId,
+            text: text,
+            parse_mode: parseMode,
+            ...options
+        }
+
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: parseMode
-            })
+            body: JSON.stringify(body)
         })
 
         if (!response.ok) {
