@@ -29,6 +29,7 @@ export function ProfileForm({ initialData, isEdit }: ProfileFormProps) {
         propertyType: initialData?.propertyType || 'APARTMENT',
         city: initialData?.city || '',
         zipCode: initialData?.zipCode || '',
+        district: initialData?.district || '',
         priceMax: initialData?.priceMax || '',
         roomsMin: initialData?.roomsMin || '',
         areaMin: initialData?.areaMin || ''
@@ -122,7 +123,7 @@ export function ProfileForm({ initialData, isEdit }: ProfileFormProps) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label>Stadt</Label>
                             <Input
@@ -132,7 +133,15 @@ export function ProfileForm({ initialData, isEdit }: ProfileFormProps) {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>PLZ (Optional)</Label>
+                            <Label>Stadtteil</Label>
+                            <Input
+                                placeholder="Mitte"
+                                value={formData.district || ''}
+                                onChange={e => setFormData({ ...formData, district: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>PLZ</Label>
                             <Input
                                 placeholder="10115"
                                 value={formData.zipCode}
