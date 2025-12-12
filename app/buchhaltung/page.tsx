@@ -32,7 +32,8 @@ import {
   Archive,
   Briefcase,
   Database,
-  Pencil
+  Pencil,
+  Sparkles
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
@@ -80,8 +81,21 @@ export default function BuchhaltungPage() {
 
   // New states for Voranmeldung
   const [newIncome, setNewIncome] = useState({ description: '', amount: '', date: new Date().toISOString().split('T')[0] })
-  const [uploadFiles, setUploadFiles] = useState<File[]>([])
+  interface PendingFile {
+    id: string
+    file: File
+    meta: {
+      description: string
+      category: string
+      date: string
+      amount: string
+    }
+    status: 'pending' | 'analyzing' | 'error' | 'success'
+  }
+
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  // Global meta for "Apply to all" or fallback
   const [uploadMeta, setUploadMeta] = useState({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0], amount: '' })
 
   // Edit state
@@ -185,51 +199,95 @@ export default function BuchhaltungPage() {
 
   const [uploadProgress, setUploadProgress] = useState(0)
 
+  const handleFilesAdded = async (files: File[]) => {
+    const newPending: PendingFile[] = files.map(f => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file: f,
+      meta: {
+        description: f.name,
+        category: 'EXPENSE',
+        date: new Date().toISOString().split('T')[0],
+        amount: ''
+      },
+      status: 'analyzing'
+    }))
+
+    setPendingFiles(prev => [...prev, ...newPending])
+
+    // Process OCR for each file
+    newPending.forEach(async (pf) => {
+      try {
+        const formData = new FormData()
+        formData.append('file', pf.file)
+
+        // Call OCR API
+        const res = await authenticatedFetch('/api/ocr/analyze', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.data) {
+            setPendingFiles(prev => prev.map(p => p.id === pf.id ? {
+              ...p,
+              status: 'success',
+              meta: {
+                ...p.meta,
+                amount: data.data.totalAmount?.toString() || '',
+                description: data.data.description || p.meta.description,
+                category: data.data.category || p.meta.category,
+                date: data.data.date || p.meta.date
+              }
+            } : p))
+            return
+          }
+        }
+        // If failed or no data
+        setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, status: 'pending' } : p))
+      } catch (e) {
+        console.error('OCR failed for', pf.file.name, e)
+        setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, status: 'error' } : p))
+      }
+    })
+  }
+
   const handleUploadReceipt = async () => {
     try {
-      if (uploadFiles.length === 0) return
+      if (pendingFiles.length === 0) return
 
       setLoading(true)
       setUploadProgress(0)
 
-      // Upload files in parallel batches to avoid browser limits but speed up process
-      const BATCH_SIZE = 5
-      const totalFiles = uploadFiles.length
+      const BATCH_SIZE = 3
+      const totalFiles = pendingFiles.length
       let processedCount = 0
-
       const errors: string[] = []
 
       for (let i = 0; i < totalFiles; i += BATCH_SIZE) {
-        const batch = uploadFiles.slice(i, i + BATCH_SIZE)
+        const batch = pendingFiles.slice(i, i + BATCH_SIZE)
 
-        await Promise.all(batch.map(async (file) => {
+        await Promise.all(batch.map(async (pf) => {
           try {
             const response = await authenticatedFetch('/api/accounting/receipts', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                filename: file.name,
-                url: `/uploads/${file.name}`, // Mock URL
-                size: file.size,
-                mimeType: file.type,
-                ...uploadMeta,
-                description: uploadMeta.description || file.name,
-                amount: uploadMeta.amount ? parseFloat(uploadMeta.amount) : undefined
+                filename: pf.file.name,
+                url: `/uploads/${pf.file.name}`, // Mock URL
+                size: pf.file.size,
+                mimeType: pf.file.type,
+                ...pf.meta,
+                amount: pf.meta.amount ? parseFloat(pf.meta.amount) : undefined
               })
             })
 
-            // authenticatedFetch usually throws on error, but let's be sure
             if (!response.ok) {
-              if (response.status === 401) {
-                window.location.href = '/auth/login'
-                return // Stop execution to redirect
-              }
-              throw new Error(`Server responded with status ${response.status}`)
+              throw new Error(`Status ${response.status}`)
             }
-
           } catch (e: any) {
-            console.error(`Failed to upload ${file.name}`, e)
-            errors.push(`${file.name}: ${e.message || 'Unknown error'}`)
+            console.error(`Failed to upload ${pf.file.name}`, e)
+            errors.push(`${pf.file.name}: ${e.message}`)
           }
         }))
 
@@ -238,11 +296,9 @@ export default function BuchhaltungPage() {
       }
 
       if (errors.length > 0) {
-        alert(`Fehler beim Hochladen von ${errors.length} Dateien:\n${errors.join('\n')}`)
+        alert(`Fehler beim Hochladen:\n${errors.join('\n')}`)
       } else {
-        // Only clear if all successful
-        setUploadFiles([])
-        setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0], amount: '' })
+        setPendingFiles([])
       }
 
       setUploadProgress(0)
@@ -250,7 +306,7 @@ export default function BuchhaltungPage() {
 
     } catch (error: any) {
       console.error('Error uploading receipts:', error)
-      alert(`Ein unerwarteter Fehler ist aufgetreten: ${error.message}`)
+      alert(`Fehler: ${error.message}`)
     } finally {
       setLoading(false)
       setUploadProgress(0)
@@ -305,12 +361,12 @@ export default function BuchhaltungPage() {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setUploadFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)])
+      handleFilesAdded(Array.from(e.dataTransfer.files))
     }
   }
 
   const removeFile = (index: number) => {
-    setUploadFiles(prev => prev.filter((_, i) => i !== index))
+    setPendingFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handlePeriodChange = (period: AccountingPeriod) => {
@@ -704,7 +760,7 @@ export default function BuchhaltungPage() {
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
-                        setUploadFiles(prev => [...prev, ...Array.from(e.target.files!)])
+                        handleFilesAdded(Array.from(e.target.files))
                       }
                     }}
                     accept=".pdf,.jpg,.png,.docx,.xlsx"
@@ -721,66 +777,84 @@ export default function BuchhaltungPage() {
                   </div>
                 </div>
 
-                {uploadFiles.length > 0 && (
+                {pendingFiles.length > 0 && (
                   <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                    <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
-                      {uploadFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
-                          <div className="flex items-center truncate">
-                            <FileText className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
-                            <span className="truncate max-w-[150px]">{file.name}</span>
+                    <div className="max-h-[400px] overflow-y-auto space-y-3 border rounded-md p-2">
+                      {pendingFiles.map((pf, index) => (
+                        <div key={pf.id} className="bg-white p-3 rounded border text-sm space-y-3 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center truncate">
+                              <FileText className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+                              <span className="truncate max-w-[150px] font-medium">{pf.file.name}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {pf.status === 'analyzing' && (
+                                <div className="flex items-center text-xs text-blue-600">
+                                  <Sparkles className="h-3 w-3 mr-1 animate-pulse" />
+                                  Analysiere...
+                                </div>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  removeFile(index)
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removeFile(index)
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Betrag (€)</Label>
+                              <Input
+                                className="h-7 text-xs"
+                                value={pf.meta.amount}
+                                onChange={(e) => {
+                                  const val = e.target.value
+                                  setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, meta: { ...p.meta, amount: val } } : p))
+                                }}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Kategorie</Label>
+                              <Select
+                                value={pf.meta.category}
+                                onValueChange={(v) => setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, meta: { ...p.meta, category: v } } : p))}
+                              >
+                                <SelectTrigger className="h-7 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="EXPENSE">Ausgabe</SelectItem>
+                                  <SelectItem value="INCOME">Einnahme</SelectItem>
+                                  <SelectItem value="OTHER">Sonstiges</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Beschreibung</Label>
+                            <Input
+                              className="h-7 text-xs"
+                              value={pf.meta.description}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, meta: { ...p.meta, description: val } } : p))
+                              }}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs">Beschreibung (Optional für alle)</Label>
-                      <Input
-                        value={uploadMeta.description}
-                        onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
-                        placeholder="Gemeinsame Beschreibung..."
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Betrag (€) (Optional)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={uploadMeta.amount}
-                        onChange={(e) => setUploadMeta({ ...uploadMeta, amount: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Kategorie</Label>
-                      <Select
-                        value={uploadMeta.category}
-                        onValueChange={(v) => setUploadMeta({ ...uploadMeta, category: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="EXPENSE">Ausgabe</SelectItem>
-                          <SelectItem value="INCOME">Einnahme</SelectItem>
-                          <SelectItem value="OTHER">Sonstiges</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                     <Button onClick={handleUploadReceipt} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
-                      {loading ? `Wird hochgeladen... ${uploadProgress}%` : `${uploadFiles.length} Dateien hochladen`}
+                      {loading ? `Wird hochgeladen... ${uploadProgress}%` : `${pendingFiles.length} Dateien hochladen`}
                     </Button>
                   </div>
                 )}
