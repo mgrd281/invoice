@@ -615,6 +615,178 @@ export default function BuchhaltungPage() {
           </CardContent>
         </Card>
 
+        {/* 2. Modern Upload System (Global) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Upload Area */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Upload className="h-5 w-5 mr-2 text-blue-600" />
+                  Beleg hochladen
+                </CardTitle>
+                <CardDescription>Drag & Drop oder Klicken zum Auswählen</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-blue-200 bg-blue-50/50 hover:bg-blue-50'
+                    }`}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setUploadFiles(prev => [...prev, ...Array.from(e.target.files!)])
+                      }
+                    }}
+                    accept=".pdf,.jpg,.png,.docx,.xlsx"
+                  />
+
+                  <div className="space-y-2">
+                    <div className="h-12 w-12 bg-white rounded-full shadow-sm mx-auto flex items-center justify-center">
+                      <Upload className={`h-6 w-6 ${isDragging ? 'text-blue-600' : 'text-blue-400'}`} />
+                    </div>
+                    <p className="font-medium text-gray-900">
+                      {isDragging ? 'Dateien hier ablegen' : 'Dateien auswählen oder hierher ziehen'}
+                    </p>
+                    <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX (Unbegrenzt)</p>
+                  </div>
+                </div>
+
+                {uploadFiles.length > 0 && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
+                      {uploadFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                          <div className="flex items-center truncate">
+                            <FileText className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+                            <span className="truncate max-w-[150px]">{file.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeFile(index)
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Beschreibung (Optional für alle)</Label>
+                      <Input
+                        value={uploadMeta.description}
+                        onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
+                        placeholder="Gemeinsame Beschreibung..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Kategorie</Label>
+                      <Select
+                        value={uploadMeta.category}
+                        onValueChange={(v) => setUploadMeta({ ...uploadMeta, category: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EXPENSE">Ausgabe</SelectItem>
+                          <SelectItem value="INCOME">Einnahme</SelectItem>
+                          <SelectItem value="OTHER">Sonstiges</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={handleUploadReceipt} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+                      {loading ? `Wird hochgeladen... ${uploadProgress}%` : `${uploadFiles.length} Dateien hochladen`}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Uploaded List */}
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Beleg-Eingang</CardTitle>
+                  <CardDescription>Zuletzt hochgeladene Dokumente</CardDescription>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Datei</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Kategorie</TableHead>
+                      <TableHead>Beschreibung</TableHead>
+                      <TableHead className="text-right">Aktion</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {receipts.map((receipt) => (
+                      <TableRow key={receipt.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                            </div>
+                            <span className="truncate max-w-[150px]" title={receipt.filename}>{receipt.filename}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">
+                            {receipt.category === 'EXPENSE' ? 'Ausgabe' : receipt.category === 'INCOME' ? 'Einnahme' : 'Sonstiges'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-gray-500">{receipt.description}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {receipts.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="h-12 w-12 bg-gray-50 rounded-full flex items-center justify-center mb-2">
+                              <FileText className="h-6 w-6 text-gray-300" />
+                            </div>
+                            <p>Keine Belege vorhanden</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Data Tables */}
         <Tabs defaultValue="invoices" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
@@ -824,201 +996,10 @@ export default function BuchhaltungPage() {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* 2. Modern Upload System */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Upload Area */}
-                <div className="lg:col-span-1 space-y-6">
-                  <Card className="h-full">
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Upload className="h-5 w-5 mr-2 text-blue-600" />
-                        Beleg hochladen
-                      </CardTitle>
-                      <CardDescription>Drag & Drop oder Klicken zum Auswählen</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div
-                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-blue-200 bg-blue-50/50 hover:bg-blue-50'
-                          }`}
-                        onDragOver={onDragOver}
-                        onDragLeave={onDragLeave}
-                        onDrop={onDrop}
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                      >
-                        <input
-                          id="file-upload"
-                          type="file"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                              setUploadFiles(prev => [...prev, ...Array.from(e.target.files!)])
-                            }
-                          }}
-                          accept=".pdf,.jpg,.png,.docx,.xlsx"
-                        />
-
-                        <div className="space-y-2">
-                          <div className="h-12 w-12 bg-white rounded-full shadow-sm mx-auto flex items-center justify-center">
-                            <Upload className={`h-6 w-6 ${isDragging ? 'text-blue-600' : 'text-blue-400'}`} />
-                          </div>
-                          <p className="font-medium text-gray-900">
-                            {isDragging ? 'Dateien hier ablegen' : 'Dateien auswählen oder hierher ziehen'}
-                          </p>
-                          <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX (Unbegrenzt)</p>
-                        </div>
-                      </div>
-
-                      {uploadFiles.length > 0 && (
-                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                          <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
-                            {uploadFiles.map((file, index) => (
-                              <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
-                                <div className="flex items-center truncate">
-                                  <FileText className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
-                                  <span className="truncate max-w-[150px]">{file.name}</span>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    removeFile(index)
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-xs">Beschreibung (Optional für alle)</Label>
-                            <Input
-                              value={uploadMeta.description}
-                              onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
-                              placeholder="Gemeinsame Beschreibung..."
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Kategorie</Label>
-                            <Select
-                              value={uploadMeta.category}
-                              onValueChange={(v) => setUploadMeta({ ...uploadMeta, category: v })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="EXPENSE">Ausgabe</SelectItem>
-                                <SelectItem value="INCOME">Einnahme</SelectItem>
-                                <SelectItem value="OTHER">Sonstiges</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button onClick={handleUploadReceipt} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
-                            {loading ? `Wird hochgeladen... ${uploadProgress}%` : `${uploadFiles.length} Dateien hochladen`}
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Uploaded List */}
-                <div className="lg:col-span-2">
-                  <Card className="h-full">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <CardTitle>Beleg-Eingang</CardTitle>
-                        <CardDescription>Zuletzt hochgeladene Dokumente</CardDescription>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Filter className="h-4 w-4 mr-2" />
-                          Filter
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Datei</TableHead>
-                            <TableHead>Datum</TableHead>
-                            <TableHead>Kategorie</TableHead>
-                            <TableHead>Beschreibung</TableHead>
-                            <TableHead className="text-right">Aktion</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {receipts.map((receipt) => (
-                            <TableRow key={receipt.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex items-center space-x-2">
-                                  <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <FileText className="h-4 w-4 text-gray-500" />
-                                  </div>
-                                  <span className="truncate max-w-[150px]" title={receipt.filename}>{receipt.filename}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className="text-xs">
-                                  {receipt.category === 'EXPENSE' ? 'Ausgabe' : receipt.category === 'INCOME' ? 'Einnahme' : 'Sonstiges'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-gray-500">{receipt.description}</TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="ghost" size="sm">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          {receipts.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                <div className="flex flex-col items-center justify-center">
-                                  <div className="h-12 w-12 bg-gray-50 rounded-full flex items-center justify-center mb-2">
-                                    <FileText className="h-6 w-6 text-gray-300" />
-                                  </div>
-                                  <p>Keine Belege vorhanden</p>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* 3. Import System (Teaser) */}
-              <Card className="bg-gray-50 border-dashed">
-                <CardContent className="p-6 flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-white rounded-lg border shadow-sm">
-                      <Database className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">Daten importieren?</h3>
-                      <p className="text-sm text-gray-500">Importieren Sie Buchungen aus CSV oder Excel Dateien.</p>
-                    </div>
-                  </div>
-                  <Button variant="outline">
-                    Import starten
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
-
-        </Tabs >
-      </div >
-    </div >
+        </Tabs>
+      </div>
+    </div>
   )
 }
