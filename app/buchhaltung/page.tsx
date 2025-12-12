@@ -330,7 +330,7 @@ export default function BuchhaltungPage() {
   const handleEditReceipt = (receipt: Receipt) => {
     setEditingReceipt(receipt)
     setEditForm({
-      amount: '',
+      amount: receipt.amount ? receipt.amount.toString() : '',
       category: receipt.category || 'EXPENSE',
       description: receipt.description || ''
     })
