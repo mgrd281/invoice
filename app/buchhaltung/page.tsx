@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,7 +31,8 @@ import {
   Save,
   Archive,
   Briefcase,
-  Database
+  Database,
+  Pencil
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
@@ -81,6 +83,10 @@ export default function BuchhaltungPage() {
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [uploadMeta, setUploadMeta] = useState({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0], amount: '' })
+
+  // Edit state
+  const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null)
+  const [editForm, setEditForm] = useState({ amount: '', category: '', description: '' })
 
   // Filter states
   const [filter, setFilter] = useState<AccountingFilter>({
@@ -248,6 +254,40 @@ export default function BuchhaltungPage() {
     } finally {
       setLoading(false)
       setUploadProgress(0)
+    }
+  }
+
+  const handleEditReceipt = (receipt: Receipt) => {
+    setEditingReceipt(receipt)
+    setEditForm({
+      amount: '',
+      category: receipt.category || 'EXPENSE',
+      description: receipt.description || ''
+    })
+  }
+
+  const handleSaveReceipt = async () => {
+    if (!editingReceipt) return
+
+    try {
+      const response = await authenticatedFetch(`/api/accounting/receipts/${editingReceipt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...editForm,
+          date: editingReceipt.date // Keep original date or allow editing?
+        })
+      })
+
+      if (response.ok) {
+        setEditingReceipt(null)
+        loadAccountingData()
+      } else {
+        alert('Fehler beim Speichern')
+      }
+    } catch (error) {
+      console.error('Error saving receipt:', error)
+      alert('Fehler beim Speichern')
     }
   }
 
@@ -793,6 +833,9 @@ export default function BuchhaltungPage() {
                         </TableCell>
                         <TableCell className="text-gray-500">{receipt.description}</TableCell>
                         <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditReceipt(receipt)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="sm">
                             <Download className="h-4 w-4" />
                           </Button>
@@ -817,6 +860,56 @@ export default function BuchhaltungPage() {
             </Card>
           </div>
         </div>
+
+        <Dialog open={!!editingReceipt} onOpenChange={(open) => !open && setEditingReceipt(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Beleg bearbeiten & verarbeiten</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Beschreibung</Label>
+                <Input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Kategorie</Label>
+                <Select
+                  value={editForm.category}
+                  onValueChange={(v) => setEditForm({ ...editForm, category: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EXPENSE">Ausgabe</SelectItem>
+                    <SelectItem value="INCOME">Einnahme</SelectItem>
+                    <SelectItem value="OTHER">Sonstiges</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Betrag (€) (Zur Verbuchung)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-gray-500">
+                  Wenn Sie einen Betrag eingeben, wird automatisch eine {editForm.category === 'EXPENSE' ? 'Ausgabe' : 'Einnahme'} erstellt.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingReceipt(null)}>Abbrechen</Button>
+              <Button onClick={handleSaveReceipt}>Speichern & Verbuchen</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Data Tables */}
         <Tabs defaultValue="invoices" className="space-y-6">
