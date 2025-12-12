@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { generateArizonaPDFBuffer } from '@/lib/server-pdf-generator'
 import { sendTelegramMessage, sendTelegramDocument } from '@/lib/telegram'
 import { ImmoscoutProvider } from '@/lib/real-estate/immoscout'
+import { SagaProvider } from '@/lib/real-estate/saga'
 import { RealEstateFilter } from '@/lib/real-estate/types'
 import OpenAI from 'openai'
 
@@ -644,7 +645,9 @@ export async function POST(request: NextRequest) {
                 if (profiles.length === 0) {
                     await sendTelegramMessage(settings.botToken, chatId, "⚠️ Keine aktiven Suchprofile gefunden.")
                 } else {
-                    const provider = new ImmoscoutProvider()
+                    const immoProvider = new ImmoscoutProvider()
+                    const sagaProvider = new SagaProvider()
+
                     let foundCount = 0
 
                     for (const profile of profiles) {
@@ -662,7 +665,29 @@ export async function POST(request: NextRequest) {
                             areaMin: profile.areaMin || undefined
                         }
 
-                        const listings = await provider.search(filter)
+                        // 1. Search ImmoScout
+                        let listings: any[] = []
+                        try {
+                            const immoListings = await immoProvider.search(filter)
+                            listings = [...listings, ...immoListings]
+                        } catch (e: any) {
+                            console.error('ImmoScout failed:', e)
+                            // Notify user about ImmoScout error but continue to SAGA
+                            const msg = e.message || ''
+                            if (msg.includes('403') || msg.includes('ACCESS_DENIED')) {
+                                await sendTelegramMessage(settings.botToken, chatId, `⚠️ ImmoScout: Zugriff verweigert (Warte auf Freischaltung).`)
+                            }
+                        }
+
+                        // 2. Search SAGA (Only if Hamburg)
+                        if (profile.city?.toLowerCase().includes('hamburg') || profile.zipCode?.startsWith('2')) {
+                            try {
+                                const sagaListings = await sagaProvider.search(filter)
+                                listings = [...listings, ...sagaListings]
+                            } catch (e) {
+                                console.error('SAGA failed:', e)
+                            }
+                        }
 
                         // Filter seen
                         const newListings = []
@@ -718,17 +743,7 @@ _Anbieter: ${listing.provider}_`
                 }
             } catch (e: any) {
                 console.error('Direct search failed:', e)
-                const errorMessage = e.message || 'Unbekannter Fehler'
-
-                if (errorMessage.includes('403') || errorMessage.includes('ACCESS_DENIED')) {
-                    await sendTelegramMessage(settings.botToken, chatId,
-                        `⚠️ *Verbindung erfolgreich, aber Zugriff verweigert (403)*\n\n` +
-                        `Deine API-Keys sind korrekt, aber dein ImmoScout-Account hat noch keine Berechtigung für die Suche.\n\n` +
-                        `👉 Bitte logge dich im *ImmoScout Developer Portal* ein und beantrage den *"Production Access"* für deine App.`
-                    )
-                } else {
-                    await sendTelegramMessage(settings.botToken, chatId, `❌ Fehler bei der Suche:\n${errorMessage}`)
-                }
+                await sendTelegramMessage(settings.botToken, chatId, "❌ Fehler beim Ausführen der Suche.")
             }
 
         } else if (lowerText.includes('status prüfen')) {
