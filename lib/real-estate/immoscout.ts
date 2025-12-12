@@ -28,11 +28,17 @@ export class ImmoscoutProvider implements RealEstateProvider {
     }
 
     async search(filter: RealEstateFilter): Promise<RealEstateListing[]> {
+        // FORCE MOCK DATA FOR TESTING
+        console.log('Forcing MOCK data for testing...')
+        return this.getMockData(filter)
+
         // 1. Check for API Keys
+        /*
         if (!this.apiKey || !this.apiSecret) {
             console.warn('ImmoScout API keys not found. Returning MOCK data.')
             return this.getMockData(filter)
         }
+        */
 
         try {
             // 2. Get Coordinates (using OpenStreetMap Nominatim)
