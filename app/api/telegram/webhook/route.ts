@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateArizonaPDFBuffer } from '@/lib/server-pdf-generator'
 import { sendTelegramMessage, sendTelegramDocument } from '@/lib/telegram'
+import { ImmoscoutProvider } from '@/lib/real-estate/immoscout'
+import { RealEstateFilter } from '@/lib/real-estate/types'
 import OpenAI from 'openai'
 
 export const dynamic = 'force-dynamic'
@@ -633,18 +635,90 @@ export async function POST(request: NextRequest) {
         } else if (lowerText.includes('suche jetzt starten')) {
             await sendTelegramMessage(settings.botToken, chatId, "🚀 Suche wird gestartet... Bitte warten.")
 
-            // Trigger the cron job manually
             try {
-                // Use the production URL since we are running on Vercel
-                const cronUrl = 'https://invoice-kohl-five.vercel.app/api/cron/real-estate'
+                // Execute search directly
+                const profiles = await (prisma as any).realEstateSearchProfile.findMany({
+                    where: { organizationId: settings.organizationId, isActive: true }
+                })
 
-                // We don't await the result to avoid timeout, just trigger it
-                fetch(cronUrl, { headers: { 'Authorization': 'Bearer ' + process.env.CRON_SECRET } }).catch(e => console.error('Cron trigger failed', e))
+                if (profiles.length === 0) {
+                    await sendTelegramMessage(settings.botToken, chatId, "⚠️ Keine aktiven Suchprofile gefunden.")
+                } else {
+                    const provider = new ImmoscoutProvider()
+                    let foundCount = 0
 
-                // Give immediate feedback (the cron will send the actual results)
-                await sendTelegramMessage(settings.botToken, chatId, "✅ Suchauftrag wurde an das System gesendet. Ergebnisse kommen gleich!")
+                    for (const profile of profiles) {
+                        await sendTelegramMessage(settings.botToken, chatId, `🔎 Prüfe: ${profile.name}...`, undefined)
+
+                        const filter: RealEstateFilter = {
+                            city: profile.city || undefined,
+                            zipCode: profile.zipCode || undefined,
+                            district: profile.district || undefined,
+                            transactionType: profile.transactionType as any,
+                            propertyType: profile.propertyType as any,
+                            priceMin: profile.priceMin || undefined,
+                            priceMax: profile.priceMax || undefined,
+                            roomsMin: profile.roomsMin || undefined,
+                            areaMin: profile.areaMin || undefined
+                        }
+
+                        const listings = await provider.search(filter)
+
+                        // Filter seen
+                        const newListings = []
+                        for (const listing of listings) {
+                            const seen = await (prisma as any).realEstateSeenListing.findUnique({
+                                where: {
+                                    profileId_externalId: {
+                                        profileId: profile.id,
+                                        externalId: listing.id
+                                    }
+                                }
+                            })
+                            if (!seen) newListings.push(listing)
+                        }
+
+                        if (newListings.length > 0) {
+                            for (const listing of newListings) {
+                                const message = `🏠 *Neues Angebot gefunden!* (${profile.name})
+                                
+📍 ${listing.title}
+🏙️ ${listing.address}
+
+💶 *${listing.price.toLocaleString('de-DE')} ${listing.currency}*
+📐 ${listing.area} m² • 🚪 ${listing.rooms} Zi.
+
+🔗 [Exposé ansehen](${listing.link})
+_Anbieter: ${listing.provider}_`
+                                await sendTelegramMessage(settings.botToken, chatId, message)
+
+                                // Mark as seen
+                                await (prisma as any).realEstateSeenListing.create({
+                                    data: { profileId: profile.id, externalId: listing.id }
+                                })
+                            }
+                            foundCount += newListings.length
+                        } else {
+                            // Optional: Feedback for no results
+                            // await sendTelegramMessage(settings.botToken, chatId, `✅ Keine neuen Angebote für ${profile.name}.`, undefined)
+                        }
+
+                        // Update last run
+                        await (prisma as any).realEstateSearchProfile.update({
+                            where: { id: profile.id },
+                            data: { lastRunAt: new Date() }
+                        })
+                    }
+
+                    if (foundCount === 0) {
+                        await sendTelegramMessage(settings.botToken, chatId, "✅ Suche abgeschlossen. Keine neuen Angebote gefunden.", undefined)
+                    } else {
+                        await sendTelegramMessage(settings.botToken, chatId, `✅ Suche abgeschlossen. ${foundCount} neue Angebote gefunden!`)
+                    }
+                }
             } catch (e) {
-                await sendTelegramMessage(settings.botToken, chatId, "❌ Fehler beim Starten der Suche.")
+                console.error('Direct search failed:', e)
+                await sendTelegramMessage(settings.botToken, chatId, "❌ Fehler beim Ausführen der Suche.")
             }
 
         } else if (lowerText.includes('status prüfen')) {
@@ -681,9 +755,10 @@ export async function POST(request: NextRequest) {
                 let msg = `📋 *Deine Suchprofile:*\n\n`
                 profiles.forEach((p: any) => {
                     const status = p.isActive ? '✅' : '⏸️'
+                    const priceMax = p.priceMax ? `bis ${p.priceMax.toLocaleString('de-DE')}€` : 'kein Preislimit'
                     msg += `${status} *${p.name}*\n`
                     msg += `   📍 ${p.city || p.zipCode} (${p.transactionType === 'RENT' ? 'Miete' : 'Kauf'})\n`
-                    msg += `   💰 bis ${p.priceMax?.toLocaleString('de-DE')}€\n\n`
+                    msg += `   💰 ${priceMax}\n\n`
                 })
                 await sendTelegramMessage(settings.botToken, chatId, msg)
             }
