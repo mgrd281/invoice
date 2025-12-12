@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -101,6 +102,7 @@ export default function BuchhaltungPage() {
   // Edit state
   const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null)
   const [editForm, setEditForm] = useState({ amount: '', category: '', description: '' })
+  const [selectedReceipts, setSelectedReceipts] = useState<string[]>([])
 
   // Filter states
   const [filter, setFilter] = useState<AccountingFilter>({
@@ -363,6 +365,40 @@ export default function BuchhaltungPage() {
     } catch (error) {
       console.error('Error deleting receipt:', error)
       alert('Fehler beim Löschen')
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedReceipts.length === 0) return
+    if (!confirm(`Möchten Sie wirklich ${selectedReceipts.length} Belege löschen?`)) return
+
+    try {
+      // Delete sequentially or parallel
+      await Promise.all(selectedReceipts.map(id =>
+        authenticatedFetch(`/api/accounting/receipts/${id}`, { method: 'DELETE' })
+      ))
+
+      setSelectedReceipts([])
+      loadAccountingData()
+    } catch (error) {
+      console.error('Error deleting receipts:', error)
+      alert('Fehler beim Löschen einiger Belege')
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedReceipts.length === receipts.length) {
+      setSelectedReceipts([])
+    } else {
+      setSelectedReceipts(receipts.map(r => r.id))
+    }
+  }
+
+  const toggleSelectOne = (id: string) => {
+    if (selectedReceipts.includes(id)) {
+      setSelectedReceipts(prev => prev.filter(i => i !== id))
+    } else {
+      setSelectedReceipts(prev => [...prev, id])
     }
   }
 
@@ -890,6 +926,17 @@ export default function BuchhaltungPage() {
                   <CardDescription>Zuletzt hochgeladene Dokumente</CardDescription>
                 </div>
                 <div className="flex space-x-2">
+                  {selectedReceipts.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteSelected}
+                      className="animate-in fade-in zoom-in"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {selectedReceipts.length} löschen
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm">
                     <Filter className="h-4 w-4 mr-2" />
                     Filter
@@ -900,6 +947,12 @@ export default function BuchhaltungPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={receipts.length > 0 && selectedReceipts.length === receipts.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead>Datei</TableHead>
                       <TableHead>Datum</TableHead>
                       <TableHead>Kategorie</TableHead>
@@ -910,6 +963,12 @@ export default function BuchhaltungPage() {
                   <TableBody>
                     {receipts.map((receipt) => (
                       <TableRow key={receipt.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedReceipts.includes(receipt.id)}
+                            onCheckedChange={() => toggleSelectOne(receipt.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center space-x-2">
                             <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
