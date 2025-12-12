@@ -157,7 +157,7 @@ export class ImmoscoutProvider implements RealEstateProvider {
         return [
             {
                 id: `is24-mock-${Date.now()}`,
-                title: `[SIMULATION] ${filter.propertyType === 'HOUSE' ? 'Haus' : 'Wohnung'} in ${filter.city || filter.zipCode || 'bester Lage'}`,
+                title: `SIMULATION: ${filter.propertyType === 'HOUSE' ? 'Haus' : 'Wohnung'} in ${filter.city || filter.zipCode || 'bester Lage'}`,
                 address: `${filter.zipCode || '10115'} ${filter.city || 'Berlin'}, Musterstraße 1`,
                 price: basePrice,
                 currency: 'EUR',

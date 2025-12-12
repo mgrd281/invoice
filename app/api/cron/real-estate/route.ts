@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
             // Notify start (Debugging)
             for (const user of settings.allowedUsers) {
-                await sendTelegramMessage(settings.botToken, user.telegramUserId, `🔎 Prüfe Angebote für: ${profile.name}...`)
+                await sendTelegramMessage(settings.botToken, user.telegramUserId, `🔎 Prüfe Angebote für: ${profile.name}...`, undefined)
             }
 
             // 6. Send Notifications & Mark as Seen
@@ -102,7 +102,7 @@ _Anbieter: ${listing.provider}_`
             } else {
                 // Notify no results (Debugging)
                 for (const user of settings.allowedUsers) {
-                    await sendTelegramMessage(settings.botToken, user.telegramUserId, `✅ Keine neuen Angebote für ${profile.name} gefunden.`)
+                    await sendTelegramMessage(settings.botToken, user.telegramUserId, `✅ Keine neuen Angebote für ${profile.name} gefunden.`, undefined)
                 }
             }
 

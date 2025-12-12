@@ -1,17 +1,22 @@
 import { prisma } from '@/lib/prisma'
 
-export async function sendTelegramMessage(token: string, chatId: number | string, text: string) {
+export async function sendTelegramMessage(token: string, chatId: number | string, text: string, parseMode: 'Markdown' | 'HTML' | undefined = 'Markdown') {
     const url = `https://api.telegram.org/bot${token}/sendMessage`
     try {
-        await fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: chatId,
                 text: text,
-                parse_mode: 'Markdown'
+                parse_mode: parseMode
             })
         })
+
+        if (!response.ok) {
+            const errorText = await response.text()
+            console.error('Telegram API Error:', response.status, errorText)
+        }
     } catch (error) {
         console.error('Failed to send Telegram message:', error)
     }
