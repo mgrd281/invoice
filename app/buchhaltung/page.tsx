@@ -347,6 +347,25 @@ export default function BuchhaltungPage() {
     }
   }
 
+  const handleDeleteReceipt = async (id: string) => {
+    if (!confirm('Möchten Sie diesen Beleg wirklich löschen?')) return
+
+    try {
+      const response = await authenticatedFetch(`/api/accounting/receipts/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        loadAccountingData()
+      } else {
+        alert('Fehler beim Löschen')
+      }
+    } catch (error) {
+      console.error('Error deleting receipt:', error)
+      alert('Fehler beim Löschen')
+    }
+  }
+
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -912,6 +931,14 @@ export default function BuchhaltungPage() {
                           </Button>
                           <Button variant="ghost" size="sm">
                             <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteReceipt(receipt.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
