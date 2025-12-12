@@ -214,7 +214,7 @@ export default function BuchhaltungPage() {
             // authenticatedFetch usually throws on error, but let's be sure
             if (!response.ok) {
               if (response.status === 401) {
-                window.location.href = '/login'
+                window.location.href = '/auth/login'
                 return // Stop execution to redirect
               }
               throw new Error(`Server responded with status ${response.status}`)
