@@ -191,12 +191,14 @@ export default function BuchhaltungPage() {
       const totalFiles = uploadFiles.length
       let processedCount = 0
 
+      const errors: string[] = []
+
       for (let i = 0; i < totalFiles; i += BATCH_SIZE) {
         const batch = uploadFiles.slice(i, i + BATCH_SIZE)
 
         await Promise.all(batch.map(async (file) => {
           try {
-            await authenticatedFetch('/api/accounting/receipts', {
+            const response = await authenticatedFetch('/api/accounting/receipts', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -208,8 +210,13 @@ export default function BuchhaltungPage() {
                 description: uploadMeta.description || file.name
               })
             })
-          } catch (e) {
+
+            // authenticatedFetch usually throws on error, but let's be sure
+            if (!response.ok) throw new Error(`Server responded with status ${response.status}`)
+
+          } catch (e: any) {
             console.error(`Failed to upload ${file.name}`, e)
+            errors.push(`${file.name}: ${e.message || 'Unknown error'}`)
           }
         }))
 
@@ -217,13 +224,20 @@ export default function BuchhaltungPage() {
         setUploadProgress(Math.round((processedCount / totalFiles) * 100))
       }
 
-      setUploadFiles([])
-      setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+      if (errors.length > 0) {
+        alert(`Fehler beim Hochladen von ${errors.length} Dateien:\n${errors.join('\n')}`)
+      } else {
+        // Only clear if all successful
+        setUploadFiles([])
+        setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+      }
+
       setUploadProgress(0)
       loadAccountingData()
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading receipts:', error)
+      alert(`Ein unerwarteter Fehler ist aufgetreten: ${error.message}`)
     } finally {
       setLoading(false)
       setUploadProgress(0)
