@@ -12,7 +12,14 @@ export async function PUT(
             return authResult.error
         }
 
-        const { organization } = authResult
+        const { user } = authResult
+        const organization = await prisma.organization.findFirst({
+            where: { users: { some: { id: user.id } } }
+        })
+
+        if (!organization) {
+            return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+        }
         const id = params.id
         const body = await request.json()
         const { date, description, category, netAmount, taxRate, supplier } = body
@@ -67,7 +74,14 @@ export async function DELETE(
             return authResult.error
         }
 
-        const { organization } = authResult
+        const { user } = authResult
+        const organization = await prisma.organization.findFirst({
+            where: { users: { some: { id: user.id } } }
+        })
+
+        if (!organization) {
+            return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+        }
         const id = params.id
 
         // Verify ownership

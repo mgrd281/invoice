@@ -1307,10 +1307,12 @@ export default function BuchhaltungPage() {
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-1">
                             {expense.receiptUrl && (
-                              <Button variant="ghost" size="sm" asChild>
-                                <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer">
-                                  <Eye className="w-4 h-4 text-blue-500" />
-                                </a>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(expense.receiptUrl, '_blank')}
+                              >
+                                <Eye className="w-4 h-4 text-blue-500" />
                               </Button>
                             )}
                             <Button variant="ghost" size="sm" onClick={() => handleEditExpense(expense)}>
