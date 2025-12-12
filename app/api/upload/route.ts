@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
 import { getCompanySettings } from '@/lib/company-settings'
+import * as XLSX from 'xlsx'
 import {
   DocumentKind,
   DocumentStatus,
@@ -172,21 +173,50 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Check if file is CSV
-    if (!file.name.endsWith('.csv')) {
+    // Check if file is CSV, Excel or Numbers
+    const isCsv = file.name.endsWith('.csv')
+    const isExcel = file.name.endsWith('.xlsx')
+    const isNumbers = file.name.endsWith('.numbers')
+
+    if (!isCsv && !isExcel && !isNumbers) {
       return NextResponse.json(
-        { error: 'Nur CSV-Dateien sind erlaubt' },
+        { error: 'Nur CSV, Excel (.xlsx) oder Numbers (.numbers) Dateien sind erlaubt' },
         { status: 400 }
       )
     }
 
     // Read file content
-    const fileContent = await file.text()
+    let fileContent = ''
+
+    if (isExcel || isNumbers) {
+      try {
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const workbook = XLSX.read(buffer, { type: 'buffer' })
+
+        if (workbook.SheetNames.length === 0) {
+          throw new Error('Keine Tabellenblätter gefunden')
+        }
+
+        const firstSheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[firstSheetName]
+        fileContent = XLSX.utils.sheet_to_csv(worksheet)
+      } catch (error) {
+        console.error('Error parsing spreadsheet:', error)
+        return NextResponse.json(
+          { error: 'Fehler beim Lesen der Excel/Numbers Datei. Bitte stellen Sie sicher, dass die Datei nicht beschädigt ist.' },
+          { status: 400 }
+        )
+      }
+    } else {
+      fileContent = await file.text()
+    }
+
     const lines = fileContent.split('\n').filter(line => line.trim())
 
     if (lines.length < 2) {
       return NextResponse.json(
-        { error: 'CSV-Datei ist leer oder hat keine Daten' },
+        { error: 'Datei ist leer oder hat keine Daten' },
         { status: 400 }
       )
     }

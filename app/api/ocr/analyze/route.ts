@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
 import OpenAI from 'openai'
 
+// Polyfill DOMMatrix for pdf-parse in Node environment
+if (typeof DOMMatrix === 'undefined') {
+    // @ts-ignore
+    global.DOMMatrix = class DOMMatrix {
+        a: number; b: number; c: number; d: number; e: number; f: number;
+        constructor() {
+            this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
+        }
+        translate() { return this; }
+        scale() { return this; }
+        toString() { return 'matrix(1, 0, 0, 1, 0, 0)'; }
+    }
+}
+
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {

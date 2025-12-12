@@ -38,16 +38,21 @@ export default function UploadPage() {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0]
-      if (droppedFile.type === 'text/csv' || droppedFile.name.endsWith('.csv')) {
+      const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/x-iwork-numbers-sffnumbers']
+      const validExtensions = ['.csv', '.xlsx', '.numbers']
+
+      const isValid = validTypes.includes(droppedFile.type) || validExtensions.some(ext => droppedFile.name.toLowerCase().endsWith(ext))
+
+      if (isValid) {
         setFile(droppedFile)
         setUploadStatus({ type: 'idle' })
       } else {
-        setUploadStatus({ 
-          type: 'error', 
-          message: 'Bitte wählen Sie eine CSV-Datei aus.' 
+        setUploadStatus({
+          type: 'error',
+          message: 'Bitte wählen Sie eine CSV, Excel oder Numbers Datei aus.'
         })
       }
     }
@@ -75,7 +80,7 @@ export default function UploadPage() {
         // Reset file input
         const fileInput = document.getElementById('file-input') as HTMLInputElement
         if (fileInput) fileInput.value = ''
-        
+
         // Trigger invoice list refresh
         console.log('CSV upload successful, triggering invoice list refresh...')
         window.dispatchEvent(new CustomEvent('invoicesUpdated'))
@@ -131,33 +136,31 @@ export default function UploadPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   CSV-Datei auswählen
                 </label>
-                
+
                 {/* Hidden file input */}
                 <input
                   id="file-input"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.numbers,.xlsx"
                   onChange={handleFileChange}
                   className="hidden"
-                  aria-label="CSV-Datei auswählen"
+                  aria-label="Datei auswählen"
                 />
-                
+
                 {/* Custom file upload button */}
-                <div 
+                <div
                   onClick={() => document.getElementById('file-input')?.click()}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                    dragActive 
-                      ? 'border-blue-400 bg-blue-50' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragActive
+                    ? 'border-blue-400 bg-blue-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                    }`}
                 >
-                  <Upload className={`h-8 w-8 mx-auto mb-2 ${
-                    dragActive ? 'text-blue-500' : 'text-gray-400'
-                  }`} />
+                  <Upload className={`h-8 w-8 mx-auto mb-2 ${dragActive ? 'text-blue-500' : 'text-gray-400'
+                    }`} />
                   <p className="text-sm text-gray-600">
                     <span className="font-medium text-blue-600 hover:text-blue-500">
                       Datei auswählen
@@ -165,7 +168,7 @@ export default function UploadPage() {
                     {' '}oder hier ablegen
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Nur CSV-Dateien werden unterstützt
+                    CSV, Numbers oder Excel Dateien werden unterstützt
                   </p>
                 </div>
               </div>
