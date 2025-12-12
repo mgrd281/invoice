@@ -1,4 +1,4 @@
-```typescript
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateArizonaPDFBuffer } from '@/lib/server-pdf-generator'
@@ -33,29 +33,29 @@ import { loadInvoicesFromDisk } from '@/lib/server-storage'
 async function getInvoiceStats() {
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
-    
+
     const startOfYesterday = new Date(startOfDay)
     startOfYesterday.setDate(startOfDay.getDate() - 1)
     const endOfYesterday = new Date(startOfDay)
     endOfYesterday.setMilliseconds(-1)
 
     const startOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth(), 1)
-    
+
     const lastMonthStart = new Date(startOfDay.getFullYear(), startOfDay.getMonth() - 1, 1)
     const lastMonthEnd = new Date(startOfMonth)
     lastMonthEnd.setMilliseconds(-1)
-    
+
     const thirtyDaysAgo = new Date(startOfDay)
     thirtyDaysAgo.setDate(startOfDay.getDate() - 30)
 
     // Fetch ALL relevant data (optimized)
     const allInvoices = await prisma.invoice.findMany({
-        where: { 
+        where: {
             createdAt: { gte: lastMonthStart },
             status: { notIn: ['CANCELLED', 'DRAFT'] }
         },
-        include: { 
-            items: true, 
+        include: {
+            items: true,
             customer: true,
             payments: true // Include payments to check for refunds
         }
@@ -75,7 +75,7 @@ async function getInvoiceStats() {
         // 3. Calculate based on refundAmount field
         const gross = Number(inv.totalGross) || 0
         const refund = Number(inv.refundAmount) || 0
-        
+
         // If refund equals or exceeds gross, it's fully refunded
         if (refund >= gross) return 0;
 
@@ -115,7 +115,7 @@ async function getInvoiceStats() {
             const itemTotal = Number(item.grossAmount)
             if (itemTotal > 0) {
                 const current = productMap.get(item.description) || { count: 0, rev: 0 }
-                productMap.set(item.description, { 
+                productMap.set(item.description, {
                     count: current.count + Number(item.quantity),
                     rev: current.rev + itemTotal
                 })
@@ -125,7 +125,7 @@ async function getInvoiceStats() {
     const topProducts = Array.from(productMap.entries())
         .sort((a, b) => b[1].rev - a[1].rev)
         .slice(0, 5)
-        .map(([name, data]) => `- ${ name }: ${ data.count } x(€${ data.rev.toFixed(2) })`)
+        .map(([name, data]) => `- ${name}: ${data.count} x(€${data.rev.toFixed(2)})`)
         .join('\n')
 
     // 3. Top Customers (All time in selection)
@@ -137,14 +137,14 @@ async function getInvoiceStats() {
     const topCustomers = Array.from(customerMap.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
-        .map(([name, total]) => `- ${ name }: €${ total.toFixed(2) } `)
+        .map(([name, total]) => `- ${name}: €${total.toFixed(2)} `)
         .join('\n')
 
     // 4. Recent Orders
     const recentOrders = validInvoices
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5)
-        .map(inv => `- ${ new Date(inv.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) }: €${ getRealRevenue(inv).toFixed(2) } (${ inv.customer?.name || 'Gast' })`)
+        .map(inv => `- ${new Date(inv.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}: €${getRealRevenue(inv).toFixed(2)} (${inv.customer?.name || 'Gast'})`)
         .join('\n')
 
     return { stats, topProducts, topCustomers, recentOrders }
@@ -182,14 +182,14 @@ async function handleSalesToday(token: string, chatId: number | string) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
 
-    let message = `📊 * Bericht für heute * (${ startOfDay.toLocaleDateString('de-DE') }) \n\n`
-    message += `💰 * Umsatz:* €${ totalSales.toFixed(2) } \n`
-    message += `📦 * Bestellungen:* ${ count } \n\n`
+    let message = `📊 * Bericht für heute * (${startOfDay.toLocaleDateString('de-DE')}) \n\n`
+    message += `💰 * Umsatz:* €${totalSales.toFixed(2)} \n`
+    message += `📦 * Bestellungen:* ${count} \n\n`
 
     if (topProducts.length > 0) {
         message += `🏆 * Top Produkte:*\n`
         topProducts.forEach((p, i) => {
-            message += `${ i + 1 }. ${ p[0] } (${ p[1] }x) \n`
+            message += `${i + 1}. ${p[0]} (${p[1]}x) \n`
         })
     } else {
         message += `_Keine Verkäufe heute._`
@@ -216,7 +216,7 @@ async function handlePdfInvoices(token: string, chatId: number | string) {
     for (const invoice of invoices) {
         const buffer = await generateArizonaPDFBuffer(invoice.id)
         if (buffer) {
-            await sendTelegramDocument(token, chatId, buffer, `Rechnung_${ invoice.invoiceNumber }.pdf`, `Rechnung ${ invoice.invoiceNumber } `)
+            await sendTelegramDocument(token, chatId, buffer, `Rechnung_${invoice.invoiceNumber}.pdf`, `Rechnung ${invoice.invoiceNumber} `)
         }
     }
 }
@@ -254,8 +254,8 @@ async function handleTopProducts(token: string, chatId: number | string) {
 
     if (topProducts.length > 0) {
         topProducts.forEach((p, i) => {
-            message += `${ i + 1 }. * ${ p[0] }*\n`
-            message += `   📦 ${ p[1].count } Stk. | 💰 €${ p[1].revenue.toFixed(2) } \n`
+            message += `${i + 1}. * ${p[0]}*\n`
+            message += `   📦 ${p[1].count} Stk. | 💰 €${p[1].revenue.toFixed(2)} \n`
         })
     } else {
         message += `_Keine Daten verfügbar._`
@@ -264,83 +264,6 @@ async function handleTopProducts(token: string, chatId: number | string) {
     await sendTelegramMessage(token, chatId, message)
 }
 
-export async function POST(request: NextRequest) {
-    try {
-        const update = await request.json()
-        const message = update.message
-
-        if (!message || !message.text) {
-            return NextResponse.json({ ok: true })
-        }
-
-        const chatId = message.chat.id
-        const userId = message.from.id.toString()
-        const text = message.text.trim()
-
-        // Fetch Settings
-        const settings = await prisma.telegramSettings.findFirst({
-            include: { allowedUsers: true }
-        })
-
-        if (!settings || !settings.isEnabled || !settings.botToken) {
-            return NextResponse.json({ ok: true })
-        }
-
-        // Auth Check
-        const isAllowed = settings.allowedUsers.some(u => u.telegramUserId === userId)
-        if (!isAllowed) {
-            await sendTelegramMessage(settings.botToken, chatId, `⛔ Zugriff verweigert.Ihre ID: \`${userId}\``)
-return NextResponse.json({ ok: true })
-        }
-
-// Log Command (Fire and forget)
-prisma.telegramLog.create({
-    data: {
-        organizationId: settings.organizationId,
-        telegramUserId: userId,
-        command: text,
-        status: 'RECEIVED'
-    }
-}).catch(console.error)
-
-// Route Commands
-const lowerText = text.toLowerCase()
-
-if (lowerText.includes('umsatz heute')) {
-    await handleSalesToday(settings.botToken, chatId)
-}
-else if (lowerText.includes('rechnungen pdf')) {
-    await handlePdfInvoices(settings.botToken, chatId)
-}
-else if (lowerText.includes('top produkte')) {
-    await handleTopProducts(settings.botToken, chatId)
-}
-else if (lowerText === '/start' || lowerText === 'start') {
-    await sendTelegramMessage(settings.botToken, chatId, `🤖 *RechnungsProfi Bot*
-
-Verfügbare Befehle:
-🔹 *Umsatz heute* (Zeigt den heutigen Umsatz)
-🔹 *Rechnungen PDF* (Sendet die letzten Rechnungen als PDF)
-🔹 *Top Produkte* (Zeigt die Bestseller der letzten 30 Tage)
-
-💡 *Du kannst mir auch normale Fragen stellen!*
-Z.B. "Wie lief der letzte Monat?" oder "Welches Produkt verkauft sich am schlechtesten?"
-`)
-}
-else {
-    // Intelligent AI Response for everything else
-    await handleAiChat(settings.botToken, chatId, text)
-}
-
-    } catch (error) {
-    console.error('Telegram Webhook Error:', error)
-}
-
-return NextResponse.json({ ok: true })
-}
-
-// AI Chat Handler
-import OpenAI from 'openai'
 
 async function handleAiChat(token: string, chatId: number | string, userMessage: string) {
     try {

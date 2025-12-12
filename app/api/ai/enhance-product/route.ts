@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
+export const dynamic = 'force-dynamic'
+
+// Lazy initialization of OpenAI client
+let openaiClient: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI {
+    if (!openaiClient) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set')
+        }
+        openaiClient = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        })
+    }
+    return openaiClient
+}
 
 export const maxDuration = 60; // Allow up to 60 seconds for AI processing
 
@@ -14,6 +27,10 @@ export async function POST(request: NextRequest) {
 
         if (!product) {
             return NextResponse.json({ error: 'Product data is required' }, { status: 400 })
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({ error: 'OpenAI API key is not configured' }, { status: 500 })
         }
 
         // Strip HTML from description to force AI to focus on content, not structure
@@ -76,6 +93,7 @@ Kategorie: ${product.product_type || 'General'}
 
 Erstelle jetzt das JSON-Objekt mit dem NEUEN Text.`
 
+        const openai = getOpenAIClient()
         const completion = await openai.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
             model: 'gpt-4o',

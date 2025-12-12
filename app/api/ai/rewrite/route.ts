@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// Initialize OpenAI client
-// Note: This requires OPENAI_API_KEY environment variable
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
+export const dynamic = 'force-dynamic'
+
+// Lazy initialization of OpenAI client
+let openaiClient: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI {
+    if (!openaiClient) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set')
+        }
+        openaiClient = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        })
+    }
+    return openaiClient
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -33,6 +44,7 @@ export async function POST(request: NextRequest) {
             ${text}`
         }
 
+        const openai = getOpenAIClient()
         let completion;
         try {
             completion = await openai.chat.completions.create({
