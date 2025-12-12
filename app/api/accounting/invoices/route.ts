@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
+import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth-middleware'
 import { AccountingInvoice, InvoiceStatus } from '@/lib/accounting-types'
-
-// Global storage for invoices (in production, use database)
-declare global {
-  var invoices: any[] | undefined
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +10,7 @@ export async function GET(request: NextRequest) {
     if ('error' in authResult) {
       return authResult.error
     }
+    const { user } = authResult
 
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
@@ -22,62 +19,104 @@ export async function GET(request: NextRequest) {
     const minAmount = searchParams.get('minAmount')
     const maxAmount = searchParams.get('maxAmount')
 
-    // Get invoices from global storage
-    let invoices = global.invoices || []
+    // Find organization
+    const organization = await prisma.organization.findFirst({
+      where: { users: { some: { id: user.id } } }
+    }) || await prisma.organization.findFirst()
 
-    // Convert to accounting format
-    const accountingInvoices: AccountingInvoice[] = invoices.map(invoice => ({
-      id: invoice.id,
-      invoiceNumber: invoice.number || invoice.invoiceNumber,
-      customerName: invoice.customerName || invoice.customer?.name || 'Unbekannter Kunde',
-      customerTaxId: invoice.customer?.taxId,
-      date: invoice.date,
-      dueDate: invoice.dueDate,
-      status: mapInvoiceStatus(invoice.status),
-      subtotal: invoice.subtotal || 0,
-      taxRate: invoice.taxRate || 19,
-      taxAmount: invoice.taxAmount || 0,
-      totalAmount: invoice.total || invoice.totalAmount || 0,
-      paidDate: invoice.paidDate,
-      category: 'service', // Default category
-      description: invoice.items?.[0]?.description || 'Dienstleistung',
-      accountingAccount: '8400', // Default revenue account
-      costCenter: '',
-      bookingText: `Rechnung ${invoice.number || invoice.invoiceNumber}`
-    }))
+    if (!organization) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
 
-    // Apply filters
-    let filteredInvoices = accountingInvoices
+    // Build query
+    const where: any = {
+      organizationId: organization.id
+    }
 
-    // Date filter
     if (startDate) {
-      filteredInvoices = filteredInvoices.filter(inv => inv.date >= startDate)
+      where.issueDate = { ...where.issueDate, gte: new Date(startDate) }
     }
     if (endDate) {
-      filteredInvoices = filteredInvoices.filter(inv => inv.date <= endDate)
+      where.issueDate = { ...where.issueDate, lte: new Date(endDate) }
     }
 
-    // Status filter
+    // Status filter (mapped from frontend 'bezahlt' etc to Prisma 'PAID' etc)
     if (statusFilter && statusFilter !== '') {
       const statusArray = statusFilter.split(',') as InvoiceStatus[]
-      filteredInvoices = filteredInvoices.filter(inv => statusArray.includes(inv.status))
+      // We need to handle 'offen' mapping to multiple statuses (DRAFT, SENT)
+      const prismaStatuses: string[] = []
+
+      statusArray.forEach(s => {
+        if (s === 'offen') {
+          prismaStatuses.push('DRAFT', 'SENT')
+        } else if (s === 'bezahlt') {
+          prismaStatuses.push('PAID')
+        } else if (s === 'überfällig') {
+          prismaStatuses.push('OVERDUE')
+        } else if (s === 'storniert' || s === 'erstattet') {
+          prismaStatuses.push('CANCELLED')
+        }
+      })
+
+      if (prismaStatuses.length > 0) {
+        where.status = { in: prismaStatuses }
+      }
     }
 
-    // Amount filter
     if (minAmount) {
-      filteredInvoices = filteredInvoices.filter(inv => inv.totalAmount >= parseFloat(minAmount))
+      where.totalGross = { ...where.totalGross, gte: parseFloat(minAmount) }
     }
     if (maxAmount) {
-      filteredInvoices = filteredInvoices.filter(inv => inv.totalAmount <= parseFloat(maxAmount))
+      where.totalGross = { ...where.totalGross, lte: parseFloat(maxAmount) }
     }
 
-    // Sort by date (newest first)
-    filteredInvoices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    // Fetch invoices
+    const invoices = await prisma.invoice.findMany({
+      where,
+      include: {
+        customer: true,
+        items: true,
+        payments: true
+      },
+      orderBy: { issueDate: 'desc' }
+    })
+
+    // Convert to accounting format
+    const accountingInvoices: AccountingInvoice[] = invoices.map(invoice => {
+      const status = mapPrismaStatusToFrontend(invoice.status)
+
+      // Determine paid date
+      let paidDate: string | undefined
+      if (status === 'bezahlt') {
+        const payment = invoice.payments.find(p => p.status === 'COMPLETED')
+        paidDate = payment ? payment.paymentDate.toISOString() : invoice.updatedAt.toISOString()
+      }
+
+      return {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        customerName: invoice.customer?.name || 'Unbekannter Kunde',
+        customerTaxId: invoice.customer?.taxId || undefined,
+        date: invoice.issueDate.toISOString(),
+        dueDate: invoice.dueDate.toISOString(),
+        status: status,
+        subtotal: Number(invoice.totalNet),
+        taxRate: 19, // Default or derived
+        taxAmount: Number(invoice.totalTax),
+        totalAmount: Number(invoice.totalGross),
+        paidDate: paidDate,
+        category: 'revenue',
+        description: invoice.items?.[0]?.description || 'Rechnung',
+        accountingAccount: '8400', // Default revenue account
+        costCenter: '',
+        bookingText: `Rechnung ${invoice.invoiceNumber}`
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      invoices: filteredInvoices,
-      total: filteredInvoices.length
+      invoices: accountingInvoices,
+      total: accountingInvoices.length
     })
 
   } catch (error) {
@@ -89,14 +128,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function mapInvoiceStatus(status: string): InvoiceStatus {
-  const statusMap: { [key: string]: InvoiceStatus } = {
-    'Bezahlt': 'bezahlt',
-    'Offen': 'offen',
-    'Erstattet': 'erstattet',
-    'Storniert': 'storniert',
-    'Überfällig': 'überfällig'
+function mapPrismaStatusToFrontend(status: string): InvoiceStatus {
+  const map: Record<string, InvoiceStatus> = {
+    'PAID': 'bezahlt',
+    'SENT': 'offen',
+    'DRAFT': 'offen',
+    'OVERDUE': 'überfällig',
+    'CANCELLED': 'storniert'
   }
-
-  return statusMap[status] || 'offen'
+  return map[status] || 'offen'
 }
