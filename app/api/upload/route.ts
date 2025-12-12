@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
         const prefix = getDocumentPrefix(documentKind)
         let documentNumber = firstOrder.orderNumber
 
-        if (!documentNumber || documentNumber.startsWith('ORD-') || !documentNumber.startsWith(prefix)) {
+        if (!documentNumber || documentNumber.startsWith('ORD-')) {
           const count = invoices.filter((inv: any) => inv.number?.startsWith(prefix)).length + 1
           documentNumber = `${prefix}-2024-${String(count).padStart(3, '0')}`
         }
