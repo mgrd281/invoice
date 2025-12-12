@@ -78,7 +78,8 @@ export default function BuchhaltungPage() {
 
   // New states for Voranmeldung
   const [newIncome, setNewIncome] = useState({ description: '', amount: '', date: new Date().toISOString().split('T')[0] })
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadFiles, setUploadFiles] = useState<File[]>([])
+  const [isDragging, setIsDragging] = useState(false)
   const [uploadMeta, setUploadMeta] = useState({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
 
   // Filter states
@@ -178,32 +179,57 @@ export default function BuchhaltungPage() {
 
   const handleUploadReceipt = async () => {
     try {
-      if (!uploadFile) return
+      if (uploadFiles.length === 0) return
 
-      // In a real app, use FormData and upload to a storage service
-      // Here we simulate it or use a simple base64/text approach if small
-      // For now, we'll just store metadata and a fake URL
+      setLoading(true)
 
-      const response = await authenticatedFetch('/api/accounting/receipts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: uploadFile.name,
-          url: `/uploads/${uploadFile.name}`, // Mock URL
-          size: uploadFile.size,
-          mimeType: uploadFile.type,
-          ...uploadMeta
+      // Upload each file
+      for (const file of uploadFiles) {
+        const response = await authenticatedFetch('/api/accounting/receipts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            url: `/uploads/${file.name}`, // Mock URL
+            size: file.size,
+            mimeType: file.type,
+            ...uploadMeta,
+            description: uploadMeta.description || file.name // Use filename if no description
+          })
         })
-      })
-
-      if (response.ok) {
-        setUploadFile(null)
-        setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
-        loadAccountingData()
       }
+
+      setUploadFiles([])
+      setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+      loadAccountingData()
+
     } catch (error) {
-      console.error('Error uploading receipt:', error)
+      console.error('Error uploading receipts:', error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setUploadFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)])
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setUploadFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handlePeriodChange = (period: AccountingPeriod) => {
@@ -258,7 +284,14 @@ export default function BuchhaltungPage() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `buchhaltung-${filter.startDate}-${filter.endDate}.${format}`
+        const extensionMap: Record<string, string> = {
+          csv: 'csv',
+          excel: 'xls',
+          pdf: 'html', // API returns HTML
+          datev: 'csv',
+          zip: 'zip'
+        }
+        a.download = `buchhaltung-${filter.startDate}-${filter.endDate}.${extensionMap[format] || format}`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -786,43 +819,67 @@ export default function BuchhaltungPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div
-                        className="border-2 border-dashed border-blue-200 rounded-xl bg-blue-50/50 p-8 text-center hover:bg-blue-50 transition-colors cursor-pointer"
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-blue-200 bg-blue-50/50 hover:bg-blue-50'
+                          }`}
+                        onDragOver={onDragOver}
+                        onDragLeave={onDragLeave}
+                        onDrop={onDrop}
                         onClick={() => document.getElementById('file-upload')?.click()}
                       >
                         <input
                           id="file-upload"
                           type="file"
+                          multiple
                           className="hidden"
-                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              setUploadFiles(prev => [...prev, ...Array.from(e.target.files!)])
+                            }
+                          }}
                           accept=".pdf,.jpg,.png,.docx,.xlsx"
                         />
-                        {uploadFile ? (
-                          <div className="space-y-2">
-                            <div className="h-12 w-12 bg-blue-100 rounded-lg mx-auto flex items-center justify-center">
-                              <FileText className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <p className="font-medium text-blue-900 truncate px-2">{uploadFile.name}</p>
-                            <p className="text-xs text-blue-600">{(uploadFile.size / 1024).toFixed(0)} KB</p>
+
+                        <div className="space-y-2">
+                          <div className="h-12 w-12 bg-white rounded-full shadow-sm mx-auto flex items-center justify-center">
+                            <Upload className={`h-6 w-6 ${isDragging ? 'text-blue-600' : 'text-blue-400'}`} />
                           </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <div className="h-12 w-12 bg-white rounded-full shadow-sm mx-auto flex items-center justify-center">
-                              <Upload className="h-6 w-6 text-blue-400" />
-                            </div>
-                            <p className="font-medium text-gray-900">Datei auswählen</p>
-                            <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX</p>
-                          </div>
-                        )}
+                          <p className="font-medium text-gray-900">
+                            {isDragging ? 'Dateien hier ablegen' : 'Dateien auswählen oder hierher ziehen'}
+                          </p>
+                          <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX (Unbegrenzt)</p>
+                        </div>
                       </div>
 
-                      {uploadFile && (
+                      {uploadFiles.length > 0 && (
                         <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                          <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
+                            {uploadFiles.map((file, index) => (
+                              <div key={index} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                                <div className="flex items-center truncate">
+                                  <FileText className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+                                  <span className="truncate max-w-[150px]">{file.name}</span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    removeFile(index)
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+
                           <div className="space-y-1">
-                            <Label className="text-xs">Beschreibung</Label>
+                            <Label className="text-xs">Beschreibung (Optional für alle)</Label>
                             <Input
                               value={uploadMeta.description}
                               onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
-                              placeholder="Was wurde gekauft?"
+                              placeholder="Gemeinsame Beschreibung..."
                             />
                           </div>
                           <div className="space-y-1">
@@ -842,7 +899,7 @@ export default function BuchhaltungPage() {
                             </Select>
                           </div>
                           <Button onClick={handleUploadReceipt} className="w-full bg-blue-600 hover:bg-blue-700">
-                            Hochladen speichern
+                            {uploadFiles.length} Dateien hochladen
                           </Button>
                         </div>
                       )}
