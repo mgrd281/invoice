@@ -40,6 +40,7 @@ export class ImmoscoutProvider implements RealEstateProvider {
         }
         */
 
+        /*
         try {
             // 2. Get Coordinates (using OpenStreetMap Nominatim)
             const coords = await this.getCoordinates(filter.zipCode, filter.city)
@@ -85,6 +86,7 @@ export class ImmoscoutProvider implements RealEstateProvider {
             console.error('ImmoScout Search Exception:', error)
             return this.getMockData(filter)
         }
+        */
     }
 
     private async getCoordinates(zip?: string, city?: string): Promise<{ lat: number, lon: number } | null> {
