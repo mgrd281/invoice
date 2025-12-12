@@ -599,6 +599,76 @@ _ID: ${expense.expenseNumber}_`
     }
 }
 
+// Command: Handle Support Request
+async function handleSupportRequest(token: string, chatId: number | string, query: string) {
+    try {
+        await sendTelegramMessage(token, chatId, "🔍 Suche Daten und formuliere Antwort... ⏳")
+
+        // 1. Search for context in DB (Orders, Keys, Customers)
+        // Simple keyword search for Order IDs (e.g., "RE-2024-001") or Email addresses
+        const orderMatch = query.match(/RE-\d{4}-\d+/i) || query.match(/#\d+/);
+        let contextData = "Keine spezifischen Bestelldaten gefunden.";
+
+        if (orderMatch) {
+            const searchTerm = orderMatch[0].replace('#', '');
+            const invoice = await prisma.invoice.findFirst({
+                where: {
+                    OR: [
+                        { invoiceNumber: { contains: searchTerm } },
+                        { orderId: { contains: searchTerm } }
+                    ]
+                },
+                include: { items: true, customer: true, payments: true }
+            })
+
+            if (invoice) {
+                contextData = `
+                Gefundene Bestellung: ${invoice.invoiceNumber}
+                Kunde: ${invoice.customer.name} (${invoice.customer.email})
+                Status: ${invoice.status}
+                Bezahlt: ${invoice.payments.some(p => p.status === 'COMPLETED') ? 'JA' : 'NEIN'}
+                Produkte: ${invoice.items.map(i => i.description).join(', ')}
+                `
+            }
+        }
+
+        // 2. Generate Draft with GPT-4o
+        const openai = getOpenAIClient()
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `Du bist ein freundlicher, professioneller Kundensupport-Mitarbeiter.
+                    Deine Aufgabe: Formuliere eine Antwort-E-Mail auf die Kundenanfrage.
+                    
+                    KONTEXT DATEN AUS DATENBANK:
+                    ${contextData}
+                    
+                    REGELN:
+                    - Sei höflich und hilfsbereit.
+                    - Wenn der Kunde bezahlt hat aber keinen Key hat, entschuldige dich und sage, wir senden ihn sofort.
+                    - Wenn nicht bezahlt, bitte freundlich um Zahlung.
+                    - Antworte direkt mit dem E-Mail-Text (Betreff + Inhalt).`
+                },
+                {
+                    role: "user",
+                    content: `Kundenanfrage: "${query}"`
+                }
+            ],
+            max_tokens: 500
+        })
+
+        const draft = completion.choices[0]?.message?.content || "Konnte keinen Entwurf erstellen."
+
+        await sendTelegramMessage(token, chatId, `📝 *Entwurf für deine Antwort:*\n\n${draft}`)
+
+    } catch (error) {
+        console.error("Support request failed:", error)
+        await sendTelegramMessage(token, chatId, "❌ Fehler beim Erstellen der Antwort.")
+    }
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
@@ -640,7 +710,14 @@ export async function POST(request: NextRequest) {
         // 2. Handle Text Commands
         const lowerText = text.toLowerCase()
 
-        if (lowerText.includes('umsatz heute')) {
+        if (lowerText.startsWith('/support') || lowerText.startsWith('support')) {
+            const query = text.replace(/^\/?support\s*/i, '')
+            if (query.length < 5) {
+                await sendTelegramMessage(settings.botToken, chatId, "ℹ️ Bitte gib die Kundenanfrage ein. Bsp: `/support Kunde X hat Key nicht erhalten`")
+            } else {
+                await handleSupportRequest(settings.botToken, chatId, query)
+            }
+        } else if (lowerText.includes('umsatz heute')) {
             await handleSalesToday(settings.botToken, chatId)
         } else if (lowerText.includes('rechnungen pdf')) {
             await handlePdfInvoices(settings.botToken, chatId)
@@ -653,7 +730,8 @@ export async function POST(request: NextRequest) {
                 "📊 'Umsatz heute'\n" +
                 "📄 'Rechnungen PDF'\n" +
                 "🏆 'Top Produkte'\n" +
-                "📸 *Sende mir einfach ein Foto* von einem Beleg, um ihn zu speichern!"
+                "🆘 '/support [Anfrage]' -> KI schreibt Antwort\n" +
+                "📸 *Sende ein Foto* für Beleg-Scan!"
             )
         } else {
             // Intelligent AI Response for everything else
