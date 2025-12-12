@@ -226,17 +226,8 @@ export async function DELETE(
       )
     }
 
-    // Check status
-    if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
-      return NextResponse.json(
-        {
-          error: 'Löschen nicht erlaubt',
-          message: `Rechnung ist ${mapPrismaStatusToFrontend(invoice.status)}. Löschen ist nicht erlaubt.`,
-          code: 'LOCKED_INVOICE'
-        },
-        { status: 409 }
-      )
-    }
+    // Check status - Restriction removed as per user request
+    // if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') { ... }
 
     // Hard delete for now as we don't have deletedAt
     await prisma.invoice.delete({
