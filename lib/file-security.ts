@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { validateFileAccess, getUserStoragePath } from './file-manager'
 
 // Benutzerinformationen aus JWT-Token extrahieren
-export function extractUserFromRequest(request: NextRequest): { userId: number; email: string; role: string } | null {
+export function extractUserFromRequest(request: NextRequest): { userId: string; email: string; role: string } | null {
   try {
     const token = request.cookies.get('auth-token')?.value
 
@@ -16,7 +16,7 @@ export function extractUserFromRequest(request: NextRequest): { userId: number; 
 
     if (decoded.exp && decoded.exp > Math.floor(Date.now() / 1000)) {
       return {
-        userId: decoded.userId,
+        userId: String(decoded.userId), // Ensure it's a string
         email: decoded.email,
         role: decoded.role
       }
@@ -31,7 +31,7 @@ export function extractUserFromRequest(request: NextRequest): { userId: number; 
 
 // Dateizugriffsberechtigungen prüfen
 export function checkFilePermission(
-  userId: number,
+  userId: string,
   filePath: string,
   operation: 'read' | 'write' | 'delete'
 ): { allowed: boolean; reason?: string } {
@@ -79,7 +79,7 @@ export function checkFilePermission(
 }
 
 // Speicherplatzbeschränkungen prüfen
-export function checkStorageQuota(userId: number, fileSize: number): { allowed: boolean; reason?: string } {
+export function checkStorageQuota(userId: string, fileSize: number): { allowed: boolean; reason?: string } {
   // Maximal 100 MB pro Benutzer (anpassbar)
   const MAX_STORAGE_MB = 100
   const MAX_STORAGE_BYTES = MAX_STORAGE_MB * 1024 * 1024
@@ -123,7 +123,7 @@ export function checkFileType(fileName: string, allowedTypes?: string[]): { allo
 
 // Sicherheitsereignisse protokollieren
 export function logSecurityEvent(
-  userId: number,
+  userId: string,
   operation: string,
   filePath: string,
   success: boolean,
@@ -146,7 +146,7 @@ export function logSecurityEvent(
 
 // Umfassende Sicherheitsprüfung vor Operationen
 export function performSecurityCheck(
-  userId: number,
+  userId: string,
   fileName: string,
   filePath: string,
   operation: 'read' | 'write' | 'delete',
