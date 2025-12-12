@@ -80,7 +80,7 @@ export default function BuchhaltungPage() {
   const [newIncome, setNewIncome] = useState({ description: '', amount: '', date: new Date().toISOString().split('T')[0] })
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
-  const [uploadMeta, setUploadMeta] = useState({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+  const [uploadMeta, setUploadMeta] = useState({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0], amount: '' })
 
   // Filter states
   const [filter, setFilter] = useState<AccountingFilter>({
@@ -207,7 +207,8 @@ export default function BuchhaltungPage() {
                 size: file.size,
                 mimeType: file.type,
                 ...uploadMeta,
-                description: uploadMeta.description || file.name
+                description: uploadMeta.description || file.name,
+                amount: uploadMeta.amount ? parseFloat(uploadMeta.amount) : undefined
               })
             })
 
@@ -235,7 +236,7 @@ export default function BuchhaltungPage() {
       } else {
         // Only clear if all successful
         setUploadFiles([])
-        setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0] })
+        setUploadMeta({ description: '', category: 'EXPENSE', date: new Date().toISOString().split('T')[0], amount: '' })
       }
 
       setUploadProgress(0)
@@ -710,6 +711,16 @@ export default function BuchhaltungPage() {
                         value={uploadMeta.description}
                         onChange={(e) => setUploadMeta({ ...uploadMeta, description: e.target.value })}
                         placeholder="Gemeinsame Beschreibung..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Betrag (€) (Optional)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={uploadMeta.amount}
+                        onChange={(e) => setUploadMeta({ ...uploadMeta, amount: e.target.value })}
+                        placeholder="0.00"
                       />
                     </div>
                     <div className="space-y-1">

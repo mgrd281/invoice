@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         const { user } = authResult
 
         const body = await request.json()
-        const { filename, url, date, description, category, mimeType, size } = body
+        const { filename, url, date, description, category, mimeType, size, amount } = body
 
         const organization = await prisma.organization.findFirst({
             where: { users: { some: { id: user.id } } }
@@ -76,6 +76,40 @@ export async function POST(request: NextRequest) {
                 size
             }
         })
+
+        // If amount is provided, create corresponding accounting entry
+        if (amount) {
+            const amountValue = parseFloat(amount)
+
+            if (category === 'EXPENSE') {
+                await prisma.expense.create({
+                    data: {
+                        organizationId: organization.id,
+                        expenseNumber: `EXP-${Date.now()}`, // Simple generation
+                        date: new Date(date),
+                        category: 'other',
+                        description: description || filename,
+                        supplier: 'Beleg-Upload',
+                        netAmount: amountValue, // Simplified: assuming 0% tax for quick upload
+                        taxRate: 0,
+                        taxAmount: 0,
+                        totalAmount: amountValue,
+                        receiptUrl: url,
+                        receiptFileName: filename
+                    }
+                })
+            } else if (category === 'INCOME') {
+                await prisma.additionalIncome.create({
+                    data: {
+                        organizationId: organization.id,
+                        date: new Date(date),
+                        description: description || filename,
+                        amount: amountValue,
+                        type: 'INCOME'
+                    }
+                })
+            }
+        }
 
         return NextResponse.json(receipt)
     } catch (error) {
