@@ -212,7 +212,13 @@ export default function BuchhaltungPage() {
             })
 
             // authenticatedFetch usually throws on error, but let's be sure
-            if (!response.ok) throw new Error(`Server responded with status ${response.status}`)
+            if (!response.ok) {
+              if (response.status === 401) {
+                window.location.href = '/login'
+                throw new Error('Sitzung abgelaufen. Bitte neu anmelden.')
+              }
+              throw new Error(`Server responded with status ${response.status}`)
+            }
 
           } catch (e: any) {
             console.error(`Failed to upload ${file.name}`, e)

@@ -32,6 +32,7 @@ export function useAuthenticatedFetch() {
 
     const mergedOptions: RequestInit = {
       ...options,
+      credentials: 'include', // Ensure cookies are sent
       headers: {
         ...authHeaders.headers,
         ...options.headers
