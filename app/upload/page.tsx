@@ -326,7 +326,7 @@ export default function UploadPage() {
                             onCheckedChange={() => toggleSelect(idx)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{inv.number}</TableCell>
+                        <TableCell className="font-medium">{inv.shopifyOrderNumber}</TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span>{inv.customerName}</span>
@@ -517,8 +517,8 @@ export default function UploadPage() {
                   </Label>
                   <Input
                     id="number"
-                    value={editingInvoice.number}
-                    onChange={(e) => setEditingInvoice({ ...editingInvoice, number: e.target.value })}
+                    value={editingInvoice.shopifyOrderNumber}
+                    onChange={(e) => setEditingInvoice({ ...editingInvoice, shopifyOrderNumber: e.target.value })}
                     className="col-span-3"
                   />
                 </div>
