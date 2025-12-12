@@ -21,10 +21,25 @@ import {
     Gift,
     Globe,
     Star,
-    Zap
+    Zap,
+    Home
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
+    {
+        id: 'real-estate',
+        href: '/real-estate',
+        title: 'Immo-Alarm',
+        description: 'Neue Immobilien-Angebote überwachen',
+        icon: Home,
+        iconBg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50',
+        badge: 'NEU',
+        badgeClass: 'bg-indigo-100 text-indigo-700',
+        hasPing: true,
+        pingColor: 'bg-indigo-400',
+        pingDotColor: 'bg-indigo-500'
+    },
     {
         id: 'csv-import',
         href: '/upload',

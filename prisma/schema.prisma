@@ -102,6 +102,7 @@ model Organization {
   googleShoppingSettings GoogleShoppingSettings?
   reviewIncentiveSettings ReviewIncentiveSettings?
   abandonedCarts    AbandonedCart[]
+  realEstateProfiles RealEstateSearchProfile[]
 }
 
 model WidgetSettings {
@@ -783,4 +784,42 @@ model AbandonedCart {
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, checkoutId])
+}
+
+model RealEstateSearchProfile {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  isActive       Boolean      @default(true)
+  provider       String       @default("IMMOSCOUT24")
+  
+  // Filters
+  city           String?
+  zipCode        String?
+  district       String?
+  transactionType String      @default("RENT") // RENT, BUY
+  propertyType    String      @default("APARTMENT") // APARTMENT, HOUSE, COMMERCIAL
+  priceMin       Int?
+  priceMax       Int?
+  roomsMin       Int?
+  areaMin        Int?
+  
+  additionalFilters Json?
+  
+  lastRunAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  seenListings   RealEstateSeenListing[]
+}
+
+model RealEstateSeenListing {
+  id             String                  @id @default(uuid())
+  profileId      String
+  profile        RealEstateSearchProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  externalId     String
+  seenAt         DateTime                @default(now())
+  
+  @@unique([profileId, externalId])
 }
