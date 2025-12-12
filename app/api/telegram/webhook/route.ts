@@ -513,3 +513,157 @@ Nutzerfrage: "${userMessage}"`
         await sendTelegramMessage(token, chatId, "🤯 Entschuldigung, ich bin gerade überlastet. Versuch es später nochmal.")
     }
 }
+// Command: Handle Photo (AI Receipt Scanning)
+async function handlePhotoMessage(token: string, chatId: number | string, photoArray: any[], organizationId: string) {
+    try {
+        await sendTelegramMessage(token, chatId, "📸 Bild empfangen. Analysiere Beleg mit KI... ⏳")
+
+        // 1. Get the largest photo version
+        const photo = photoArray[photoArray.length - 1]
+        const fileId = photo.file_id
+
+        // 2. Get File Path from Telegram
+        const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`)
+        const fileData = await fileRes.json()
+        const filePath = fileData.result.file_path
+
+        // 3. Download Image
+        const imageUrl = `https://api.telegram.org/file/bot${token}/${filePath}`
+        const imageRes = await fetch(imageUrl)
+        const arrayBuffer = await imageRes.arrayBuffer()
+        const base64Image = Buffer.from(arrayBuffer).toString('base64')
+
+        // 4. Analyze with GPT-4o Vision
+        const openai = getOpenAIClient()
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: "Du bist ein Buchhaltungs-Assistent. Extrahiere Daten aus diesem Beleg. Antworte NUR mit validem JSON."
+                },
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: "Extrahiere folgende Daten als JSON: { supplier (string), date (YYYY-MM-DD), totalAmount (number), taxRate (number, z.B. 19 oder 7), category (string, z.B. 'Bürobedarf', 'Reisekosten', 'Werbung'), description (string) }. Wenn kein Datum gefunden, nimm heute." },
+                        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
+                    ]
+                }
+            ],
+            max_tokens: 500,
+            response_format: { type: "json_object" }
+        })
+
+        const resultText = completion.choices[0]?.message?.content
+        if (!resultText) throw new Error("Keine Antwort von KI")
+
+        const data = JSON.parse(resultText)
+
+        // 5. Calculate Net/Tax
+        const total = Number(data.totalAmount)
+        const rate = Number(data.taxRate)
+        const net = total / (1 + rate / 100)
+        const tax = total - net
+
+        // 6. Save to Database
+        const expense = await prisma.expense.create({
+            data: {
+                organizationId: organizationId,
+                expenseNumber: `EXP-${Date.now().toString().slice(-6)}`,
+                date: new Date(data.date),
+                supplier: data.supplier,
+                category: data.category,
+                description: data.description || "Beleg Import",
+                totalAmount: total,
+                netAmount: net,
+                taxRate: rate,
+                taxAmount: tax,
+                receiptUrl: imageUrl // Note: Telegram URLs expire, ideally upload to S3/Blob
+            }
+        })
+
+        // 7. Success Message
+        const reply = `✅ *Beleg gespeichert!*
+🏢 Händler: ${expense.supplier}
+💰 Betrag: €${expense.totalAmount.toFixed(2)}
+📂 Kategorie: ${expense.category}
+📅 Datum: ${expense.date.toLocaleDateString('de-DE')}
+
+_ID: ${expense.expenseNumber}_`
+
+        await sendTelegramMessage(token, chatId, reply)
+
+    } catch (error) {
+        console.error("Receipt scanning failed:", error)
+        await sendTelegramMessage(token, chatId, "❌ Fehler beim Scannen des Belegs. Bitte versuche es erneut oder gib die Daten manuell ein.")
+    }
+}
+
+export async function POST(request: NextRequest) {
+    try {
+        const body = await request.json()
+
+        // Basic validation
+        if (!body.message) {
+            return NextResponse.json({ status: 'ignored' })
+        }
+
+        const chatId = body.message.chat.id
+        const text = body.message.text || ''
+        const photo = body.message.photo
+
+        // Check settings
+        const settings = await prisma.telegramSettings.findFirst({
+            where: { isEnabled: true },
+            include: { allowedUsers: true }
+        })
+
+        if (!settings || !settings.botToken) {
+            return NextResponse.json({ error: 'Bot disabled' }, { status: 403 })
+        }
+
+        // Security: Check if user is allowed
+        const isAllowed = settings.allowedUsers.some(u => u.telegramUserId === chatId.toString())
+        if (!isAllowed) {
+            await sendTelegramMessage(settings.botToken, chatId, "⛔ Zugriff verweigert. Deine ID ist nicht registriert.")
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // --- ROUTING ---
+
+        // 1. Handle Photos (Receipts)
+        if (photo && photo.length > 0) {
+            await handlePhotoMessage(settings.botToken, chatId, photo, settings.organizationId)
+            return NextResponse.json({ success: true })
+        }
+
+        // 2. Handle Text Commands
+        const lowerText = text.toLowerCase()
+
+        if (lowerText.includes('umsatz heute')) {
+            await handleSalesToday(settings.botToken, chatId)
+        } else if (lowerText.includes('rechnungen pdf')) {
+            await handlePdfInvoices(settings.botToken, chatId)
+        } else if (lowerText.includes('top produkte')) {
+            await handleTopProducts(settings.botToken, chatId)
+        } else if (lowerText === '/start' || lowerText === 'start') {
+            await sendTelegramMessage(settings.botToken, chatId,
+                "👋 Hallo Chef! Ich bin dein RechnungsProfi AI.\n\n" +
+                "Befehle:\n" +
+                "📊 'Umsatz heute'\n" +
+                "📄 'Rechnungen PDF'\n" +
+                "🏆 'Top Produkte'\n" +
+                "📸 *Sende mir einfach ein Foto* von einem Beleg, um ihn zu speichern!"
+            )
+        } else {
+            // Intelligent AI Response for everything else
+            await handleAiChat(settings.botToken, chatId, text)
+        }
+
+        return NextResponse.json({ success: true })
+
+    } catch (error) {
+        console.error('Telegram Webhook Error:', error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
+}
