@@ -82,19 +82,6 @@ function parseCSVLine(line: string, delimiter?: string): string[] {
   return result
 }
 
-// Global storage for CSV data
-declare global {
-  var csvInvoices: any[] | undefined
-  var csvCustomers: any[] | undefined
-}
-
-// Initialize global storage
-if (!global.csvInvoices) {
-  global.csvInvoices = []
-}
-if (!global.csvCustomers) {
-  global.csvCustomers = []
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -106,6 +93,10 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const type = formData.get('type') as string
+
+    // Local storage for parsed data
+    const invoices: any[] = []
+    const customers: any[] = []
 
     if (!file) {
       return NextResponse.json(
@@ -328,8 +319,8 @@ export async function POST(request: NextRequest) {
       try {
         const firstOrder = orders[0]
 
-        // Create or find customer in global storage
-        let customer = global.csvCustomers!.find((c: any) => c.email === firstOrder.customerEmail)
+        // Create or find customer in local storage
+        let customer = customers.find((c: any) => c.email === firstOrder.customerEmail)
         if (!customer) {
           customer = {
             id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -346,7 +337,7 @@ export async function POST(request: NextRequest) {
             phone: '+49 123 456789', // Default phone
             createdAt: new Date().toISOString()
           }
-          global.csvCustomers!.push(customer)
+          customers.push(customer)
           customersCreated++
         }
 
@@ -395,7 +386,7 @@ export async function POST(request: NextRequest) {
         let documentNumber = firstOrder.orderNumber
 
         if (!documentNumber || documentNumber.startsWith('ORD-') || !documentNumber.startsWith(prefix)) {
-          const count = global.csvInvoices!.filter((inv: any) => inv.number?.startsWith(prefix)).length + 1
+          const count = invoices.filter((inv: any) => inv.number?.startsWith(prefix)).length + 1
           documentNumber = `${prefix}-2024-${String(count).padStart(3, '0')}`
         }
 
@@ -420,16 +411,23 @@ export async function POST(request: NextRequest) {
           date: firstOrder.orderDate,
           dueDate: documentKind === DocumentKind.CANCELLATION || documentKind === DocumentKind.CREDIT_NOTE ? '' : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           items: orders.map((order: ShopifyOrder) => {
-            // Convert brutto unitPrice to netto for display
-            const nettoUnitPrice = order.unitPrice / (1 + firstOrder.taxRate / 100)
+            // unitPrice from CSV is brutto
+            const bruttoUnitPrice = order.unitPrice
+            const bruttoTotal = bruttoUnitPrice * order.quantity
+
+            // Calculate net values
+            const nettoUnitPrice = bruttoUnitPrice / (1 + firstOrder.taxRate / 100)
             const nettoTotal = nettoUnitPrice * order.quantity
+            const taxAmount = bruttoTotal - nettoTotal
+
             return {
               id: `item-${Math.random().toString(36).substr(2, 9)}`,
               description: order.productName,
               quantity: order.quantity,
-              unitPrice: nettoUnitPrice, // Show netto price in invoice
-              total: nettoTotal, // Show netto total in invoice
-              // Use Lineitem sku as EAN (primary source)
+              unitPrice: nettoUnitPrice, // Net unit price
+              netAmount: nettoTotal,
+              grossAmount: bruttoTotal,
+              taxAmount: taxAmount,
               ean: order.sku || order.ean || undefined
             }
           }),
@@ -453,8 +451,7 @@ export async function POST(request: NextRequest) {
           originalInvoiceNumber: originalRechnung
         }
 
-        // Invoice is already added to global.csvInvoices above
-        global.csvInvoices!.push(invoice)
+        invoices.push(invoice)
         invoicesCreated++
 
       } catch (error) {
@@ -462,21 +459,21 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Customers are already saved to global.csvCustomers during creation
-
     // Debug logging
     console.log('Upload API - Final counts:')
-    console.log('- Global csvInvoices:', global.csvInvoices!.length)
-    console.log('- Global csvCustomers:', global.csvCustomers!.length)
-    console.log('- Sample invoice:', global.csvInvoices![0])
+    console.log('- Local invoices:', invoices.length)
+    console.log('- Local customers:', customers.length)
+    console.log('- Sample invoice:', invoices[0])
 
     return NextResponse.json({
       success: true,
       recordsProcessed,
       invoicesCreated,
       customersCreated,
+      invoices, // Return the data
+      customers, // Return the data
       errors: errors.length > 0 ? errors : undefined,
-      message: `${recordsProcessed} Datensätze verarbeitet, ${invoicesCreated} Rechnungen und ${customersCreated} Kunden erstellt${errors.length > 0 ? ` (${errors.length} Fehler)` : ''}`
+      message: `${recordsProcessed} Datensätze verarbeitet, ${invoicesCreated} Rechnungen und ${customersCreated} Kunden gefunden${errors.length > 0 ? ` (${errors.length} Fehler)` : ''}`
     })
 
   } catch (error) {
