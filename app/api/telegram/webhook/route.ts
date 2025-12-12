@@ -630,6 +630,23 @@ export async function POST(request: NextRequest) {
             await handlePdfInvoices(settings.botToken, chatId)
         } else if (lowerText.includes('top produkte')) {
             await handleTopProducts(settings.botToken, chatId)
+        } else if (lowerText.includes('suche jetzt starten')) {
+            await sendTelegramMessage(settings.botToken, chatId, "🚀 Suche wird gestartet... Bitte warten.")
+
+            // Trigger the cron job manually
+            try {
+                // Use the production URL since we are running on Vercel
+                const cronUrl = 'https://invoice-kohl-five.vercel.app/api/cron/real-estate'
+
+                // We don't await the result to avoid timeout, just trigger it
+                fetch(cronUrl, { headers: { 'Authorization': 'Bearer ' + process.env.CRON_SECRET } }).catch(e => console.error('Cron trigger failed', e))
+
+                // Give immediate feedback (the cron will send the actual results)
+                await sendTelegramMessage(settings.botToken, chatId, "✅ Suchauftrag wurde an das System gesendet. Ergebnisse kommen gleich!")
+            } catch (e) {
+                await sendTelegramMessage(settings.botToken, chatId, "❌ Fehler beim Starten der Suche.")
+            }
+
         } else if (lowerText.includes('status prüfen')) {
             // Handle Status Check
             const profiles = await (prisma as any).realEstateSearchProfile.findMany({
@@ -674,6 +691,7 @@ export async function POST(request: NextRequest) {
         } else if (lowerText === '/start' || lowerText === 'start') {
             const menu = {
                 keyboard: [
+                    [{ text: "🚀 Suche jetzt starten" }],
                     [{ text: "🔍 Status prüfen" }, { text: "📋 Meine Suchprofile" }],
                     [{ text: "🆘 Hilfe" }]
                 ],
