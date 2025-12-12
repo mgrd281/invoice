@@ -215,7 +215,7 @@ export default function BuchhaltungPage() {
             if (!response.ok) {
               if (response.status === 401) {
                 window.location.href = '/login'
-                throw new Error('Sitzung abgelaufen. Bitte neu anmelden.')
+                return // Stop execution to redirect
               }
               throw new Error(`Server responded with status ${response.status}`)
             }
