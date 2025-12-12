@@ -437,7 +437,7 @@ export async function POST(request: NextRequest) {
           total,
           status: documentStatus,
           statusColor,
-          amount: `€${total.toFixed(2)}`,
+          amount: `${total.toFixed(2)} €`,
           createdAt: new Date().toISOString(),
           shopifyOrderNumber: firstOrder.orderNumber,
           // New document type fields

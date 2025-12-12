@@ -1,17 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -32,6 +33,19 @@ export default function UploadPage() {
 
   // Selection State
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+
+  // Preview State
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewData, setPreviewData] = useState<any>(null)
+  const [companySettings, setCompanySettings] = useState<any>(null)
+
+  useEffect(() => {
+    // Fetch company settings for preview
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => setCompanySettings(data))
+      .catch(err => console.error('Failed to fetch settings:', err))
+  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -206,6 +220,46 @@ export default function UploadPage() {
     }
   }
 
+  const handlePreview = (index: number) => {
+    const invoice = previewInvoices[index]
+
+    // Construct data object for InvoicePreviewDialog
+    const data = {
+      customer: {
+        companyName: invoice.customerName, // Assuming name is company or person
+        name: invoice.customerName,
+        address: invoice.customerAddress,
+        zipCode: invoice.customerZip,
+        city: invoice.customerCity,
+        country: invoice.customerCountry,
+        type: 'company' // Default to company for now
+      },
+      invoiceData: {
+        invoiceNumber: invoice.number,
+        date: invoice.date,
+        deliveryDate: invoice.date, // Default to invoice date
+        headerSubject: `Rechnung Nr. ${invoice.number}`,
+        headerText: 'Vielen Dank für Ihren Auftrag. Wir stellen Ihnen folgende Leistungen in Rechnung:',
+        footerText: 'Bitte überweisen Sie den Betrag innerhalb von 14 Tagen.'
+      },
+      items: invoice.items.map((item: any) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit: 'Stk.',
+        unitPrice: item.unitPrice,
+        vat: invoice.taxRate || 19,
+        total: item.netAmount,
+        ean: item.ean
+      })),
+      settings: {
+        companySettings: companySettings || {}
+      }
+    }
+
+    setPreviewData(data)
+    setPreviewOpen(true)
+  }
+
   const toggleSelect = (index: number) => {
     const newSelected = new Set(selectedIndices)
     if (newSelected.has(index)) {
@@ -347,6 +401,9 @@ export default function UploadPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => handlePreview(idx)} title="Vorschau">
+                              <Eye className="h-4 w-4 text-gray-600" />
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => handleConfirmSingle(idx)} title="Speichern">
                               <Check className="h-4 w-4 text-green-600" />
                             </Button>
@@ -402,8 +459,8 @@ export default function UploadPage() {
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragActive
-                      ? 'border-blue-400 bg-blue-50'
-                      : 'border-gray-300 hover:border-gray-400'
+                        ? 'border-blue-400 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
                       }`}
                   >
                     <Upload className={`h-8 w-8 mx-auto mb-2 ${dragActive ? 'text-blue-500' : 'text-gray-400'
@@ -582,6 +639,15 @@ export default function UploadPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Invoice Preview Dialog */}
+        {previewData && (
+          <InvoicePreviewDialog
+            open={previewOpen}
+            onOpenChange={setPreviewOpen}
+            data={previewData}
+          />
+        )}
       </main>
     </div>
   )
