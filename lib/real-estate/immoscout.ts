@@ -26,12 +26,11 @@ export class ImmoscoutProvider implements RealEstateProvider {
             },
         })
     }
-
     async search(filter: RealEstateFilter): Promise<RealEstateListing[]> {
         // 1. Check for API Keys (Using provided credentials)
         // Note: Ideally these should be in .env, but using provided values for now.
         const apiKey = 'RechnungsProfiBotKey'
-        const apiSecret = 'Xf4sa9Jnghc7Q15m'
+        const apiSecret = 'b4bg8gEjZJyhg1N0' // SANDBOX SECRET
 
         // Re-initialize OAuth with specific keys if needed, or rely on constructor if env vars were set.
         // Since we are hardcoding for this user request:
@@ -56,8 +55,8 @@ export class ImmoscoutProvider implements RealEstateProvider {
             const type = this.mapType(filter)
             const radius = 10 // 10km radius
 
-            // ImmoScout API Endpoint
-            const url = `https://rest.immobilienscout24.de/restapi/api/search/v1.0/search/radius?realestatetype=${type}&geocoordinates=${coords.lat};${coords.lon};${radius}`
+            // ImmoScout API Endpoint (SANDBOX)
+            const url = `https://rest.sandbox-immobilienscout24.de/restapi/api/search/v1.0/search/radius?realestatetype=${type}&geocoordinates=${coords.lat};${coords.lon};${radius}`
 
             // 4. Sign Request
             const requestData = {
