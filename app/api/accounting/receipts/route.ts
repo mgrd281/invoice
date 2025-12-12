@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         const { user } = authResult
 
         const body = await request.json()
-        const { filename, url, date, description, category, mimeType, size, amount } = body
+        const { filename, url, date, description, category, mimeType, size, amount, supplier, invoiceNumber } = body
 
         const organization = await prisma.organization.findFirst({
             where: { users: { some: { id: user.id } } }
@@ -86,11 +86,11 @@ export async function POST(request: NextRequest) {
                 await prisma.expense.create({
                     data: {
                         organizationId: organization.id,
-                        expenseNumber: `EXP-${Date.now()}`, // Simple generation
+                        expenseNumber: invoiceNumber || `EXP-${Date.now()}`,
                         date: new Date(date),
                         category: 'other',
                         description: description || filename,
-                        supplier: 'Beleg-Upload',
+                        supplier: supplier || 'Beleg-Upload',
                         netAmount: amountValue, // Simplified: assuming 0% tax for quick upload
                         taxRate: 0,
                         taxAmount: 0,

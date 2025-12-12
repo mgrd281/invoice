@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Analyze this invoice/receipt. Extract the following fields: totalAmount (number), date (YYYY-MM-DD), description (short summary), category (EXPENSE or INCOME). Return ONLY JSON." },
+                            { type: "text", text: "Analyze this invoice/receipt. Extract the following fields:\n- totalAmount (number, gross in EUR)\n- date (YYYY-MM-DD)\n- description (short summary of product/service)\n- category (INCOME or EXPENSE). Default to INCOME if it looks like an invoice issued by the user. Use EXPENSE only if it is clearly a purchase receipt.\n- invoiceNumber (string, optional)\n- supplier (string, name of issuer/shop)\n\nReturn ONLY JSON." },
                             {
                                 type: "image_url",
                                 image_url: {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
                         ],
                     },
                 ],
-                max_tokens: 300,
+                max_tokens: 500,
             })
             const content = response.choices[0].message.content
             result = parseJsonFromLlm(content)
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
                 messages: [
                     {
                         role: "system",
-                        content: "You are an accounting assistant. Extract data from the following invoice text. Return JSON with fields: totalAmount (number), date (YYYY-MM-DD), description (short summary), category (EXPENSE or INCOME)."
+                        content: "You are an accounting assistant. Extract data from the following invoice text. Return JSON with fields:\n- totalAmount (number, gross in EUR)\n- date (YYYY-MM-DD)\n- description (short summary of product/service)\n- category (INCOME or EXPENSE). Default to INCOME.\n- invoiceNumber (string, optional)\n- supplier (string, name of issuer/shop)"
                     },
                     {
                         role: "user",

@@ -91,6 +91,8 @@ export default function BuchhaltungPage() {
       category: string
       date: string
       amount: string
+      supplier?: string
+      invoiceNumber?: string
     }
     status: 'pending' | 'analyzing' | 'error' | 'success'
   }
@@ -250,8 +252,10 @@ export default function BuchhaltungPage() {
                 ...p.meta,
                 amount: data.data.totalAmount?.toString() || '',
                 description: data.data.description || p.meta.description,
-                category: data.data.category || p.meta.category,
-                date: data.data.date || p.meta.date
+                category: data.data.category || 'INCOME', // Default to INCOME as requested
+                date: data.data.date || p.meta.date,
+                supplier: data.data.supplier,
+                invoiceNumber: data.data.invoiceNumber
               }
             } : p))
             return
@@ -292,7 +296,9 @@ export default function BuchhaltungPage() {
                 size: pf.file.size,
                 mimeType: pf.file.type,
                 ...pf.meta,
-                amount: pf.meta.amount ? parseFloat(pf.meta.amount) : undefined
+                amount: pf.meta.amount ? parseFloat(pf.meta.amount) : undefined,
+                supplier: pf.meta.supplier,
+                invoiceNumber: pf.meta.invoiceNumber
               })
             })
 
@@ -1033,7 +1039,14 @@ export default function BuchhaltungPage() {
                             <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
                               <FileText className="h-4 w-4 text-gray-500" />
                             </div>
-                            <span className="truncate max-w-[150px]" title={receipt.filename}>{receipt.filename}</span>
+                            <div className="flex flex-col">
+                              <span className="truncate max-w-[150px] font-medium" title={receipt.description || receipt.filename}>
+                                {receipt.description || receipt.filename}
+                              </span>
+                              {receipt.description && receipt.description !== receipt.filename && (
+                                <span className="text-xs text-gray-500 truncate max-w-[150px]">{receipt.filename}</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
