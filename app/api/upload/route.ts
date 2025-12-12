@@ -266,13 +266,13 @@ export async function POST(request: NextRequest) {
         // Map common Shopify CSV fields with more flexibility - prioritize Bestellnummer
         const order: ShopifyOrder = {
           orderNumber: record['Bestellnummer'] || record['Order Number'] || record['Name'] || record['Order'] || `ORD-${Date.now()}-${i}`,
-          customerName: record['Billing Name'] || record['Shipping Name'] || record['Customer Name'] || record['Name'] || record['Kundenname'] || record['Customer'] || 'Unbekannter Kunde',
-          customerCompany: record['Company'] || record['Billing Company'] || record['Shipping Company'] || record['Firma'] || record['Unternehmen'] || '',
-          customerEmail: record['Email'] || record['Customer Email'] || record['E-Mail'] || record['Billing Email'] || record['Shipping Email'] || `kunde${i}@example.com`,
-          customerAddress: record['Billing Address1'] || record['Shipping Address1'] || record['Address1'] || record['Adresse'] || record['Billing Address'] || record['Shipping Address'] || record['Street'] || record['Straße'] || 'Musterstraße 1',
-          customerCity: record['Billing City'] || record['Shipping City'] || record['City'] || record['Stadt'] || record['Ort'] || 'Berlin',
-          customerZip: record['Billing Zip'] || record['Shipping Zip'] || record['Zip'] || record['PLZ'] || record['Postal Code'] || record['Postleitzahl'] || '12345',
-          customerCountry: record['Billing Country'] || record['Shipping Country'] || record['Country'] || record['Land'] || record['Country Code'] || 'DE',
+          customerName: record['Billing Name'] || record['Shipping Name'] || record['Customer Name'] || record['Name'] || record['Kundenname'] || record['Rechnungsname'] || record['Liefername'] || record['Customer'] || 'Unbekannter Kunde',
+          customerCompany: record['Company'] || record['Billing Company'] || record['Shipping Company'] || record['Firma'] || record['Unternehmen'] || record['Lieferfirma'] || '',
+          customerEmail: record['Email'] || record['Customer Email'] || record['E-Mail'] || record['Billing Email'] || record['Shipping Email'] || record['Lieferemail'] || `kunde${i}@example.com`,
+          customerAddress: record['Billing Address1'] || record['Shipping Address1'] || record['Address1'] || record['Adresse'] || record['Billing Address'] || record['Shipping Address'] || record['Street'] || record['Straße'] || record['Rechnungsadresse'] || record['Lieferadresse'] || 'Musterstraße 1',
+          customerCity: record['Billing City'] || record['Shipping City'] || record['City'] || record['Stadt'] || record['Ort'] || record['Rechnungsstadt'] || record['Lieferstadt'] || 'Berlin',
+          customerZip: record['Billing Zip'] || record['Shipping Zip'] || record['Zip'] || record['PLZ'] || record['Postal Code'] || record['Postleitzahl'] || record['RechnungsPLZ'] || record['LieferPLZ'] || '12345',
+          customerCountry: record['Billing Country'] || record['Shipping Country'] || record['Country'] || record['Land'] || record['Country Code'] || record['Rechnungsland'] || record['Lieferland'] || 'DE',
           orderDate: record['Created at'] || record['Date'] || record['Bestelldatum'] || record['Order Date'] || new Date().toISOString().split('T')[0],
           productName: record['Lineitem name'] || record['Product'] || record['Item'] || record['Produktname'] || record['Product Name'] || 'Produkt',
           quantity: parseInt(record['Lineitem quantity'] || record['Quantity'] || record['Menge'] || record['Qty'] || '1'),
@@ -287,10 +287,10 @@ export async function POST(request: NextRequest) {
 
         // Add additional fields for invoice type detection
         order.rechnungstyp = record['Rechnungstyp'] || 'Rechnung'
-        order.statusDeutsch = record['Status_Deutsch'] || ''
+        order.statusDeutsch = record['Status_Deutsch'] || record['Status'] || ''
         order.grund = record['Grund'] || ''
-        order.originalRechnung = record['Original_Rechnung'] || ''
-        order.financialStatus = record['Financial Status'] || ''
+        order.originalRechnung = record['Original_Rechnung'] || record['Originalrechnung'] || ''
+        order.financialStatus = record['Financial Status'] || record['Finanzstatus'] || ''
 
         // Calculate tax amount if not provided - unitPrice already includes tax (Brutto)
         if (!order.taxAmount) {
