@@ -14,17 +14,17 @@ export async function GET(
     let user = extractUserFromRequest(request)
     if (!user) {
       // Standard-Benutzer für öffentlichen Zugang verwenden
-      user = { userId: 1, email: 'guest@example.com', role: 'user' }
+      user = { userId: '1', email: 'guest@example.com', role: 'user' }
     }
-    
+
     const { searchParams } = new URL(request.url)
     const subDirectory = searchParams.get('dir') || 'uploads'
     const download = searchParams.get('download') === 'true'
-    
+
     const fileName = decodeURIComponent(params.filename)
     const userPath = getUserStoragePath(user.userId)
     const filePath = path.join(userPath, subDirectory, fileName)
-    
+
     // Zugriffssicherheit überprüfen
     const securityCheck = performSecurityCheck(
       user.userId,
@@ -32,14 +32,14 @@ export async function GET(
       filePath,
       'read'
     )
-    
+
     if (!securityCheck.allowed) {
       return NextResponse.json(
         { success: false, message: securityCheck.reason },
         { status: 403 }
       )
     }
-    
+
     // Überprüfen, ob die Datei existiert
     const fileInfo = await getFileInfo(user.userId, fileName, subDirectory)
     if (!fileInfo) {
@@ -48,10 +48,10 @@ export async function GET(
         { status: 404 }
       )
     }
-    
+
     // Datei lesen
     const fileBuffer = await readFile(filePath)
-    
+
     // Content-Type bestimmen
     const ext = path.extname(fileName).toLowerCase()
     const mimeTypes: { [key: string]: string } = {
@@ -67,27 +67,27 @@ export async function GET(
       '.xml': 'application/xml',
       '.zip': 'application/zip'
     }
-    
+
     const contentType = mimeTypes[ext] || 'application/octet-stream'
-    
+
     // Antwort erstellen
     const response = new NextResponse(fileBuffer as any)
     response.headers.set('Content-Type', contentType)
     response.headers.set('Content-Length', fileBuffer.length.toString())
-    
+
     if (download) {
       response.headers.set('Content-Disposition', `attachment; filename="${fileName}"`)
     } else {
       response.headers.set('Content-Disposition', `inline; filename="${fileName}"`)
     }
-    
+
     return response
-    
+
   } catch (error) {
     console.error('Error downloading file:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Fehler beim Herunterladen der Datei',
         error: process.env.NODE_ENV === 'development' ? error : undefined
       },
@@ -106,16 +106,16 @@ export async function DELETE(
     let user = extractUserFromRequest(request)
     if (!user) {
       // Standard-Benutzer für öffentlichen Zugang verwenden
-      user = { userId: 1, email: 'guest@example.com', role: 'user' }
+      user = { userId: '1', email: 'guest@example.com', role: 'user' }
     }
-    
+
     const { searchParams } = new URL(request.url)
     const subDirectory = searchParams.get('dir') || 'uploads'
-    
+
     const fileName = decodeURIComponent(params.filename)
     const userPath = getUserStoragePath(user.userId)
     const filePath = path.join(userPath, subDirectory, fileName)
-    
+
     // Löschsicherheit überprüfen
     const securityCheck = performSecurityCheck(
       user.userId,
@@ -123,17 +123,17 @@ export async function DELETE(
       filePath,
       'delete'
     )
-    
+
     if (!securityCheck.allowed) {
       return NextResponse.json(
         { success: false, message: securityCheck.reason },
         { status: 403 }
       )
     }
-    
+
     // Datei löschen
     const deleted = await deleteUserFile(user.userId, fileName, subDirectory)
-    
+
     if (deleted) {
       return NextResponse.json({
         success: true,
@@ -146,12 +146,12 @@ export async function DELETE(
         { status: 404 }
       )
     }
-    
+
   } catch (error) {
     console.error('Error deleting file:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Fehler beim Löschen der Datei',
         error: process.env.NODE_ENV === 'development' ? error : undefined
       },
@@ -170,34 +170,34 @@ export async function PUT(
     let user = extractUserFromRequest(request)
     if (!user) {
       // Standard-Benutzer für öffentlichen Zugang verwenden
-      user = { userId: 1, email: 'guest@example.com', role: 'user' }
+      user = { userId: '1', email: 'guest@example.com', role: 'user' }
     }
-    
+
     const { searchParams } = new URL(request.url)
     const subDirectory = searchParams.get('dir') || 'uploads'
-    
+
     const fileName = decodeURIComponent(params.filename)
-    
+
     // Dateiinformationen abrufen
     const fileInfo = await getFileInfo(user.userId, fileName, subDirectory)
-    
+
     if (!fileInfo) {
       return NextResponse.json(
         { success: false, message: 'Datei nicht gefunden' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       data: fileInfo
     })
-    
+
   } catch (error) {
     console.error('Error getting file info:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Fehler beim Abrufen der Dateiinformationen',
         error: process.env.NODE_ENV === 'development' ? error : undefined
       },
