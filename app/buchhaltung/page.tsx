@@ -34,7 +34,9 @@ import {
   Briefcase,
   Database,
   Pencil,
-  Sparkles
+  Sparkles,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
@@ -914,6 +916,18 @@ export default function BuchhaltungPage() {
                                   Analysiere...
                                 </div>
                               )}
+                              {pf.status === 'success' && (
+                                <div className="flex items-center text-xs text-green-600">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Analysiert
+                                </div>
+                              )}
+                              {pf.status === 'error' && (
+                                <div className="flex items-center text-xs text-red-600">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Fehler
+                                </div>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -973,8 +987,14 @@ export default function BuchhaltungPage() {
                       ))}
                     </div>
 
-                    <Button onClick={handleUploadReceipt} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
-                      {loading ? `Wird hochgeladen... ${uploadProgress}%` : `${pendingFiles.length} Dateien hochladen`}
+                    <Button
+                      onClick={handleUploadReceipt}
+                      disabled={loading || pendingFiles.some(f => f.status === 'analyzing')}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {loading ? `Wird hochgeladen... ${uploadProgress}%` :
+                        pendingFiles.some(f => f.status === 'analyzing') ? 'Bitte warten (Analyse läuft)...' :
+                          `${pendingFiles.length} Dateien hochladen`}
                     </Button>
                   </div>
                 )}
@@ -1022,6 +1042,7 @@ export default function BuchhaltungPage() {
                       <TableHead>Datum</TableHead>
                       <TableHead>Kategorie</TableHead>
                       <TableHead className="text-right">Betrag</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-right">Aktion</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1061,6 +1082,17 @@ export default function BuchhaltungPage() {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {receipt.amount ? `€${parseFloat(receipt.amount.toString()).toFixed(2)}` : '-'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {receipt.amount ? (
+                            <div className="flex items-center justify-center text-green-600" title="Automatisch erkannt">
+                              <CheckCircle className="h-4 w-4" />
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center text-orange-500" title="Bitte prüfen">
+                              <AlertTriangle className="h-4 w-4" />
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={() => handleEditReceipt(receipt)}>
