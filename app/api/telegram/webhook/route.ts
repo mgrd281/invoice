@@ -648,7 +648,8 @@ export async function POST(request: NextRequest) {
             await handleTopProducts(settings.botToken, chatId)
         } else if (lowerText === '/start' || lowerText === 'start') {
             await sendTelegramMessage(settings.botToken, chatId,
-                "👋 Hallo Chef! Ich bin dein RechnungsProfi AI.\n\n" +
+                `👋 Hallo Chef! Ich bin dein RechnungsProfi AI.\n` +
+                `🆔 Deine ID: \`${chatId}\`\n\n` +
                 "Befehle:\n" +
                 "📊 'Umsatz heute'\n" +
                 "📄 'Rechnungen PDF'\n" +

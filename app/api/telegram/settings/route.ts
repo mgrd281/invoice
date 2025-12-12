@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ensureOrganization } from '@/lib/db-operations'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
-        const organization = await prisma.organization.findFirst()
-        if (!organization) {
-            return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
-        }
+        const organization = await ensureOrganization()
 
         const settings = await prisma.telegramSettings.findUnique({
             where: { organizationId: organization.id },
@@ -25,11 +23,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const organization = await prisma.organization.findFirst()
-
-        if (!organization) {
-            return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
-        }
+        const organization = await ensureOrganization()
 
         // Upsert settings
         const settings = await prisma.telegramSettings.upsert({
