@@ -105,6 +105,17 @@ export default function BuchhaltungPage() {
   const [editForm, setEditForm] = useState({ amount: '', category: '', description: '' })
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([])
 
+  // Expense Edit State
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [editExpenseForm, setEditExpenseForm] = useState({
+    description: '',
+    category: '',
+    netAmount: '',
+    taxRate: '',
+    supplier: '',
+    date: ''
+  })
+
   // Filter states
   const [filter, setFilter] = useState<AccountingFilter>({
     period: 'month',
@@ -400,6 +411,53 @@ export default function BuchhaltungPage() {
       setSelectedReceipts(prev => prev.filter(i => i !== id))
     } else {
       setSelectedReceipts(prev => [...prev, id])
+    }
+  }
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense)
+    setEditExpenseForm({
+      description: expense.description,
+      category: expense.category,
+      netAmount: expense.netAmount.toString(),
+      taxRate: expense.taxRate.toString(),
+      supplier: expense.supplier,
+      date: new Date(expense.date).toISOString().split('T')[0]
+    })
+  }
+
+  const handleSaveExpense = async () => {
+    if (!editingExpense) return
+    try {
+      const res = await authenticatedFetch(`/api/accounting/expenses/${editingExpense.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editExpenseForm)
+      })
+      if (res.ok) {
+        setEditingExpense(null)
+        loadAccountingData()
+      } else {
+        alert('Fehler beim Speichern')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Fehler beim Speichern')
+    }
+  }
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm('Möchten Sie diese Ausgabe wirklich löschen?')) return
+    try {
+      const res = await authenticatedFetch(`/api/accounting/expenses/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        loadAccountingData()
+      } else {
+        alert('Fehler beim Löschen')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Fehler beim Löschen')
     }
   }
 
@@ -1078,6 +1136,71 @@ export default function BuchhaltungPage() {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ausgabe bearbeiten</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Datum</Label>
+                  <Input
+                    type="date"
+                    value={editExpenseForm.date}
+                    onChange={(e) => setEditExpenseForm({ ...editExpenseForm, date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Kategorie</Label>
+                  <Input
+                    value={editExpenseForm.category}
+                    onChange={(e) => setEditExpenseForm({ ...editExpenseForm, category: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Beschreibung</Label>
+                <Input
+                  value={editExpenseForm.description}
+                  onChange={(e) => setEditExpenseForm({ ...editExpenseForm, description: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Lieferant</Label>
+                <Input
+                  value={editExpenseForm.supplier}
+                  onChange={(e) => setEditExpenseForm({ ...editExpenseForm, supplier: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Netto (€)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editExpenseForm.netAmount}
+                    onChange={(e) => setEditExpenseForm({ ...editExpenseForm, netAmount: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>MwSt (%)</Label>
+                  <Input
+                    type="number"
+                    step="1"
+                    value={editExpenseForm.taxRate}
+                    onChange={(e) => setEditExpenseForm({ ...editExpenseForm, taxRate: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingExpense(null)}>Abbrechen</Button>
+              <Button onClick={handleSaveExpense}>Speichern</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Data Tables */}
         <Tabs defaultValue="invoices" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
@@ -1166,7 +1289,7 @@ export default function BuchhaltungPage() {
                       <TableHead className="text-right">Netto</TableHead>
                       <TableHead className="text-right">MwSt</TableHead>
                       <TableHead className="text-right">Brutto</TableHead>
-                      <TableHead>Beleg</TableHead>
+                      <TableHead className="text-right">Aktion</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1181,12 +1304,22 @@ export default function BuchhaltungPage() {
                         <TableCell className="text-right">€{Number(expense.netAmount).toFixed(2)}</TableCell>
                         <TableCell className="text-right">€{Number(expense.taxAmount).toFixed(2)}</TableCell>
                         <TableCell className="text-right font-medium">€{Number(expense.totalAmount).toFixed(2)}</TableCell>
-                        <TableCell>
-                          {expense.receiptUrl && (
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4" />
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-1">
+                            {expense.receiptUrl && (
+                              <Button variant="ghost" size="sm" asChild>
+                                <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                  <Eye className="w-4 h-4 text-blue-500" />
+                                </a>
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={() => handleEditExpense(expense)}>
+                              <Pencil className="w-4 h-4 text-gray-500" />
                             </Button>
-                          )}
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteExpense(expense.id)}>
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
