@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
             number: invoice.invoiceNumber,
             date: invoice.issueDate.toISOString(),
             dueDate: invoice.dueDate.toISOString(),
-            subtotal: Number(invoice.subtotal),
-            taxRate: Number(invoice.taxRate),
-            taxAmount: Number(invoice.taxAmount),
+            subtotal: Number(invoice.totalNet),
+            taxRate: 19, // Default to 19% as it's not directly on invoice
+            taxAmount: Number(invoice.totalTax),
             total: Number(invoice.totalGross),
             status: invoice.status,
             document_kind: (invoice as any).documentKind || 'invoice', // Fallback
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
             // Map customer
             customer: {
               name: invoice.customer.name,
-              companyName: invoice.customer.companyName || undefined,
-              email: invoice.customer.email,
+              companyName: undefined, // Customer model doesn't have companyName in schema
+              email: invoice.customer.email || '',
               address: invoice.customer.address,
               zipCode: invoice.customer.zipCode,
               city: invoice.customer.city,
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
               description: item.description,
               quantity: Number(item.quantity),
               unitPrice: Number(item.unitPrice),
-              total: Number(item.total),
+              total: Number(item.grossAmount), // Use grossAmount for total
               ean: item.ean || undefined
             }))
           }
