@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
+    const search = searchParams.get('search') || ''
     const skip = (page - 1) * limit
 
     // Fetch invoices from Prisma
@@ -72,6 +73,26 @@ export async function GET(request: NextRequest) {
     // If not admin, restrict to specific organization
     if (!shouldShowAllData(user)) {
       whereClause.organizationId = org.id
+    }
+
+    // Add search filter if query is present
+    if (search) {
+      const searchTerms = search.trim().split(/[\s,]+/) // Split by space or comma
+
+      // Create AND condition for multiple terms (all terms must match something)
+      // OR create OR condition if you want any term to match
+      // Let's stick to simple "contains" logic for the whole string or split terms
+
+      const termConditions = searchTerms.map(term => ({
+        OR: [
+          { invoiceNumber: { contains: term, mode: 'insensitive' } },
+          { customer: { name: { contains: term, mode: 'insensitive' } } },
+          { customer: { email: { contains: term, mode: 'insensitive' } } },
+          { order: { orderNumber: { contains: term, mode: 'insensitive' } } }
+        ]
+      }))
+
+      whereClause.AND = termConditions as any
     }
 
     // Get total count for pagination

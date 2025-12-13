@@ -91,8 +91,18 @@ export default function InvoicesPage() {
     }
 
     try {
-      // Fetch invoices for this user only using authenticated fetch with pagination
-      const response = await authenticatedFetch(`/api/invoices?page=${page}&limit=${limit}`, {
+      // Build query string
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      })
+
+      if (searchQuery) {
+        queryParams.append('search', searchQuery)
+      }
+
+      // Fetch invoices for this user only using authenticated fetch with pagination and search
+      const response = await authenticatedFetch(`/api/invoices?${queryParams.toString()}`, {
         signal: abortController.signal
       })
 
@@ -164,7 +174,7 @@ export default function InvoicesPage() {
         setLoading(false)
       }
     }
-  }, [isAuthenticated, user?.email, page, limit])
+  }, [isAuthenticated, user?.email, page, limit, searchQuery])
 
   useEffect(() => {
     fetchInvoices()
@@ -228,87 +238,19 @@ export default function InvoicesPage() {
   }, [fetchInvoices, isAutoSyncing]) // Updated dependencies
 
 
-
-  // Search invoices directly (supports multiple emails, names, and invoice numbers)
-  const searchInvoicesByCustomer = async (query: string) => {
-    if (!query.trim()) {
-      setShowSearchResults(false)
-      return
-    }
-
-    setIsSearching(true)
-
-    const queryLower = query.toLowerCase().trim()
-    console.log(`Searching invoices for: "${queryLower}"`)
-
-    // Split query by common separators (comma, semicolon, space, newline)
-    const searchTerms = queryLower
-      .split(/[,;|\n\r\t]+/)
-      .map(term => term.trim())
-      .filter(term => term.length > 0)
-
-    console.log(`Search terms: `, searchTerms)
-
-    // Local Search
-    const filteredInvoices = invoices.filter(invoice => {
-      // Get all possible customer email fields
-      const customerEmail = (
-        invoice.customerEmail ||
-        invoice.customer?.email ||
-        invoice.email ||
-        ''
-      ).toLowerCase()
-
-      // Get all possible customer name fields  
-      const customerName = (
-        invoice.customerName ||
-        invoice.customer?.name ||
-        invoice.name ||
-        ''
-      ).toLowerCase()
-
-      // Get invoice number
-      const invoiceNumber = (invoice.number || invoice.invoiceNumber || '').toLowerCase()
-      const orderNumber = (invoice.orderNumber || '').toLowerCase()
-
-      // Check if any search term matches any field
-      const hasMatch = searchTerms.some(term => {
-        const emailMatch = customerEmail.includes(term)
-        const nameMatch = customerName.includes(term)
-        const numberMatch = invoiceNumber.includes(term)
-        const orderMatch = orderNumber.includes(term)
-
-        return emailMatch || nameMatch || numberMatch || orderMatch
-      })
-
-      return hasMatch
-    })
-
-    console.log(`Found ${filteredInvoices.length} matching invoices locally`)
-    setSearchResults(filteredInvoices)
-    setShowSearchResults(true)
-    setIsSearching(false)
-
-
-  }
-
-  // Handle search input change with debouncing
+  // Handle search input change with debouncing (reset page to 1 on search)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery) {
-        searchInvoicesByCustomer(searchQuery)
-      } else {
-        setShowSearchResults(false)
-      }
-    }, 300)
+      setPage(1) // Reset to first page on new search
+      // fetchInvoices will be triggered by page change or searchQuery change in its dependency array
+    }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, invoices])
+  }, [searchQuery])
 
   // Clear search
   const clearSearch = () => {
     setSearchQuery('')
-    setShowSearchResults(false)
     setSearchResults([])
   }
 
