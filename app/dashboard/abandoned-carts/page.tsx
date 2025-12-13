@@ -37,9 +37,9 @@ export default function AbandonedCartsPage() {
     const [soundEnabled, setSoundEnabled] = useState(false)
     const [debugLogs, setDebugLogs] = useState<string[]>([])
 
-    const addLog = (msg: string) => {
+    const addLog = useCallback((msg: string) => {
         setDebugLogs(prev => [`${new Date().toLocaleTimeString()}: ${msg}`, ...prev].slice(0, 10))
-    }
+    }, [])
 
     const [mounted, setMounted] = useState(false)
 
