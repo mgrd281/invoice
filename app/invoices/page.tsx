@@ -228,9 +228,21 @@ export default function InvoicesPage() {
     }, [dateRange])
 
     // Custom event listener for invoice updates
-    window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
-    window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
-    window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
+        window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
+        window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+      }
+
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
+          window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
+          window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+        }
+      }
+    }, [handleInvoiceUpdate])
 
     // ---------------------------------------------------------
     // AUTO-SYNC POLLING (Every 30 seconds)
