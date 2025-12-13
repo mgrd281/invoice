@@ -934,7 +934,6 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-
       <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
         <DialogContent>
           <DialogHeader>
