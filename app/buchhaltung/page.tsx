@@ -271,6 +271,10 @@ export default function BuchhaltungPage() {
       case 'year':
         startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]
         break
+      case 'all':
+        startDate = ''
+        endDate = ''
+        break
       default:
         return // Don't change dates for custom period
     }

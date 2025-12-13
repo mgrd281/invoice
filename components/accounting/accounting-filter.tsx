@@ -35,6 +35,7 @@ export function AccountingFilterBar({ filter, setFilter, handlePeriodChange }: A
                                 <SelectItem value="month">Aktueller Monat</SelectItem>
                                 <SelectItem value="quarter">Aktuelles Quartal</SelectItem>
                                 <SelectItem value="year">Aktuelles Jahr</SelectItem>
+                                <SelectItem value="all">Alles (Gesamt)</SelectItem>
                                 <SelectItem value="custom">Benutzerdefiniert</SelectItem>
                             </SelectContent>
                         </Select>

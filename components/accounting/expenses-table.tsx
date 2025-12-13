@@ -81,7 +81,10 @@ export function ExpensesTable({ expenses, onEdit, onDelete }: ExpensesTableProps
                         {expenses.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                                    Keine Ausgaben im gewählten Zeitraum gefunden
+                                    <div className="flex flex-col items-center justify-center space-y-2">
+                                        <p>Keine Ausgaben im gewählten Zeitraum gefunden</p>
+                                        <p className="text-sm text-gray-400">Prüfen Sie den Datumsfilter oder wählen Sie "Alles (Gesamt)"</p>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
