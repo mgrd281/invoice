@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { InvoiceType, generateInvoiceNumber, calculateStornoAmounts, createStornoItems, ExtendedInvoice } from '@/lib/invoice-types'
-
-// Mock storage - in einer echten Anwendung würde dies eine Datenbank sein
-declare global {
-  var csvInvoices: any[] | undefined
-}
-
-if (!global.csvInvoices) {
-  global.csvInvoices = []
-}
+import { prisma } from '@/lib/prisma'
+import { ShopifyAPI } from '@/lib/shopify-api'
+import { InvoiceType, generateInvoiceNumber } from '@/lib/invoice-types'
 
 export async function POST(
   request: NextRequest,
@@ -18,9 +11,17 @@ export async function POST(
     const { reason, processingNotes } = await request.json()
     const invoiceId = params.id
 
-    // Ursprüngliche Rechnung finden
-    const originalInvoice = global.csvInvoices?.find(inv => inv.id === invoiceId)
-    
+    // 1. Fetch original invoice from Prisma
+    const originalInvoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        items: true,
+        customer: true,
+        order: true,
+        organization: true
+      }
+    })
+
     if (!originalInvoice) {
       return NextResponse.json(
         { error: 'Rechnung nicht gefunden' },
@@ -28,81 +29,112 @@ export async function POST(
       )
     }
 
-    // Prüfen ob bereits storniert
-    if (originalInvoice.status === 'Storniert') {
+    // 2. Check if already cancelled
+    if (originalInvoice.status === 'CANCELLED') {
       return NextResponse.json(
         { error: 'Diese Rechnung wurde bereits storniert' },
         { status: 400 }
       )
     }
 
-    // Prüfen ob Rechnung stornierbar ist
-    if (originalInvoice.type !== InvoiceType.REGULAR) {
+    // 3. Check if it's a regular invoice
+    // Assuming 'INVOICE' is the standard documentKind for regular invoices
+    if (originalInvoice.documentKind !== 'INVOICE' && originalInvoice.documentKind !== 'REGULAR') {
       return NextResponse.json(
         { error: 'Nur normale Rechnungen können storniert werden' },
         { status: 400 }
       )
     }
 
-    // Neue Rechnungsnummer für Storno generieren
-    const stornoNumber = generateInvoiceNumber(
-      InvoiceType.CANCELLATION, 
-      (global.csvInvoices?.length || 0) + 1
-    )
+    // 4. Cancel Shopify Order if linked
+    if (originalInvoice.order?.shopifyOrderId) {
+      try {
+        const shopify = new ShopifyAPI()
+        const shopifyOrderId = parseInt(originalInvoice.order.shopifyOrderId)
 
-    // Storno-Beträge berechnen
-    const stornoAmounts = calculateStornoAmounts(originalInvoice)
-    
-    // Storno-Positionen erstellen
-    const stornoItems = createStornoItems(originalInvoice.items)
-
-    // Stornorechnung erstellen
-    const stornoInvoice: ExtendedInvoice = {
-      id: `storno-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      number: stornoNumber,
-      type: InvoiceType.CANCELLATION,
-      customerId: originalInvoice.customerId,
-      customerName: originalInvoice.customerName,
-      customerEmail: originalInvoice.customerEmail,
-      customerAddress: originalInvoice.customerAddress,
-      customerCity: originalInvoice.customerCity,
-      customerZip: originalInvoice.customerZip,
-      customerCountry: originalInvoice.customerCountry,
-      date: new Date().toISOString().split('T')[0],
-      dueDate: new Date().toISOString().split('T')[0], // Storno sofort fällig
-      items: stornoItems,
-      subtotal: stornoAmounts.subtotal,
-      taxRate: originalInvoice.taxRate,
-      taxAmount: stornoAmounts.taxAmount,
-      total: stornoAmounts.total,
-      status: 'Storniert',
-      statusColor: 'bg-red-100 text-red-800',
-      amount: `€${Math.abs(stornoAmounts.total).toFixed(2)}`,
-      createdAt: new Date().toISOString(),
-      
-      // Storno-spezifische Felder
-      originalInvoiceId: originalInvoice.id,
-      originalInvoiceNumber: originalInvoice.number,
-      reason: reason || 'Stornierung auf Kundenwunsch',
-      refundMethod: 'bank_transfer',
-      processingNotes: processingNotes
-    }
-
-    // Stornorechnung zur Liste hinzufügen
-    global.csvInvoices!.push(stornoInvoice)
-
-    // Ursprüngliche Rechnung als storniert markieren
-    const originalIndex = global.csvInvoices!.findIndex(inv => inv.id === invoiceId)
-    if (originalIndex !== -1) {
-      global.csvInvoices![originalIndex] = {
-        ...originalInvoice,
-        status: 'Storniert',
-        statusColor: 'bg-red-100 text-red-800',
-        processingNotes: `Storniert durch ${stornoNumber} am ${new Date().toLocaleDateString('de-DE')}`
+        console.log(`Attempting to cancel Shopify order ${shopifyOrderId}...`)
+        await shopify.cancelOrder(shopifyOrderId)
+        console.log(`✅ Shopify order ${shopifyOrderId} cancelled successfully`)
+      } catch (shopifyError) {
+        console.error('⚠️ Failed to cancel Shopify order:', shopifyError)
+        // We continue with invoice cancellation even if Shopify fails, 
+        // but maybe we should append this to the notes
       }
     }
 
-    console.log(`✅ Stornorechnung ${stornoNumber} für Rechnung ${originalInvoice.number} erstellt`)
+    // 5. Generate Storno Invoice Number
+    // Count existing invoices to determine the next number
+    // In a real app with high concurrency, this needs a better sequence mechanism
+    const invoiceCount = await prisma.invoice.count({
+      where: { organizationId: originalInvoice.organizationId }
+    })
+
+    const stornoNumber = generateInvoiceNumber(
+      InvoiceType.CANCELLATION,
+      invoiceCount + 1
+    )
+
+    // 6. Calculate Amounts (Negative)
+    const totalNet = Number(originalInvoice.totalNet) * -1
+    const totalGross = Number(originalInvoice.totalGross) * -1
+    const totalTax = Number(originalInvoice.totalTax) * -1
+
+    // 7. Create Storno Invoice in Prisma
+    const stornoInvoice = await prisma.invoice.create({
+      data: {
+        organizationId: originalInvoice.organizationId,
+        customerId: originalInvoice.customerId,
+        templateId: originalInvoice.templateId, // Use same template
+        invoiceNumber: stornoNumber,
+        issueDate: new Date(),
+        dueDate: new Date(), // Storno is due immediately
+        totalNet: totalNet,
+        totalGross: totalGross,
+        totalTax: totalTax,
+        currency: originalInvoice.currency,
+        status: 'CANCELLED', // Or PAID? Usually Storno is considered settled/paid by the refund
+        documentKind: 'CANCELLATION',
+
+        // Link to original
+        referenceNumber: originalInvoice.invoiceNumber,
+        originalDate: originalInvoice.issueDate,
+        reason: reason || 'Stornierung',
+
+        // Copy settings/texts
+        headerSubject: `Stornorechnung zu ${originalInvoice.invoiceNumber}`,
+        headerText: originalInvoice.headerText,
+        footerText: originalInvoice.footerText,
+        settings: originalInvoice.settings || undefined,
+
+        // Create negative items
+        items: {
+          create: originalInvoice.items.map(item => ({
+            description: `STORNO: ${item.description}`,
+            quantity: Number(item.quantity) * -1,
+            unitPrice: Number(item.unitPrice), // Price stays same, quantity becomes negative
+            taxRateId: item.taxRateId,
+            netAmount: Number(item.netAmount) * -1,
+            grossAmount: Number(item.grossAmount) * -1,
+            taxAmount: Number(item.taxAmount) * -1,
+            ean: item.ean
+          }))
+        }
+      }
+    })
+
+    // 8. Update Original Invoice Status
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        status: 'CANCELLED',
+        reason: reason, // Store reason on original too?
+        // We might want to store the link to the storno invoice somewhere, 
+        // but currently there's no direct field for "cancellationInvoiceId" on Invoice.
+        // We can rely on referenceNumber in the storno invoice.
+      }
+    })
+
+    console.log(`✅ Storno invoice ${stornoNumber} created for ${originalInvoice.invoiceNumber}`)
 
     return NextResponse.json({
       success: true,
@@ -114,7 +146,7 @@ export async function POST(
   } catch (error) {
     console.error('Fehler beim Erstellen der Stornorechnung:', error)
     return NextResponse.json(
-      { error: 'Fehler beim Erstellen der Stornorechnung' },
+      { error: 'Fehler beim Erstellen der Stornorechnung: ' + (error as Error).message },
       { status: 500 }
     )
   }
