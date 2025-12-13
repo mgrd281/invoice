@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { FixDataButton } from '@/components/accounting/fix-data-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,28 +107,36 @@ export default async function DebugPage() {
                         <CardTitle>Organisationen</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>ID</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>User Count</TableHead>
-                                    <TableHead>Invoices</TableHead>
-                                    <TableHead>Incomes</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {data.organizations.map((org) => (
-                                    <TableRow key={org.id}>
-                                        <TableCell className="font-mono text-xs">{org.id}</TableCell>
-                                        <TableCell>{org.name}</TableCell>
-                                        <TableCell>{org._count.users}</TableCell>
-                                        <TableCell>{org._count.invoices}</TableCell>
-                                        <TableCell>{org._count.additionalIncomes}</TableCell>
+                        <div className="space-y-4">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>User Count</TableHead>
+                                        <TableHead>Invoices</TableHead>
+                                        <TableHead>Incomes</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {data.organizations.map((org) => (
+                                        <TableRow key={org.id}>
+                                            <TableCell className="font-mono text-xs">{org.id}</TableCell>
+                                            <TableCell>{org.name}</TableCell>
+                                            <TableCell>{org._count.users}</TableCell>
+                                            <TableCell>{org._count.invoices}</TableCell>
+                                            <TableCell>{org._count.additionalIncomes}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+
+                            <div className="pt-4 border-t">
+                                <form action="/api/debug/fix-org-ids" method="POST">
+                                    <FixDataButton />
+                                </form>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
