@@ -12,6 +12,7 @@ import { InvoiceActions } from '@/components/invoice-actions'
 import { EmailInvoice } from '@/components/email-invoice'
 import BulkEmailSender from '@/components/bulk-email-sender'
 import CSVExportButton from '@/components/csv-export-button'
+import { CustomerHistoryDrawer } from '@/components/customer-history-drawer'
 import { InvoiceType, ExtendedInvoice } from '@/lib/invoice-types'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -40,6 +41,16 @@ export default function InvoicesPage() {
 
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
+
+  // Customer History Drawer State
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+
+  const handleCustomerClick = (email: string) => {
+    if (!email) return
+    setSelectedCustomerEmail(email)
+    setIsDrawerOpen(true)
+  }
 
   useEffect(() => {
     fetchInvoices()
@@ -991,7 +1002,17 @@ export default function InvoicesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {invoice.customerName || invoice.customer?.name || 'Unbekannter Kunde'}
+                        <div
+                          className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex flex-col"
+                          onClick={() => handleCustomerClick(invoice.customerEmail || invoice.customer?.email)}
+                        >
+                          <span>{invoice.customerName || invoice.customer?.name || 'Unbekannter Kunde'}</span>
+                          {(invoice.customerEmail || invoice.customer?.email) && (
+                            <span className="text-xs text-gray-500 no-underline font-normal">
+                              {invoice.customerEmail || invoice.customer?.email}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {invoice.date ? new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}

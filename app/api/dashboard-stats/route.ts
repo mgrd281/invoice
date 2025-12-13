@@ -142,10 +142,12 @@ export async function GET(request: NextRequest) {
         case 'SENT': // Offen
           openInvoicesCount++
           openInvoicesAmount += amount
+          totalRevenue += amount
           break
         case 'OVERDUE': // Mahnung/Überfällig
           overdueInvoicesCount++
           overdueInvoicesAmount += amount
+          totalRevenue += amount
           // Overdue is technically still open revenue-wise, but usually tracked separately
           // If you want to count overdue as open for "total outstanding", add it here.
           // For now, keeping them separate as per dashboard design.
@@ -163,6 +165,7 @@ export async function GET(request: NextRequest) {
           if (amount > 0) {
             openInvoicesCount++
             openInvoicesAmount += amount
+            totalRevenue += amount
           }
           break
       }

@@ -324,7 +324,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Gesamtumsatz</CardTitle>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  €{stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                  {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                 </div>
                 <p className="text-xs text-gray-600">
                   {stats.totalRevenue > 0
@@ -380,7 +380,20 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-bold text-orange-600">{stats.openInvoicesCount}</div>
                 <p className="text-xs text-gray-600">
-                  €{stats.openInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} ausstehend
+                  {stats.openInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € ausstehend
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Storniert</CardTitle>
+                <RotateCcw className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.cancelledInvoicesCount}</div>
+                <p className="text-xs text-gray-600">
+                  {stats.cancelledInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € storniert
                 </p>
               </CardContent>
             </Card>
@@ -508,7 +521,7 @@ export default function DashboardPage() {
                       <span className="text-sm animate-slide-in">{stats.paidInvoicesCount} bezahlte Rechnungen</span>
                     </div>
                     <span className="text-sm font-medium text-green-600 calculator-display">
-                      €{stats.paidInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                      {stats.paidInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                     </span>
                   </div>
                 )}
@@ -519,7 +532,7 @@ export default function DashboardPage() {
                       <span className="text-sm animate-slide-in">{stats.openInvoicesCount} offene Rechnungen</span>
                     </div>
                     <span className="text-sm font-medium text-orange-600 status-badge-pending">
-                      €{stats.openInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                      {stats.openInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                     </span>
                   </div>
                 )}
@@ -530,7 +543,7 @@ export default function DashboardPage() {
                       <span className="text-sm animate-slide-in">{stats.overdueInvoicesCount} überfällige Rechnungen</span>
                     </div>
                     <span className="text-sm font-medium text-red-600 status-badge-overdue">
-                      €{stats.overdueInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                      {stats.overdueInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                     </span>
                   </div>
                 )}
@@ -542,7 +555,7 @@ export default function DashboardPage() {
                       <span className="text-sm animate-slide-in">{stats.refundInvoicesCount} erstattete Rechnungen</span>
                     </div>
                     <span className="text-sm font-medium text-purple-600 calculator-display">
-                      €{stats.refundInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                      {stats.refundInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                     </span>
                   </div>
                 )}
