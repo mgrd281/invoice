@@ -265,6 +265,7 @@ model Invoice {
   settings        Json?         // Stores currency, skonto, internalContact, etc.
 
   @@unique([organizationId, invoiceNumber])
+  @@index([organizationId, issueDate(sort: Desc), invoiceNumber(sort: Desc)])
 }
 
 model InvoiceItem {

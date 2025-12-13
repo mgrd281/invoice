@@ -89,7 +89,7 @@ export default function InvoicesPage() {
     let syncInterval: NodeJS.Timeout
 
     if (isAuthenticated && isAutoSyncing) {
-      console.log('🔄 Starting Auto-Sync polling (every 10s)...')
+      console.log('🔄 Starting Auto-Sync polling (every 30s)...')
       syncInterval = setInterval(async () => {
         try {
           const res = await fetch('/api/shopify/auto-sync')
@@ -105,7 +105,7 @@ export default function InvoicesPage() {
         } catch (err) {
           console.error('Auto-Sync failed:', err)
         }
-      }, 3000) // 3 seconds for faster updates
+      }, 30000) // 30 seconds for reduced load
     }
 
     return () => {
