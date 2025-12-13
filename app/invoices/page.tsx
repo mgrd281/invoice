@@ -931,14 +931,14 @@ export default function InvoicesPage() {
             </div>
           )}
         </div>
-        </div>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Status für {selectedInvoices.size} Rechnungen ändern</DialogTitle>
+  <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Status für {selectedInvoices.size} Rechnungen ändern</DialogTitle>
           <DialogDescription>
             Wählen Sie den neuen Status für die ausgewählten Rechnungen.
           </DialogDescription>
