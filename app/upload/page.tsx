@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -42,6 +42,10 @@ export default function UploadPage() {
   // Import Options
   const [importTarget, setImportTarget] = useState<'invoices' | 'accounting' | 'both'>('invoices')
   const [accountingType, setAccountingType] = useState<'income' | 'expense' | 'other'>('income')
+
+  // Progress State
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [estimatedTime, setEstimatedTime] = useState(0)
 
   useEffect(() => {
     // Fetch company settings for preview
@@ -103,6 +107,17 @@ export default function UploadPage() {
     setUploadStatus({ type: 'idle' })
     setPreviewInvoices([])
     setSelectedIndices(new Set())
+    setUploadProgress(0)
+    setEstimatedTime(2) // Start with 2 seconds estimate
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) return prev
+        return prev + 10
+      })
+      setEstimatedTime(prev => Math.max(0, prev - 0.2))
+    }, 200)
 
     try {
       const formData = new FormData()
@@ -113,19 +128,29 @@ export default function UploadPage() {
         body: formData,
       })
 
+      clearInterval(progressInterval)
+
       if (response.ok) {
+        setUploadProgress(100)
+        setEstimatedTime(0)
         const result = await response.json()
-        setUploadStatus({ type: 'success', message: result.message, errors: result.errors })
-        setPreviewInvoices(result.invoices || [])
+
+        // Small delay to show 100% before showing results
+        setTimeout(() => {
+          setUploadStatus({ type: 'success', message: result.message, errors: result.errors })
+          setPreviewInvoices(result.invoices || [])
+          setUploading(false)
+        }, 500)
 
         // Don't clear file yet, allow re-upload if needed
       } else {
         const error = await response.json()
         setUploadStatus({ type: 'error', message: error.error || 'Upload failed' })
+        setUploading(false)
       }
     } catch (error) {
+      clearInterval(progressInterval)
       setUploadStatus({ type: 'error', message: 'Netzwerkfehler beim Hochladen der Datei' })
-    } finally {
       setUploading(false)
     }
   }
@@ -605,25 +630,62 @@ export default function UploadPage() {
                   )}
                 </div>
 
-                {/* Upload Button */}
-                <Button
-                  onClick={handleUpload}
-                  disabled={!file || uploading}
-                  className="w-full"
-                  size="lg"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Wird analysiert...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Vorschau anzeigen
-                    </>
-                  )}
-                </Button>
+                {/* Upload Button or Progress Bar */}
+                {uploading ? (
+                  <div className="bg-white border rounded-lg p-6 shadow-sm">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <div className="mb-4 relative">
+                        <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center">
+                          <Upload className="h-8 w-8 text-blue-600 animate-bounce" />
+                        </div>
+                        {/* Optional: Add a success checkmark overlay if 100% */}
+                        {uploadProgress === 100 && (
+                          <div className="absolute -right-1 -bottom-1 bg-green-500 rounded-full p-1">
+                            <Check className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">
+                        {uploadProgress === 100 ? 'Upload abgeschlossen!' : 'Ihre Datei wird hochgeladen...'}
+                      </h3>
+
+                      <div className="w-full max-w-md mt-4 mb-2">
+                        <div className="flex justify-between text-sm text-gray-600 mb-1">
+                          <span>Fortschritt</span>
+                          <span className="font-medium text-blue-600">{Math.round(uploadProgress)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      {estimatedTime > 0 && (
+                        <p className="text-sm text-gray-500 mt-2">
+                          Geschätzte Wartezeit: <span className="font-medium">{Math.ceil(estimatedTime)} Sekunden</span>
+                        </p>
+                      )}
+
+                      <div className="flex items-center mt-4 text-xs text-gray-400">
+                        <Shield className="h-3 w-3 mr-1" />
+                        100% privat und sicher
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleUpload}
+                    disabled={!file}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Vorschau anzeigen
+                  </Button>
+                )}
               </div>
 
               {/* Status Messages */}
