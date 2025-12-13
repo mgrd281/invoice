@@ -218,6 +218,15 @@ export default function InvoicesPage() {
       fetchInvoices(true) // Background update
     }
 
+    // Handle date range changes
+    useEffect(() => {
+      if (dateRange.from || dateRange.to) {
+        setLimit(250) // Increase limit when filtering by date
+        setPage(1)
+      }
+      // We don't need to trigger fetch here because dateRange is in fetchInvoices dependency
+    }, [dateRange])
+
     // Custom event listener for invoice updates
     window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
     window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
@@ -676,7 +685,13 @@ export default function InvoicesPage() {
   // Calculate statistics (based on ALL visible invoices, ignoring current filter for the counts themselves)
   // We want the counts to remain static/global based on the search context, not the filter context
   const statsBaseInvoices = showSearchResults ? visibleSearchResults : visibleInvoices
-  const totalInvoices = statsBaseInvoices.length
+
+  // Use total count from API if available (for pagination/filtering), otherwise fallback to loaded length
+  const totalInvoices = totalInvoicesCount > 0 ? totalInvoicesCount : statsBaseInvoices.length
+
+  // Note: These specific status counts are currently based on LOADED invoices only.
+  // To get accurate counts for ALL pages, we would need separate API calls or a stats endpoint.
+  // For now, we keep them as is, but Total is accurate.
   const paidInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Bezahlt').length
   const openInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Offen').length
   const overdueInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Überfällig').length
