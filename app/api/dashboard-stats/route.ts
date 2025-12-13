@@ -128,8 +128,12 @@ export async function GET(request: NextRequest) {
       // Check for Refund/Cancellation documents first if documentKind is available
       if (kind === 'REFUND_FULL' || kind === 'REFUND_PARTIAL' || kind === 'CREDIT_NOTE') {
         refundInvoicesCount++
-        refundInvoicesAmount += Number((invoice as any).refundAmount) || amount
-        continue
+        // Track refund volume as positive number for the "Refunded" card
+        refundInvoicesAmount += Math.abs(Number((invoice as any).refundAmount) || amount)
+
+        // Do NOT continue here. Let it fall through to switch(status).
+        // Since refunds have negative amounts in DB, adding them to 'PAID' 
+        // will correctly subtract from the total revenue.
       }
 
       // Status-based aggregation
