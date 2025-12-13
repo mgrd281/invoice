@@ -26,8 +26,6 @@ interface AbandonedCart {
 }
 
 export default function AbandonedCartsPage() {
-    const authenticatedFetch = useAuthenticatedFetch()
-
     // State
     const [carts, setCarts] = useState<AbandonedCart[]>([])
     const [loading, setLoading] = useState(true)
@@ -35,41 +33,43 @@ export default function AbandonedCartsPage() {
     const [settingsLoading, setSettingsLoading] = useState(true)
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
     const [soundEnabled, setSoundEnabled] = useState(false)
-
     const [mounted, setMounted] = useState(false)
 
-    useEffect(() => {
-        setMounted(true)
-        const savedSound = localStorage.getItem('abandonedCartSoundEnabled')
-        if (savedSound === 'true') {
-            setSoundEnabled(true)
-        }
-    }, [])
-
-    if (!mounted) {
-        return <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-        </div>
-    }
-
-    // Real-time updates
+    // Refs
     const knownCartIds = useRef<Set<string>>(new Set())
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const [newCartAlert, setNewCartAlert] = useState<AbandonedCart | null>(null)
 
-    // ... (keep existing imports and state)
+    // Hooks
+    const authenticatedFetch = useAuthenticatedFetch()
 
-    // Remove the useEffect that did new Audio()
+    // 1. Handle Mounting & LocalStorage safely
+    useEffect(() => {
+        setMounted(true)
+        try {
+            const savedSound = localStorage.getItem('abandonedCartSoundEnabled')
+            if (savedSound === 'true') {
+                setSoundEnabled(true)
+            }
+        } catch (e) {
+            console.error("LocalStorage access failed:", e)
+        }
+    }, [])
 
+    // 2. Sound Toggle Logic
     const toggleSound = async () => {
         const newState = !soundEnabled
         setSoundEnabled(newState)
-        localStorage.setItem('abandonedCartSoundEnabled', String(newState))
+        try {
+            localStorage.setItem('abandonedCartSoundEnabled', String(newState))
+        } catch (e) {
+            console.error("Failed to save sound preference:", e)
+        }
 
         if (newState) {
-            // 1. Try to unlock audio autoplay
+            // Try to unlock audio autoplay
             if (audioRef.current) {
-                audioRef.current.load() // Reload to ensure source is ready
+                audioRef.current.load()
                 const playPromise = audioRef.current.play()
                 if (playPromise !== undefined) {
                     playPromise
@@ -81,20 +81,25 @@ export default function AbandonedCartsPage() {
                 }
             }
 
-            // 2. Request System Notification Permission
+            // Request System Notification Permission
             if ('Notification' in window && Notification.permission !== 'granted') {
-                const permission = await Notification.requestPermission()
-                if (permission !== 'granted') {
-                    alert("Bitte erlauben Sie Benachrichtigungen im Browser, um Alarme zu erhalten.")
+                try {
+                    const permission = await Notification.requestPermission()
+                    if (permission !== 'granted') {
+                        alert("Bitte erlauben Sie Benachrichtigungen im Browser, um Alarme zu erhalten.")
+                    }
+                } catch (e) {
+                    console.error("Notification permission request failed:", e)
                 }
             }
         }
     }
 
+    // 3. Trigger Alert Logic
     const triggerNewCartAlert = useCallback((cart: AbandonedCart, isTest: boolean = false) => {
         setNewCartAlert(cart)
 
-        // 1. System Notification
+        // System Notification
         if ((soundEnabled || isTest) && 'Notification' in window && Notification.permission === 'granted') {
             try {
                 new Notification("Neuer abgebrochener Warenkorb!", {
@@ -106,26 +111,30 @@ export default function AbandonedCartsPage() {
             }
         }
 
-        // 2. Play Sound
+        // Play Sound
         if ((soundEnabled || isTest) && audioRef.current) {
-            audioRef.current.currentTime = 0
-            const playPromise = audioRef.current.play()
-            if (playPromise !== undefined) {
-                playPromise
-                    .catch(error => console.error(`Audio play failed: ${error.message}`))
+            try {
+                audioRef.current.currentTime = 0
+                const playPromise = audioRef.current.play()
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => console.error(`Audio play failed: ${error.message}`))
+                }
+            } catch (e) {
+                console.error("Audio playback error:", e)
             }
         }
 
         setTimeout(() => setNewCartAlert(null), 8000)
     }, [soundEnabled])
 
+    // 4. Fetch Carts Logic
     const fetchCarts = useCallback(async () => {
         setLoading(true)
         try {
             const response = await authenticatedFetch('/api/abandoned-carts')
             if (response.ok) {
                 const data = await response.json()
-                const currentCarts: AbandonedCart[] = data.carts
+                const currentCarts: AbandonedCart[] = data.carts || []
 
                 // Check for new carts
                 if (knownCartIds.current.size > 0) {
@@ -150,9 +159,9 @@ export default function AbandonedCartsPage() {
         } finally {
             setLoading(false)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []) // Intentionally empty to prevent infinite loops if dependencies are unstable
+    }, [authenticatedFetch, triggerNewCartAlert])
 
+    // 5. Fetch Settings Logic
     const fetchSettings = useCallback(async () => {
         try {
             const response = await authenticatedFetch('/api/marketing/settings')
@@ -165,9 +174,9 @@ export default function AbandonedCartsPage() {
         } finally {
             setSettingsLoading(false)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [authenticatedFetch])
 
+    // 6. Test Alarm
     const testAlarm = () => {
         const mockCart: AbandonedCart = {
             id: 'test-cart-' + Date.now(),
@@ -186,6 +195,7 @@ export default function AbandonedCartsPage() {
         setSoundEnabled(true)
     }
 
+    // 7. Toggle Exit Intent
     const toggleExitIntent = async (checked: boolean) => {
         setExitIntentEnabled(checked)
         try {
@@ -196,22 +206,32 @@ export default function AbandonedCartsPage() {
             })
         } catch (error) {
             console.error('Failed to save settings:', error)
-            // Revert on error
             setExitIntentEnabled(!checked)
         }
     }
 
+    // 8. Initial Load & Interval
     useEffect(() => {
-        fetchCarts()
-        fetchSettings()
-        // Auto-refresh every 30 seconds to show "real-time" updates
-        const interval = setInterval(fetchCarts, 30000)
-        return () => clearInterval(interval)
-    }, [fetchCarts])
+        if (mounted) {
+            fetchCarts()
+            fetchSettings()
+            const interval = setInterval(fetchCarts, 30000)
+            return () => clearInterval(interval)
+        }
+    }, [mounted, fetchCarts, fetchSettings])
+
+    // 9. Render Guard
+    if (!mounted) {
+        return (
+            <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 p-8 relative">
-            {/* Audio Element with Base64 Beep for reliability */}
+            {/* Audio Element */}
             <audio
                 ref={audioRef}
                 preload="auto"
