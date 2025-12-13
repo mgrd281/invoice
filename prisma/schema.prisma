@@ -89,6 +89,7 @@ model Organization {
   responseTemplates ResponseTemplate[]
   replyTemplates    ReplyTemplate[]
   dunningSettings DunningSettings?
+  vorkasseSettings VorkasseSettings?
   dunningTemplates DunningTemplate[]
   marketingSettings MarketingSettings?
   expenses          Expense[]
@@ -200,6 +201,11 @@ model Order {
   currency       String       @default("EUR")
   status         OrderStatus  @default(PENDING)
   shopifyOrderId String?      @unique(map: "Order_shopifyOrderId_key") // Add a unique constraint for this field
+  
+  // Vorkasse Automation
+  vorkasseReminderLevel Int @default(0) // 0=None, 1=First, 2=Second
+  vorkasseLastReminderAt DateTime?
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   invoices       Invoice[]
@@ -799,22 +805,47 @@ model RealEstateSearchProfile {
   // Filters
   city           String?
   zipCode        String?
-  district       String?
-  transactionType String      @default("RENT") // RENT, BUY
-  propertyType    String      @default("APARTMENT") // APARTMENT, HOUSE, COMMERCIAL
+  radius         Int?         @default(10) // km
   priceMin       Int?
   priceMax       Int?
   roomsMin       Int?
+  roomsMax       Int?
   areaMin        Int?
+  areaMax        Int?
   
-  additionalFilters Json?
+  // Notification
+  email          String?
+  telegramChatId String?
   
-  lastRunAt      DateTime?
+  lastCheckedAt  DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   
   seenListings   RealEstateSeenListing[]
 }
+
+model VorkasseSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(true)
+  
+  reminder1Days    Int    @default(3)
+  reminder1Subject String @default("Zahlungserinnerung für Ihre Bestellung")
+  reminder1Text    String @default("Hallo, wir haben festgestellt, dass Ihre Bestellung (Nr. {orderNumber}) noch nicht bezahlt wurde. Bitte überweisen Sie den offenen Betrag. Vielen Dank!")
+  
+  reminder2Days    Int    @default(10)
+  reminder2Subject String @default("Letzte Zahlungserinnerung")
+  reminder2Text    String @default("Dies ist eine letzte Zahlungserinnerung für Ihre Bestellung (Nr. {orderNumber}). Bitte begleichen Sie den Betrag, um eine automatische Stornierung zu vermeiden.")
+  
+  cancellationDays    Int    @default(14)
+  cancellationSubject String @default("Bestellung storniert")
+  cancellationText    String @default("Ihre Bestellung wurde storniert, da kein Zahlungseingang verzeichnet wurde.")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}  
 
 model RealEstateSeenListing {
   id             String                  @id @default(uuid())
