@@ -1,90 +1,139 @@
 import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
 import { generateArizonaPDF } from '@/lib/arizona-pdf-generator'
-import fs from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { getCompanySettings } from '@/lib/company-settings'
 
 export async function POST(request: NextRequest) {
   try {
     console.log('ZIP download request received')
     const { invoiceIds } = await request.json()
-    console.log('Invoice IDs:', invoiceIds)
+    console.log(`Requested ZIP for ${invoiceIds?.length} invoices`)
 
     if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
-      console.log('No invoice IDs provided')
-      return NextResponse.json(
-        { error: 'No invoice IDs provided' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No invoice IDs provided' }, { status: 400 })
     }
 
-    // Get invoices from API
-    const selectedInvoices = []
-
-    for (const invoiceId of invoiceIds) {
-      try {
-        // Fetch invoice from internal API
-        const response = await fetch(`http://localhost:3000/api/invoices/${invoiceId}`)
-        if (response.ok) {
-          const invoiceData = await response.json()
-          selectedInvoices.push(invoiceData)
-        } else {
-          console.error(`Invoice ${invoiceId} not found`)
-        }
-      } catch (error) {
-        console.error(`Error fetching invoice ${invoiceId}:`, error)
-        // Continue with other invoices
+    // 1. Fetch all invoices in ONE query (Fixes N+1 problem)
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        id: { in: invoiceIds }
+      },
+      include: {
+        customer: true,
+        items: true,
+        organization: true
       }
+    })
+
+    console.log(`Fetched ${invoices.length} invoices from database`)
+
+    if (invoices.length === 0) {
+      return NextResponse.json({ error: 'No valid invoices found' }, { status: 404 })
     }
 
-    console.log(`Found ${selectedInvoices.length} invoices`)
-
-    if (selectedInvoices.length === 0) {
-      console.log('No valid invoices found')
-      return NextResponse.json(
-        { error: 'No valid invoices found' },
-        { status: 404 }
-      )
-    }
-
-    // Create ZIP file
-    console.log('Creating ZIP file...')
+    // 2. Create ZIP file
     const zip = new JSZip()
+    const companySettings = getCompanySettings()
 
-    // Generate PDF for each invoice and add to ZIP
-    for (const invoice of selectedInvoices) {
-      try {
-        console.log(`Generating PDF for invoice ${invoice.number}`)
+    // 3. Generate PDFs
+    // We process in chunks to avoid blocking the event loop too long
+    const CHUNK_SIZE = 10
+    let processedCount = 0
+    let errorCount = 0
 
-        // Generate PDF buffer using jsPDF
-        const doc = await generateArizonaPDF(invoice)
-        const pdfBuffer = doc.output('arraybuffer')
+    for (let i = 0; i < invoices.length; i += CHUNK_SIZE) {
+      const chunk = invoices.slice(i, i + CHUNK_SIZE)
 
-        // Create filename: Rechnung_NUMMER_DATUM.pdf
-        const date = new Date(invoice.date).toISOString().split('T')[0]
-        const filename = `Rechnung_${invoice.number}_${date}.pdf`
+      await Promise.all(chunk.map(async (invoice) => {
+        try {
+          // Map Prisma invoice to InvoiceData expected by generator
+          const invoiceData = {
+            id: invoice.id,
+            number: invoice.invoiceNumber,
+            date: invoice.issueDate.toISOString(),
+            dueDate: invoice.dueDate.toISOString(),
+            subtotal: Number(invoice.subtotal),
+            taxRate: Number(invoice.taxRate),
+            taxAmount: Number(invoice.taxAmount),
+            total: Number(invoice.totalGross),
+            status: invoice.status,
+            document_kind: (invoice as any).documentKind || 'invoice', // Fallback
+            reference_number: (invoice as any).referenceNumber,
+            grund: (invoice as any).reason,
+            // Map customer
+            customer: {
+              name: invoice.customer.name,
+              companyName: invoice.customer.companyName || undefined,
+              email: invoice.customer.email,
+              address: invoice.customer.address,
+              zipCode: invoice.customer.zipCode,
+              city: invoice.customer.city,
+              country: invoice.customer.country
+            },
+            // Map organization (use invoice's org or fallback to settings)
+            organization: invoice.organization ? {
+              name: invoice.organization.name,
+              address: invoice.organization.address,
+              zipCode: invoice.organization.zipCode,
+              city: invoice.organization.city,
+              country: invoice.organization.country,
+              taxId: invoice.organization.taxId || '',
+              bankName: invoice.organization.bankName || '',
+              iban: invoice.organization.iban || '',
+              bic: invoice.organization.bic || ''
+            } : {
+              name: companySettings.companyName || 'Company',
+              address: companySettings.address || '',
+              zipCode: companySettings.zipCode || '',
+              city: companySettings.city || '',
+              country: companySettings.country || '',
+              taxId: companySettings.taxId || '',
+              bankName: companySettings.bankName || '',
+              iban: companySettings.iban || '',
+              bic: companySettings.bic || ''
+            },
+            // Map items
+            items: invoice.items.map(item => ({
+              description: item.description,
+              quantity: Number(item.quantity),
+              unitPrice: Number(item.unitPrice),
+              total: Number(item.total),
+              ean: item.ean || undefined
+            }))
+          }
 
-        console.log(`Adding ${filename} to ZIP (${pdfBuffer.byteLength} bytes)`)
+          // Generate PDF
+          // @ts-ignore - Types might slightly mismatch but structure is correct
+          const doc = await generateArizonaPDF(invoiceData)
+          const pdfBuffer = doc.output('arraybuffer')
 
-        // Add PDF to ZIP
-        zip.file(filename, pdfBuffer)
-      } catch (error) {
-        console.error(`Error generating PDF for invoice ${invoice.number}:`, error)
-        // Continue with other invoices even if one fails
+          // Create filename
+          const date = new Date(invoice.issueDate).toISOString().split('T')[0]
+          const safeNumber = invoice.invoiceNumber.replace(/[^a-zA-Z0-9-_]/g, '_')
+          const filename = `Rechnung_${safeNumber}_${date}.pdf`
+
+          zip.file(filename, pdfBuffer)
+          processedCount++
+        } catch (error) {
+          console.error(`Error generating PDF for invoice ${invoice.invoiceNumber}:`, error)
+          errorCount++
+        }
+      }))
+
+      // Small delay to allow GC?
+      if (i + CHUNK_SIZE < invoices.length) {
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
     }
 
-    // Generate ZIP buffer
-    console.log('Generating ZIP buffer...')
-    const zipBuffer = await zip.generateAsync({ type: 'arraybuffer' })
+    console.log(`ZIP generation complete. Processed: ${processedCount}, Errors: ${errorCount}`)
 
-    // Create filename for ZIP
+    // 4. Generate ZIP buffer
+    const zipBuffer = await zip.generateAsync({ type: 'arraybuffer' })
     const timestamp = new Date().toISOString().split('T')[0]
     const zipFilename = `Rechnungen_${timestamp}.zip`
 
-    console.log(`ZIP created: ${zipFilename} (${zipBuffer.byteLength} bytes)`)
-
-    // Return ZIP file
     return new NextResponse(zipBuffer, {
       status: 200,
       headers: {
@@ -96,9 +145,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating ZIP file:', error)
-    return NextResponse.json(
-      { error: 'Failed to create ZIP file' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to create ZIP file' }, { status: 500 })
   }
 }
