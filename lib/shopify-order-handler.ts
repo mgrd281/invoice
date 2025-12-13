@@ -270,6 +270,23 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         }
     })
 
+    // 5. Create Additional Income (Buchhaltung)
+    // Automatically add to accounting as "Einnahme"
+    try {
+        await prisma.additionalIncome.create({
+            data: {
+                organizationId: organization.id,
+                date: new Date(order.created_at || Date.now()),
+                description: `Shopify Order ${order.name}`,
+                amount: totalGross,
+                type: 'INCOME'
+            }
+        })
+        log(`✅ Additional Income created for order ${order.name}`)
+    } catch (err) {
+        log(`⚠️ Failed to create Additional Income for order ${order.name}: ${err}`)
+    }
+
     log(`✅ Invoice created in DB: ${newInvoice.invoiceNumber}`)
     return { ...mapPrismaInvoiceToData(newInvoice), isNew: true }
 }
