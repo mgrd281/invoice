@@ -39,10 +39,9 @@ export default function AbandonedCartsPage() {
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const [newCartAlert, setNewCartAlert] = useState<AbandonedCart | null>(null)
 
-    useEffect(() => {
-        // Cash register sound
-        audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3")
-    }, [])
+    // ... (keep existing imports and state)
+
+    // Remove the useEffect that did new Audio()
 
     const fetchCarts = async () => {
         setLoading(true)
@@ -62,7 +61,12 @@ export default function AbandonedCartsPage() {
                         // Play sound
                         if (audioRef.current) {
                             audioRef.current.currentTime = 0
-                            audioRef.current.play().catch(e => console.log("Audio play failed", e))
+                            const playPromise = audioRef.current.play()
+                            if (playPromise !== undefined) {
+                                playPromise.catch(error => {
+                                    console.error("Auto-play failed:", error)
+                                })
+                            }
                         }
 
                         // Auto hide after 8 seconds
@@ -114,12 +118,16 @@ export default function AbandonedCartsPage() {
 
         setNewCartAlert(mockCart)
 
-        // Create a new audio instance directly on user interaction to bypass autoplay policies
-        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3")
-        audio.play().catch(e => {
-            console.error("Audio play failed", e)
-            // Fallback: try a different sound or just log
-        })
+        if (audioRef.current) {
+            audioRef.current.currentTime = 0
+            const playPromise = audioRef.current.play()
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error("Test play failed:", error)
+                    alert("Audio playback failed. Please check browser permissions.")
+                })
+            }
+        }
 
         setTimeout(() => setNewCartAlert(null), 8000)
     }
@@ -149,6 +157,9 @@ export default function AbandonedCartsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-8 relative">
+            {/* Hidden Audio Element */}
+            <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto" />
+
             {/* Notification Alert */}
             {newCartAlert && (
                 <div className="fixed top-24 right-8 z-50 animate-in slide-in-from-right-full duration-500">
@@ -241,7 +252,6 @@ export default function AbandonedCartsPage() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {/* ... existing stats cards ... */}
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-medium text-gray-500">Gefundene Warenkörbe</CardTitle>
