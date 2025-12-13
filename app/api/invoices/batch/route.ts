@@ -25,7 +25,36 @@ export async function POST(request: NextRequest) {
         }
 
         const org = await ensureOrganization()
-        const { invoices, importTarget = 'invoices', accountingType = 'income' } = await request.json()
+        const body = await request.json()
+
+        // Handle Bulk Status Update
+        if (body.action === 'updateStatus') {
+            const { ids, status } = body
+
+            if (!ids || !Array.isArray(ids) || !status) {
+                return NextResponse.json({ error: 'Invalid data for status update' }, { status: 400 })
+            }
+
+            const prismaStatus = mapStatusToPrisma(status)
+
+            await prisma.invoice.updateMany({
+                where: {
+                    id: { in: ids },
+                    organizationId: org.id
+                },
+                data: {
+                    status: prismaStatus
+                }
+            })
+
+            return NextResponse.json({
+                success: true,
+                message: `Status updated to ${status} for ${ids.length} invoices`
+            })
+        }
+
+        // Handle Batch Import (Existing Logic)
+        const { invoices, importTarget = 'invoices', accountingType = 'income' } = body
 
         if (!invoices || !Array.isArray(invoices)) {
             return NextResponse.json({ error: 'Invalid data' }, { status: 400 })

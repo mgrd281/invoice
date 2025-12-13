@@ -6,9 +6,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown } from 'lucide-react'
+import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2 } from 'lucide-react'
 import { downloadInvoicePDF } from '@/lib/pdf-generator'
 import { useToast } from '@/components/ui/toast'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { InvoiceActions } from '@/components/invoice-actions'
 import { EmailInvoice } from '@/components/email-invoice'
 import BulkEmailSender from '@/components/bulk-email-sender'
@@ -51,6 +52,12 @@ export default function InvoicesPage() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
 
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+
+  // Date Filter State
+  const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>({ from: null, to: null })
+
+  // Bulk Actions State
+  const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false)
 
   // Customer History Drawer State
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null)
@@ -103,6 +110,9 @@ export default function InvoicesPage() {
       if (debouncedSearchQuery) {
         queryParams.append('search', debouncedSearchQuery)
       }
+
+      if (dateRange.from) queryParams.append('from', dateRange.from)
+      if (dateRange.to) queryParams.append('to', dateRange.to)
 
       // Fetch invoices for this user only using authenticated fetch with pagination and search
       const response = await authenticatedFetch(`/api/invoices?${queryParams.toString()}`, {
@@ -186,7 +196,7 @@ export default function InvoicesPage() {
         setIsSearching(false) // Stop search loading indicator
       }
     }
-  }, [isAuthenticated, user?.email, page, limit, debouncedSearchQuery]) // Removed isSearching from dependencies to avoid loop
+  }, [isAuthenticated, user?.email, page, limit, debouncedSearchQuery, dateRange]) // Removed isSearching from dependencies to avoid loop
 
   useEffect(() => {
     fetchInvoices()
@@ -249,6 +259,39 @@ export default function InvoicesPage() {
     }
   }, [fetchInvoices, isAutoSyncing]) // Updated dependencies
 
+
+  // Bulk Status Update
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    if (selectedInvoices.size === 0) return
+
+    try {
+      showToast(`Aktualisiere Status für ${selectedInvoices.size} Rechnungen...`, 'info')
+
+      const response = await authenticatedFetch('/api/invoices/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'updateStatus',
+          ids: Array.from(selectedInvoices),
+          status: newStatus
+        })
+      })
+
+      if (response.ok) {
+        showToast('Status erfolgreich aktualisiert', 'success')
+        fetchInvoices(true)
+        setSelectedInvoices(new Set())
+        setShowBulkStatusUpdate(false)
+      } else {
+        throw new Error('Failed to update status')
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+      showToast('Fehler beim Aktualisieren des Status', 'error')
+    }
+  }
 
   // Handle search input change with debouncing (reset page to 1 on search)
   useEffect(() => {
@@ -812,6 +855,70 @@ export default function InvoicesPage() {
                 {searchResults.length > 0 && (
                   <span className="ml-2 text-green-600">✓</span>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Date Filter & Bulk Actions */}
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Zeitraum:</span>
+              <input
+                type="date"
+                className="text-sm border rounded px-2 py-1"
+                value={dateRange.from || ''}
+                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value || null }))}
+              />
+              <span className="text-gray-400">-</span>
+              <input
+                type="date"
+                className="text-sm border rounded px-2 py-1"
+                value={dateRange.to || ''}
+                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value || null }))}
+              />
+              {(dateRange.from || dateRange.to) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDateRange({ from: null, to: null })}
+                  className="h-8 px-2 text-gray-500"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+
+            {selectedInvoices.size > 0 && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm font-medium text-blue-600">{selectedInvoices.size} ausgewählt</span>
+
+                <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8">
+                      <Edit2 className="h-3 w-3 mr-2" />
+                      Status ändern
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Status für {selectedInvoices.size} Rechnungen ändern</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        {['Bezahlt', 'Offen', 'Mahnung', 'Storniert'].map((status) => (
+                          <Button
+                            key={status}
+                            variant="outline"
+                            className={`justify-start ${getStatusColor(status)}`}
+                            onClick={() => handleBulkStatusUpdate(status)}
+                          >
+                            {status}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>

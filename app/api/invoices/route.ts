@@ -75,6 +75,23 @@ export async function GET(request: NextRequest) {
       whereClause.organizationId = org.id
     }
 
+    // Date range filter
+    const from = searchParams.get('from')
+    const to = searchParams.get('to')
+
+    if (from || to) {
+      whereClause.issueDate = {}
+      if (from) {
+        whereClause.issueDate.gte = new Date(from)
+      }
+      if (to) {
+        // Set 'to' date to end of day
+        const toDate = new Date(to)
+        toDate.setHours(23, 59, 59, 999)
+        whereClause.issueDate.lte = toDate
+      }
+    }
+
     // Add search filter if query is present
     if (search) {
       const searchTerms = search.trim().split(/[\s,]+/) // Split by space or comma
