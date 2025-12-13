@@ -296,7 +296,7 @@ export default function InvoicesPage() {
       showToast('PDF wird generiert...', 'success')
 
       // Use new download endpoint with authentication
-      const response = await fetch(`/ api / invoices / ${invoiceId}/download-pdf`, {
+      const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
