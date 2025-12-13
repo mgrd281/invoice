@@ -198,6 +198,37 @@ export default function InvoicesPage() {
     }
   }, [isAuthenticated, user?.email, page, limit, debouncedSearchQuery, dateRange]) // Removed isSearching from dependencies to avoid loop
 
+  // Listen for invoice updates (e.g., after CSV upload)
+  const handleInvoiceUpdate = useCallback(() => {
+    console.log('Invoice update detected, refreshing list...')
+    fetchInvoices(true) // Background update
+  }, [fetchInvoices])
+
+  // Handle date range changes
+  useEffect(() => {
+    if (dateRange.from || dateRange.to) {
+      setLimit(250) // Increase limit when filtering by date
+      setPage(1)
+    }
+  }, [dateRange])
+
+  // Custom event listener for invoice updates
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
+      window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
+      window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
+        window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
+        window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+      }
+    }
+  }, [handleInvoiceUpdate])
+
   useEffect(() => {
     fetchInvoices()
 
@@ -211,38 +242,6 @@ export default function InvoicesPage() {
         console.error('Error loading hidden invoices:', error)
       }
     }
-
-    // Listen for invoice updates (e.g., after CSV upload)
-    const handleInvoiceUpdate = () => {
-      console.log('Invoice update detected, refreshing list...')
-      fetchInvoices(true) // Background update
-    }
-
-    // Handle date range changes
-    useEffect(() => {
-      if (dateRange.from || dateRange.to) {
-        setLimit(250) // Increase limit when filtering by date
-        setPage(1)
-      }
-      // We don't need to trigger fetch here because dateRange is in fetchInvoices dependency
-    }, [dateRange])
-
-    // Custom event listener for invoice updates
-    useEffect(() => {
-      if (typeof window !== 'undefined') {
-        window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
-        window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
-        window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
-      }
-
-      return () => {
-        if (typeof window !== 'undefined') {
-          window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
-          window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
-          window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
-        }
-      }
-    }, [handleInvoiceUpdate])
 
     // ---------------------------------------------------------
     // AUTO-SYNC POLLING (Every 30 seconds)
@@ -270,15 +269,12 @@ export default function InvoicesPage() {
     }
 
     return () => {
-      window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
-      window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
-      window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
       if (syncInterval) clearInterval(syncInterval)
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
     }
-  }, [fetchInvoices, isAutoSyncing]) // Updated dependencies
+  }, [fetchInvoices, isAutoSyncing, isAuthenticated])
 
 
   // Bulk Status Update
