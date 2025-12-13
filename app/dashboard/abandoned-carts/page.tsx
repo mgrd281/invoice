@@ -35,11 +35,6 @@ export default function AbandonedCartsPage() {
     const [settingsLoading, setSettingsLoading] = useState(true)
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
     const [soundEnabled, setSoundEnabled] = useState(false)
-    const [debugLogs, setDebugLogs] = useState<string[]>([])
-
-    const addLog = useCallback((msg: string) => {
-        setDebugLogs(prev => [`${new Date().toLocaleTimeString()}: ${msg}`, ...prev].slice(0, 10))
-    }, [])
 
     const [mounted, setMounted] = useState(false)
 
@@ -70,7 +65,6 @@ export default function AbandonedCartsPage() {
         const newState = !soundEnabled
         setSoundEnabled(newState)
         localStorage.setItem('abandonedCartSoundEnabled', String(newState))
-        addLog(`Sound toggled to ${newState}`)
 
         if (newState) {
             // 1. Try to unlock audio autoplay
@@ -80,18 +74,16 @@ export default function AbandonedCartsPage() {
                 if (playPromise !== undefined) {
                     playPromise
                         .then(() => {
-                            addLog("Audio unlock successful (played/paused)")
                             audioRef.current?.pause()
                             audioRef.current!.currentTime = 0
                         })
-                        .catch(error => addLog(`Audio unlock failed: ${error.message}`))
+                        .catch(error => console.error(`Audio unlock failed: ${error.message}`))
                 }
             }
 
             // 2. Request System Notification Permission
             if ('Notification' in window && Notification.permission !== 'granted') {
                 const permission = await Notification.requestPermission()
-                addLog(`Notification permission: ${permission}`)
                 if (permission !== 'granted') {
                     alert("Bitte erlauben Sie Benachrichtigungen im Browser, um Alarme zu erhalten.")
                 }
@@ -101,7 +93,6 @@ export default function AbandonedCartsPage() {
 
     const triggerNewCartAlert = useCallback((cart: AbandonedCart, isTest: boolean = false) => {
         setNewCartAlert(cart)
-        addLog(`Triggering alert for cart ${cart.id.slice(0, 8)}... (Sound: ${soundEnabled}, Test: ${isTest})`)
 
         // 1. System Notification
         if ((soundEnabled || isTest) && 'Notification' in window && Notification.permission === 'granted') {
@@ -110,9 +101,8 @@ export default function AbandonedCartsPage() {
                     body: `Wert: ${Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}`,
                     icon: '/favicon.ico'
                 })
-                addLog("System notification sent")
             } catch (e) {
-                addLog(`System notification failed: ${e}`)
+                console.error(`System notification failed: ${e}`)
             }
         }
 
@@ -122,19 +112,15 @@ export default function AbandonedCartsPage() {
             const playPromise = audioRef.current.play()
             if (playPromise !== undefined) {
                 playPromise
-                    .then(() => addLog("Audio played successfully"))
-                    .catch(error => addLog(`Audio play failed: ${error.message}`))
+                    .catch(error => console.error(`Audio play failed: ${error.message}`))
             }
-        } else {
-            addLog("Audio skipped (disabled or no ref)")
         }
 
         setTimeout(() => setNewCartAlert(null), 8000)
-    }, [soundEnabled, addLog])
+    }, [soundEnabled])
 
     const fetchCarts = useCallback(async () => {
         setLoading(true)
-        // addLog("Fetching carts...") // Reduce log noise
         try {
             const response = await authenticatedFetch('/api/abandoned-carts')
             if (response.ok) {
@@ -148,7 +134,6 @@ export default function AbandonedCartsPage() {
                     if (newCarts.length > 0) {
                         const sortedNewCarts = [...newCarts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                         const latestCart = sortedNewCarts[0]
-                        addLog(`New cart detected: ${latestCart.id}`)
                         triggerNewCartAlert(latestCart)
                     }
                 }
@@ -162,7 +147,6 @@ export default function AbandonedCartsPage() {
             }
         } catch (error) {
             console.error('Failed to fetch carts:', error)
-            addLog(`Fetch error: ${error}`)
         } finally {
             setLoading(false)
         }
@@ -198,7 +182,6 @@ export default function AbandonedCartsPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         }
-        addLog("Triggering test alarm.")
         triggerNewCartAlert(mockCart, true)
         setSoundEnabled(true)
     }
@@ -478,18 +461,6 @@ export default function AbandonedCartsPage() {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Debug Logs Section */}
-                {debugLogs.length > 0 && (
-                    <div className="mt-8 p-4 bg-gray-100 rounded-lg border border-gray-200">
-                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Debug Logs</h4>
-                        <div className="font-mono text-xs text-gray-600 space-y-1">
-                            {debugLogs.map((log, i) => (
-                                <div key={i}>{log}</div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     )
