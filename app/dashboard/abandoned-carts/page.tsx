@@ -34,6 +34,7 @@ export default function AbandonedCartsPage() {
     const [exitIntentEnabled, setExitIntentEnabled] = useState(false)
     const [settingsLoading, setSettingsLoading] = useState(true)
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+    const [soundEnabled, setSoundEnabled] = useState(false)
 
     // Real-time updates
     const knownCartIds = useRef<Set<string>>(new Set())
@@ -44,22 +45,46 @@ export default function AbandonedCartsPage() {
 
     // Remove the useEffect that did new Audio()
 
-    const triggerNewCartAlert = useCallback((cart: AbandonedCart) => {
+    const toggleSound = () => {
+        if (!soundEnabled) {
+            // Try to play to unlock autoplay
+            if (audioRef.current) {
+                const playPromise = audioRef.current.play()
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            // Audio started! We can pause it now.
+                            audioRef.current?.pause()
+                            audioRef.current!.currentTime = 0
+                            setSoundEnabled(true)
+                        })
+                        .catch(error => {
+                            console.error("Could not enable audio:", error)
+                            alert("Browser blocked audio. Please interact with the page first.")
+                        })
+                }
+            }
+        } else {
+            setSoundEnabled(false)
+        }
+    }
+
+    const triggerNewCartAlert = useCallback((cart: AbandonedCart, isTest: boolean = false) => {
         setNewCartAlert(cart)
 
-        if (audioRef.current) {
+        // Play sound if enabled OR if it's a manual test
+        if ((soundEnabled || isTest) && audioRef.current) {
             audioRef.current.currentTime = 0
             const playPromise = audioRef.current.play()
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
                     console.error("Audio play failed:", error)
-                    // Try to recover or log visible error
                 })
             }
         }
 
         setTimeout(() => setNewCartAlert(null), 8000)
-    }, [])
+    }, [soundEnabled])
 
     const fetchCarts = useCallback(async () => {
         setLoading(true)
@@ -124,7 +149,8 @@ export default function AbandonedCartsPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         }
-        triggerNewCartAlert(mockCart)
+        triggerNewCartAlert(mockCart, true)
+        setSoundEnabled(true)
     }
 
     const toggleExitIntent = async (checked: boolean) => {
@@ -215,13 +241,20 @@ export default function AbandonedCartsPage() {
                             </span>
                         )}
                         <div className="flex gap-2">
+                            <Button
+                                onClick={toggleSound}
+                                variant={soundEnabled ? "default" : "outline"}
+                                className={`flex items-center gap-2 ${soundEnabled ? 'bg-emerald-600 hover:bg-emerald-700' : 'text-gray-500'}`}
+                            >
+                                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                                {soundEnabled ? 'Ton An' : 'Ton Aus'}
+                            </Button>
                             <Button onClick={testAlarm} variant="outline" className="flex items-center gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50">
                                 <Bell className="w-4 h-4" />
-                                Test Alarm
+                                Test
                             </Button>
                             <Button onClick={fetchCarts} variant="outline" className="flex items-center gap-2">
                                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                                Aktualisieren
                             </Button>
                         </div>
                     </div>
