@@ -885,7 +885,7 @@ export default function BuchhaltungPage() {
                         handleFilesAdded(Array.from(e.target.files))
                       }
                     }}
-                    accept=".pdf,.jpg,.png,.docx,.xlsx"
+                    accept=".pdf,.jpg,.png,.docx,.xlsx,.xls,.csv"
                   />
 
                   <div className="space-y-2">
@@ -895,7 +895,7 @@ export default function BuchhaltungPage() {
                     <p className="font-medium text-gray-900">
                       {isDragging ? 'Dateien hier ablegen' : 'Dateien auswählen oder hierher ziehen'}
                     </p>
-                    <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX (Unbegrenzt)</p>
+                    <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX, CSV, Excel (Unbegrenzt)</p>
                   </div>
                 </div>
 

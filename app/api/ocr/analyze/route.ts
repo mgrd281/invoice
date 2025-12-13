@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
 import OpenAI from 'openai'
+import * as XLSX from 'xlsx'
 
 // Polyfill DOMMatrix for pdf-parse in Node environment
 if (typeof DOMMatrix === 'undefined') {
@@ -54,8 +55,25 @@ export async function POST(request: NextRequest) {
             }
         } else if (file.type.startsWith('image/')) {
             isImage = true
+        } else if (
+            file.type === 'text/csv' ||
+            file.type === 'application/vnd.ms-excel' ||
+            file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+            file.name.endsWith('.csv') ||
+            file.name.endsWith('.xls') ||
+            file.name.endsWith('.xlsx')
+        ) {
+            try {
+                const workbook = XLSX.read(buffer, { type: 'buffer' })
+                const sheetName = workbook.SheetNames[0]
+                const sheet = workbook.Sheets[sheetName]
+                text = XLSX.utils.sheet_to_csv(sheet)
+            } catch (e) {
+                console.error('Excel/CSV parse error:', e)
+                return NextResponse.json({ error: 'Failed to parse Excel/CSV file' }, { status: 500 })
+            }
         } else {
-            return NextResponse.json({ error: 'Unsupported file type. Please upload PDF or Image.' }, { status: 400 })
+            return NextResponse.json({ error: 'Unsupported file type. Please upload PDF, Image, CSV or Excel.' }, { status: 400 })
         }
 
         let result
