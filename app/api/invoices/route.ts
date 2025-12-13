@@ -4,6 +4,17 @@ import { prisma } from '@/lib/prisma'
 import { ensureOrganization, ensureCustomer, ensureTaxRate, ensureDefaultTemplate } from '@/lib/db-operations'
 import { Prisma } from '@prisma/client'
 
+// Mock storage for Email Status (shared with [id]/email-status/route.ts)
+declare global {
+  var invoiceEmailStatus: Record<string, {
+    sent: boolean
+    sentAt?: string
+    sentTo?: string
+    messageId?: string
+    lastAttempt?: string
+  }> | undefined
+}
+
 export const dynamic = 'force-dynamic'
 
 // Helper to map Prisma status to Frontend status
@@ -108,7 +119,8 @@ export async function GET(request: NextRequest) {
       original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
       grund: (inv as any).reason,
       refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined,
-      orderNumber: inv.order?.orderNumber
+      orderNumber: inv.order?.orderNumber,
+      emailStatus: global.invoiceEmailStatus?.[inv.id] || { sent: false }
     }))
 
     return NextResponse.json({

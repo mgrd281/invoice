@@ -153,23 +153,15 @@ export default function InvoicesPage() {
 
       console.log('Fetched invoices for user:', user.email, 'Count:', allInvoices.length, 'Page:', page)
 
-      // Fetch email statuses for all invoices
-      const emailStatusPromises = allInvoices.map(async (invoice: any) => {
-        try {
-          const statusResponse = await fetch(`/api/invoices/${invoice.id}/email-status`)
-          const statusData = await statusResponse.json()
-          return { id: invoice.id, status: statusData.status }
-        } catch (error) {
-          console.error(`Error fetching email status for invoice ${invoice.id}:`, error)
-          return { id: invoice.id, status: { sent: false } }
+      // Extract email statuses from the invoices directly
+      const emailStatusMap = allInvoices.reduce((acc: Record<string, any>, invoice: any) => {
+        if (invoice.emailStatus) {
+          acc[invoice.id] = invoice.emailStatus
+        } else {
+          acc[invoice.id] = { sent: false }
         }
-      })
-
-      const emailStatusResults = await Promise.all(emailStatusPromises)
-      const emailStatusMap = emailStatusResults.reduce((acc, { id, status }) => {
-        acc[id] = status
         return acc
-      }, {} as Record<string, any>)
+      }, {})
 
       setEmailStatuses(emailStatusMap)
 
