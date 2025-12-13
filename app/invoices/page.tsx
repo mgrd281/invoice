@@ -58,6 +58,7 @@ export default function InvoicesPage() {
 
   // Bulk Actions State
   const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false)
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false)
 
   // Customer History Drawer State
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null)
@@ -537,6 +538,14 @@ export default function InvoicesPage() {
       return
     }
 
+    setIsDownloadingZip(true)
+    // Show a toast if it takes longer than 1 second (simulated by just showing it, user perception handles the rest)
+    // or we can use a timeout to show it only if it's slow.
+    // For now, let's show a "Preparing" toast immediately which is good UX.
+    const loadingToastId = setTimeout(() => {
+      showToast('ZIP-Datei wird erstellt... Bitte warten', 'info')
+    }, 1000)
+
     try {
       console.log('Sending request to /api/download-invoices-zip')
       const response = await fetch('/api/download-invoices-zip', {
@@ -576,11 +585,15 @@ export default function InvoicesPage() {
       document.body.removeChild(a)
 
       const count = selectedInvoices.size > 0 ? selectedInvoices.size : invoices.length
+      clearTimeout(loadingToastId) // Clear the loading toast timer if it finished fast
       showToast(`${count} Rechnungen als ZIP heruntergeladen`, 'success')
 
     } catch (error) {
       console.error('ZIP download error:', error)
       showToast('Fehler beim Herunterladen der ZIP-Datei', 'error')
+    } finally {
+      clearTimeout(loadingToastId)
+      setIsDownloadingZip(false)
     }
   }
 
@@ -779,11 +792,21 @@ export default function InvoicesPage() {
               <Button
                 variant="outline"
                 onClick={handleDownloadZip}
+                disabled={isDownloadingZip}
                 className="text-green-600 hover:text-green-700 hover:border-green-300"
                 title={selectedInvoices.size > 0 ? `${selectedInvoices.size} ausgewählte Rechnungen herunterladen` : 'Alle Rechnungen herunterladen'}
               >
-                <Download className="h-4 w-4 mr-2" />
-                {selectedInvoices.size > 0 ? `${selectedInvoices.size} als ZIP` : 'Alle als ZIP'}
+                {isDownloadingZip ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Wird erstellt...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    {selectedInvoices.size > 0 ? `${selectedInvoices.size} als ZIP` : 'Alle als ZIP'}
+                  </>
+                )}
               </Button>
 
               <Button
@@ -832,6 +855,11 @@ export default function InvoicesPage() {
             </div>
           </div>
         </div>
+        {isDownloadingZip && (
+          <div className="w-full h-1 bg-green-100 overflow-hidden">
+            <div className="h-full bg-green-500 animate-pulse w-full origin-left"></div>
+          </div>
+        )}
       </header>
 
       {/* Search Section */}
