@@ -133,69 +133,37 @@ export default function CancelInvoicePage() {
     try {
       setSaving(true)
 
-      // Create cancellation invoice
-      const cancellationInvoice = {
-        originalInvoiceId: originalInvoice.id,
-        invoiceNumber: cancellationData.cancellationNumber,
-        customerName: originalInvoice.customerName,
-        customerEmail: originalInvoice.customerEmail,
-        customerAddress: originalInvoice.customerAddress,
-        date: cancellationData.cancellationDate,
-        status: 'Storniert',
-        type: 'cancellation',
-
-        // Negative amounts for cancellation
-        items: originalInvoice.items.map(item => ({
-          ...item,
-          quantity: -item.quantity,
-          total: -item.total
-        })),
-
-        subtotal: -originalInvoice.subtotal,
-        taxRate: originalInvoice.taxRate,
-        taxAmount: -originalInvoice.taxAmount,
-        totalAmount: -originalInvoice.totalAmount,
-
-        cancellationReason: cancellationData.reason,
-        refundMethod: cancellationData.refundMethod,
-        refundAmount: cancellationData.refundAmount,
-        notes: cancellationData.notes,
-
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-
-      // Save cancellation invoice
-      const response = await authenticatedFetch('/api/invoices', {
+      const response = await authenticatedFetch(`/api/invoices/${originalInvoice.id}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(cancellationInvoice)
+        body: JSON.stringify({
+          reason: cancellationData.reason,
+          processingNotes: cancellationData.notes,
+          cancellationNumber: cancellationData.cancellationNumber,
+          date: cancellationData.cancellationDate,
+          refundMethod: cancellationData.refundMethod,
+          // We don't pass refundAmount as the API calculates it based on the original invoice
+          // to ensure data consistency for a full cancellation.
+        })
       })
 
       if (response.ok) {
-        // Update original invoice status to cancelled
-        await authenticatedFetch(`/api/invoices/${originalInvoice.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...originalInvoice,
-            status: 'Storniert',
-            updatedAt: new Date().toISOString()
-          })
-        })
-
-        alert('Storno-Rechnung erfolgreich erstellt! / Cancellation invoice created successfully!')
-        router.push('/invoices')
+        const result = await response.json()
+        if (result.success) {
+          alert('Storno-Rechnung erfolgreich erstellt! / Cancellation invoice created successfully!')
+          router.push('/invoices')
+        } else {
+          throw new Error(result.error || 'Failed to create cancellation invoice')
+        }
       } else {
-        throw new Error('Failed to create cancellation invoice')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create cancellation invoice')
       }
     } catch (error) {
       console.error('Error creating cancellation:', error)
-      alert('Fehler beim Erstellen der Storno-Rechnung / Error creating cancellation invoice')
+      alert(`Fehler beim Erstellen der Storno-Rechnung: ${(error as Error).message}`)
     } finally {
       setSaving(false)
     }
@@ -300,8 +268,8 @@ export default function CancelInvoicePage() {
               <div>
                 <Label className="text-sm font-medium text-gray-500">Status</Label>
                 <Badge className={`${originalInvoice.status === 'Bezahlt' ? 'bg-green-100 text-green-800' :
-                    originalInvoice.status === 'Offen' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
+                  originalInvoice.status === 'Offen' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
                   }`}>
                   {originalInvoice.status}
                 </Badge>

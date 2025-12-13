@@ -8,7 +8,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { reason, processingNotes } = await request.json()
+    const {
+      reason,
+      processingNotes,
+      cancellationNumber: providedNumber,
+      date: providedDate,
+      refundMethod
+    } = await request.json()
     const invoiceId = params.id
 
     // 1. Fetch original invoice from Prisma
@@ -63,16 +69,18 @@ export async function POST(
     }
 
     // 5. Generate Storno Invoice Number
-    // Count existing invoices to determine the next number
-    // In a real app with high concurrency, this needs a better sequence mechanism
-    const invoiceCount = await prisma.invoice.count({
-      where: { organizationId: originalInvoice.organizationId }
-    })
+    let stornoNumber = providedNumber
 
-    const stornoNumber = generateInvoiceNumber(
-      InvoiceType.CANCELLATION,
-      invoiceCount + 1
-    )
+    if (!stornoNumber) {
+      const invoiceCount = await prisma.invoice.count({
+        where: { organizationId: originalInvoice.organizationId }
+      })
+
+      stornoNumber = generateInvoiceNumber(
+        InvoiceType.CANCELLATION,
+        invoiceCount + 1
+      )
+    }
 
     // 6. Calculate Amounts (Negative)
     const totalNet = Number(originalInvoice.totalNet) * -1
@@ -86,8 +94,8 @@ export async function POST(
         customerId: originalInvoice.customerId,
         templateId: originalInvoice.templateId, // Use same template
         invoiceNumber: stornoNumber,
-        issueDate: new Date(),
-        dueDate: new Date(), // Storno is due immediately
+        issueDate: providedDate ? new Date(providedDate) : new Date(),
+        dueDate: providedDate ? new Date(providedDate) : new Date(), // Storno is due immediately
         totalNet: totalNet,
         totalGross: totalGross,
         totalTax: totalTax,
@@ -104,7 +112,11 @@ export async function POST(
         headerSubject: `Stornorechnung zu ${originalInvoice.invoiceNumber}`,
         headerText: originalInvoice.headerText,
         footerText: originalInvoice.footerText,
-        settings: originalInvoice.settings || undefined,
+        settings: {
+          ...(originalInvoice.settings as object || {}),
+          refundMethod: refundMethod,
+          processingNotes: processingNotes
+        },
 
         // Create negative items
         items: {
