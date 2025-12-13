@@ -1,7 +1,7 @@
 // Accounting System Types and Interfaces
 // Buchhaltungssystem - Typen und Schnittstellen
 
-export type AccountingPeriod = 'month' | 'quarter' | 'year' | 'custom'
+export type AccountingPeriod = 'month' | 'quarter' | 'year' | 'all' | 'custom'
 export type InvoiceStatus = 'offen' | 'bezahlt' | 'erstattet' | 'storniert' | 'überfällig'
 export type ExpenseCategory = 'office' | 'travel' | 'equipment' | 'marketing' | 'utilities' | 'professional_services' | 'other'
 export type ExportFormat = 'csv' | 'pdf' | 'datev' | 'excel' | 'zip'
@@ -184,6 +184,7 @@ export function getAccountingPeriodLabel(period: AccountingPeriod): string {
     'month': 'Monat',
     'quarter': 'Quartal',
     'year': 'Jahr',
+    'all': 'Gesamt',
     'custom': 'Benutzerdefiniert'
   }
   return labels[period]
