@@ -47,6 +47,10 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [estimatedTime, setEstimatedTime] = useState(0)
 
+  // Saving Progress State
+  const [saveProgress, setSaveProgress] = useState(0)
+  const [saveEstimatedTime, setSaveEstimatedTime] = useState(0)
+
   // Duplicates & Templates
   const [duplicates, setDuplicates] = useState<Set<string>>(new Set())
   const [templates, setTemplates] = useState<any[]>([])
@@ -202,20 +206,17 @@ export default function UploadPage() {
     if (invoicesToSave.length === 0) return
 
     setSaving(true)
+    setSaveProgress(0)
+
     const totalToSave = invoicesToSave.length
+    // Estimate: 0.1s per invoice is a rough guess for batch processing
+    const initialEstimate = Math.ceil(totalToSave * 0.05)
+    setSaveEstimatedTime(initialEstimate)
+
     let savedCount = 0
     const chunkSize = 50 // Process 50 invoices at a time
     const failedInvoices: any[] = []
-
-    // Sort indices in descending order to remove from end first (though we'll rebuild the list anyway)
-    // Actually, better to just track IDs or keep the ones NOT in the saved set.
-    // Since indices change as we remove items, it's tricky to remove incrementally by index if we don't handle it carefully.
-    // Strategy: We will process the *invoicesToSave* array. For each successful chunk, we will filter them out of *previewInvoices*.
-    // To identify them reliably, we might need a unique ID. If not available, we can rely on object reference or index from the original list.
-    // Given the current setup, let's process chunks and then update the main list.
-
-    // However, the user wants them to disappear *immediately*.
-    // So we should update `previewInvoices` after each chunk.
+    const startTime = Date.now()
 
     // Let's create a Set of indices to remove for efficient lookup
     const indicesToRemoveSet = new Set(indicesToRemove)
@@ -226,6 +227,18 @@ export default function UploadPage() {
     // Let's iterate through chunks of invoicesToSave
     for (let i = 0; i < totalToSave; i += chunkSize) {
       const chunk = invoicesToSave.slice(i, i + chunkSize)
+
+      // Update progress
+      const currentProgress = Math.round((i / totalToSave) * 100)
+      setSaveProgress(currentProgress)
+
+      // Update estimated time remaining
+      if (i > 0) {
+        const elapsed = (Date.now() - startTime) / 1000
+        const rate = i / elapsed // items per second
+        const remaining = totalToSave - i
+        setSaveEstimatedTime(Math.ceil(remaining / rate))
+      }
 
       setUploadStatus({
         type: 'idle',
@@ -258,17 +271,7 @@ export default function UploadPage() {
           // Also update selectedIndices. This is harder because indices shift.
           // Easiest is to just clear selection or re-calculate. 
           // If we are saving "Selected", we probably want to clear them as they are saved.
-          setSelectedIndices(prev => {
-            const newSet = new Set(prev)
-            // We don't easily know the *original* index of these items in the *current* previewInvoices 
-            // without searching. 
-            // Since we are removing them, we can just clear the selection of the ones we removed.
-            // Actually, if we remove them from the list, the indices of remaining items change.
-            // It's safest to clear selection if we are doing a bulk action, or just reset it.
-            // But if we only save *some* selected, we want to keep others selected?
-            // For now, let's just clear selection as items are removed.
-            return new Set()
-          })
+          setSelectedIndices(prev => new Set())
 
         } else {
           console.error('Chunk failed', await response.json())
@@ -284,6 +287,8 @@ export default function UploadPage() {
       }
     }
 
+    setSaveProgress(100)
+    setSaveEstimatedTime(0)
     setSaving(false)
 
     if (failedInvoices.length === 0) {
@@ -463,27 +468,40 @@ export default function UploadPage() {
                   </div>
 
                   <div className="space-x-2">
-                    <Button variant="destructive" onClick={handleDeleteAll}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Alle löschen
-                    </Button>
-                    <Button
-                      onClick={selectedIndices.size > 0 ? handleConfirmSelected : handleConfirmAll}
-                      disabled={saving}
-                      className={saving ? 'opacity-50 cursor-not-allowed' : ''}
-                    >
-                      {saving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Speichere...
-                        </>
-                      ) : (
-                        <>
+                    {saving ? (
+                      <div className="flex items-center gap-4 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                        <div className="flex flex-col w-[200px]">
+                          <div className="flex justify-between text-xs text-blue-800 mb-1">
+                            <span>Speichere...</span>
+                            <span className="font-medium">{saveProgress}%</span>
+                          </div>
+                          <div className="w-full bg-blue-200 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300 ease-out"
+                              style={{ width: `${saveProgress}%` }}
+                            ></div>
+                          </div>
+                          {saveEstimatedTime > 0 && (
+                            <span className="text-[10px] text-blue-600 mt-1">
+                              ca. {saveEstimatedTime} Sek. verbleibend
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Button variant="destructive" onClick={handleDeleteAll}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Alle löschen
+                        </Button>
+                        <Button
+                          onClick={selectedIndices.size > 0 ? handleConfirmSelected : handleConfirmAll}
+                        >
                           <Save className="h-4 w-4 mr-2" />
                           {selectedIndices.size > 0 ? `${selectedIndices.size} speichern` : 'Alle speichern'}
-                        </>
-                      )}
-                    </Button>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
