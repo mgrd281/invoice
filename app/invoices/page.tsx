@@ -907,16 +907,23 @@ export default function InvoicesPage() {
               <div className="flex items-center gap-2 ml-auto">
                 <span className="text-sm font-medium text-blue-600">{selectedInvoices.size} ausgewählt</span>
 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setShowBulkStatusUpdate(true)}
+                >
+                  <Edit2 className="h-3 w-3 mr-2" />
+                  Status ändern
+                </Button>
+
                 <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8">
-                      <Edit2 className="h-3 w-3 mr-2" />
-                      Status ändern
-                    </Button>
-                  </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Status für {selectedInvoices.size} Rechnungen ändern</DialogTitle>
+                      <DialogDescription>
+                        Wählen Sie den neuen Status für die ausgewählten Rechnungen.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-2 gap-2">
