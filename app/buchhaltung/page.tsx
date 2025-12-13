@@ -1248,9 +1248,10 @@ export default function BuchhaltungPage() {
 
         {/* Data Tables */}
         <Tabs defaultValue="invoices" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="invoices">Rechnungen ({invoices.length})</TabsTrigger>
             <TabsTrigger value="expenses">Ausgaben ({expenses.length})</TabsTrigger>
+            <TabsTrigger value="additional_income">Sonstige ({additionalIncomes.length})</TabsTrigger>
             <TabsTrigger value="voranmeldung">Voranmeldung</TabsTrigger>
           </TabsList>
 
@@ -1376,6 +1377,71 @@ export default function BuchhaltungPage() {
                 {expenses.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     Keine Ausgaben im gewählten Zeitraum gefunden
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="additional_income">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Sonstige Einnahmen</CardTitle>
+                    <CardDescription>
+                      Manuell erfasste oder importierte Einnahmen (ohne Rechnung)
+                    </CardDescription>
+                  </div>
+                  {/* Add Income Dialog/Button could go here if implemented */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Beschreibung</TableHead>
+                      <TableHead>Typ</TableHead>
+                      <TableHead className="text-right">Betrag</TableHead>
+                      <TableHead className="text-right">Aktion</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {additionalIncomes.map((income) => (
+                      <TableRow key={income.id}>
+                        <TableCell>{new Date(income.date).toLocaleDateString('de-DE')}</TableCell>
+                        <TableCell>{income.description}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {income.type === 'INCOME' ? 'Einnahme' : 'Sonstiges'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">€{Number(income.amount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={async () => {
+                              if (!confirm('Möchten Sie diese Einnahme wirklich löschen?')) return;
+                              try {
+                                const res = await authenticatedFetch(`/api/accounting/additional-income/${income.id}`, { method: 'DELETE' });
+                                if (res.ok) loadAccountingData();
+                              } catch (e) { console.error(e); alert('Fehler beim Löschen'); }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {additionalIncomes.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Keine sonstigen Einnahmen im gewählten Zeitraum gefunden
                   </div>
                 )}
               </CardContent>
