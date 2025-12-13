@@ -41,13 +41,21 @@ export default function AbandonedCartsPage() {
         setDebugLogs(prev => [`${new Date().toLocaleTimeString()}: ${msg}`, ...prev].slice(0, 10))
     }
 
-    // Load sound preference on mount
+    const [mounted, setMounted] = useState(false)
+
     useEffect(() => {
+        setMounted(true)
         const savedSound = localStorage.getItem('abandonedCartSoundEnabled')
         if (savedSound === 'true') {
             setSoundEnabled(true)
         }
     }, [])
+
+    if (!mounted) {
+        return <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        </div>
+    }
 
     // Real-time updates
     const knownCartIds = useRef<Set<string>>(new Set())
