@@ -397,7 +397,12 @@ export default function AbandonedCartsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-medium">
-                                                        {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
+                                                        {(() => {
+                                                            const price = Number(cart.totalPrice)
+                                                            return isNaN(price)
+                                                                ? '0,00 €'
+                                                                : price.toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })
+                                                        })()}
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-1">
                                                         {cart.lineItems && Array.isArray(cart.lineItems) ? (
@@ -441,7 +446,13 @@ export default function AbandonedCartsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-500">
-                                                    {formatDistanceToNow(new Date(cart.updatedAt), { addSuffix: true, locale: de })}
+                                                    {(() => {
+                                                        try {
+                                                            return cart.updatedAt ? formatDistanceToNow(new Date(cart.updatedAt), { addSuffix: true, locale: de }) : 'Unbekannt'
+                                                        } catch (e) {
+                                                            return 'Datum ungültig'
+                                                        }
+                                                    })()}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <a
