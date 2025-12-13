@@ -108,12 +108,20 @@ export async function POST(request: NextRequest) {
           const doc = await generateArizonaPDF(invoiceData)
           const pdfBuffer = doc.output('arraybuffer')
 
-          // Create filename
-          const date = new Date(invoice.issueDate).toISOString().split('T')[0]
-          const safeNumber = invoice.invoiceNumber.replace(/[^a-zA-Z0-9-_]/g, '_')
-          const filename = `Rechnung_${safeNumber}_${date}.pdf`
+          // Create filename and folder structure
+          const invoiceDate = new Date(invoice.issueDate)
+          const year = invoiceDate.getFullYear()
+          const month = String(invoiceDate.getMonth() + 1).padStart(2, '0')
+          const day = String(invoiceDate.getDate()).padStart(2, '0')
 
-          zip.file(filename, pdfBuffer)
+          const monthFolder = `${year}-${month}`
+          const dayFolder = `${year}-${month}-${day}`
+
+          const safeNumber = invoice.invoiceNumber.replace(/[^a-zA-Z0-9-_]/g, '_')
+          const filename = `Rechnung_${safeNumber}_${dayFolder}.pdf`
+
+          // Add to zip with folder structure: YYYY-MM / YYYY-MM-DD / filename
+          zip.file(`${monthFolder}/${dayFolder}/${filename}`, pdfBuffer)
           processedCount++
         } catch (error) {
           console.error(`Error generating PDF for invoice ${invoice.invoiceNumber}:`, error)
