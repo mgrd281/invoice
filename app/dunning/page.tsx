@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuthenticatedFetch } from '@/lib/api-client'
-import { AlertCircle, Save, CheckCircle, Clock, Percent, Mail } from 'lucide-react'
+import { AlertCircle, Save, CheckCircle, Clock, Percent, Mail, ShoppingBag } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function DunningPage() {
@@ -169,7 +169,58 @@ export default function DunningPage() {
                     <TabsList className="bg-white p-1 rounded-lg border">
                         <TabsTrigger value="settings" className="px-6">Einstellungen</TabsTrigger>
                         <TabsTrigger value="templates" className="px-6">E-Mail Vorlagen</TabsTrigger>
+                        <TabsTrigger value="shopify" className="px-6">Shopify Automation</TabsTrigger>
                     </TabsList>
+
+                    {/* SHOPIFY AUTOMATION TAB */}
+                    <TabsContent value="shopify">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ShoppingBag className="w-5 h-5 text-green-600" />
+                                    Shopify Zahlungsabgleich & Erinnerungen
+                                </CardTitle>
+                                <CardDescription>
+                                    Konfigurieren Sie automatische E-Mails für Vorkasse- und Rechnungszahler direkt aus Shopify-Bestellungen.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                                    <div className="bg-blue-100 p-2 rounded-full">
+                                        <Mail className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-blue-900">Separate Konfiguration</h3>
+                                        <p className="text-sm text-blue-700 mt-1">
+                                            Für Shopify-Bestellungen (Vorkasse & Rechnung) haben wir ein separates, spezialisiertes System entwickelt,
+                                            das Erinnerungen basierend auf dem Bestelldatum sendet, noch bevor eine Rechnung in diesem System erstellt wurde.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                        <h4 className="font-medium mb-2">Vorkasse-Erinnerungen</h4>
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            Automatische Zahlungserinnerungen für Kunden, die per Banküberweisung zahlen müssen.
+                                        </p>
+                                        <Button variant="outline" onClick={() => router.push('/settings/payment-reminders')} className="w-full">
+                                            Konfigurieren
+                                        </Button>
+                                    </div>
+                                    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                        <h4 className="font-medium mb-2">Rechnungskauf-Erinnerungen</h4>
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            Erinnerungen und Mahnungen für "Kauf auf Rechnung" Bestellungen.
+                                        </p>
+                                        <Button variant="outline" onClick={() => router.push('/settings/payment-reminders')} className="w-full">
+                                            Konfigurieren
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
                     {/* SETTINGS TAB */}
                     <TabsContent value="settings">
