@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -27,19 +27,46 @@ interface AbandonedCart {
 
 export default function AbandonedCartsPage() {
     const authenticatedFetch = useAuthenticatedFetch()
-    const [carts, setCarts] = useState<AbandonedCart[]>([])
-    const [loading, setLoading] = useState(true)
-    const [exitIntentEnabled, setExitIntentEnabled] = useState(false)
-    const [settingsLoading, setSettingsLoading] = useState(true)
+    const knownCartIds = useRef<Set<string>>(new Set())
+    const audioRef = useRef<HTMLAudioElement | null>(null)
+    const [newCartAlert, setNewCartAlert] = useState<AbandonedCart | null>(null)
+
+    useEffect(() => {
+        // Cash register sound
+        audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3")
+    }, [])
 
     const fetchCarts = async () => {
-        // ... existing fetchCarts logic
         setLoading(true)
         try {
             const response = await authenticatedFetch('/api/abandoned-carts')
             if (response.ok) {
                 const data = await response.json()
-                setCarts(data.carts)
+                const currentCarts: AbandonedCart[] = data.carts
+
+                // Check for new carts
+                if (knownCartIds.current.size > 0) {
+                    const newCarts = currentCarts.filter((c: AbandonedCart) => !knownCartIds.current.has(c.id))
+                    if (newCarts.length > 0) {
+                        const latestCart = newCarts[0]
+                        setNewCartAlert(latestCart)
+
+                        // Play sound
+                        if (audioRef.current) {
+                            audioRef.current.currentTime = 0
+                            audioRef.current.play().catch(e => console.log("Audio play failed", e))
+                        }
+
+                        // Auto hide after 8 seconds
+                        setTimeout(() => setNewCartAlert(null), 8000)
+                    }
+                }
+
+                // Update known IDs
+                const newIds = new Set(currentCarts.map((c: AbandonedCart) => c.id))
+                knownCartIds.current = newIds
+
+                setCarts(currentCarts)
             }
         } catch (error) {
             console.error('Failed to fetch carts:', error)
@@ -86,7 +113,42 @@ export default function AbandonedCartsPage() {
     }, [authenticatedFetch])
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="min-h-screen bg-gray-50 p-8 relative">
+            {/* Notification Alert */}
+            {newCartAlert && (
+                <div className="fixed top-24 right-8 z-50 animate-in slide-in-from-right-full duration-500">
+                    <Card className="w-96 shadow-2xl border-l-4 border-l-emerald-500 bg-white">
+                        <CardContent className="p-4">
+                            <div className="flex items-start gap-4">
+                                <div className="bg-emerald-100 p-3 rounded-full animate-bounce">
+                                    <ShoppingBag className="w-6 h-6 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-gray-900 flex items-center justify-between">
+                                        Neuer Warenkorb!
+                                        <span className="text-xs font-normal text-gray-500">Gerade eben</span>
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Ein Kunde hat Waren im Wert von <span className="font-bold text-emerald-600">{Number(newCartAlert.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: newCartAlert.currency || 'EUR' })}</span> zurückgelassen.
+                                    </p>
+                                    <div className="mt-3 flex gap-2">
+                                        <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => setNewCartAlert(null)}>
+                                            Ausblenden
+                                        </Button>
+                                        <Button size="sm" className="w-full text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => window.open(newCartAlert.cartUrl, '_blank')}>
+                                            Ansehen
+                                        </Button>
+                                    </div>
+                                </div>
+                                <button onClick={() => setNewCartAlert(null)} className="text-gray-400 hover:text-gray-600">
+                                    <XCircle className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between">
