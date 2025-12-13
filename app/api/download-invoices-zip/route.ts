@@ -122,6 +122,10 @@ export async function POST(request: NextRequest) {
 
           // Add to zip with folder structure: YYYY-MM / YYYY-MM-DD / filename
           zip.file(`${monthFolder}/${dayFolder}/${filename}`, pdfBuffer)
+
+          // Also add to a "Alle Rechnungen" folder within the month for easier access
+          zip.file(`${monthFolder}/Alle_Rechnungen/${filename}`, pdfBuffer)
+
           processedCount++
         } catch (error) {
           console.error(`Error generating PDF for invoice ${invoice.invoiceNumber}:`, error)
