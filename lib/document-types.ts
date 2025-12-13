@@ -191,11 +191,16 @@ export function determineDocumentStatus(csvData: any, kind: DocumentKind): Docum
     case 'pending':
       return DocumentStatus.OFFEN
     case 'partial':
+    case 'partially_paid':
       return DocumentStatus.TEILWEISE_BEZAHLT
+    case 'authorized':
+      return DocumentStatus.OFFEN
     case 'refunded':
       return kind === DocumentKind.CANCELLATION ? DocumentStatus.STORNIERT : DocumentStatus.GUTSCHRIFT
     case 'partially_refunded':
       return DocumentStatus.GUTSCHRIFT
+    case 'voided':
+      return DocumentStatus.STORNIERT
     default:
       // Default based on document kind
       if (kind === DocumentKind.CANCELLATION) {
