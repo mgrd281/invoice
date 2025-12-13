@@ -365,6 +365,11 @@ export default function BuchhaltungPage() {
                   <span>Steuerberater</span>
                 </Button>
               </Link>
+              <Link href="/buchhaltung/debug">
+                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
+                  <span className="text-xs">Diagnose</span>
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"

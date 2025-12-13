@@ -1,0 +1,169 @@
+import { prisma } from '@/lib/prisma'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
+
+async function getDebugData() {
+    const invoiceCount = await prisma.invoice.count()
+    const expenseCount = await prisma.expense.count()
+    const incomeCount = await prisma.additionalIncome.count()
+    const receiptCount = await prisma.receipt.count()
+
+    const recentInvoices = await prisma.invoice.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, invoiceNumber: true, issueDate: true, totalGross: true, createdAt: true }
+    })
+
+    const recentExpenses = await prisma.expense.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, description: true, date: true, totalAmount: true, createdAt: true }
+    })
+
+    const recentIncome = await prisma.additionalIncome.findMany({
+        take: 5,
+        orderBy: { date: 'desc' },
+        select: { id: true, description: true, date: true, amount: true, type: true }
+    })
+
+    return {
+        counts: { invoiceCount, expenseCount, incomeCount, receiptCount },
+        recentInvoices,
+        recentExpenses,
+        recentIncome
+    }
+}
+
+export default async function DebugPage() {
+    const data = await getDebugData()
+
+    return (
+        <div className="min-h-screen bg-gray-50 p-8">
+            <div className="max-w-7xl mx-auto space-y-8">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Link href="/buchhaltung">
+                            <Button variant="ghost">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Zurück zur Buchhaltung
+                            </Button>
+                        </Link>
+                        <h1 className="text-3xl font-bold text-gray-900">System Diagnose</h1>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        Serverzeit: {new Date().toLocaleString('de-DE')}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Rechnungen (DB)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data.counts.invoiceCount}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Ausgaben (DB)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data.counts.expenseCount}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Zusätzliche Einnahmen (DB)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data.counts.incomeCount}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-500">Belege (DB)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data.counts.receiptCount}</div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Letzte 5 Zusätzliche Einnahmen (Importiert)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Beschreibung</TableHead>
+                                        <TableHead>Datum</TableHead>
+                                        <TableHead>Betrag</TableHead>
+                                        <TableHead>Typ</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {data.recentIncome.map((item) => (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="font-medium">{item.description}</TableCell>
+                                            <TableCell>{new Date(item.date).toLocaleDateString('de-DE')}</TableCell>
+                                            <TableCell>€{Number(item.amount).toFixed(2)}</TableCell>
+                                            <TableCell><Badge>{item.type}</Badge></TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {data.recentIncome.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-gray-500">Keine Daten gefunden</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Letzte 5 Rechnungen</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nummer</TableHead>
+                                        <TableHead>Datum</TableHead>
+                                        <TableHead>Betrag</TableHead>
+                                        <TableHead>Erstellt am</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {data.recentInvoices.map((item) => (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="font-medium">{item.invoiceNumber}</TableCell>
+                                            <TableCell>{new Date(item.issueDate).toLocaleDateString('de-DE')}</TableCell>
+                                            <TableCell>€{Number(item.totalGross).toFixed(2)}</TableCell>
+                                            <TableCell>{new Date(item.createdAt).toLocaleDateString('de-DE')}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {data.recentInvoices.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-gray-500">Keine Daten gefunden</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    )
+}
