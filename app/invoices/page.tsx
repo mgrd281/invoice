@@ -1067,7 +1067,7 @@ export default function InvoicesPage() {
         </div >
 
         {/* Invoices Table */}
-        < Card >
+        <Card>
           <CardHeader>
             <CardTitle>Alle Rechnungen</CardTitle>
             <CardDescription>
@@ -1268,7 +1268,7 @@ export default function InvoicesPage() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card >
+        </Card>
 
         {/* Empty State (if no invoices or no search results) */}
         {
@@ -1412,7 +1412,7 @@ export default function InvoicesPage() {
             </div>
           )
         }
-      </main >
+      </main>
 
       {/* Komponente für den Massenversand */}
       {
@@ -1424,7 +1424,14 @@ export default function InvoicesPage() {
         )
       }
 
+      <CustomerHistoryDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        customerEmail={selectedCustomerEmail}
+        allInvoices={invoices}
+      />
+
       <ToastContainer />
-    </div >
+    </div>
   )
 }
