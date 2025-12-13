@@ -928,36 +928,36 @@ export default function InvoicesPage() {
                   <Edit2 className="h-3 w-3 mr-2" />
                   Status ändern
                 </Button>
-
-                <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Status für {selectedInvoices.size} Rechnungen ändern</DialogTitle>
-                      <DialogDescription>
-                        Wählen Sie den neuen Status für die ausgewählten Rechnungen.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-2">
-                        {['Bezahlt', 'Offen', 'Mahnung', 'Storniert'].map((status) => (
-                          <Button
-                            key={status}
-                            variant="outline"
-                            className={`justify-start ${getStatusColor(status)}`}
-                            onClick={() => handleBulkStatusUpdate(status)}
-                          >
-                            {status}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </div>
             )}
           </div>
         </div>
-      </div>
+      </header>
+
+      <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Status für {selectedInvoices.size} Rechnungen ändern</DialogTitle>
+            <DialogDescription>
+              Wählen Sie den neuen Status für die ausgewählten Rechnungen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-2">
+              {['Bezahlt', 'Offen', 'Mahnung', 'Storniert'].map((status) => (
+                <Button
+                  key={status}
+                  variant="outline"
+                  className={`justify-start ${getStatusColor(status)}`}
+                  onClick={() => handleBulkStatusUpdate(status)}
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -1064,10 +1064,10 @@ export default function InvoicesPage() {
               <p className="text-xs text-gray-500">Potenziell</p>
             </CardContent>
           </Card>
-        </div>
+        </div >
 
         {/* Invoices Table */}
-        <Card>
+        < Card >
           <CardHeader>
             <CardTitle>Alle Rechnungen</CardTitle>
             <CardDescription>
@@ -1268,155 +1268,163 @@ export default function InvoicesPage() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+        </Card >
 
         {/* Empty State (if no invoices or no search results) */}
-        {displayedInvoices.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {showSearchResults ? 'Keine Rechnungen gefunden' : 'Noch keine Rechnungen erstellt'}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {showSearchResults
-                  ? `Keine Rechnungen entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
-                  : 'Erstellen Sie Ihre erste Rechnung oder laden Sie CSV-Daten hoch.'
-                }
-              </p>
-              {showSearchResults ? (
-                <Button onClick={clearSearch} variant="outline">
-                  Suche zurücksetzen
-                </Button>
-              ) : (
-                <div className="flex justify-center space-x-4">
-                  <Link href="/invoices/new">
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Neue Rechnung
-                    </Button>
-                  </Link>
-                  <Link href="/upload">
-                    <Button variant="outline">
-                      CSV hochladen
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {
+          displayedInvoices.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {showSearchResults ? 'Keine Rechnungen gefunden' : 'Noch keine Rechnungen erstellt'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {showSearchResults
+                    ? `Keine Rechnungen entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
+                    : 'Erstellen Sie Ihre erste Rechnung oder laden Sie CSV-Daten hoch.'
+                  }
+                </p>
+                {showSearchResults ? (
+                  <Button onClick={clearSearch} variant="outline">
+                    Suche zurücksetzen
+                  </Button>
+                ) : (
+                  <div className="flex justify-center space-x-4">
+                    <Link href="/invoices/new">
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Neue Rechnung
+                      </Button>
+                    </Link>
+                    <Link href="/upload">
+                      <Button variant="outline">
+                        CSV hochladen
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        }
 
         {/* Pagination Controls */}
-        {displayedInvoices.length > 0 && !showSearchResults && (
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Zeige</span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value))
-                  setPage(1) // Reset to first page when limit changes
-                }}
-                className="border border-gray-300 rounded-md text-sm p-1"
-              >
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="250">250</option>
-                <option value="500">500</option>
-                <option value="1000">1000</option>
-                <option value="2000">2000</option>
-                <option value="3000">3000</option>
-              </select>
-              <span className="text-sm text-gray-600">Einträge pro Seite</span>
-            </div>
+        {
+          displayedInvoices.length > 0 && !showSearchResults && (
+            <div className="flex items-center justify-between py-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Zeige</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value))
+                    setPage(1) // Reset to first page when limit changes
+                  }}
+                  className="border border-gray-300 rounded-md text-sm p-1"
+                >
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="250">250</option>
+                  <option value="500">500</option>
+                  <option value="1000">1000</option>
+                  <option value="2000">2000</option>
+                  <option value="3000">3000</option>
+                </select>
+                <span className="text-sm text-gray-600">Einträge pro Seite</span>
+              </div>
 
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-              >
-                Zurück
-              </Button>
-              <span className="text-sm text-gray-600">
-                Seite {page} von {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages || loading}
-              >
-                Weiter
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Dialog */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {deleteTarget.type === 'single'
-                  ? 'Rechnung wirklich löschen?'
-                  : `${deleteTarget.ids.length} Rechnungen wirklich löschen?`
-                }
-              </h3>
-              {deleteTarget.type === 'single' && deleteTarget.invoiceNumber && (
-                <p className="text-sm text-gray-600 mb-6">
-                  Die Rechnung "{deleteTarget.invoiceNumber}" wird unwiderruflich gelöscht.
-                </p>
-              )}
-              {deleteTarget.type === 'bulk' && (
-                <p className="text-sm text-gray-600 mb-6">
-                  Die ausgewählten {deleteTarget.ids.length} Rechnungen werden unwiderruflich gelöscht.
-                </p>
-              )}
-              <div className="flex justify-end space-x-3">
+              <div className="flex items-center space-x-4">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setShowDeleteConfirm(false)
-                    setDeleteTarget({ type: 'single', ids: [] })
-                  }}
-                  disabled={deleting}
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1 || loading}
                 >
-                  Abbrechen
+                  Zurück
                 </Button>
+                <span className="text-sm text-gray-600">
+                  Seite {page} von {totalPages}
+                </span>
                 <Button
-                  variant="destructive"
-                  onClick={confirmDelete}
-                  disabled={deleting}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || loading}
                 >
-                  {deleting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Wird gelöscht...
-                    </>
-                  ) : (
-                    'Ja, löschen'
-                  )}
+                  Weiter
                 </Button>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )
+        }
+
+        {/* Delete Confirmation Dialog */}
+        {
+          showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {deleteTarget.type === 'single'
+                    ? 'Rechnung wirklich löschen?'
+                    : `${deleteTarget.ids.length} Rechnungen wirklich löschen?`
+                  }
+                </h3>
+                {deleteTarget.type === 'single' && deleteTarget.invoiceNumber && (
+                  <p className="text-sm text-gray-600 mb-6">
+                    Die Rechnung "{deleteTarget.invoiceNumber}" wird unwiderruflich gelöscht.
+                  </p>
+                )}
+                {deleteTarget.type === 'bulk' && (
+                  <p className="text-sm text-gray-600 mb-6">
+                    Die ausgewählten {deleteTarget.ids.length} Rechnungen werden unwiderruflich gelöscht.
+                  </p>
+                )}
+                <div className="flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeleteTarget({ type: 'single', ids: [] })
+                    }}
+                    disabled={deleting}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={confirmDelete}
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Wird gelöscht...
+                      </>
+                    ) : (
+                      'Ja, löschen'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+      </main >
 
       {/* Komponente für den Massenversand */}
-      {showBulkEmailSender && (
-        <BulkEmailSender
-          selectedInvoices={Array.from(selectedInvoices)}
-          onClose={() => setShowBulkEmailSender(false)}
-        />
-      )}
+      {
+        showBulkEmailSender && (
+          <BulkEmailSender
+            selectedInvoices={Array.from(selectedInvoices)}
+            onClose={() => setShowBulkEmailSender(false)}
+          />
+        )
+      }
 
       <ToastContainer />
-    </div>
+    </div >
   )
 }
