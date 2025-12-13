@@ -39,6 +39,12 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const { showToast, ToastContainer } = useToast()
 
+  // Pagination State
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(50)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
+
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
 
@@ -108,7 +114,7 @@ export default function InvoicesPage() {
       window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
       if (syncInterval) clearInterval(syncInterval)
     }
-  }, [isAuthenticated, user, isAutoSyncing])
+  }, [isAuthenticated, user, isAutoSyncing, page, limit]) // Added page and limit dependencies
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -131,12 +137,21 @@ export default function InvoicesPage() {
       return
     }
 
-    try {
-      // Fetch invoices for this user only using authenticated fetch
-      const response = await authenticatedFetch('/api/invoices')
-      const allInvoices = await response.json()
+    setLoading(true)
 
-      console.log('Fetched invoices for user:', user.email, 'Count:', allInvoices.length)
+    try {
+      // Fetch invoices for this user only using authenticated fetch with pagination
+      const response = await authenticatedFetch(`/api/invoices?page=${page}&limit=${limit}`)
+      const data = await response.json()
+
+      // Handle new response format
+      const allInvoices = data.invoices || []
+      const pagination = data.pagination || { total: 0, pages: 1, page: 1, limit: 50 }
+
+      setTotalPages(pagination.pages)
+      setTotalInvoicesCount(pagination.total)
+
+      console.log('Fetched invoices for user:', user.email, 'Count:', allInvoices.length, 'Page:', page)
 
       // Fetch email statuses for all invoices
       const emailStatusPromises = allInvoices.map(async (invoice: any) => {
@@ -163,6 +178,7 @@ export default function InvoicesPage() {
       const combinedInvoices = allInvoices
 
       // Sort invoices by creation date/upload date in descending order (newest first)
+      // Note: Backend already sorts, but we can keep client-side sort if needed for mixed data
       const sortedInvoices = combinedInvoices.sort((a: any, b: any) => {
         const dateA = new Date(a.date || a.createdAt || a.uploadedAt || '1970-01-01').getTime()
         const dateB = new Date(b.date || b.createdAt || b.uploadedAt || '1970-01-01').getTime()
@@ -1153,6 +1169,51 @@ export default function InvoicesPage() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Pagination Controls */}
+        {displayedInvoices.length > 0 && !showSearchResults && (
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Zeige</span>
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value))
+                  setPage(1) // Reset to first page when limit changes
+                }}
+                className="border border-gray-300 rounded-md text-sm p-1"
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span className="text-sm text-gray-600">Einträge pro Seite</span>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+              >
+                Zurück
+              </Button>
+              <span className="text-sm text-gray-600">
+                Seite {page} von {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages || loading}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
         )}
 
         {/* Delete Confirmation Dialog */}

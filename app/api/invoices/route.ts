@@ -42,6 +42,12 @@ export async function GET(request: NextRequest) {
     // Ensure organization exists (idempotent)
     const org = await ensureOrganization()
 
+    // Pagination parameters
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const skip = (page - 1) * limit
+
     // Fetch invoices from Prisma
     const whereClause: Prisma.InvoiceWhereInput = {}
 
@@ -49,28 +55,11 @@ export async function GET(request: NextRequest) {
     if (!shouldShowAllData(user)) {
       whereClause.organizationId = org.id
     }
-    // If admin, we show all invoices (empty whereClause for organizationId)
 
-    if (!shouldShowAllData(user)) {
-      // Filter by customer email matching user email? 
-      // Or we need to link invoices to users directly.
-      // The current schema has userId on Invoice? Let's check.
-      // Schema has userId on Invoice? No, it has customerId.
-      // But User has role.
-      // For now, let's return all invoices for the organization if admin, 
-      // or maybe filter by something else.
-      // The previous code filtered by `invoice.userId === user.id`.
-      // But Invoice model in schema doesn't seem to have userId?
-      // Let's check schema again.
-      // Invoice model: organizationId, customerId, orderId... no userId.
-      // But Customer has userId? No.
-      // User has organizationId.
-
-      // If the user belongs to the organization, they should see invoices for that organization?
-      // Or maybe we should add userId to Invoice to track creator?
-      // For now, let's assume all users in the org can see all invoices, 
-      // or just return all for simplicity as requested "save all data".
-    }
+    // Get total count for pagination
+    const totalCount = await prisma.invoice.count({
+      where: whereClause
+    })
 
     const invoices = await prisma.invoice.findMany({
       where: whereClause,
@@ -82,7 +71,9 @@ export async function GET(request: NextRequest) {
       orderBy: [
         { issueDate: 'desc' },
         { invoiceNumber: 'desc' }
-      ]
+      ],
+      skip: skip,
+      take: limit
     })
 
     // Map to frontend format
@@ -120,7 +111,15 @@ export async function GET(request: NextRequest) {
       orderNumber: inv.order?.orderNumber
     }))
 
-    return NextResponse.json(mappedInvoices)
+    return NextResponse.json({
+      invoices: mappedInvoices,
+      pagination: {
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit),
+        page: page,
+        limit: limit
+      }
+    })
 
   } catch (error) {
     console.error('Error fetching invoices:', error)
