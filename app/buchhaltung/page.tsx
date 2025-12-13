@@ -421,6 +421,7 @@ export default function BuchhaltungPage() {
               <div className="lg:col-span-2">
                 <ReceiptsList
                   receipts={receipts}
+                  additionalIncomes={additionalIncomes}
                   selectedReceipts={selectedReceipts}
                   setSelectedReceipts={setSelectedReceipts}
                   onDeleteSelected={async () => {

@@ -14,8 +14,17 @@ interface Receipt {
     amount?: number
 }
 
+interface AdditionalIncome {
+    id: string
+    date: string
+    description: string
+    amount: number
+    type: string
+}
+
 interface ReceiptsListProps {
     receipts: Receipt[]
+    additionalIncomes?: AdditionalIncome[]
     selectedReceipts: string[]
     setSelectedReceipts: React.Dispatch<React.SetStateAction<string[]>>
     onDeleteSelected: () => void
@@ -25,6 +34,7 @@ interface ReceiptsListProps {
 
 export function ReceiptsList({
     receipts,
+    additionalIncomes = [],
     selectedReceipts,
     setSelectedReceipts,
     onDeleteSelected,
@@ -32,11 +42,27 @@ export function ReceiptsList({
     onEdit
 }: ReceiptsListProps) {
 
+    // Combine receipts and additional incomes for display
+    // We map additional incomes to a Receipt-like structure for consistent rendering
+    const combinedItems = [
+        ...receipts.map(r => ({ ...r, type: 'receipt' })),
+        ...additionalIncomes.map(ai => ({
+            id: ai.id,
+            date: ai.date,
+            filename: 'Importiert', // Placeholder for imported items
+            description: ai.description,
+            category: ai.type,
+            url: '',
+            amount: ai.amount,
+            type: 'income' // Distinguish type
+        }))
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
     const toggleSelectAll = () => {
-        if (selectedReceipts.length === receipts.length) {
+        if (selectedReceipts.length === combinedItems.length) {
             setSelectedReceipts([])
         } else {
-            setSelectedReceipts(receipts.map(r => r.id))
+            setSelectedReceipts(combinedItems.map(r => r.id))
         }
     }
 
@@ -52,8 +78,8 @@ export function ReceiptsList({
         <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Beleg-Eingang</CardTitle>
-                    <CardDescription>Zuletzt hochgeladene Dokumente</CardDescription>
+                    <CardTitle>Beleg-Eingang & Importierte Daten</CardTitle>
+                    <CardDescription>Zuletzt hochgeladene Dokumente und importierte Einnahmen</CardDescription>
                 </div>
                 <div className="flex space-x-2">
                     {selectedReceipts.length > 0 && (
@@ -79,11 +105,11 @@ export function ReceiptsList({
                         <TableRow>
                             <TableHead className="w-[50px]">
                                 <Checkbox
-                                    checked={receipts.length > 0 && selectedReceipts.length === receipts.length}
+                                    checked={combinedItems.length > 0 && selectedReceipts.length === combinedItems.length}
                                     onCheckedChange={toggleSelectAll}
                                 />
                             </TableHead>
-                            <TableHead>Datei</TableHead>
+                            <TableHead>Datei / Beschreibung</TableHead>
                             <TableHead>Datum</TableHead>
                             <TableHead>Kategorie</TableHead>
                             <TableHead className="text-right">Betrag</TableHead>
@@ -92,45 +118,52 @@ export function ReceiptsList({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {receipts.map((receipt) => (
-                            <TableRow key={receipt.id}>
+                        {combinedItems.map((item) => (
+                            <TableRow key={item.id}>
                                 <TableCell>
                                     <Checkbox
-                                        checked={selectedReceipts.includes(receipt.id)}
-                                        onCheckedChange={() => toggleSelectOne(receipt.id)}
+                                        checked={selectedReceipts.includes(item.id)}
+                                        onCheckedChange={() => toggleSelectOne(item.id)}
                                     />
                                 </TableCell>
                                 <TableCell className="font-medium">
                                     <div className="flex items-center space-x-2">
-                                        <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
-                                            <FileText className="h-4 w-4 text-gray-500" />
+                                        <div className={`h-8 w-8 rounded flex items-center justify-center ${item.type === 'income' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                                            {item.type === 'income' ? (
+                                                <FileText className="h-4 w-4 text-blue-500" />
+                                            ) : (
+                                                <FileText className="h-4 w-4 text-gray-500" />
+                                            )}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="truncate max-w-[150px] font-medium" title={receipt.description || receipt.filename}>
-                                                {receipt.description || receipt.filename}
+                                            <span className="truncate max-w-[250px] font-medium" title={item.description || item.filename}>
+                                                {item.description || item.filename}
                                             </span>
-                                            {receipt.description && receipt.description !== receipt.filename && (
-                                                <span className="text-xs text-gray-500 truncate max-w-[150px]">{receipt.filename}</span>
+                                            {item.type === 'income' && (
+                                                <span className="text-xs text-blue-500">Importiert</span>
+                                            )}
+                                            {item.type === 'receipt' && item.description && item.description !== item.filename && (
+                                                <span className="text-xs text-gray-500 truncate max-w-[150px]">{item.filename}</span>
                                             )}
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell>{new Date(receipt.date).toLocaleDateString('de-DE')}</TableCell>
+                                <TableCell>{new Date(item.date).toLocaleDateString('de-DE')}</TableCell>
                                 <TableCell>
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${receipt.category === 'INCOME' ? 'bg-green-100 text-green-700' :
-                                        receipt.category === 'EXPENSE' ? 'bg-red-100 text-red-700' :
-                                            'bg-gray-100 text-gray-700'
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.category === 'INCOME' || item.category === 'income' ? 'bg-green-100 text-green-700' :
+                                            item.category === 'EXPENSE' ? 'bg-red-100 text-red-700' :
+                                                'bg-gray-100 text-gray-700'
                                         }`}>
-                                        {receipt.category === 'INCOME' ? 'Einnahme' :
-                                            receipt.category === 'EXPENSE' ? 'Ausgabe' : 'Sonstiges'}
+                                        {item.category === 'INCOME' || item.category === 'income' ? 'Einnahme' :
+                                            item.category === 'EXPENSE' ? 'Ausgabe' : 'Sonstiges'}
                                     </span>
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
-                                    {receipt.amount ? `€${parseFloat(receipt.amount.toString()).toFixed(2)}` : '-'}
+                                    {item.amount ? `€${parseFloat(item.amount.toString()).toFixed(2)}` : '-'}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    {receipt.amount ? (
-                                        <div className="flex items-center justify-center text-green-600" title="Automatisch erkannt">
+                                    {item.amount ? (
+                                        <div className="flex items-center justify-center text-green-600" title="Vollständig">
                                             <CheckCircle className="h-4 w-4" />
                                         </div>
                                     ) : (
@@ -140,31 +173,35 @@ export function ReceiptsList({
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm" onClick={() => onEdit(receipt)}>
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm">
-                                        <Download className="h-4 w-4" />
-                                    </Button>
+                                    {item.type === 'receipt' && (
+                                        <>
+                                            <Button variant="ghost" size="sm" onClick={() => onEdit(item as any)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm">
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => onDelete(receipt.id)}
+                                        onClick={() => onDelete(item.id)}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {receipts.length === 0 && (
+                        {combinedItems.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                                     <div className="flex flex-col items-center justify-center">
                                         <div className="h-12 w-12 bg-gray-50 rounded-full flex items-center justify-center mb-2">
                                             <FileText className="h-6 w-6 text-gray-300" />
                                         </div>
-                                        <p>Keine Belege vorhanden</p>
+                                        <p>Keine Belege oder importierten Daten vorhanden</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
