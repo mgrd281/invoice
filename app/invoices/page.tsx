@@ -63,7 +63,7 @@ export default function InvoicesPage() {
     setIsDrawerOpen(true)
   }
 
-  const fetchInvoices = useCallback(async () => {
+  const fetchInvoices = useCallback(async (isBackground = false) => {
     if (!isAuthenticated || !user) {
       console.log('User not authenticated, cannot load invoices')
       setInvoices([])
@@ -80,13 +80,28 @@ export default function InvoicesPage() {
     const abortController = new AbortController()
     abortControllerRef.current = abortController
 
-    setLoading(true)
+    // Set timeout to avoid hanging requests (15 seconds)
+    const timeoutId = setTimeout(() => {
+      console.log('Fetch timed out, aborting...')
+      abortController.abort()
+    }, 15000)
+
+    if (!isBackground) {
+      setLoading(true)
+    }
 
     try {
       // Fetch invoices for this user only using authenticated fetch with pagination
       const response = await authenticatedFetch(`/api/invoices?page=${page}&limit=${limit}`, {
         signal: abortController.signal
       })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
 
       // Handle new response format
@@ -134,6 +149,7 @@ export default function InvoicesPage() {
       setInvoices(sortedInvoices)
 
     } catch (error: any) {
+      clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
         console.log('Fetch aborted')
         return
@@ -141,9 +157,10 @@ export default function InvoicesPage() {
       console.error('Error fetching invoices:', error)
       // Fallback to empty array - API should handle mock data
       setInvoices([])
+      showToast('Fehler beim Laden der Rechnungen', 'error')
     } finally {
-      // Only set loading false if this request wasn't aborted
-      if (abortControllerRef.current === abortController) {
+      // Only set loading false if this request wasn't aborted and we were loading
+      if (abortControllerRef.current === abortController && !isBackground) {
         setLoading(false)
       }
     }
@@ -166,7 +183,7 @@ export default function InvoicesPage() {
     // Listen for invoice updates (e.g., after CSV upload)
     const handleInvoiceUpdate = () => {
       console.log('Invoice update detected, refreshing list...')
-      fetchInvoices()
+      fetchInvoices(true) // Background update
     }
 
     // Custom event listener for invoice updates
@@ -189,9 +206,9 @@ export default function InvoicesPage() {
           setLastSyncTime(new Date())
 
           if (data.synced > 0) {
-            console.log(`✅ Auto - Sync found ${data.synced} new invoices! Refreshing...`)
+            console.log(`✅ Auto-Sync found ${data.synced} new invoices! Refreshing...`)
             showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
-            fetchInvoices() // Refresh the list
+            fetchInvoices(true) // Refresh the list in background
           }
         } catch (err) {
           console.error('Auto-Sync failed:', err)
