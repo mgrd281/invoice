@@ -807,6 +807,9 @@ model RealEstateSearchProfile {
   // Filters
   city           String?
   zipCode        String?
+  district       String?
+  transactionType String      @default("RENT") // RENT, BUY
+  propertyType   String       @default("APARTMENT") // APARTMENT, HOUSE
   radius         Int?         @default(10) // km
   priceMin       Int?
   priceMax       Int?
@@ -819,7 +822,7 @@ model RealEstateSearchProfile {
   email          String?
   telegramChatId String?
   
-  lastCheckedAt  DateTime?
+  lastRunAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   
