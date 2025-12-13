@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export async function POST(request: NextRequest) {
     try {
-        // 1. Find the target organization (prefer 'default-org' or the first one found)
-        let targetOrg = await prisma.organization.findUnique({
-            where: { id: 'default-org' }
+        // 1. Authenticate and get user's organization
+        const authResult = requireAuth(request)
+        if ('error' in authResult) {
+            return authResult.error
+        }
+        const { user } = authResult
+
+        // Find the organization the user belongs to
+        const userOrg = await prisma.organization.findFirst({
+            where: { users: { some: { id: user.id } } }
         })
 
-        if (!targetOrg) {
-            targetOrg = await prisma.organization.findFirst()
+        if (!userOrg) {
+            return NextResponse.json({ error: 'User does not belong to any organization' }, { status: 400 })
         }
 
-        if (!targetOrg) {
-            return NextResponse.json({ error: 'No organization found' }, { status: 404 })
-        }
-
-        const targetOrgId = targetOrg.id
+        const targetOrgId = userOrg.id
+        console.log(`Fixing data: Moving all records to organization ${userOrg.name} (${targetOrgId})`)
 
         // 2. Update all records to point to this organization
+        // We update EVERYTHING that is not already in this org
         const updateInvoices = await prisma.invoice.updateMany({
             where: { organizationId: { not: targetOrgId } },
             data: { organizationId: targetOrgId }
@@ -44,9 +50,13 @@ export async function POST(request: NextRequest) {
             data: { organizationId: targetOrgId }
         })
 
+        // Also update the 'default-org' settings if it exists to match this org, 
+        // or ensure this org is the one used for settings
+
         return NextResponse.json({
             success: true,
             targetOrgId,
+            targetOrgName: userOrg.name,
             updated: {
                 invoices: updateInvoices.count,
                 expenses: updateExpenses.count,
