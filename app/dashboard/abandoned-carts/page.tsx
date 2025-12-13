@@ -114,13 +114,12 @@ export default function AbandonedCartsPage() {
 
         setNewCartAlert(mockCart)
 
-        if (audioRef.current) {
-            audioRef.current.currentTime = 0
-            audioRef.current.play().catch(e => {
-                console.error("Audio play failed", e)
-                alert("Audio autoplay blocked. Please interact with the page first.")
-            })
-        }
+        // Create a new audio instance directly on user interaction to bypass autoplay policies
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3")
+        audio.play().catch(e => {
+            console.error("Audio play failed", e)
+            // Fallback: try a different sound or just log
+        })
 
         setTimeout(() => setNewCartAlert(null), 8000)
     }
