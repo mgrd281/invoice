@@ -125,15 +125,24 @@ export async function GET(request: NextRequest) {
       const status = invoice.status
       const kind = (invoice as any).documentKind // Cast because it might be missing in types if not updated
 
+      // Calculate Total Revenue (Gesamtumsatz) - Sum of EVERYTHING (Paid, Open, Overdue, Cancelled, Refunded)
+      // We exclude only Drafts from the financial total
+      if (status !== 'DRAFT') {
+        // For refunds/cancellations stored with negative values, this correctly subtracts them.
+        // If the user wants "Volume" (absolute sum), we would use Math.abs(), but "Umsatz" usually implies the net financial result.
+        // However, if the user wants to see the "Total Invoiced Volume" before deductions, that's different.
+        // Based on "everything with refunds", I'll assume Net Revenue (Invoices - Refunds).
+        totalRevenue += amount
+      }
+
       // Check for Refund/Cancellation documents first if documentKind is available
       if (kind === 'REFUND_FULL' || kind === 'REFUND_PARTIAL' || kind === 'CREDIT_NOTE') {
         refundInvoicesCount++
         // Track refund volume as positive number for the "Refunded" card
         refundInvoicesAmount += Math.abs(Number((invoice as any).refundAmount) || amount)
 
-        // Do NOT continue here. Let it fall through to switch(status).
-        // Since refunds have negative amounts in DB, adding them to 'PAID' 
-        // will correctly subtract from the total revenue.
+        // We still want to count them in specific stats below if needed, or just skip status check?
+        // Refunds usually have status PAID or similar.
       }
 
       // Status-based aggregation
@@ -141,17 +150,14 @@ export async function GET(request: NextRequest) {
         case 'PAID':
           paidInvoicesCount++
           paidInvoicesAmount += amount
-          totalRevenue += amount
           break
         case 'SENT': // Offen
           openInvoicesCount++
           openInvoicesAmount += amount
-          totalRevenue += amount
           break
         case 'OVERDUE': // Mahnung/Überfällig
           overdueInvoicesCount++
           overdueInvoicesAmount += amount
-          totalRevenue += amount
           // Overdue is technically still open revenue-wise, but usually tracked separately
           // If you want to count overdue as open for "total outstanding", add it here.
           // For now, keeping them separate as per dashboard design.
