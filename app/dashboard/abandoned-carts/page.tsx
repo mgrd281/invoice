@@ -36,6 +36,14 @@ export default function AbandonedCartsPage() {
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
     const [soundEnabled, setSoundEnabled] = useState(false)
 
+    // Load sound preference on mount
+    useEffect(() => {
+        const savedSound = localStorage.getItem('abandonedCartSoundEnabled')
+        if (savedSound === 'true') {
+            setSoundEnabled(true)
+        }
+    }, [])
+
     // Real-time updates
     const knownCartIds = useRef<Set<string>>(new Set())
     const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -45,34 +53,47 @@ export default function AbandonedCartsPage() {
 
     // Remove the useEffect that did new Audio()
 
-    const toggleSound = () => {
-        if (!soundEnabled) {
-            // Try to play to unlock autoplay
+    const toggleSound = async () => {
+        const newState = !soundEnabled
+        setSoundEnabled(newState)
+        localStorage.setItem('abandonedCartSoundEnabled', String(newState))
+
+        if (newState) {
+            // 1. Try to unlock audio autoplay
             if (audioRef.current) {
                 const playPromise = audioRef.current.play()
                 if (playPromise !== undefined) {
                     playPromise
                         .then(() => {
-                            // Audio started! We can pause it now.
                             audioRef.current?.pause()
                             audioRef.current!.currentTime = 0
-                            setSoundEnabled(true)
                         })
-                        .catch(error => {
-                            console.error("Could not enable audio:", error)
-                            alert("Browser blocked audio. Please interact with the page first.")
-                        })
+                        .catch(error => console.error("Audio autoplay unlock failed:", error))
                 }
             }
-        } else {
-            setSoundEnabled(false)
+
+            // 2. Request System Notification Permission
+            if ('Notification' in window && Notification.permission !== 'granted') {
+                const permission = await Notification.requestPermission()
+                if (permission !== 'granted') {
+                    alert("Bitte erlauben Sie Benachrichtigungen im Browser, um Alarme zu erhalten.")
+                }
+            }
         }
     }
 
     const triggerNewCartAlert = useCallback((cart: AbandonedCart, isTest: boolean = false) => {
         setNewCartAlert(cart)
 
-        // Play sound if enabled OR if it's a manual test
+        // 1. System Notification
+        if ((soundEnabled || isTest) && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification("Neuer abgebrochener Warenkorb!", {
+                body: `Wert: ${Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}`,
+                icon: '/favicon.ico' // Optional: Add a path to your icon
+            })
+        }
+
+        // 2. Play Sound
         if ((soundEnabled || isTest) && audioRef.current) {
             audioRef.current.currentTime = 0
             const playPromise = audioRef.current.play()
