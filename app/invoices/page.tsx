@@ -1211,6 +1211,17 @@ export default function InvoicesPage() {
                               <span className="text-xs ml-1">Versendet</span>
                             </div>
                           )}
+
+                          {/* Mahnstatus Anzeige */}
+                          {invoice.vorkasseReminderLevel > 0 && (
+                            <div
+                              className="flex items-center text-orange-600 ml-2"
+                              title={`Mahnstufe ${invoice.vorkasseReminderLevel} - Letzte: ${invoice.vorkasseLastReminderAt ? new Date(invoice.vorkasseLastReminderAt).toLocaleDateString('de-DE') : 'Unbekannt'}`}
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                              <span className="text-xs ml-1 font-medium">Mahnung {invoice.vorkasseReminderLevel}</span>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">

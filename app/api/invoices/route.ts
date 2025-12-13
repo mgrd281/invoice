@@ -170,6 +170,8 @@ export async function GET(request: NextRequest) {
         grund: (inv as any).reason,
         refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined,
         orderNumber: inv.order?.orderNumber,
+        vorkasseReminderLevel: inv.order?.vorkasseReminderLevel,
+        vorkasseLastReminderAt: inv.order?.vorkasseLastReminderAt,
         emailStatus: global.invoiceEmailStatus?.[inv.id] || { sent: false }
       }
     })
