@@ -164,7 +164,7 @@ export default function InvoicesPage() {
         setLoading(false)
       }
     }
-  }, [isAuthenticated, user, page, limit])
+  }, [isAuthenticated, user?.email, page, limit])
 
   useEffect(() => {
     fetchInvoices()
