@@ -467,6 +467,35 @@ export default function SettingsPage() {
 
 
 
+        {/* Automation & Reminders */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Settings className="h-5 w-5 mr-2 text-purple-600" />
+              Automatisierung & Erinnerungen
+            </CardTitle>
+            <CardDescription>
+              Konfigurieren Sie automatische Prozesse und Benachrichtigungen
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Zahlungserinnerungen (Vorkasse & Rechnung)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatische E-Mails für offene Rechnungen und Stornierungen
+                </p>
+              </div>
+              <Link href="/settings/payment-reminders">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Konfigurieren
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Security Settings */}
         <Card>
           <CardHeader>
