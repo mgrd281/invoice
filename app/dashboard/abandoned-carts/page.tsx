@@ -134,7 +134,7 @@ export default function AbandonedCartsPage() {
 
     const fetchCarts = useCallback(async () => {
         setLoading(true)
-        addLog("Fetching carts...")
+        // addLog("Fetching carts...") // Reduce log noise
         try {
             const response = await authenticatedFetch('/api/abandoned-carts')
             if (response.ok) {
@@ -151,11 +151,6 @@ export default function AbandonedCartsPage() {
                         addLog(`New cart detected: ${latestCart.id}`)
                         triggerNewCartAlert(latestCart)
                     }
-                } else {
-                    // First load
-                    if (currentCarts.length > 0) {
-                        // addLog(`Initial load: ${currentCarts.length} carts found`)
-                    }
                 }
 
                 // Update known IDs
@@ -164,7 +159,6 @@ export default function AbandonedCartsPage() {
 
                 setCarts(currentCarts)
                 setLastRefreshed(new Date())
-                addLog(`Fetched ${currentCarts.length} carts.`)
             }
         } catch (error) {
             console.error('Failed to fetch carts:', error)
@@ -172,9 +166,10 @@ export default function AbandonedCartsPage() {
         } finally {
             setLoading(false)
         }
-    }, [authenticatedFetch, triggerNewCartAlert, addLog])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Intentionally empty to prevent infinite loops if dependencies are unstable
 
-    const fetchSettings = async () => {
+    const fetchSettings = useCallback(async () => {
         try {
             const response = await authenticatedFetch('/api/marketing/settings')
             if (response.ok) {
@@ -186,7 +181,8 @@ export default function AbandonedCartsPage() {
         } finally {
             setSettingsLoading(false)
         }
-    }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const testAlarm = () => {
         const mockCart: AbandonedCart = {
