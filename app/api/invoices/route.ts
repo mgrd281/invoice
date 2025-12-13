@@ -50,8 +50,15 @@ export async function GET(request: NextRequest) {
     }
     const { user } = authResult
 
-    // Ensure organization exists (idempotent)
-    const org = await ensureOrganization()
+    // Ensure organization exists (read-only check first for performance)
+    // We use 'default-org' as fallback ID matching ensureOrganization logic
+    let org = await prisma.organization.findFirst({
+      where: { id: 'default-org' } // In a real app, this might come from session/settings
+    })
+
+    if (!org) {
+      org = await ensureOrganization()
+    }
 
     // Pagination parameters
     const searchParams = request.nextUrl.searchParams
@@ -76,7 +83,7 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         customer: true,
-        items: true,
+        // items: true, // Removed for performance - not needed in list view
         order: true
       },
       orderBy: [
@@ -107,13 +114,7 @@ export async function GET(request: NextRequest) {
         country: inv.customer.country,
         companyName: '' // Add to schema if needed
       },
-      items: inv.items.map(item => ({
-        description: item.description,
-        quantity: Number(item.quantity),
-        unitPrice: Number(item.unitPrice), // This is gross in our logic
-        total: Number(item.grossAmount),
-        ean: (item as any).ean
-      })),
+      items: [], // Items not fetched for list view performance
       document_kind: (inv as any).documentKind,
       reference_number: (inv as any).referenceNumber,
       original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
