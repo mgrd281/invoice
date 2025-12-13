@@ -215,7 +215,15 @@ export default function AbandonedCartsPage() {
         if (mounted) {
             fetchCarts()
             fetchSettings()
-            const interval = setInterval(fetchCarts, 30000)
+
+            // Optimize: Refresh every 5 minutes instead of 30 seconds to save Vercel usage
+            // Also check if document is visible to avoid unnecessary background fetches
+            const interval = setInterval(() => {
+                if (!document.hidden) {
+                    fetchCarts()
+                }
+            }, 300000) // 5 minutes = 300,000ms
+
             return () => clearInterval(interval)
         }
     }, [mounted, fetchCarts, fetchSettings])
