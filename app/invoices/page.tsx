@@ -50,6 +50,8 @@ export default function InvoicesPage() {
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
 
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+
   // Customer History Drawer State
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -87,7 +89,8 @@ export default function InvoicesPage() {
     }, 15000)
 
     if (!isBackground) {
-      setLoading(true)
+      // Only set main loading if not searching (to avoid full screen spinner on search)
+      if (!isSearching) setLoading(true)
     }
 
     try {
@@ -97,8 +100,8 @@ export default function InvoicesPage() {
         limit: limit.toString(),
       })
 
-      if (searchQuery) {
-        queryParams.append('search', searchQuery)
+      if (debouncedSearchQuery) {
+        queryParams.append('search', debouncedSearchQuery)
       }
 
       // Fetch invoices for this user only using authenticated fetch with pagination and search
@@ -158,6 +161,14 @@ export default function InvoicesPage() {
       console.log('Invoices sorted by date (newest first):', sortedInvoices.length)
       setInvoices(sortedInvoices)
 
+      // Update search results state if we are searching
+      if (debouncedSearchQuery) {
+        setSearchResults(sortedInvoices)
+        setShowSearchResults(true)
+      } else {
+        setShowSearchResults(false)
+      }
+
     } catch (error: any) {
       clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
@@ -170,11 +181,12 @@ export default function InvoicesPage() {
       showToast('Fehler beim Laden der Rechnungen', 'error')
     } finally {
       // Only set loading false if this request wasn't aborted and we were loading
-      if (abortControllerRef.current === abortController && !isBackground) {
-        setLoading(false)
+      if (abortControllerRef.current === abortController) {
+        if (!isBackground) setLoading(false)
+        setIsSearching(false) // Stop search loading indicator
       }
     }
-  }, [isAuthenticated, user?.email, page, limit, searchQuery])
+  }, [isAuthenticated, user?.email, page, limit, debouncedSearchQuery]) // Removed isSearching from dependencies to avoid loop
 
   useEffect(() => {
     fetchInvoices()
@@ -240,13 +252,20 @@ export default function InvoicesPage() {
 
   // Handle search input change with debouncing (reset page to 1 on search)
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setPage(1) // Reset to first page on new search
-      // fetchInvoices will be triggered by page change or searchQuery change in its dependency array
-    }, 500)
+    // If search query changes, set isSearching to true immediately (visual feedback)
+    if (searchQuery !== debouncedSearchQuery) {
+      if (searchQuery.trim().length > 0) {
+        setIsSearching(true)
+      }
 
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery])
+      const timeoutId = setTimeout(() => {
+        setPage(1) // Reset to first page on new search
+        setDebouncedSearchQuery(searchQuery)
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [searchQuery, debouncedSearchQuery])
 
   // Clear search
   const clearSearch = () => {
