@@ -17,26 +17,31 @@ async function getDebugData() {
     const recentInvoices = await prisma.invoice.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, invoiceNumber: true, issueDate: true, totalGross: true, createdAt: true }
+        select: { id: true, invoiceNumber: true, issueDate: true, totalGross: true, createdAt: true, organizationId: true }
     })
 
     const recentExpenses = await prisma.expense.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, description: true, date: true, totalAmount: true, createdAt: true }
+        select: { id: true, description: true, date: true, totalAmount: true, createdAt: true, organizationId: true }
     })
 
     const recentIncome = await prisma.additionalIncome.findMany({
         take: 5,
         orderBy: { date: 'desc' },
-        select: { id: true, description: true, date: true, amount: true, type: true }
+        select: { id: true, description: true, date: true, amount: true, type: true, organizationId: true }
+    })
+
+    const organizations = await prisma.organization.findMany({
+        include: { _count: { select: { users: true, invoices: true, additionalIncomes: true } } }
     })
 
     return {
         counts: { invoiceCount, expenseCount, incomeCount, receiptCount },
         recentInvoices,
         recentExpenses,
-        recentIncome
+        recentIncome,
+        organizations
     }
 }
 
@@ -54,7 +59,7 @@ export default async function DebugPage() {
                                 Zurück zur Buchhaltung
                             </Button>
                         </Link>
-                        <h1 className="text-3xl font-bold text-gray-900">System Diagnose</h1>
+                        <h1 className="text-3xl font-bold text-gray-900">System Diagnose (Erweitert)</h1>
                     </div>
                     <div className="text-sm text-gray-500">
                         Serverzeit: {new Date().toLocaleString('de-DE')}
@@ -96,6 +101,36 @@ export default async function DebugPage() {
                     </Card>
                 </div>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Organisationen</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>User Count</TableHead>
+                                    <TableHead>Invoices</TableHead>
+                                    <TableHead>Incomes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {data.organizations.map((org) => (
+                                    <TableRow key={org.id}>
+                                        <TableCell className="font-mono text-xs">{org.id}</TableCell>
+                                        <TableCell>{org.name}</TableCell>
+                                        <TableCell>{org._count.users}</TableCell>
+                                        <TableCell>{org._count.invoices}</TableCell>
+                                        <TableCell>{org._count.additionalIncomes}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <Card>
                         <CardHeader>
@@ -107,24 +142,19 @@ export default async function DebugPage() {
                                     <TableRow>
                                         <TableHead>Beschreibung</TableHead>
                                         <TableHead>Datum</TableHead>
-                                        <TableHead>Betrag</TableHead>
-                                        <TableHead>Typ</TableHead>
+                                        <TableHead>Org ID</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {data.recentIncome.map((item) => (
                                         <TableRow key={item.id}>
-                                            <TableCell className="font-medium">{item.description}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <div className="truncate w-40" title={item.description}>{item.description}</div>
+                                            </TableCell>
                                             <TableCell>{new Date(item.date).toLocaleDateString('de-DE')}</TableCell>
-                                            <TableCell>€{Number(item.amount).toFixed(2)}</TableCell>
-                                            <TableCell><Badge>{item.type}</Badge></TableCell>
+                                            <TableCell className="font-mono text-xs">{item.organizationId}</TableCell>
                                         </TableRow>
                                     ))}
-                                    {data.recentIncome.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-gray-500">Keine Daten gefunden</TableCell>
-                                        </TableRow>
-                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -140,8 +170,7 @@ export default async function DebugPage() {
                                     <TableRow>
                                         <TableHead>Nummer</TableHead>
                                         <TableHead>Datum</TableHead>
-                                        <TableHead>Betrag</TableHead>
-                                        <TableHead>Erstellt am</TableHead>
+                                        <TableHead>Org ID</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -149,15 +178,9 @@ export default async function DebugPage() {
                                         <TableRow key={item.id}>
                                             <TableCell className="font-medium">{item.invoiceNumber}</TableCell>
                                             <TableCell>{new Date(item.issueDate).toLocaleDateString('de-DE')}</TableCell>
-                                            <TableCell>€{Number(item.totalGross).toFixed(2)}</TableCell>
-                                            <TableCell>{new Date(item.createdAt).toLocaleDateString('de-DE')}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.organizationId}</TableCell>
                                         </TableRow>
                                     ))}
-                                    {data.recentInvoices.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-gray-500">Keine Daten gefunden</TableCell>
-                                        </TableRow>
-                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
