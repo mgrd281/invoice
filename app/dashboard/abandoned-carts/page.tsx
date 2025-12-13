@@ -27,6 +27,14 @@ interface AbandonedCart {
 
 export default function AbandonedCartsPage() {
     const authenticatedFetch = useAuthenticatedFetch()
+
+    // State
+    const [carts, setCarts] = useState<AbandonedCart[]>([])
+    const [loading, setLoading] = useState(true)
+    const [exitIntentEnabled, setExitIntentEnabled] = useState(false)
+    const [settingsLoading, setSettingsLoading] = useState(true)
+
+    // Real-time updates
     const knownCartIds = useRef<Set<string>>(new Set())
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const [newCartAlert, setNewCartAlert] = useState<AbandonedCart | null>(null)
