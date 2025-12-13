@@ -116,34 +116,46 @@ export async function GET(request: NextRequest) {
     })
 
     // Map to frontend format
-    const mappedInvoices = invoices.map(inv => ({
-      id: inv.id,
-      number: inv.invoiceNumber,
-      date: inv.issueDate.toISOString().split('T')[0],
-      dueDate: inv.dueDate.toISOString().split('T')[0],
-      subtotal: Number(inv.totalNet),
-      taxRate: 19, // Approximation, ideally fetch from items or store on invoice
-      taxAmount: Number(inv.totalTax),
-      total: Number(inv.totalGross),
-      status: mapPrismaStatusToFrontend(inv.status),
-      customer: {
-        name: inv.customer.name,
-        email: inv.customer.email,
-        address: inv.customer.address,
-        zipCode: inv.customer.zipCode,
-        city: inv.customer.city,
-        country: inv.customer.country,
-        companyName: '' // Add to schema if needed
-      },
-      items: [], // Items not fetched for list view performance
-      document_kind: (inv as any).documentKind,
-      reference_number: (inv as any).referenceNumber,
-      original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
-      grund: (inv as any).reason,
-      refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined,
-      orderNumber: inv.order?.orderNumber,
-      emailStatus: global.invoiceEmailStatus?.[inv.id] || { sent: false }
-    }))
+    const mappedInvoices = invoices.map(inv => {
+      let status = mapPrismaStatusToFrontend(inv.status)
+
+      // Override status for Credit Notes and Refunds
+      // If it's a credit note/refund but marked as PAID in DB, show as Gutschrift/Erstattet
+      if ((inv as any).documentKind === 'CREDIT_NOTE' ||
+        (inv as any).documentKind === 'REFUND_FULL' ||
+        (inv as any).documentKind === 'REFUND_PARTIAL') {
+        status = 'Gutschrift' // Or 'Erstattet' if preferred, but Gutschrift is standard
+      }
+
+      return {
+        id: inv.id,
+        number: inv.invoiceNumber,
+        date: inv.issueDate.toISOString().split('T')[0],
+        dueDate: inv.dueDate.toISOString().split('T')[0],
+        subtotal: Number(inv.totalNet),
+        taxRate: 19, // Approximation, ideally fetch from items or store on invoice
+        taxAmount: Number(inv.totalTax),
+        total: Number(inv.totalGross),
+        status: status,
+        customer: {
+          name: inv.customer.name,
+          email: inv.customer.email,
+          address: inv.customer.address,
+          zipCode: inv.customer.zipCode,
+          city: inv.customer.city,
+          country: inv.customer.country,
+          companyName: '' // Add to schema if needed
+        },
+        items: [], // Items not fetched for list view performance
+        document_kind: (inv as any).documentKind,
+        reference_number: (inv as any).referenceNumber,
+        original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
+        grund: (inv as any).reason,
+        refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined,
+        orderNumber: inv.order?.orderNumber,
+        emailStatus: global.invoiceEmailStatus?.[inv.id] || { sent: false }
+      }
+    })
 
     return NextResponse.json({
       invoices: mappedInvoices,

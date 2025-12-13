@@ -373,7 +373,10 @@ export async function POST(request: NextRequest) {
         })
 
         // Apply correct signs for Storno/Gutschrift
-        if (documentKind === DocumentKind.CANCELLATION || documentKind === DocumentKind.CREDIT_NOTE) {
+        if (documentKind === DocumentKind.CANCELLATION ||
+          documentKind === DocumentKind.CREDIT_NOTE ||
+          documentKind === DocumentKind.REFUND_FULL ||
+          documentKind === DocumentKind.REFUND_PARTIAL) {
           if (total > 0) {
             subtotal = -subtotal
             taxAmount = -taxAmount

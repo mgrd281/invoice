@@ -136,6 +136,7 @@ export function determineDocumentKind(csvData: any): DocumentKind {
   const rechnungstyp = csvData.rechnungstyp?.toLowerCase() || ''
   const orderNumber = csvData.orderNumber || ''
   const total = parseFloat(csvData.total || '0')
+  const financialStatus = csvData.financialStatus?.toLowerCase() || ''
 
   // Check explicit type column
   if (rechnungstyp === 'storno') {
@@ -151,6 +152,14 @@ export function determineDocumentKind(csvData: any): DocumentKind {
   }
   if (orderNumber.startsWith('GS-')) {
     return DocumentKind.CREDIT_NOTE
+  }
+
+  // Check financial status
+  if (financialStatus === 'refunded') {
+    return DocumentKind.REFUND_FULL
+  }
+  if (financialStatus === 'partially_refunded') {
+    return DocumentKind.REFUND_PARTIAL
   }
 
   // Check by negative amount (fallback)
