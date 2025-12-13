@@ -324,7 +324,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Gesamtumsatz</CardTitle>
@@ -339,6 +339,21 @@ export default function DashboardPage() {
                     ? `Aus ${stats.totalInvoices} Rechnungen generiert`
                     : 'Keine Umsätze vorhanden'
                   }
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Bezahlter Umsatz</CardTitle>
+                <CheckCircle className="h-4 w-4 text-emerald-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-600">
+                  {stats.paidInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                </div>
+                <p className="text-xs text-gray-600">
+                  Nur vollständig bezahlte Rechnungen (ohne Stornos)
                 </p>
               </CardContent>
             </Card>
