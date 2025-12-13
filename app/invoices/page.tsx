@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+// ... other imports
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,7 @@ export default function InvoicesPage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
 
+  // State definitions
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set())
@@ -41,7 +43,7 @@ export default function InvoicesPage() {
 
   // Pagination State
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(50)
+  const [limit, setLimit] = useState(20) // Reduced default limit for better performance
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
 
@@ -52,84 +54,16 @@ export default function InvoicesPage() {
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
+  // Abort controller ref to cancel previous requests
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   const handleCustomerClick = (email: string) => {
     if (!email) return
     setSelectedCustomerEmail(email)
     setIsDrawerOpen(true)
   }
 
-  useEffect(() => {
-    fetchInvoices()
-
-    // Load hidden invoices from localStorage
-    const savedHidden = localStorage.getItem('hiddenInvoices')
-    if (savedHidden) {
-      try {
-        const hiddenIds = JSON.parse(savedHidden)
-        setHiddenInvoices(new Set(hiddenIds))
-      } catch (error) {
-        console.error('Error loading hidden invoices:', error)
-      }
-    }
-
-    // Listen for invoice updates (e.g., after CSV upload)
-    const handleInvoiceUpdate = () => {
-      console.log('Invoice update detected, refreshing list...')
-      fetchInvoices()
-    }
-
-    // Custom event listener for invoice updates
-    window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
-    window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
-    window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
-
-    // ---------------------------------------------------------
-    // AUTO-SYNC POLLING (Every 10 seconds)
-    // ---------------------------------------------------------
-    let syncInterval: NodeJS.Timeout
-
-    if (isAuthenticated && isAutoSyncing) {
-      console.log('🔄 Starting Auto-Sync polling (every 30s)...')
-      syncInterval = setInterval(async () => {
-        try {
-          const res = await fetch('/api/shopify/auto-sync')
-          const data = await res.json()
-
-          setLastSyncTime(new Date())
-
-          if (data.synced > 0) {
-            console.log(`✅ Auto-Sync found ${data.synced} new invoices! Refreshing...`)
-            showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
-            fetchInvoices() // Refresh the list
-          }
-        } catch (err) {
-          console.error('Auto-Sync failed:', err)
-        }
-      }, 30000) // 30 seconds for reduced load
-    }
-
-    return () => {
-      window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
-      window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
-      window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
-      if (syncInterval) clearInterval(syncInterval)
-    }
-  }, [isAuthenticated, user, isAutoSyncing, page, limit]) // Added page and limit dependencies
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Bezahlt': return 'bg-green-100 text-green-800'
-      case 'Offen': return 'bg-yellow-100 text-yellow-800'
-      case 'Überfällig': return 'bg-red-100 text-red-800'
-      case 'Storniert': return 'bg-gray-100 text-gray-800'
-      case 'Gutschrift': return 'bg-blue-100 text-blue-800'
-      case 'Entwurf': return 'bg-gray-100 text-gray-600'
-      default: return 'bg-gray-100 text-gray-600'
-    }
-  }
-
-  const fetchInvoices = async () => {
-
+  const fetchInvoices = useCallback(async () => {
     if (!isAuthenticated || !user) {
       console.log('User not authenticated, cannot load invoices')
       setInvoices([])
@@ -137,16 +71,27 @@ export default function InvoicesPage() {
       return
     }
 
+    // Cancel previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
     setLoading(true)
 
     try {
       // Fetch invoices for this user only using authenticated fetch with pagination
-      const response = await authenticatedFetch(`/api/invoices?page=${page}&limit=${limit}`)
+      const response = await authenticatedFetch(`/ api / invoices ? page = ${page}& limit=${limit} `, {
+        signal: abortController.signal
+      })
       const data = await response.json()
 
       // Handle new response format
       const allInvoices = data.invoices || []
-      const pagination = data.pagination || { total: 0, pages: 1, page: 1, limit: 50 }
+      const pagination = data.pagination || { total: 0, pages: 1, page: 1, limit: 20 }
 
       setTotalPages(pagination.pages)
       setTotalInvoicesCount(pagination.total)
@@ -188,14 +133,82 @@ export default function InvoicesPage() {
       console.log('Invoices sorted by date (newest first):', sortedInvoices.length)
       setInvoices(sortedInvoices)
 
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Fetch aborted')
+        return
+      }
       console.error('Error fetching invoices:', error)
       // Fallback to empty array - API should handle mock data
       setInvoices([])
     } finally {
-      setLoading(false)
+      // Only set loading false if this request wasn't aborted
+      if (abortControllerRef.current === abortController) {
+        setLoading(false)
+      }
     }
-  }
+  }, [isAuthenticated, user, page, limit])
+
+  useEffect(() => {
+    fetchInvoices()
+
+    // Load hidden invoices from localStorage
+    const savedHidden = localStorage.getItem('hiddenInvoices')
+    if (savedHidden) {
+      try {
+        const hiddenIds = JSON.parse(savedHidden)
+        setHiddenInvoices(new Set(hiddenIds))
+      } catch (error) {
+        console.error('Error loading hidden invoices:', error)
+      }
+    }
+
+    // Listen for invoice updates (e.g., after CSV upload)
+    const handleInvoiceUpdate = () => {
+      console.log('Invoice update detected, refreshing list...')
+      fetchInvoices()
+    }
+
+    // Custom event listener for invoice updates
+    window.addEventListener('invoicesUpdated', handleInvoiceUpdate)
+    window.addEventListener('invoiceUpdated', handleInvoiceUpdate)
+    window.addEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+
+    // ---------------------------------------------------------
+    // AUTO-SYNC POLLING (Every 30 seconds)
+    // ---------------------------------------------------------
+    let syncInterval: NodeJS.Timeout
+
+    if (isAuthenticated && isAutoSyncing) {
+      console.log('🔄 Starting Auto-Sync polling (every 30s)...')
+      syncInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/shopify/auto-sync')
+          const data = await res.json()
+
+          setLastSyncTime(new Date())
+
+          if (data.synced > 0) {
+            console.log(`✅ Auto - Sync found ${data.synced} new invoices! Refreshing...`)
+            showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
+            fetchInvoices() // Refresh the list
+          }
+        } catch (err) {
+          console.error('Auto-Sync failed:', err)
+        }
+      }, 30000) // 30 seconds for reduced load
+    }
+
+    return () => {
+      window.removeEventListener('invoicesUpdated', handleInvoiceUpdate)
+      window.removeEventListener('invoiceUpdated', handleInvoiceUpdate)
+      window.removeEventListener('invoiceStatusChanged', handleInvoiceUpdate)
+      if (syncInterval) clearInterval(syncInterval)
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [fetchInvoices, isAutoSyncing]) // Updated dependencies
 
 
 
@@ -217,7 +230,7 @@ export default function InvoicesPage() {
       .map(term => term.trim())
       .filter(term => term.length > 0)
 
-    console.log(`Search terms:`, searchTerms)
+    console.log(`Search terms: `, searchTerms)
 
     // Local Search
     const filteredInvoices = invoices.filter(invoice => {
@@ -291,7 +304,7 @@ export default function InvoicesPage() {
     // Save to localStorage
     localStorage.setItem('hiddenInvoices', JSON.stringify(Array.from(newHidden)))
 
-    showToast(`Beispiel-Rechnung "${invoiceNumber}" wurde ausgeblendet`, 'success')
+    showToast(`Beispiel - Rechnung "${invoiceNumber}" wurde ausgeblendet`, 'success')
   }
 
   // Function to show hidden invoices
@@ -324,7 +337,7 @@ export default function InvoicesPage() {
       showToast('PDF wird generiert...', 'success')
 
       // Use new download endpoint with authentication
-      const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
+      const response = await fetch(`/ api / invoices / ${invoiceId}/download-pdf`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -649,6 +662,18 @@ export default function InvoicesPage() {
   const cancelledInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Storniert').length
   const refundInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Gutschrift').length
   const duplicateCount = duplicateNumbers.length
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Bezahlt': return 'bg-green-100 text-green-800'
+      case 'Offen': return 'bg-yellow-100 text-yellow-800'
+      case 'Überfällig': return 'bg-red-100 text-red-800'
+      case 'Storniert': return 'bg-gray-100 text-gray-800'
+      case 'Gutschrift': return 'bg-blue-100 text-blue-800'
+      case 'Entwurf': return 'bg-gray-100 text-gray-600'
+      default: return 'bg-gray-100 text-gray-600'
+    }
+  }
 
   // Helper function to get invoice type icon and color
   const getInvoiceTypeDisplay = (invoice: any) => {
