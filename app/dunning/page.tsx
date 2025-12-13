@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuthenticatedFetch } from '@/lib/api-client'
-import { AlertCircle, Save, CheckCircle, Clock, Percent, Mail, ShoppingBag } from 'lucide-react'
+import { AlertCircle, Save, CheckCircle, Clock, Percent, Mail, ShoppingBag, CreditCard, FileText, ArrowRight, Sparkles } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function DunningPage() {
@@ -173,53 +173,92 @@ export default function DunningPage() {
                     </TabsList>
 
                     {/* SHOPIFY AUTOMATION TAB */}
-                    <TabsContent value="shopify">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <ShoppingBag className="w-5 h-5 text-green-600" />
-                                    Shopify Zahlungsabgleich & Erinnerungen
-                                </CardTitle>
-                                <CardDescription>
-                                    Konfigurieren Sie automatische E-Mails für Vorkasse- und Rechnungszahler direkt aus Shopify-Bestellungen.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-                                    <div className="bg-blue-100 p-2 rounded-full">
-                                        <Mail className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-blue-900">Separate Konfiguration</h3>
-                                        <p className="text-sm text-blue-700 mt-1">
-                                            Für Shopify-Bestellungen (Vorkasse & Rechnung) haben wir ein separates, spezialisiertes System entwickelt,
-                                            das Erinnerungen basierend auf dem Bestelldatum sendet, noch bevor eine Rechnung in diesem System erstellt wurde.
-                                        </p>
-                                    </div>
+                    <TabsContent value="shopify" className="space-y-6">
+                        <div className="grid gap-6 md:grid-cols-2">
+                            {/* Vorkasse Card */}
+                            <Card className="group relative overflow-hidden transition-all hover:shadow-lg border-l-4 border-l-purple-500">
+                                <div className="absolute top-0 right-0 p-6 opacity-5 transition-opacity group-hover:opacity-10">
+                                    <CreditCard className="h-32 w-32 text-purple-600" />
                                 </div>
+                                <CardHeader>
+                                    <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+                                        <CreditCard className="h-6 w-6" />
+                                    </div>
+                                    <CardTitle>Vorkasse-Erinnerungen</CardTitle>
+                                    <CardDescription>
+                                        Für Banküberweisungen
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="mb-6 text-sm text-gray-500">
+                                        Automatische Zahlungserinnerungen für Kunden, die per Banküberweisung zahlen.
+                                        Startet den Prozess direkt nach Bestelleingang.
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push('/settings/payment-reminders')}
+                                        className="w-full bg-white text-purple-600 border border-purple-200 hover:bg-purple-50 hover:border-purple-300 group-hover:border-purple-400"
+                                    >
+                                        Konfigurieren
+                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                    </Button>
+                                </CardContent>
+                            </Card>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                        <h4 className="font-medium mb-2">Vorkasse-Erinnerungen</h4>
-                                        <p className="text-sm text-gray-500 mb-4">
-                                            Automatische Zahlungserinnerungen für Kunden, die per Banküberweisung zahlen müssen.
-                                        </p>
-                                        <Button variant="outline" onClick={() => router.push('/settings/payment-reminders')} className="w-full">
-                                            Konfigurieren
-                                        </Button>
+                            {/* Rechnung Card */}
+                            <Card className="group relative overflow-hidden transition-all hover:shadow-lg border-l-4 border-l-blue-500">
+                                <div className="absolute top-0 right-0 p-6 opacity-5 transition-opacity group-hover:opacity-10">
+                                    <FileText className="h-32 w-32 text-blue-600" />
+                                </div>
+                                <CardHeader>
+                                    <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                                        <FileText className="h-6 w-6" />
                                     </div>
-                                    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                        <h4 className="font-medium mb-2">Rechnungskauf-Erinnerungen</h4>
-                                        <p className="text-sm text-gray-500 mb-4">
-                                            Erinnerungen und Mahnungen für "Kauf auf Rechnung" Bestellungen.
-                                        </p>
-                                        <Button variant="outline" onClick={() => router.push('/settings/payment-reminders')} className="w-full">
-                                            Konfigurieren
-                                        </Button>
+                                    <CardTitle>Rechnungskauf-Erinnerungen</CardTitle>
+                                    <CardDescription>
+                                        Für "Kauf auf Rechnung"
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="mb-6 text-sm text-gray-500">
+                                        Erinnerungen und Mahnstufen für Rechnungskäufe.
+                                        Inklusive automatischer Stornierung bei Nichtzahlung nach Fristablauf.
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push('/settings/payment-reminders')}
+                                        className="w-full bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 group-hover:border-blue-400"
+                                    >
+                                        Konfigurieren
+                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Info Banner */}
+                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-8 text-white shadow-lg">
+                            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/5 blur-2xl"></div>
+                            <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-32 w-32 rounded-full bg-blue-500/10 blur-2xl"></div>
+
+                            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+                                <div className="rounded-full bg-white/10 p-3 ring-1 ring-white/20">
+                                    <Sparkles className="h-6 w-6 text-yellow-300" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="mb-2 text-lg font-semibold text-white">Intelligente Automatisierung</h4>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        Dieses System arbeitet unabhängig von der manuellen Rechnungserstellung.
+                                        Es synchronisiert sich automatisch mit Ihrem Shopify-Shop, erkennt den Zahlungsstatus
+                                        und sendet E-Mails basierend auf Ihren definierten Regeln.
+                                    </p>
+                                </div>
+                                <div className="hidden md:block">
+                                    <div className="flex items-center gap-2 rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white ring-1 ring-white/10">
+                                        <CheckCircle className="h-4 w-4 text-green-400" />
+                                        Aktiv
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </TabsContent>
 
                     {/* SETTINGS TAB */}
