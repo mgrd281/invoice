@@ -453,7 +453,7 @@ export default function BuchhaltungPage() {
           </TabsContent>
 
           <TabsContent value="invoices">
-            <InvoicesTable invoices={invoices} />
+            <InvoicesTable invoices={invoices} additionalIncomes={additionalIncomes} />
           </TabsContent>
 
           <TabsContent value="expenses">
