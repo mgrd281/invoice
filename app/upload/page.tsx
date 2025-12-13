@@ -39,6 +39,10 @@ export default function UploadPage() {
   const [previewData, setPreviewData] = useState<any>(null)
   const [companySettings, setCompanySettings] = useState<any>(null)
 
+  // Import Options
+  const [importTarget, setImportTarget] = useState<'invoices' | 'accounting' | 'both'>('invoices')
+  const [accountingType, setAccountingType] = useState<'income' | 'expense' | 'other'>('income')
+
   useEffect(() => {
     // Fetch company settings for preview
     fetch('/api/settings')
@@ -166,7 +170,11 @@ export default function UploadPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ invoices: chunk }),
+          body: JSON.stringify({
+            invoices: chunk,
+            importTarget,
+            accountingType
+          }),
         })
 
         if (response.ok) {
@@ -542,6 +550,60 @@ export default function UploadPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Import Target Selection */}
+                <div className="space-y-3 pt-2">
+                  <Label>Importieren als:</Label>
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="target-invoices"
+                        checked={importTarget === 'invoices' || importTarget === 'both'}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setImportTarget(importTarget === 'accounting' ? 'both' : 'invoices')
+                          } else {
+                            if (importTarget === 'both') setImportTarget('accounting')
+                            // Prevent unchecking if it's the only one, or handle validation later
+                          }
+                        }}
+                      />
+                      <Label htmlFor="target-invoices" className="cursor-pointer">Rechnungen (Invoices)</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="target-accounting"
+                        checked={importTarget === 'accounting' || importTarget === 'both'}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setImportTarget(importTarget === 'invoices' ? 'both' : 'accounting')
+                          } else {
+                            if (importTarget === 'both') setImportTarget('invoices')
+                          }
+                        }}
+                      />
+                      <Label htmlFor="target-accounting" className="cursor-pointer">Buchhaltung</Label>
+                    </div>
+                  </div>
+
+                  {/* Accounting Type Selection - Only if Accounting is selected */}
+                  {(importTarget === 'accounting' || importTarget === 'both') && (
+                    <div className="ml-6 mt-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <Label className="mb-2 block text-sm font-medium">Buchungstyp:</Label>
+                      <Select value={accountingType} onValueChange={(v: any) => setAccountingType(v)}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="income">Einnahme</SelectItem>
+                          <SelectItem value="expense">Ausgabe</SelectItem>
+                          <SelectItem value="other">Sonstiges</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
 
                 {/* Upload Button */}
                 <Button
