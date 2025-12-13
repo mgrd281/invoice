@@ -84,7 +84,7 @@ export default function InvoicesPage() {
 
     try {
       // Fetch invoices for this user only using authenticated fetch with pagination
-      const response = await authenticatedFetch(`/ api / invoices ? page = ${page}& limit=${limit} `, {
+      const response = await authenticatedFetch(`/api/invoices?page=${page}&limit=${limit}`, {
         signal: abortController.signal
       })
       const data = await response.json()
