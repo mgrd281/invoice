@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -33,6 +33,7 @@ export default function AbandonedCartsPage() {
     const [loading, setLoading] = useState(true)
     const [exitIntentEnabled, setExitIntentEnabled] = useState(false)
     const [settingsLoading, setSettingsLoading] = useState(true)
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
 
     // Real-time updates
     const knownCartIds = useRef<Set<string>>(new Set())
@@ -43,7 +44,24 @@ export default function AbandonedCartsPage() {
 
     // Remove the useEffect that did new Audio()
 
-    const fetchCarts = async () => {
+    const triggerNewCartAlert = useCallback((cart: AbandonedCart) => {
+        setNewCartAlert(cart)
+
+        if (audioRef.current) {
+            audioRef.current.currentTime = 0
+            const playPromise = audioRef.current.play()
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error("Audio play failed:", error)
+                    // Try to recover or log visible error
+                })
+            }
+        }
+
+        setTimeout(() => setNewCartAlert(null), 8000)
+    }, [])
+
+    const fetchCarts = useCallback(async () => {
         setLoading(true)
         try {
             const response = await authenticatedFetch('/api/abandoned-carts')
@@ -53,24 +71,14 @@ export default function AbandonedCartsPage() {
 
                 // Check for new carts
                 if (knownCartIds.current.size > 0) {
+                    // Find carts that are in currentCarts but NOT in knownCartIds
                     const newCarts = currentCarts.filter((c: AbandonedCart) => !knownCartIds.current.has(c.id))
+
                     if (newCarts.length > 0) {
-                        const latestCart = newCarts[0]
-                        setNewCartAlert(latestCart)
-
-                        // Play sound
-                        if (audioRef.current) {
-                            audioRef.current.currentTime = 0
-                            const playPromise = audioRef.current.play()
-                            if (playPromise !== undefined) {
-                                playPromise.catch(error => {
-                                    console.error("Auto-play failed:", error)
-                                })
-                            }
-                        }
-
-                        // Auto hide after 8 seconds
-                        setTimeout(() => setNewCartAlert(null), 8000)
+                        // Sort by createdAt desc to get the newest one
+                        const sortedNewCarts = [...newCarts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        const latestCart = sortedNewCarts[0]
+                        triggerNewCartAlert(latestCart)
                     }
                 }
 
@@ -79,13 +87,14 @@ export default function AbandonedCartsPage() {
                 knownCartIds.current = newIds
 
                 setCarts(currentCarts)
+                setLastRefreshed(new Date())
             }
         } catch (error) {
             console.error('Failed to fetch carts:', error)
         } finally {
             setLoading(false)
         }
-    }
+    }, [authenticatedFetch, triggerNewCartAlert])
 
     const fetchSettings = async () => {
         try {
@@ -115,21 +124,7 @@ export default function AbandonedCartsPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         }
-
-        setNewCartAlert(mockCart)
-
-        if (audioRef.current) {
-            audioRef.current.currentTime = 0
-            const playPromise = audioRef.current.play()
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.error("Test play failed:", error)
-                    alert("Audio playback failed. Please check browser permissions.")
-                })
-            }
-        }
-
-        setTimeout(() => setNewCartAlert(null), 8000)
+        triggerNewCartAlert(mockCart)
     }
 
     const toggleExitIntent = async (checked: boolean) => {
@@ -153,7 +148,7 @@ export default function AbandonedCartsPage() {
         // Auto-refresh every 30 seconds to show "real-time" updates
         const interval = setInterval(fetchCarts, 30000)
         return () => clearInterval(interval)
-    }, [authenticatedFetch])
+    }, [fetchCarts])
 
     return (
         <div className="min-h-screen bg-gray-50 p-8 relative">
@@ -213,15 +208,22 @@ export default function AbandonedCartsPage() {
                             Verfolgen Sie verlorene Warenkörbe in Echtzeit und sehen Sie, welche gerettet wurden.
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button onClick={testAlarm} variant="outline" className="flex items-center gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50">
-                            <Bell className="w-4 h-4" />
-                            Test Alarm
-                        </Button>
-                        <Button onClick={fetchCarts} variant="outline" className="flex items-center gap-2">
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                            Aktualisieren
-                        </Button>
+                    <div className="flex items-center gap-4">
+                        {lastRefreshed && (
+                            <span className="text-xs text-gray-400">
+                                Aktualisiert: {lastRefreshed.toLocaleTimeString()}
+                            </span>
+                        )}
+                        <div className="flex gap-2">
+                            <Button onClick={testAlarm} variant="outline" className="flex items-center gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50">
+                                <Bell className="w-4 h-4" />
+                                Test Alarm
+                            </Button>
+                            <Button onClick={fetchCarts} variant="outline" className="flex items-center gap-2">
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                Aktualisieren
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
