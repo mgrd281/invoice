@@ -90,6 +90,7 @@ model Organization {
   replyTemplates    ReplyTemplate[]
   dunningSettings DunningSettings?
   vorkasseSettings VorkasseSettings?
+  rechnungSettings RechnungSettings?
   dunningTemplates DunningTemplate[]
   marketingSettings MarketingSettings?
   expenses          Expense[]
@@ -205,6 +206,7 @@ model Order {
   // Vorkasse Automation
   vorkasseReminderLevel Int @default(0) // 0=None, 1=First, 2=Second
   vorkasseLastReminderAt DateTime?
+  initialPaymentEmailSentAt DateTime?
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -845,7 +847,34 @@ model VorkasseSettings {
   
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-}  
+}
+
+model RechnungSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(true)
+  
+  // Initial Email (3 mins after order)
+  initialEmailSubject String @default("Rechnung für Ihre Bestellung")
+  initialEmailText    String @default("Sehr geehrte Frau/Herr,\n\nvielen Dank für Ihre Bestellung...") // Truncated for brevity in schema default
+  
+  reminder1Days    Int    @default(3)
+  reminder1Subject String @default("Zahlungserinnerung für Ihre Bestellung")
+  reminder1Text    String @default("Hallo, wir haben festgestellt, dass Ihre Bestellung (Nr. {orderNumber}) noch nicht bezahlt wurde. Bitte überweisen Sie den offenen Betrag. Vielen Dank!")
+  
+  reminder2Days    Int    @default(10)
+  reminder2Subject String @default("Letzte Zahlungserinnerung")
+  reminder2Text    String @default("Dies ist eine letzte Zahlungserinnerung für Ihre Bestellung (Nr. {orderNumber}). Bitte begleichen Sie den Betrag, um eine automatische Stornierung zu vermeiden.")
+  
+  cancellationDays    Int    @default(14)
+  cancellationSubject String @default("Bestellung storniert")
+  cancellationText    String @default("Ihre Bestellung wurde storniert, da kein Zahlungseingang verzeichnet wurde.")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
 
 model RealEstateSeenListing {
   id             String                  @id @default(uuid())
