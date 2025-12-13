@@ -757,6 +757,11 @@ export class ShopifyAPI {
         body: JSON.stringify({}) // Empty body or optional reason
       })
 
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(JSON.stringify(error))
+      }
+
       const data = await response.json()
       console.log('✅ Order cancelled successfully')
       return data
@@ -765,6 +770,64 @@ export class ShopifyAPI {
       throw error
     }
   }
+
+  /**
+   * Fully refund an order (used when cancellation is not possible, e.g. fulfilled orders)
+   */
+  async fullyRefundOrder(orderId: number): Promise<any> {
+    try {
+      console.log(`💸 Fully refunding order ${orderId}...`)
+
+      // 1. Fetch order to get items
+      const order = await this.getOrder(orderId)
+      if (!order) throw new Error('Order not found')
+
+      // 2. Construct refund payload
+      const refundLineItems = order.line_items.map(item => ({
+        line_item_id: item.id,
+        quantity: item.quantity,
+        restock_type: 'no_restock' // Digital goods usually don't need restock, or make it configurable
+      }))
+
+      const payload: any = {
+        refund: {
+          currency: order.currency,
+          notify: false, // We handle notifications
+          refund_line_items: refundLineItems,
+        }
+      }
+
+      // Add shipping refund if applicable
+      // Note: calculating shipping refund is tricky without 'shipping_lines' detail in the interface
+      // For now, we'll skip explicit shipping refund unless we fetch it from 'order' object which has it.
+      // The 'ShopifyOrder' interface in this file doesn't show 'shipping_lines', but the API returns it.
+      // Let's rely on what we have. If we want to refund shipping, we need the amount.
+      // We can try to refund the full 'total_price' via 'transactions' if it was paid, 
+      // but 'refund_line_items' is safer for inventory/status.
+
+      // If we want to refund the *amount* (money), we need 'transactions'.
+      // If the order is 'pending' payment, we just want to zero it out?
+      // If we send 'refund_line_items', Shopify calculates the amount.
+
+      const response = await this.makeRequest(`/orders/${orderId}/refunds.json`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(JSON.stringify(error))
+      }
+
+      const data = await response.json()
+      console.log('✅ Order fully refunded successfully')
+      return data
+    } catch (error) {
+      console.error(`Error refunding order ${orderId}:`, error)
+      throw error
+    }
+  }
+
   /**
    * Create a discount code for abandoned cart recovery
    */

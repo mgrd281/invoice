@@ -59,12 +59,20 @@ export async function POST(
         const shopifyOrderId = parseInt(originalInvoice.order.shopifyOrderId)
 
         console.log(`Attempting to cancel Shopify order ${shopifyOrderId}...`)
-        await shopify.cancelOrder(shopifyOrderId)
-        console.log(`✅ Shopify order ${shopifyOrderId} cancelled successfully`)
+        try {
+          await shopify.cancelOrder(shopifyOrderId)
+          console.log(`✅ Shopify order ${shopifyOrderId} cancelled successfully`)
+        } catch (cancelError: any) {
+          console.warn(`⚠️ Could not cancel order ${shopifyOrderId}, trying refund/close instead. Reason:`, cancelError.message || cancelError)
+
+          // If cancellation fails (e.g. because it's fulfilled), try to refund it fully
+          // This effectively "cancels" the financial part and marks items as returned
+          await shopify.fullyRefundOrder(shopifyOrderId)
+          console.log(`✅ Shopify order ${shopifyOrderId} refunded successfully`)
+        }
       } catch (shopifyError) {
-        console.error('⚠️ Failed to cancel Shopify order:', shopifyError)
-        // We continue with invoice cancellation even if Shopify fails, 
-        // but maybe we should append this to the notes
+        console.error('⚠️ Failed to cancel/refund Shopify order:', shopifyError)
+        // We continue with invoice cancellation even if Shopify fails
       }
     }
 
