@@ -74,19 +74,36 @@ export default function CancelInvoicePage() {
     try {
       setLoading(true)
       const response = await authenticatedFetch(`/api/invoices/${invoiceId}`)
-      
+
       if (response.ok) {
         const data = await response.json()
         console.log('📋 Loaded invoice data:', data) // Debug logging
-        
+
         if (data && !data.error) {
-          // API returns invoice data directly, not wrapped in { invoice: ... }
-          setOriginalInvoice(data)
-          
-          // Set refund amount to original total - with safe access
-          const totalAmount = data.totalAmount || data.total || data.amount || 0
+          // Normalize data to match interface
+          const normalizedInvoice: Invoice = {
+            id: data.id,
+            invoiceNumber: data.number || data.invoiceNumber,
+            customerName: data.customer?.name || data.customerName || 'Unbekannt',
+            customerEmail: data.customer?.email || data.customerEmail || '',
+            customerAddress: data.customer?.address || data.customerAddress || '',
+            date: data.date,
+            dueDate: data.dueDate,
+            status: data.status,
+            items: data.items || [],
+            subtotal: data.subtotal || 0,
+            taxRate: data.taxRate || 19,
+            taxAmount: data.taxAmount || 0,
+            totalAmount: data.totalAmount || data.total || 0,
+            notes: data.notes
+          }
+
+          setOriginalInvoice(normalizedInvoice)
+
+          // Set refund amount to original total
+          const totalAmount = normalizedInvoice.totalAmount
           console.log('💰 Setting refund amount:', totalAmount)
-          
+
           setCancellationData(prev => ({
             ...prev,
             refundAmount: totalAmount
@@ -126,24 +143,24 @@ export default function CancelInvoicePage() {
         date: cancellationData.cancellationDate,
         status: 'Storniert',
         type: 'cancellation',
-        
+
         // Negative amounts for cancellation
         items: originalInvoice.items.map(item => ({
           ...item,
           quantity: -item.quantity,
           total: -item.total
         })),
-        
+
         subtotal: -originalInvoice.subtotal,
         taxRate: originalInvoice.taxRate,
         taxAmount: -originalInvoice.taxAmount,
         totalAmount: -originalInvoice.totalAmount,
-        
+
         cancellationReason: cancellationData.reason,
         refundMethod: cancellationData.refundMethod,
         refundAmount: cancellationData.refundAmount,
         notes: cancellationData.notes,
-        
+
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -245,11 +262,11 @@ export default function CancelInvoicePage() {
             <div>
               <h3 className="text-sm font-medium text-red-800">Wichtiger Hinweis / Important Notice</h3>
               <p className="text-sm text-red-700 mt-1">
-                Diese Aktion erstellt eine Storno-Rechnung und setzt die ursprüngliche Rechnung auf "Storniert". 
+                Diese Aktion erstellt eine Storno-Rechnung und setzt die ursprüngliche Rechnung auf "Storniert".
                 Diese Aktion kann nicht rückgängig gemacht werden.
               </p>
               <p className="text-sm text-red-700 mt-1">
-                This action creates a cancellation invoice and sets the original invoice to "Cancelled". 
+                This action creates a cancellation invoice and sets the original invoice to "Cancelled".
                 This action cannot be undone.
               </p>
             </div>
@@ -282,11 +299,10 @@ export default function CancelInvoicePage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-500">Status</Label>
-                <Badge className={`${
-                  originalInvoice.status === 'Bezahlt' ? 'bg-green-100 text-green-800' :
-                  originalInvoice.status === 'Offen' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
+                <Badge className={`${originalInvoice.status === 'Bezahlt' ? 'bg-green-100 text-green-800' :
+                    originalInvoice.status === 'Offen' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                  }`}>
                   {originalInvoice.status}
                 </Badge>
               </div>
@@ -463,8 +479,8 @@ export default function CancelInvoicePage() {
               <Separator />
 
               <div className="space-y-3">
-                <Button 
-                  onClick={handleSaveCancellation} 
+                <Button
+                  onClick={handleSaveCancellation}
                   disabled={saving || !cancellationData.reason}
                   className="w-full flex items-center space-x-2 bg-red-600 hover:bg-red-700"
                 >
@@ -473,10 +489,10 @@ export default function CancelInvoicePage() {
                     {saving ? 'Wird erstellt...' : 'Storno-Rechnung erstellen'}
                   </span>
                 </Button>
-                
-                <Button 
-                  onClick={handlePreview} 
-                  variant="outline" 
+
+                <Button
+                  onClick={handlePreview}
+                  variant="outline"
                   className="w-full flex items-center space-x-2"
                   disabled={!cancellationData.reason}
                 >
