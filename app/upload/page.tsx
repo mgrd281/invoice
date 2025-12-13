@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield, AlertTriangle } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -47,13 +47,56 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [estimatedTime, setEstimatedTime] = useState(0)
 
+  // Duplicates & Templates
+  const [duplicates, setDuplicates] = useState<Set<string>>(new Set())
+  const [templates, setTemplates] = useState<any[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+
   useEffect(() => {
     // Fetch company settings for preview
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => setCompanySettings(data))
       .catch(err => console.error('Failed to fetch settings:', err))
+
+    // Fetch templates
+    fetch('/api/templates')
+      .then(res => res.json())
+      .then(data => {
+        setTemplates(data)
+        const defaultTemplate = data.find((t: any) => t.isDefault)
+        if (defaultTemplate) setSelectedTemplateId(defaultTemplate.id)
+        else if (data.length > 0) setSelectedTemplateId(data[0].id)
+      })
+      .catch(err => console.error('Failed to fetch templates:', err))
   }, [])
+
+  // Check for duplicates when previewInvoices changes
+  useEffect(() => {
+    if (previewInvoices.length === 0) return
+
+    const checkDuplicates = async () => {
+      const numbers = previewInvoices.map(inv => inv.number)
+      if (numbers.length === 0) return
+
+      try {
+        const response = await fetch('/api/invoices/check-duplicates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoiceNumbers: numbers })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setDuplicates(new Set(data.duplicates))
+        }
+      } catch (err) {
+        console.error('Failed to check duplicates:', err)
+      }
+    }
+
+    checkDuplicates()
+  }, [previewInvoices])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -198,7 +241,8 @@ export default function UploadPage() {
           body: JSON.stringify({
             invoices: chunk,
             importTarget,
-            accountingType
+            accountingType,
+            templateId: selectedTemplateId
           }),
         })
 
@@ -403,14 +447,31 @@ export default function UploadPage() {
                     Bitte überprüfen Sie die importierten Daten und bestätigen Sie die Speicherung.
                   </CardDescription>
                 </div>
-                <div className="flex space-x-4">
-                  <Button variant="destructive" onClick={handleDeleteAll}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Alle löschen
-                  </Button>
+                <div className="flex items-center gap-4">
+                  {/* Template Selector */}
+                  <div className="w-[200px]">
+                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Vorlage wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  {selectedIndices.size > 0 ? (
-                    <Button onClick={handleConfirmSelected} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                  <div className="space-x-2">
+                    <Button variant="destructive" onClick={handleDeleteAll}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Alle löschen
+                    </Button>
+                    <Button
+                      onClick={selectedIndices.size > 0 ? handleConfirmSelected : handleConfirmAll}
+                      disabled={saving}
+                      className={saving ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
                       {saving ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -419,25 +480,11 @@ export default function UploadPage() {
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          {selectedIndices.size} Ausgewählte speichern
+                          {selectedIndices.size > 0 ? `${selectedIndices.size} speichern` : 'Alle speichern'}
                         </>
                       )}
                     </Button>
-                  ) : (
-                    <Button onClick={handleConfirmAll} disabled={saving} className="bg-green-600 hover:bg-green-700">
-                      {saving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Speichere...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Alle Bestätigen & Speichern
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -461,14 +508,26 @@ export default function UploadPage() {
                   </TableHeader>
                   <TableBody>
                     {previewInvoices.map((inv, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>
+                      <TableRow
+                        key={idx}
+                        className={duplicates.has(inv.number) ? 'bg-yellow-50 hover:bg-yellow-100' : ''}
+                      >
+                        <TableCell className="w-[50px]">
                           <Checkbox
                             checked={selectedIndices.has(idx)}
                             onCheckedChange={() => toggleSelect(idx)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{inv.shopifyOrderNumber}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            {inv.number}
+                            {duplicates.has(inv.number) && (
+                              <div className="ml-2 text-yellow-600" title="Diese Rechnungsnummer existiert bereits">
+                                <AlertTriangle className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span>{inv.customerName}</span>
@@ -509,7 +568,7 @@ export default function UploadPage() {
                 </Table>
               </CardContent>
             </Card>
-          </div>
+          </div >
         ) : (
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
@@ -737,7 +796,8 @@ export default function UploadPage() {
               </div>
             </CardContent>
           </Card>
-        )}
+        )
+        }
 
         {/* Edit Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -820,14 +880,16 @@ export default function UploadPage() {
         </Dialog>
 
         {/* Invoice Preview Dialog */}
-        {previewData && (
-          <InvoicePreviewDialog
-            open={previewOpen}
-            onOpenChange={setPreviewOpen}
-            data={previewData}
-          />
-        )}
-      </main>
-    </div>
+        {
+          previewData && (
+            <InvoicePreviewDialog
+              open={previewOpen}
+              onOpenChange={setPreviewOpen}
+              data={previewData}
+            />
+          )
+        }
+      </main >
+    </div >
   )
 }
