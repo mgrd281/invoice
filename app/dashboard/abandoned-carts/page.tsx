@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink } from 'lucide-react'
+import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { de } from 'date-fns/locale'
@@ -97,6 +97,34 @@ export default function AbandonedCartsPage() {
         }
     }
 
+    const testAlarm = () => {
+        const mockCart: AbandonedCart = {
+            id: 'test-cart-' + Date.now(),
+            email: 'test@example.com',
+            cartUrl: '#',
+            lineItems: [{ title: 'Test Produkt', quantity: 1 }],
+            totalPrice: '99.99',
+            currency: 'EUR',
+            isRecovered: false,
+            recoverySent: false,
+            recoverySentAt: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        }
+
+        setNewCartAlert(mockCart)
+
+        if (audioRef.current) {
+            audioRef.current.currentTime = 0
+            audioRef.current.play().catch(e => {
+                console.error("Audio play failed", e)
+                alert("Audio autoplay blocked. Please interact with the page first.")
+            })
+        }
+
+        setTimeout(() => setNewCartAlert(null), 8000)
+    }
+
     const toggleExitIntent = async (checked: boolean) => {
         setExitIntentEnabled(checked)
         try {
@@ -175,10 +203,16 @@ export default function AbandonedCartsPage() {
                             Verfolgen Sie verlorene Warenkörbe in Echtzeit und sehen Sie, welche gerettet wurden.
                         </p>
                     </div>
-                    <Button onClick={fetchCarts} variant="outline" className="flex items-center gap-2">
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        Aktualisieren
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button onClick={testAlarm} variant="outline" className="flex items-center gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50">
+                            <Bell className="w-4 h-4" />
+                            Test Alarm
+                        </Button>
+                        <Button onClick={fetchCarts} variant="outline" className="flex items-center gap-2">
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            Aktualisieren
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Settings Card */}
