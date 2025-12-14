@@ -744,46 +744,58 @@ export default function UploadPage() {
 
                 {/* Upload Button or Progress Bar */}
                 {uploading ? (
-                  <div className="bg-white border rounded-lg p-6 shadow-sm">
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <div className="mb-4 relative">
-                        <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center">
-                          <Upload className="h-8 w-8 text-blue-600 animate-bounce" />
+                  <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-100 rounded-2xl p-8 shadow-lg relative overflow-hidden">
+                    {/* Decorative background elements */}
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+                    <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-purple-100 rounded-full blur-3xl opacity-50"></div>
+
+                    <div className="flex flex-col items-center justify-center text-center relative z-10">
+                      <div className="mb-6 relative">
+                        <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center shadow-md relative">
+                          <div className="absolute inset-0 rounded-full border-4 border-blue-50 border-t-blue-500 animate-spin"></div>
+                          {uploadProgress === 100 ? (
+                            <CheckCircle className="h-10 w-10 text-green-500 animate-in zoom-in duration-300" />
+                          ) : (
+                            <Upload className="h-8 w-8 text-blue-600" />
+                          )}
                         </div>
-                        {/* Optional: Add a success checkmark overlay if 100% */}
-                        {uploadProgress === 100 && (
-                          <div className="absolute -right-1 -bottom-1 bg-green-500 rounded-full p-1">
-                            <Check className="h-4 w-4 text-white" />
-                          </div>
-                        )}
                       </div>
 
-                      <h3 className="text-lg font-medium text-gray-900 mb-1">
-                        {uploadProgress === 100 ? 'Upload abgeschlossen!' : 'Ihre Datei wird hochgeladen...'}
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {uploadProgress === 100 ? 'Upload erfolgreich!' : 'Datei wird hochgeladen...'}
                       </h3>
+                      <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
+                        {uploadProgress === 100 ? 'Daten werden verarbeitet' : 'Ihre Daten werden sicher übertragen und analysiert.'}
+                      </p>
 
-                      <div className="w-full max-w-md mt-4 mb-2">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <div className="w-full max-w-md mb-4">
+                        <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
                           <span>Fortschritt</span>
-                          <span className="font-medium text-blue-600">{Math.round(uploadProgress)}%</span>
+                          <span className="text-blue-600">{Math.round(uploadProgress)}%</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                        <div className="w-full bg-white rounded-full h-3 overflow-hidden shadow-inner border border-gray-100">
                           <div
-                            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                            className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm relative overflow-hidden"
                             style={{ width: `${uploadProgress}%` }}
-                          ></div>
+                          >
+                            <div className="absolute inset-0 bg-white/30 w-full h-full animate-[shimmer_2s_infinite]"></div>
+                          </div>
                         </div>
                       </div>
 
                       {estimatedTime > 0 && (
-                        <p className="text-sm text-gray-500 mt-2">
-                          Geschätzte Wartezeit: <span className="font-medium">{Math.ceil(estimatedTime)} Sekunden</span>
-                        </p>
+                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-1.5 rounded-full text-blue-700 text-sm font-medium border border-blue-100 shadow-sm">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                          </span>
+                          Noch ca. {Math.floor(estimatedTime / 60)}:{String(Math.floor(estimatedTime % 60)).padStart(2, '0')} verbleibend
+                        </div>
                       )}
 
-                      <div className="flex items-center mt-4 text-xs text-gray-400">
-                        <Shield className="h-3 w-3 mr-1" />
-                        100% privat und sicher
+                      <div className="flex items-center mt-6 text-xs text-gray-400 bg-white/50 px-3 py-1 rounded-full">
+                        <Shield className="h-3 w-3 mr-1.5 text-green-600" />
+                        End-to-End verschlüsselt
                       </div>
                     </div>
                   </div>
