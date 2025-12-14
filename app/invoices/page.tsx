@@ -1141,6 +1141,7 @@ export default function InvoicesPage() {
                     </div>
                   </TableHead>
                   <TableHead>Betrag</TableHead>
+                  <TableHead>Zahlung</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
@@ -1200,15 +1201,15 @@ export default function InvoicesPage() {
                               {new Date(invoice.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
-                          {invoice.paymentMethod && (
-                            <span className="text-xs text-gray-600 mt-0.5">
-                              {invoice.paymentMethod}
-                            </span>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">
                         {new Intl.NumberFormat('de-DE', { style: 'currency', currency: invoice.currency || 'EUR' }).format(invoice.amount || invoice.total || 0)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-700">
+                          {invoice.paymentMethod || '-'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
