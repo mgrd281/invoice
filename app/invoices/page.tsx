@@ -1191,7 +1191,21 @@ export default function InvoicesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {invoice.date ? new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {invoice.date ? new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                          </span>
+                          {invoice.date && (
+                            <span className="text-xs text-gray-500">
+                              {new Date(invoice.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {invoice.paymentMethod && (
+                            <span className="text-xs text-gray-600 mt-0.5">
+                              {invoice.paymentMethod}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-medium">
                         {new Intl.NumberFormat('de-DE', { style: 'currency', currency: invoice.currency || 'EUR' }).format(invoice.amount || invoice.total || 0)}
