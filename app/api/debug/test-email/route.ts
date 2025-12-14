@@ -5,6 +5,36 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
+        // Check for Resend API Key first
+        if (process.env.RESEND_API_KEY) {
+            const { Resend } = require('resend')
+            const resend = new Resend(process.env.RESEND_API_KEY)
+            const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+            const targetEmail = process.env.SMTP_USER || process.env.EMAIL_USER || 'test@example.com'
+
+            const { data, error } = await resend.emails.send({
+                from: fromEmail,
+                to: targetEmail,
+                subject: "Test Email from Railway Debugger (Resend)",
+                html: "<b>If you receive this, your Resend configuration is CORRECT!</b>"
+            })
+
+            if (error) {
+                return NextResponse.json({
+                    error: 'Resend Sending Failed',
+                    message: error.message,
+                    details: error
+                }, { status: 500 })
+            }
+
+            return NextResponse.json({
+                success: true,
+                message: 'Email sent successfully via Resend',
+                messageId: data?.id,
+                provider: 'Resend'
+            })
+        }
+
         const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER
         const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS
         const smtpHost = process.env.SMTP_HOST
@@ -60,7 +90,8 @@ export async function GET() {
             success: true,
             message: 'Email sent successfully',
             messageId: info.messageId,
-            response: info.response
+            response: info.response,
+            provider: 'SMTP'
         })
 
     } catch (error: any) {

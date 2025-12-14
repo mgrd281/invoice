@@ -83,6 +83,9 @@ export async function verifyEmailConfig(): Promise<boolean> {
 }
 
 // Generic send email function
+import { Resend } from 'resend'
+
+// Generic send email function
 export async function sendEmail(options: {
   to: string
   subject: string
@@ -113,7 +116,35 @@ export async function sendEmail(options: {
       }
     }
 
-    // Use SMTP configuration for production
+    // Check for Resend API Key first
+    if (process.env.RESEND_API_KEY) {
+      console.log('📧 Using Resend for email delivery')
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+
+      const { data, error } = await resend.emails.send({
+        from: fromEmail,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        attachments: options.attachments?.map(att => ({
+          filename: att.filename,
+          content: att.content
+        }))
+      })
+
+      if (error) {
+        console.error('❌ Resend Error:', error)
+        throw new Error(error.message)
+      }
+
+      return {
+        success: true,
+        messageId: data?.id
+      }
+    }
+
+    // Fallback to SMTP configuration for production
     const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || ''
     const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
 
@@ -190,6 +221,64 @@ export async function sendInvoiceEmail(
       return {
         success: true,
         messageId: devMessageId,
+        logId: emailLog.id
+      }
+    }
+
+    // Use Resend if available
+    if (process.env.RESEND_API_KEY) {
+      console.log('📧 Using Resend for invoice email')
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+
+      // Generate PDF buffer for attachment
+      console.log('📄 Generating PDF for invoice:', invoiceNumber)
+      const pdfBuffer = await generateArizonaPDFBuffer(invoiceId)
+
+      if (!pdfBuffer) {
+        const error = 'Failed to generate PDF for invoice'
+        markEmailFailed(emailLog.id, error)
+        throw new Error(error)
+      }
+
+      // Update log with PDF size
+      updateEmailLog(emailLog.id, {
+        metadata: {
+          ...emailLog.metadata!,
+          pdfSize: pdfBuffer.length
+        }
+      })
+
+      // Email content
+      const subject = customSubject || `Rechnung ${invoiceNumber} von ${companyName}`
+      const htmlContent = customMessage
+        ? generateCustomEmailHTML(customerName, invoiceNumber, companyName, customMessage, invoiceAmount, dueDate)
+        : generateEmailHTML(customerName, invoiceNumber, companyName)
+
+      const { data, error } = await resend.emails.send({
+        from: fromEmail,
+        to: customerEmail,
+        cc: process.env.EMAIL_CC ? [process.env.EMAIL_CC] : undefined,
+        subject: subject,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: `Rechnung_${invoiceNumber}.pdf`,
+            content: pdfBuffer
+          }
+        ]
+      })
+
+      if (error) {
+        console.error('❌ Resend Error:', error)
+        markEmailFailed(emailLog.id, error.message)
+        throw new Error(error.message)
+      }
+
+      markEmailSent(emailLog.id, data?.id || 'resend-id', 'Sent via Resend')
+      return {
+        success: true,
+        messageId: data?.id,
         logId: emailLog.id
       }
     }
