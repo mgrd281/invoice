@@ -75,7 +75,7 @@ export default function DigitalProductDetailPage({ params }: { params: { id: str
                     setVariantSettings(prodData.data.variantSettings)
                 }
 
-                setTemplate((prodData.data.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                setTemplate(prodData.data.emailTemplate || getDefaultTemplate())
                 setDownloadUrl(prodData.data.downloadUrl || '')
                 setButtonText(prodData.data.buttonText || 'Download')
                 setButtonColor(prodData.data.buttonColor || '#000000')
@@ -701,7 +701,7 @@ Viel Spaß!`
 
                                                         // Load settings for this variant
                                                         if (newVariant === 'default') {
-                                                            setTemplate((product.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                            setTemplate(product.emailTemplate || getDefaultTemplate())
                                                             if (product.downloadButtons && Array.isArray(product.downloadButtons)) {
                                                                 setButtons(product.downloadButtons)
                                                             } else {
@@ -710,7 +710,7 @@ Viel Spaß!`
                                                         } else {
                                                             const setting = variantSettings.find(s => s.shopifyVariantId === newVariant)
                                                             if (setting) {
-                                                                setTemplate((setting.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                                setTemplate(setting.emailTemplate || getDefaultTemplate())
                                                                 if (setting.downloadButtons && Array.isArray(setting.downloadButtons)) {
                                                                     setButtons(setting.downloadButtons)
                                                                 } else {
@@ -721,7 +721,7 @@ Viel Spaß!`
                                                                 // Let's copy from default for better UX, but maybe user wants empty?
                                                                 // User asked for "Copy from default" button. So start empty or with default?
                                                                 // Let's start with default content but mark as new
-                                                                setTemplate((product.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                                setTemplate(product.emailTemplate || getDefaultTemplate())
                                                                 if (product.downloadButtons && Array.isArray(product.downloadButtons)) {
                                                                     setButtons(product.downloadButtons)
                                                                 } else {
@@ -752,7 +752,7 @@ Viel Spaß!`
                                                     size="sm"
                                                     onClick={() => {
                                                         // Copy from default
-                                                        setTemplate((product.emailTemplate || getDefaultTemplate()).replace(/\n/g, '<br/>'))
+                                                        setTemplate(product.emailTemplate || getDefaultTemplate())
                                                         if (product.downloadButtons && Array.isArray(product.downloadButtons)) {
                                                             setButtons(product.downloadButtons)
                                                         } else {
@@ -1004,7 +1004,7 @@ Viel Spaß!`
 
                                                                     // 2. Convert newlines to BR (MATCHING BACKEND LOGIC)
                                                                     // The backend blindly replaces \n with <br/>, so we must do the same to show accurate preview
-                                                                    html = html.replace(/\n/g, '<br/>');
+                                                                    // html = html.replace(/\n/g, '<br/>');
 
                                                                     // 3. Replace variables
                                                                     html = html

@@ -74,8 +74,8 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
                 el.removeAttribute('bgcolor');
             });
 
-            // Unwrap <font> and <span> tags to ensure no lingering styling
-            ['font', 'span'].forEach(tagName => {
+            // Unwrap <font> tags only, keep <span> as they might be structural (even if we strip styles, better to keep them than merge)
+            ['font'].forEach(tagName => {
                 doc.querySelectorAll(tagName).forEach(el => {
                     const parent = el.parentNode;
                     if (parent) {

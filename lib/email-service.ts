@@ -138,6 +138,7 @@ export async function sendEmail(options: {
       const { data, error } = await resend.emails.send({
         from: fromEmail,
         to: options.to,
+        replyTo: process.env.EMAIL_REPLY_TO,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments?.map(att => ({
@@ -271,6 +272,7 @@ export async function sendInvoiceEmail(
       const { data, error } = await resend.emails.send({
         from: fromEmail,
         to: customerEmail,
+        replyTo: process.env.EMAIL_REPLY_TO,
         cc: process.env.EMAIL_CC ? [process.env.EMAIL_CC] : undefined,
         subject: subject,
         html: htmlContent,
