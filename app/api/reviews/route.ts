@@ -46,7 +46,17 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     try {
         const body = await request.json()
-        const { ids } = body
+        const { ids, productId } = body
+
+        if (productId) {
+            // Delete all reviews for this product
+            await prisma.review.deleteMany({
+                where: {
+                    productId: String(productId)
+                }
+            })
+            return NextResponse.json({ success: true })
+        }
 
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })

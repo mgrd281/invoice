@@ -184,6 +184,7 @@ export default function ReviewsPage() {
     const [selectedProductStat, setSelectedProductStat] = useState<any>(null)
     const [productSearch, setProductSearch] = useState('')
     const [loadingProductStats, setLoadingProductStats] = useState(false)
+    const [deletingProductStat, setDeletingProductStat] = useState<any>(null)
 
     // All Reviews State
     const [allReviews, setAllReviews] = useState<any[]>([])
@@ -590,6 +591,29 @@ export default function ReviewsPage() {
                         }))
                     }
                 }
+            } else {
+                toast.error('Fehler beim Löschen')
+            }
+        } catch (error) {
+            console.error('Delete error:', error)
+            toast.error('Fehler beim Löschen')
+        }
+    }
+
+    const handleDeleteProductReviews = async () => {
+        if (!deletingProductStat) return
+        try {
+            const res = await fetch('/api/reviews', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: deletingProductStat.productId })
+            })
+
+            if (res.ok) {
+                toast.success('Alle Bewertungen für das Produkt wurden gelöscht')
+                setDeletingProductStat(null)
+                fetchProductStats() // Refresh list
+                fetchStats() // Refresh global stats
             } else {
                 toast.error('Fehler beim Löschen')
             }
@@ -1066,6 +1090,32 @@ export default function ReviewsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Delete Product Reviews Dialog */}
+            <AlertDialog open={!!deletingProductStat} onOpenChange={(open) => !open && setDeletingProductStat(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Alle Bewertungen löschen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Möchten Sie wirklich alle {deletingProductStat?.reviewCount} Bewertungen für "{deletingProductStat?.productTitle}" löschen?
+                            Das Produkt wird danach aus dieser Liste entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault()
+                                handleDeleteProductReviews()
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Löschen
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <header className="bg-white border-b sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
@@ -1487,8 +1537,19 @@ export default function ReviewsPage() {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Chevron for affordance */}
-                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                            {/* Chevron and Delete for affordance */}
+                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        setDeletingProductStat(stat)
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
                                                                 <ArrowRight className="h-5 w-5 text-gray-300" />
                                                             </div>
                                                         </div>
