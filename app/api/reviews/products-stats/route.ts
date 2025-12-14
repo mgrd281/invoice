@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
         }
 
-        // Group reviews by productId to get stats
+        // Group reviews by productId only to avoid splitting stats for the same product
         const groupedReviews = await prisma.review.groupBy({
-            by: ['productId', 'productTitle', 'productImage'],
+            by: ['productId'],
             where: {
                 organizationId: organization.id
             },
@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
                 rating: true
             },
             _max: {
-                createdAt: true
+                createdAt: true,
+                productTitle: true,
+                productImage: true
             },
             orderBy: {
                 _max: {
@@ -33,8 +35,8 @@ export async function GET(request: NextRequest) {
         // Format the response
         const productStats = groupedReviews.map(group => ({
             productId: group.productId,
-            productTitle: group.productTitle || 'Unbekanntes Produkt',
-            productImage: group.productImage,
+            productTitle: group._max.productTitle || 'Unbekanntes Produkt',
+            productImage: group._max.productImage,
             reviewCount: group._count.id,
             averageRating: group._avg.rating || 0,
             lastReviewDate: group._max.createdAt
