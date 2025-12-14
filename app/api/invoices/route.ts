@@ -154,6 +154,7 @@ export async function GET(request: NextRequest) {
         taxAmount: Number(inv.totalTax),
         total: Number(inv.totalGross),
         status: status,
+        paymentMethod: (inv.settings as any)?.paymentMethod || '-', // Extract from settings JSON
         customer: {
           name: inv.customer.name,
           email: inv.customer.email,

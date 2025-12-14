@@ -222,6 +222,19 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     const totalNet = items.reduce((sum: number, item: any) => sum + item.netAmount, 0)
     const totalTax = items.reduce((sum: number, item: any) => sum + item.taxAmount, 0)
 
+    // Extract payment method from Shopify
+    let paymentMethod = '-'
+    if (order.payment_gateway_names && Array.isArray(order.payment_gateway_names)) {
+        const gateways = order.payment_gateway_names as string[]
+        if (gateways.length > 0) {
+            paymentMethod = gateways[0]
+            log(`✅ Extracted payment method: ${paymentMethod}`)
+        }
+    } else if ((order as any).gateway) {
+        paymentMethod = (order as any).gateway
+        log(`✅ Extracted payment method from gateway: ${paymentMethod}`)
+    }
+
     // Get or create tax rate
     let taxRate = await prisma.taxRate.findFirst({
         where: { organizationId: organization.id, rate: 0.19 }
@@ -250,6 +263,9 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             totalGross,
             totalTax,
             status: order.financial_status === 'paid' ? 'PAID' : 'SENT',
+            settings: {
+                paymentMethod: paymentMethod
+            },
             items: {
                 create: items.map((item: any) => ({
                     description: item.description,

@@ -1323,11 +1323,25 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     }
   }
 
+  // Extract payment method from Shopify
+  let paymentMethod = '-'
+  if ((order as any).payment_gateway_names && Array.isArray((order as any).payment_gateway_names)) {
+    const gateways = (order as any).payment_gateway_names as string[]
+    if (gateways.length > 0) {
+      paymentMethod = gateways[0] // Use the first payment gateway
+      console.log('✅ Extracted payment method:', paymentMethod)
+    }
+  } else if ((order as any).gateway) {
+    paymentMethod = (order as any).gateway
+    console.log('✅ Extracted payment method from gateway:', paymentMethod)
+  }
+
   return {
     id: `shopify-${order.id}`,
     number: invoiceNumber,
     date: order.created_at,
     dueDate: dueDate.toISOString(),
+    paymentMethod: paymentMethod, // Add payment method
     customer: {
       name: customerName,
       email: customerEmail,
