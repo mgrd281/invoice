@@ -197,7 +197,7 @@ async function convertOrdersToInvoices(orders: ShopifyOrder[]): Promise<{
             isCompany: !!(order.billing_address?.company || order.shipping_address?.company)
           },
           number: `SH-${order.name.replace('#', '')}`,
-          date: new Date(order.created_at).toISOString().split('T')[0],
+          date: new Date(order.created_at).toISOString(),
           dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           items: order.line_items.map(item => ({
             description: item.title,

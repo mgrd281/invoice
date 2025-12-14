@@ -603,7 +603,7 @@ const processOrderToInvoice = withIdempotency(async (shopifyOrderId: string, ord
 
     // Rechnungsdaten
     number: `SH-${orderData.order_number}`,
-    date: new Date(orderData.created_at).toISOString().split('T')[0],
+    date: new Date(orderData.created_at).toISOString(),
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 Tage
 
     // Positionen
