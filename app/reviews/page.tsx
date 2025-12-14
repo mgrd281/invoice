@@ -2333,13 +2333,13 @@ export default function ReviewsPage() {
                                     <Label>1. Script einbinden (theme.liquid)</Label>
                                     <p className="text-sm text-gray-500">Fügen Sie dies vor dem schließenden <code>&lt;/body&gt;</code> Tag ein:</p>
                                     <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm relative group">
-                                        <code>&lt;script src="https://invoice-kohl-five.vercel.app/review-widget.js" async&gt;&lt;/script&gt;</code>
+                                        <code>&lt;script src="https://invoice-production-8cd6.up.railway.app/review-widget.js" async&gt;&lt;/script&gt;</code>
                                         <Button
                                             size="sm"
                                             variant="secondary"
                                             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={() => {
-                                                navigator.clipboard.writeText('<script src="https://invoice-kohl-five.vercel.app/review-widget.js" async></script>')
+                                                navigator.clipboard.writeText('<script src="https://invoice-production-8cd6.up.railway.app/review-widget.js" async></script>')
                                                 toast.success('Code kopiert!')
                                             }}
                                         >

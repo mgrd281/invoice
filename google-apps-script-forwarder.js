@@ -2,7 +2,7 @@
 function autoForwardToInvoiceApp() {
     // CONFIGURATION
     // Replace this with your actual Vercel URL after deployment
-    var API_URL = "https://invoice-kohl-five.vercel.app/api/support/incoming";
+    var API_URL = "https://invoice-production-8cd6.up.railway.app/api/support/incoming";
     var TARGET_LABEL = "InvoiceAppProcessed"; // Label to apply to processed emails
 
     // 1. Search for unread emails

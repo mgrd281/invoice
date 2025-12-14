@@ -1,5 +1,5 @@
 (function () {
-    const BASE_URL = 'https://invoice-kohl-five.vercel.app'; // Updated to actual deployed URL
+    const BASE_URL = 'https://invoice-production-8cd6.up.railway.app'; // Updated to actual deployed URL
 
     function initExitIntent() {
         // Check if already shown in this session

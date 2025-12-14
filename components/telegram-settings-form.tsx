@@ -157,7 +157,7 @@ export function TelegramSettingsForm() {
                         Um den Bot zu aktivieren, müssen Sie den Webhook bei Telegram setzen. Rufen Sie diese URL im Browser auf (ersetzen Sie TOKEN):
                     </p>
                     <code className="block bg-white p-2 rounded text-xs break-all border border-blue-200">
-                        https://api.telegram.org/bot{settings.botToken || 'TOKEN'}/setWebhook?url=https://invoice-kohl-five.vercel.app/api/telegram/webhook
+                        https://api.telegram.org/bot{settings.botToken || 'TOKEN'}/setWebhook?url=https://invoice-production-8cd6.up.railway.app/api/telegram/webhook
                     </code>
                 </CardContent>
             </Card>
