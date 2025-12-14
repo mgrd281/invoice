@@ -74,8 +74,8 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
                 el.removeAttribute('bgcolor');
             });
 
-            // Unwrap <font> tags only, keep <span> as they might be structural (even if we strip styles, better to keep them than merge)
-            ['font'].forEach(tagName => {
+            // Unwrap <font> and <pre> tags, keep <span> as they might be structural
+            ['font', 'pre'].forEach(tagName => {
                 doc.querySelectorAll(tagName).forEach(el => {
                     const parent = el.parentNode;
                     if (parent) {
@@ -130,7 +130,7 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
             {/* Editor Area */}
             <div
                 ref={contentRef}
-                className="flex-1 p-4 min-h-[300px] outline-none prose max-w-none text-sm font-sans leading-relaxed text-gray-800 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mb-2 [&>h4]:text-base [&>h4]:font-semibold [&>h4]:mb-1 [&>p]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-3"
+                className="flex-1 p-4 min-h-[300px] outline-none prose max-w-none text-sm font-sans leading-relaxed text-gray-800 break-words whitespace-pre-wrap [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mb-2 [&>h4]:text-base [&>h4]:font-semibold [&>h4]:mb-1 [&>p]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-3"
                 contentEditable
                 onInput={handleInput}
                 onPaste={handlePaste}
