@@ -83,6 +83,43 @@ function parseCSVLine(line: string, delimiter?: string): string[] {
   return result
 }
 
+// Helper to find value with flexible header matching
+function getColumnValue(record: Record<string, string>, possibleHeaders: string[]): string {
+  const recordKeys = Object.keys(record);
+
+  for (const header of possibleHeaders) {
+    // 1. Exact match
+    if (record[header]) return record[header];
+
+    // 2. Case-insensitive match
+    const key = recordKeys.find(k => k.toLowerCase().trim() === header.toLowerCase().trim());
+    if (key && record[key]) return record[key];
+  }
+  return '';
+}
+
+// Helper to parse dates including German format
+function parseDate(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString();
+
+  // Try parsing German format (DD.MM.YYYY HH:mm:ss)
+  const germanDateRegex = /^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?.*$/;
+  const match = dateStr.trim().match(germanDateRegex);
+
+  if (match) {
+    const [_, day, month, year, hour, minute, second] = match;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${(hour || '00').padStart(2, '0')}:${(minute || '00').padStart(2, '0')}:${(second || '00').padStart(2, '0')}`;
+  }
+
+  // Try standard parsing
+  const date = new Date(dateStr);
+  if (!isNaN(date.getTime())) {
+    return date.toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -252,47 +289,37 @@ export async function POST(request: NextRequest) {
         if (i <= 3) {
           console.log(`Record ${i} mapping:`)
           console.log('Available headers:', Object.keys(record))
-          console.log('Address fields:', {
-            'Billing Address1': record['Billing Address1'],
-            'Shipping Address1': record['Shipping Address1'],
-            'Address1': record['Address1'],
-            'Adresse': record['Adresse'],
-            'Billing Address': record['Billing Address'],
-            'Shipping Address': record['Shipping Address'],
-            'Street': record['Street'],
-            'Straße': record['Straße']
-          })
         }
 
         // Map common Shopify CSV fields with more flexibility - prioritize Bestellnummer
         const order: ShopifyOrder = {
-          orderNumber: record['Bestellnummer'] || record['Order Number'] || record['Name'] || record['Order'] || `ORD-${Date.now()}-${i}`,
-          customerName: record['Billing Name'] || record['Shipping Name'] || record['Customer Name'] || record['Name'] || record['Kundenname'] || record['Rechnungsname'] || record['Liefername'] || record['Customer'] || 'Unbekannter Kunde',
-          customerCompany: record['Company'] || record['Billing Company'] || record['Shipping Company'] || record['Firma'] || record['Unternehmen'] || record['Lieferfirma'] || '',
-          customerEmail: record['Email'] || record['Customer Email'] || record['E-Mail'] || record['Billing Email'] || record['Shipping Email'] || record['Lieferemail'] || `kunde${i}@example.com`,
-          customerAddress: record['Billing Address1'] || record['Shipping Address1'] || record['Address1'] || record['Adresse'] || record['Billing Address'] || record['Shipping Address'] || record['Street'] || record['Straße'] || record['Rechnungsadresse'] || record['Lieferadresse'] || 'Musterstraße 1',
-          customerCity: record['Billing City'] || record['Shipping City'] || record['City'] || record['Stadt'] || record['Ort'] || record['Rechnungsstadt'] || record['Lieferstadt'] || 'Berlin',
-          customerZip: record['Billing Zip'] || record['Shipping Zip'] || record['Zip'] || record['PLZ'] || record['Postal Code'] || record['Postleitzahl'] || record['RechnungsPLZ'] || record['LieferPLZ'] || '12345',
-          customerCountry: record['Billing Country'] || record['Shipping Country'] || record['Country'] || record['Land'] || record['Country Code'] || record['Rechnungsland'] || record['Lieferland'] || 'DE',
-          orderDate: record['Fulfilled at'] || record['Erfüllt am'] || record['Created at'] || record['Date'] || record['Bestelldatum'] || record['Order Date'] || new Date().toISOString().split('T')[0],
-          productName: record['Lineitem name'] || record['Product'] || record['Item'] || record['Produktname'] || record['Product Name'] || 'Produkt',
-          quantity: parseInt(record['Lineitem quantity'] || record['Quantity'] || record['Menge'] || record['Qty'] || '1'),
-          unitPrice: parseFloat(record['Lineitem price'] || record['Price'] || record['Unit Price'] || record['Preis'] || record['Einzelpreis'] || '0'),
-          totalPrice: parseFloat(record['Total'] || record['Amount'] || record['Gesamt'] || record['Line Total'] || '0'),
+          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order']) || `ORD-${Date.now()}-${i}`,
+          customerName: getColumnValue(record, ['Billing Name', 'Shipping Name', 'Customer Name', 'Name', 'Kundenname', 'Rechnungsname', 'Liefername', 'Customer']) || 'Unbekannter Kunde',
+          customerCompany: getColumnValue(record, ['Company', 'Billing Company', 'Shipping Company', 'Firma', 'Unternehmen', 'Lieferfirma']) || '',
+          customerEmail: getColumnValue(record, ['Email', 'Customer Email', 'E-Mail', 'Billing Email', 'Shipping Email', 'Lieferemail']) || `kunde${i}@example.com`,
+          customerAddress: getColumnValue(record, ['Billing Address1', 'Shipping Address1', 'Address1', 'Adresse', 'Billing Address', 'Shipping Address', 'Street', 'Straße', 'Rechnungsadresse', 'Lieferadresse']) || 'Musterstraße 1',
+          customerCity: getColumnValue(record, ['Billing City', 'Shipping City', 'City', 'Stadt', 'Ort', 'Rechnungsstadt', 'Lieferstadt']) || 'Berlin',
+          customerZip: getColumnValue(record, ['Billing Zip', 'Shipping Zip', 'Zip', 'PLZ', 'Postal Code', 'Postleitzahl', 'RechnungsPLZ', 'LieferPLZ']) || '12345',
+          customerCountry: getColumnValue(record, ['Billing Country', 'Shipping Country', 'Country', 'Land', 'Country Code', 'Rechnungsland', 'Lieferland']) || 'DE',
+          orderDate: parseDate(getColumnValue(record, ['Fulfilled at', 'Erfüllt am', 'Created at', 'Date', 'Bestelldatum', 'Order Date', 'Paid at'])),
+          productName: getColumnValue(record, ['Lineitem name', 'Product', 'Item', 'Produktname', 'Product Name']) || 'Produkt',
+          quantity: parseInt(getColumnValue(record, ['Lineitem quantity', 'Quantity', 'Menge', 'Qty']) || '1'),
+          unitPrice: parseFloat(getColumnValue(record, ['Lineitem price', 'Price', 'Unit Price', 'Preis', 'Einzelpreis']) || '0'),
+          totalPrice: parseFloat(getColumnValue(record, ['Total', 'Amount', 'Gesamt', 'Line Total']) || '0'),
           taxRate: 19, // Default German VAT
           taxAmount: 0,
           // Identifiers from CSV (flexible header names)
-          sku: record['Lineitem sku'] || record['SKU'] || record['Artikelnummer'] || record['Art.-Nr.'] || '',
-          ean: record['Lineitem sku'] || record['EAN'] || record['Barcode'] || record['GTIN'] || ''
+          sku: getColumnValue(record, ['Lineitem sku', 'SKU', 'Artikelnummer', 'Art.-Nr.']) || '',
+          ean: getColumnValue(record, ['Lineitem sku', 'EAN', 'Barcode', 'GTIN']) || ''
         }
 
         // Add additional fields for invoice type detection
-        order.rechnungstyp = record['Rechnungstyp'] || 'Rechnung'
-        order.statusDeutsch = record['Status_Deutsch'] || record['Status'] || ''
-        order.grund = record['Grund'] || ''
-        order.originalRechnung = record['Original_Rechnung'] || record['Originalrechnung'] || ''
-        order.financialStatus = record['Financial Status'] || record['Finanzstatus'] || ''
-        order.paymentMethod = record['Payment Method'] || record['Payment'] || record['Zahlungsmethode'] || record['Zahlungsart'] || ''
+        order.rechnungstyp = getColumnValue(record, ['Rechnungstyp']) || 'Rechnung'
+        order.statusDeutsch = getColumnValue(record, ['Status_Deutsch', 'Status']) || ''
+        order.grund = getColumnValue(record, ['Grund']) || ''
+        order.originalRechnung = getColumnValue(record, ['Original_Rechnung', 'Originalrechnung']) || ''
+        order.financialStatus = getColumnValue(record, ['Financial Status', 'Finanzstatus']) || ''
+        order.paymentMethod = getColumnValue(record, ['Payment Method', 'Payment', 'Zahlungsmethode', 'Zahlungsart']) || ''
 
         // Calculate tax amount if not provided - unitPrice already includes tax (Brutto)
         if (!order.taxAmount) {
