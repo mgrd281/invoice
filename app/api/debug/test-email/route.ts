@@ -48,18 +48,26 @@ export async function GET() {
             }, { status: 500 })
         }
 
-        const transporter = nodemailer.createTransport({
-            host: smtpHost || 'smtp.gmail.com',
-            port: parseInt(smtpPort || '587'),
-            secure: smtpSecure === 'true', // true for 465, false for other ports
-            auth: {
-                user: smtpUser,
-                pass: smtpPass,
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
-        })
+        const transporter = (smtpHost === 'smtp.gmail.com')
+            ? nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: smtpUser,
+                    pass: smtpPass,
+                }
+            })
+            : nodemailer.createTransport({
+                host: smtpHost || 'smtp.gmail.com',
+                port: parseInt(smtpPort || '587'),
+                secure: smtpSecure === 'true', // true for 465, false for other ports
+                auth: {
+                    user: smtpUser,
+                    pass: smtpPass,
+                },
+                tls: {
+                    rejectUnauthorized: false
+                }
+            })
 
         // Verify connection
         try {

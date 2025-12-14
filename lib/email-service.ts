@@ -4,8 +4,24 @@ import { detectEmailProvider, getSmtpConfig } from './email-providers'
 import { createEmailLog, markEmailFailed, markEmailSent, updateEmailLog } from './email-tracking'
 
 // Helper: create nodemailer transporter based on sender email and env
+// Helper: create nodemailer transporter based on sender email and env
 function createTransporter(senderEmail: string) {
   const host = process.env.SMTP_HOST || getSmtpConfig(senderEmail).host
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER || senderEmail
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
+
+  // Special handling for Gmail to avoid port/secure issues
+  if (host === 'smtp.gmail.com') {
+    console.log('🔌 Using Gmail Service Preset')
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user,
+        pass
+      }
+    })
+  }
+
   const port = parseInt(process.env.SMTP_PORT || String(getSmtpConfig(senderEmail).port))
 
   // Logic for secure connection:
@@ -14,9 +30,6 @@ function createTransporter(senderEmail: string) {
   const secure = (process.env.SMTP_SECURE || 'false') === 'true'
     ? true
     : (port === 465)
-
-  const user = process.env.SMTP_USER || process.env.EMAIL_USER || senderEmail
-  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS || ''
 
   const transporter = nodemailer.createTransport({
     host,
