@@ -262,7 +262,8 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             totalNet,
             totalGross,
             totalTax,
-            status: order.financial_status === 'paid' ? 'PAID' : 'SENT',
+            status: order.financial_status === 'paid' ? 'PAID' :
+                order.financial_status === 'voided' ? 'CANCELLED' : 'SENT',
             settings: {
                 paymentMethod: paymentMethod
             },

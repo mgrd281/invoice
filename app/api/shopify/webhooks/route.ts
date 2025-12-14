@@ -37,8 +37,8 @@ export async function POST(req: Request) {
     if (topic === 'orders/create' || topic === 'orders/updated') {
       log('🔄 Processing order...')
 
-      // Create invoice immediately for any valid order (except voided/refunded)
-      if (payload.financial_status !== 'voided' && payload.financial_status !== 'refunded') {
+      // Create invoice for all orders (including voided - they will be marked as cancelled)
+      if (payload.financial_status !== 'refunded') {
         log('⚡ Condition met: Creating invoice...')
 
         try {

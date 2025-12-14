@@ -1264,7 +1264,7 @@ export function convertShopifyOrderToInvoice(order: ShopifyOrder, settings: Shop
     status = 'Offen'
   } else if (order.financial_status === 'refunded') {
     status = 'Storniert'
-  } else if (order.financial_status === 'cancelled') {
+  } else if (order.financial_status === 'cancelled' || order.financial_status === 'voided') {
     status = 'Storniert'
   }
 
