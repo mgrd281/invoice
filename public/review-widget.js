@@ -1,7 +1,7 @@
 // public/review-widget.js
 
 (function () {
-    const BASE_URL = 'https://invoice-kohl-five.vercel.app'; // Updated to actual deployed URL
+    const BASE_URL = 'https://invoice-production-8cd6.up.railway.app'; // Updated to actual deployed URL
 
     // Initialize both widgets
     function init() {
