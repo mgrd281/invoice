@@ -471,25 +471,44 @@ export default function UploadPage() {
 
                   <div className="space-x-2">
                     {saving ? (
-                      <div className="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-xl border border-blue-200 shadow-sm">
-                        <div className="flex flex-col w-[280px]">
-                          <div className="flex justify-between text-sm font-medium text-blue-900 mb-2">
-                            <span className="flex items-center gap-2">
-                              <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
-                              Speichere Rechnungen
-                            </span>
-                            <span className="text-blue-600">{saveProgress}%</span>
+                      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-500">
+                        <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 w-[400px] flex flex-col items-center transform scale-100 transition-all">
+
+                          {/* Icon & Title */}
+                          <div className="mb-6 flex flex-col items-center">
+                            <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 relative">
+                              <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
+                              <Save className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Speichere Rechnungen</h3>
+                            <p className="text-sm text-gray-500 mt-1">Bitte warten, Daten werden verarbeitet...</p>
                           </div>
-                          <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden shadow-inner">
-                            <div
-                              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out shadow-sm"
-                              style={{ width: `${saveProgress}%` }}
-                            ></div>
+
+                          {/* Progress Bar */}
+                          <div className="w-full mb-2">
+                            <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                              <span>Fortschritt</span>
+                              <span className="text-blue-600">{saveProgress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
+                              <div
+                                className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg relative overflow-hidden"
+                                style={{ width: `${saveProgress}%` }}
+                              >
+                                <div className="absolute inset-0 bg-white/30 w-full h-full animate-[shimmer_2s_infinite]"></div>
+                              </div>
+                            </div>
                           </div>
+
+                          {/* Time Estimate */}
                           {saveEstimatedTime > 0 && (
-                            <span className="text-xs text-blue-700 mt-2 font-medium">
-                              ⏱️ ca. {saveEstimatedTime} Sek. verbleibend
-                            </span>
+                            <div className="flex items-center gap-2 mt-4 bg-blue-50 px-4 py-2 rounded-full text-blue-700 text-sm font-medium">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                              </span>
+                              Noch ca. {Math.floor(saveEstimatedTime / 60)}:{String(Math.floor(saveEstimatedTime % 60)).padStart(2, '0')} verbleibend
+                            </div>
                           )}
                         </div>
                       </div>
