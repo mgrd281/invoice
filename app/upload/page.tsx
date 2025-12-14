@@ -295,8 +295,10 @@ export default function UploadPage() {
       setUploadStatus({ type: 'success', message: `${savedCount} Rechnungen erfolgreich gespeichert!` })
       if (previewInvoices.length === 0) { // Check if all are gone
         setFile(null)
-        // Optional: Redirect
-        // window.location.href = '/invoices'
+        // Redirect to invoices page after successful save
+        setTimeout(() => {
+          window.location.href = '/invoices'
+        }, 1500)
       }
     } else {
       setUploadStatus({
@@ -469,21 +471,24 @@ export default function UploadPage() {
 
                   <div className="space-x-2">
                     {saving ? (
-                      <div className="flex items-center gap-4 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
-                        <div className="flex flex-col w-[200px]">
-                          <div className="flex justify-between text-xs text-blue-800 mb-1">
-                            <span>Speichere...</span>
-                            <span className="font-medium">{saveProgress}%</span>
+                      <div className="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-xl border border-blue-200 shadow-sm">
+                        <div className="flex flex-col w-[280px]">
+                          <div className="flex justify-between text-sm font-medium text-blue-900 mb-2">
+                            <span className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
+                              Speichere Rechnungen
+                            </span>
+                            <span className="text-blue-600">{saveProgress}%</span>
                           </div>
-                          <div className="w-full bg-blue-200 rounded-full h-1.5 overflow-hidden">
+                          <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden shadow-inner">
                             <div
-                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300 ease-out"
+                              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out shadow-sm"
                               style={{ width: `${saveProgress}%` }}
                             ></div>
                           </div>
                           {saveEstimatedTime > 0 && (
-                            <span className="text-[10px] text-blue-600 mt-1">
-                              ca. {saveEstimatedTime} Sek. verbleibend
+                            <span className="text-xs text-blue-700 mt-2 font-medium">
+                              ⏱️ ca. {saveEstimatedTime} Sek. verbleibend
                             </span>
                           )}
                         </div>
@@ -552,7 +557,18 @@ export default function UploadPage() {
                             <span className="text-xs text-gray-500">{inv.customerEmail}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{inv.date}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {inv.date && new Date(inv.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </span>
+                            {inv.date && (
+                              <span className="text-xs text-gray-500">
+                                {new Date(inv.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{inv.amount}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={inv.statusColor}>
