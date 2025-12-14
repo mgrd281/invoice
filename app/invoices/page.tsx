@@ -1208,7 +1208,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-700">
-                          {invoice.paymentMethod || '-'}
+                          {invoice.paymentMethod || invoice.settings?.paymentMethod || '-'}
                         </span>
                       </TableCell>
                       <TableCell>

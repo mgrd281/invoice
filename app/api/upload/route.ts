@@ -481,6 +481,7 @@ export async function POST(request: NextRequest) {
           // Legacy compatibility
           type: documentKind === DocumentKind.CANCELLATION ? 'STORNO' : documentKind === DocumentKind.CREDIT_NOTE ? 'GUTSCHRIFT' : 'REGULAR',
           originalInvoiceNumber: originalRechnung,
+          paymentMethod: firstOrder.paymentMethod || '-',
           settings: {
             paymentMethod: firstOrder.paymentMethod || '-'
           }
