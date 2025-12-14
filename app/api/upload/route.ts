@@ -38,6 +38,7 @@ interface ShopifyOrder {
   grund?: string
   originalRechnung?: string
   financialStatus?: string
+  paymentMethod?: string
 }
 
 // No mock data - all data goes directly to global storage
@@ -273,7 +274,7 @@ export async function POST(request: NextRequest) {
           customerCity: record['Billing City'] || record['Shipping City'] || record['City'] || record['Stadt'] || record['Ort'] || record['Rechnungsstadt'] || record['Lieferstadt'] || 'Berlin',
           customerZip: record['Billing Zip'] || record['Shipping Zip'] || record['Zip'] || record['PLZ'] || record['Postal Code'] || record['Postleitzahl'] || record['RechnungsPLZ'] || record['LieferPLZ'] || '12345',
           customerCountry: record['Billing Country'] || record['Shipping Country'] || record['Country'] || record['Land'] || record['Country Code'] || record['Rechnungsland'] || record['Lieferland'] || 'DE',
-          orderDate: record['Created at'] || record['Date'] || record['Bestelldatum'] || record['Order Date'] || new Date().toISOString().split('T')[0],
+          orderDate: record['Fulfilled at'] || record['Erfüllt am'] || record['Created at'] || record['Date'] || record['Bestelldatum'] || record['Order Date'] || new Date().toISOString().split('T')[0],
           productName: record['Lineitem name'] || record['Product'] || record['Item'] || record['Produktname'] || record['Product Name'] || 'Produkt',
           quantity: parseInt(record['Lineitem quantity'] || record['Quantity'] || record['Menge'] || record['Qty'] || '1'),
           unitPrice: parseFloat(record['Lineitem price'] || record['Price'] || record['Unit Price'] || record['Preis'] || record['Einzelpreis'] || '0'),
@@ -291,6 +292,7 @@ export async function POST(request: NextRequest) {
         order.grund = record['Grund'] || ''
         order.originalRechnung = record['Original_Rechnung'] || record['Originalrechnung'] || ''
         order.financialStatus = record['Financial Status'] || record['Finanzstatus'] || ''
+        order.paymentMethod = record['Payment Method'] || record['Payment'] || record['Zahlungsmethode'] || record['Zahlungsart'] || ''
 
         // Calculate tax amount if not provided - unitPrice already includes tax (Brutto)
         if (!order.taxAmount) {
@@ -451,7 +453,10 @@ export async function POST(request: NextRequest) {
           grund: grund,
           // Legacy compatibility
           type: documentKind === DocumentKind.CANCELLATION ? 'STORNO' : documentKind === DocumentKind.CREDIT_NOTE ? 'GUTSCHRIFT' : 'REGULAR',
-          originalInvoiceNumber: originalRechnung
+          originalInvoiceNumber: originalRechnung,
+          settings: {
+            paymentMethod: firstOrder.paymentMethod || '-'
+          }
         }
 
         invoices.push(invoice)
