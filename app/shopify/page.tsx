@@ -34,7 +34,14 @@ interface Invoice {
 function ShopifyEmbeddedContent() {
   const searchParams = useSearchParams();
   const shop = searchParams.get('shop');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'dashboard');
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);

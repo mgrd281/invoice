@@ -22,7 +22,8 @@ import {
     Globe,
     Star,
     Zap,
-    Home
+    Home,
+    Palette
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -221,6 +222,20 @@ export const DEFAULT_FEATURES = [
         hasPing: true,
         pingColor: 'bg-emerald-400',
         pingDotColor: 'bg-emerald-500'
+    },
+    {
+        id: 'storefront-widgets',
+        href: '/shopify?tab=widgets',
+        title: 'Storefront Widgets',
+        description: 'Professionelle Elemente für Ihren Shop',
+        icon: Palette,
+        iconBg: 'bg-gradient-to-r from-violet-500 to-fuchsia-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-violet-300 bg-gradient-to-br from-white to-violet-50',
+        badge: 'NEU',
+        badgeClass: 'bg-violet-100 text-violet-700',
+        hasPing: true,
+        pingColor: 'bg-violet-400',
+        pingDotColor: 'bg-violet-500'
     },
     {
         id: 'settings',
