@@ -771,6 +771,36 @@ export default function InvoicesPage() {
   const refundInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Gutschrift').length
   const duplicateCount = duplicateNumbers.length
 
+  // Calculate 19% VAT Sum
+  const vat19Sum = statsBaseInvoices
+    .filter((invoice: any) => invoice.status !== 'Storniert')
+    .reduce((sum: number, invoice: any) => {
+      // If items are available, sum up tax for 19% items
+      if (invoice.items && Array.isArray(invoice.items) && invoice.items.length > 0) {
+        const invoiceVat = invoice.items.reduce((itemSum: number, item: any) => {
+          // Check for 19% tax rate (allow for small float differences or string '19')
+          // Tax rate might be stored as 19 or 0.19
+          const rate = Number(item.taxRate || 0)
+          // Check if rate is 19 (percentage) or 0.19 (decimal)
+          if (Math.abs(rate - 19) < 0.1 || Math.abs(rate - 0.19) < 0.001) {
+            return itemSum + Number(item.taxAmount || 0)
+          }
+          return itemSum
+        }, 0)
+        return sum + invoiceVat
+      }
+
+      // Fallback: use totalTax if it looks like 19%
+      const net = Number(invoice.totalNet || 0)
+      const tax = Number(invoice.totalTax || 0)
+
+      if (net > 0 && Math.abs((tax / net) - 0.19) < 0.01) {
+        return sum + tax
+      }
+
+      return sum
+    }, 0)
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Bezahlt': return 'bg-green-100 text-green-800'
@@ -1241,7 +1271,7 @@ export default function InvoicesPage() {
         {showAnalytics && <AnalyticsDashboard />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
           <Card
             className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
             onClick={() => setStatusFilter(null)}
@@ -1341,6 +1371,23 @@ export default function InvoicesPage() {
             <CardContent>
               <div className="text-2xl font-bold text-gray-500">{duplicateCount}</div>
               <p className="text-xs text-gray-500">Potenziell</p>
+            </CardContent>
+          </Card>
+
+          {/* New 19% VAT Card */}
+          <Card className="bg-violet-50 border-violet-100">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-violet-700">
+                19 % MwSt
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-violet-700">
+                {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat19Sum)}
+              </div>
+              <p className="text-[10px] text-violet-600 leading-tight mt-1">
+                Steuerbetrag (bezahlt & nicht storniert)
+              </p>
             </CardContent>
           </Card>
         </div >
