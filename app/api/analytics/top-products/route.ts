@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
         console.error('Error fetching top products:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch top products' },
+            { error: `Failed to fetch top products: ${error.message}` },
             { status: 500 }
         );
     }

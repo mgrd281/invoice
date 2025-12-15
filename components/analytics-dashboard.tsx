@@ -30,9 +30,9 @@ export function AnalyticsDashboard() {
                         setTopProducts(productsData.topProducts || [])
                     }
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Analytics error:', err)
-                setError('Fehler beim Laden der Analysen')
+                setError(err.message || 'Fehler beim Laden der Analysen')
             } finally {
                 setLoading(false)
             }
