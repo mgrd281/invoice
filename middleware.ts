@@ -4,10 +4,13 @@ import { getToken } from 'next-auth/jwt'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow access to static files and auth API
+  // Allow access to static files, auth API, webhooks, and public API endpoints
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') || // Allow auth endpoints (login, register, callback)
+    pathname.startsWith('/api/shopify/webhooks') || // Allow Shopify webhooks
+    pathname.startsWith('/api/webhooks') || // Allow other webhooks
+    pathname.startsWith('/api/cron') || // Allow cron jobs
     pathname.includes('.') ||
     pathname === '/favicon.ico'
   ) {
