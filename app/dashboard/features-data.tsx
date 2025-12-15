@@ -120,20 +120,6 @@ export const DEFAULT_FEATURES = [
         pingDotColor: 'bg-red-500'
     },
     {
-        id: 'telegram',
-        href: '/dashboard/telegram',
-        title: 'Telegram Bot',
-        description: 'Berichte & Steuerung per Chat',
-        icon: MessageSquare,
-        iconBg: 'bg-gradient-to-r from-sky-500 to-blue-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-sky-300 bg-gradient-to-br from-white to-sky-50',
-        badge: 'NEU',
-        badgeClass: 'bg-sky-100 text-sky-700',
-        hasPing: true,
-        pingColor: 'bg-sky-400',
-        pingDotColor: 'bg-sky-500'
-    },
-    {
         id: 'analytics',
         href: '/analytics/customers',
         title: 'Kundenanalyse',

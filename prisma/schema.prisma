@@ -98,8 +98,6 @@ model Organization {
   receipts          Receipt[]
   reviews           Review[]
   widgetSettings    WidgetSettings?
-  telegramSettings  TelegramSettings?
-  telegramLogs      TelegramLog[]
   autoReviewSettings AutoReviewSettings?
   googleShoppingSettings GoogleShoppingSettings?
   reviewIncentiveSettings ReviewIncentiveSettings?
@@ -677,37 +675,6 @@ model ReplyTemplate {
   updatedAt      DateTime     @updatedAt
 }
 
-model TelegramSettings {
-  id             String   @id @default(uuid())
-  organizationId String   @unique
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  botToken       String?
-  isEnabled      Boolean  @default(false)
-  allowedUsers   TelegramAllowedUser[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
-
-model TelegramAllowedUser {
-  id                 String           @id @default(uuid())
-  telegramUserId     String
-  name               String?
-  settingsId         String
-  settings           TelegramSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
-  createdAt          DateTime         @default(now())
-}
-
-
-model TelegramLog {
-  id             String   @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  telegramUserId String
-  command        String
-  status         String
-  response       String?
-  createdAt      DateTime @default(now())
-}
 
 model AutoReviewSettings {
   id             String       @id @default(uuid())
