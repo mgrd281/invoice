@@ -1283,9 +1283,9 @@ export default function InvoicesPage() {
         {showAnalytics && <AnalyticsDashboard />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <div className="flex flex-nowrap gap-4 mb-8 overflow-x-auto pb-4">
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
+            className={`min-w-[200px] flex-shrink-0 cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
             onClick={() => setStatusFilter(null)}
           >
             <CardHeader className="pb-2">
@@ -1300,7 +1300,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'} ${openInvoices === 0 ? 'opacity-50' : ''}`}
+            className={`min-w-[200px] flex-shrink-0 cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'} ${openInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Offen')}
           >
             <CardHeader className="pb-2">
@@ -1315,7 +1315,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'} ${overdueInvoices === 0 ? 'opacity-50' : ''}`}
+            className={`min-w-[200px] flex-shrink-0 cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'} ${overdueInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Überfällig')}
           >
             <CardHeader className="pb-2">
@@ -1330,7 +1330,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'} ${paidInvoices === 0 ? 'opacity-50' : ''}`}
+            className={`min-w-[200px] flex-shrink-0 cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'} ${paidInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Bezahlt')}
           >
             <CardHeader className="pb-2">
@@ -1345,7 +1345,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'} ${cancelledInvoices === 0 ? 'opacity-50' : ''}`}
+            className={`min-w-[200px] flex-shrink-0 cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'} ${cancelledInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Storniert')}
           >
             <CardHeader className="pb-2">
@@ -1360,7 +1360,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'} ${refundInvoices === 0 ? 'opacity-50' : ''}`}
+            className={`min-w-[200px] flex-shrink-0 cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'} ${refundInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Gutschrift')}
           >
             <CardHeader className="pb-2">
@@ -1374,7 +1374,7 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card className={`bg-gray-50 ${duplicateCount === 0 ? 'opacity-30' : 'opacity-70'}`}>
+          <Card className={`min-w-[200px] flex-shrink-0 bg-gray-50 ${duplicateCount === 0 ? 'opacity-30' : 'opacity-70'}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Duplikate
@@ -1387,7 +1387,7 @@ export default function InvoicesPage() {
           </Card>
 
           {/* 19% VAT Card */}
-          <Card className={`bg-violet-50 border-violet-100 ${vat19Sum === 0 ? 'opacity-50' : ''}`}>
+          <Card className={`min-w-[200px] flex-shrink-0 bg-violet-50 border-violet-100 ${vat19Sum === 0 ? 'opacity-50' : ''}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-violet-700">
                 19 % MwSt
@@ -1404,7 +1404,7 @@ export default function InvoicesPage() {
           </Card>
 
           {/* Total Paid Amount Card */}
-          <Card className={`bg-emerald-50 border-emerald-100 ${totalPaidAmount === 0 ? 'opacity-50' : ''}`}>
+          <Card className={`min-w-[200px] flex-shrink-0 bg-emerald-50 border-emerald-100 ${totalPaidAmount === 0 ? 'opacity-50' : ''}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-emerald-700">
                 Gesamtbetrag (bezahlt)
@@ -1419,7 +1419,7 @@ export default function InvoicesPage() {
               </p>
             </CardContent>
           </Card>
-        </div >
+        </div>
 
         {/* Invoices Table */}
         <Card>
