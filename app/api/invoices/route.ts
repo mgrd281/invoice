@@ -92,6 +92,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Advanced Filters
+    const paymentMethod = searchParams.get('paymentMethod')
+    const minAmount = searchParams.get('minAmount')
+    const maxAmount = searchParams.get('maxAmount')
+    const newCustomers = searchParams.get('newCustomers') === 'true'
+
+    if (paymentMethod) {
+      whereClause.settings = {
+        path: ['paymentMethod'],
+        equals: paymentMethod
+      }
+    }
+
+    if (minAmount || maxAmount) {
+      whereClause.totalGross = {}
+      if (minAmount) whereClause.totalGross.gte = Number(minAmount)
+      if (maxAmount) whereClause.totalGross.lte = Number(maxAmount)
+    }
+
+    if (newCustomers) {
+      // Define "New Customer" as created in the last 30 days
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      whereClause.customer = {
+        createdAt: {
+          gte: thirtyDaysAgo
+        }
+      }
+    }
+
     // Add search filter if query is present
     if (search) {
       const searchTerms = search.trim().split(/[\s,]+/) // Split by space or comma
