@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
             if (invoice.items && Array.isArray(invoice.items)) {
                 invoice.items.forEach((item: any) => {
                     const productName = item.description || item.name || 'Unbekanntes Produkt';
-                    const quantity = item.quantity || 1;
-                    const price = item.unitPrice || item.price || 0; // Use unitPrice if available
+                    const quantity = Number(item.quantity) || 1;
+                    const price = Number(item.unitPrice || item.price || 0); // Use unitPrice if available
                     const revenue = quantity * price;
 
                     if (!productStats[productName]) {

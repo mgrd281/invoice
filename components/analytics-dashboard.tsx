@@ -223,19 +223,28 @@ export function AnalyticsDashboard() {
                     <CardTitle>Beliebte Produkte</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         {topProducts.map((product: any, i: number) => (
-                            <div key={i} className="flex items-center">
-                                <div className="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold mr-3">
+                            <div key={i} className="flex items-start">
+                                {/* Rank Number */}
+                                <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs mr-3 mt-0.5 flex-shrink-0">
                                     {i + 1}
                                 </div>
-                                <div className="flex-1 space-y-1">
-                                    <p className="text-sm font-medium leading-none">{product.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {product.quantity} {product.quantity === 1 ? 'Stück' : 'Stück'} verkauft
+
+                                {/* Product Info */}
+                                <div className="flex-1 min-w-0 mr-4">
+                                    {/* Line 1: Name */}
+                                    <p className="text-sm font-medium text-gray-900 leading-tight" title={product.name}>
+                                        {product.name.length > 60 ? product.name.substring(0, 60) + '...' : product.name}
+                                    </p>
+                                    {/* Line 2: Quantity */}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {product.quantity} Stück verkauft
                                     </p>
                                 </div>
-                                <div className="font-medium text-sm">
+
+                                {/* Price */}
+                                <div className="font-semibold text-sm text-gray-900 whitespace-nowrap">
                                     {formatCurrency(product.revenue)}
                                 </div>
                             </div>
