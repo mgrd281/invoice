@@ -216,7 +216,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
                     if (specificGateways.length > 0) {
                         newPaymentMethod = specificGateways[0]
                     } else {
-                        newPaymentMethod = gateways[0]
+                        newPaymentMethod = 'Vorkasse'
                     }
                 }
             }
@@ -248,7 +248,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
                             const jsonString = JSON.stringify(transactions).toLowerCase()
                             if (jsonString.includes('vorkasse')) {
                                 newPaymentMethod = 'Vorkasse'
-                            } else if (jsonString.includes('rechnung') || jsonString.includes('invoice')) {
+                            } else if (jsonString.includes('rechnung') || jsonString.includes('invoice') || jsonString.includes('bank deposit') || jsonString.includes('überweisung')) {
                                 newPaymentMethod = 'Rechnung'
                             }
                         }
@@ -364,7 +364,8 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             if (specificGateways.length > 0) {
                 paymentMethod = specificGateways[0]
             } else {
-                paymentMethod = gateways[0]
+                // If only 'manual' is present, default to 'Vorkasse' as per requirements
+                paymentMethod = 'Vorkasse'
             }
         }
     }
@@ -404,9 +405,9 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
                     if (jsonString.includes('vorkasse')) {
                         paymentMethod = 'Vorkasse'
                         log(`✅ Detected 'Vorkasse' in transaction details`)
-                    } else if (jsonString.includes('rechnung') || jsonString.includes('invoice')) {
+                    } else if (jsonString.includes('rechnung') || jsonString.includes('invoice') || jsonString.includes('bank deposit') || jsonString.includes('überweisung')) {
                         paymentMethod = 'Rechnung'
-                        log(`✅ Detected 'Rechnung' in transaction details`)
+                        log(`✅ Detected 'Rechnung' (via Bank Transfer) in transaction details`)
                     }
                 }
             }

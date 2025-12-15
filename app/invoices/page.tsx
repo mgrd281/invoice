@@ -45,8 +45,14 @@ function getPaymentMethodDisplay(method: string | undefined) {
   } else if (lowerMethod.includes('amazon')) {
     label = 'Amazon Pay'
     className = "bg-cyan-100 text-cyan-800"
-  } else if (lowerMethod === 'custom' || lowerMethod.includes('vorkasse') || lowerMethod.includes('manual')) {
-    label = 'Vorkasse / Rechnung'
+  } else if (lowerMethod === 'manual' || lowerMethod === 'custom') {
+    label = 'Vorkasse'
+    className = "bg-yellow-100 text-yellow-800"
+  } else if (lowerMethod.includes('vorkasse')) {
+    label = 'Vorkasse'
+    className = "bg-yellow-100 text-yellow-800"
+  } else if (lowerMethod.includes('rechnung')) {
+    label = 'Rechnung'
     className = "bg-yellow-100 text-yellow-800"
   } else if (lowerMethod.includes('shopify')) {
     label = 'Shopify Payments'
