@@ -19,8 +19,18 @@ export function AnalyticsDashboard() {
                     fetch('/api/analytics/top-products')
                 ])
 
-                if (!analyticsRes.ok) throw new Error('Failed to fetch analytics')
+                if (!analyticsRes.ok) {
+                    const errData = await analyticsRes.json().catch(() => ({}))
+                    throw new Error(errData.error || `Analytics API Error: ${analyticsRes.status}`)
+                }
 
+                if (!productsRes.ok) {
+                    const errData = await productsRes.json().catch(() => ({}))
+                    // We can log this but maybe not block the whole dashboard if top products fail
+                    console.error('Top products failed:', errData.error)
+                    // For now, let's throw to see the error
+                    throw new Error(errData.error || `Top Products API Error: ${productsRes.status}`)
+                }
                 const analyticsData = await analyticsRes.json()
                 setData(analyticsData)
 
