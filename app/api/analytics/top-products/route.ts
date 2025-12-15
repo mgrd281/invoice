@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
     try {
@@ -10,16 +11,12 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { PrismaClient } = require('@prisma/client');
-        const prisma = new PrismaClient();
-
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
             include: { organization: true }
         });
 
         if (!user?.organizationId) {
-            await prisma.$disconnect();
             return NextResponse.json({ error: 'No organization found' }, { status: 404 });
         }
 
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
             },
             select: {
                 items: true,
-                total: true,
+                totalGross: true,
                 createdAt: true
             }
         });
@@ -44,7 +41,7 @@ export async function GET(request: NextRequest) {
                 invoice.items.forEach((item: any) => {
                     const productName = item.description || item.name || 'Unbekanntes Produkt';
                     const quantity = item.quantity || 1;
-                    const price = item.price || 0;
+                    const price = item.unitPrice || item.price || 0; // Use unitPrice if available
                     const revenue = quantity * price;
 
                     if (!productStats[productName]) {
@@ -65,8 +62,6 @@ export async function GET(request: NextRequest) {
         const topProducts = Object.values(productStats)
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, 10);
-
-        await prisma.$disconnect();
 
         return NextResponse.json({
             success: true,
