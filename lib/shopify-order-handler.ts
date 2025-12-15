@@ -153,6 +153,92 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
 
     if (existingInvoice) {
         log(`⚠️ Invoice for order ${order.name} already exists.`)
+
+        // Check if we can improve the payment method for existing invoice
+        const currentSettings = existingInvoice.settings as any
+        const currentMethod = currentSettings?.paymentMethod || '-'
+
+        if (currentMethod.toLowerCase() === 'manual' || currentMethod.toLowerCase() === 'custom' || currentMethod === '-') {
+            log(`🔄 Checking if we can improve payment method for existing invoice ${existingInvoice.invoiceNumber}...`)
+
+            // Re-run detection logic
+            let newPaymentMethod = '-'
+
+            // 1. Try payment_gateway_names
+            if (order.payment_gateway_names && Array.isArray(order.payment_gateway_names)) {
+                const gateways = order.payment_gateway_names as string[]
+                if (gateways.length > 0) {
+                    const specificGateways = gateways.filter(g => g.toLowerCase() !== 'manual')
+                    if (specificGateways.length > 0) {
+                        newPaymentMethod = specificGateways[0]
+                    } else {
+                        newPaymentMethod = gateways[0]
+                    }
+                }
+            }
+
+            // 2. Try legacy gateway
+            if (newPaymentMethod === '-' || newPaymentMethod.toLowerCase() === 'manual' || newPaymentMethod.toLowerCase() === 'custom') {
+                const legacyGateway = (order as any).gateway
+                if (legacyGateway && legacyGateway.toLowerCase() !== 'manual' && legacyGateway.toLowerCase() !== 'custom') {
+                    newPaymentMethod = legacyGateway
+                }
+            }
+
+            // 3. Try transactions
+            if (newPaymentMethod.toLowerCase() === 'manual' || newPaymentMethod.toLowerCase() === 'custom') {
+                try {
+                    const { ShopifyAPI } = await import('@/lib/shopify-api')
+                    const api = new ShopifyAPI()
+                    const transactions = await api.getTransactions(order.id)
+
+                    if (transactions && transactions.length > 0) {
+                        const specificTx = transactions.find((t: any) =>
+                            t.gateway &&
+                            t.gateway.toLowerCase() !== 'manual' &&
+                            t.gateway.toLowerCase() !== 'custom'
+                        )
+                        if (specificTx) {
+                            newPaymentMethod = specificTx.gateway
+                        } else {
+                            const jsonString = JSON.stringify(transactions).toLowerCase()
+                            if (jsonString.includes('vorkasse')) {
+                                newPaymentMethod = 'Vorkasse'
+                            } else if (jsonString.includes('rechnung') || jsonString.includes('invoice')) {
+                                newPaymentMethod = 'Rechnung'
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            // 4. Try payment_details
+            if ((newPaymentMethod.toLowerCase() === 'manual' || newPaymentMethod.toLowerCase() === 'custom') && (order as any).payment_details) {
+                const details = (order as any).payment_details
+                if (details.credit_card_company) {
+                    newPaymentMethod = details.credit_card_company
+                }
+            }
+
+            // If we found a better method, update the invoice
+            if (newPaymentMethod !== '-' && newPaymentMethod.toLowerCase() !== 'manual' && newPaymentMethod.toLowerCase() !== 'custom' && newPaymentMethod !== currentMethod) {
+                log(`✅ Updating existing invoice ${existingInvoice.invoiceNumber} with better payment method: ${newPaymentMethod}`)
+                await prisma.invoice.update({
+                    where: { id: existingInvoice.id },
+                    data: {
+                        settings: {
+                            ...(currentSettings || {}),
+                            paymentMethod: newPaymentMethod
+                        }
+                    }
+                })
+                // Update the returned object locally
+                existingInvoice.settings = { ...(currentSettings || {}), paymentMethod: newPaymentMethod }
+            }
+        }
+
         return { ...mapPrismaInvoiceToData(existingInvoice), isNew: false }
     }
 
