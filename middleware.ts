@@ -31,9 +31,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // If on access gate page and already unlocked, redirect to login or intended page
+  // If on access gate page and already unlocked, redirect to auth/signin or intended page
   if (isAccessGatePage && accessGateUnlocked) {
-    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/login'
+    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/auth/signin'
     const url = request.nextUrl.clone()
     url.pathname = redirectTo
     url.search = ''

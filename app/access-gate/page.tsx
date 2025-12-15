@@ -30,8 +30,8 @@ export default function AccessGatePage() {
             const data = await response.json()
 
             if (response.ok && data.success) {
-                // Redirect to the intended page or login
-                const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/login'
+                // Redirect to the intended page or auth/signin
+                const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/auth/signin'
                 router.push(redirectTo)
                 router.refresh()
             } else {
