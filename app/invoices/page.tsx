@@ -90,6 +90,7 @@ export default function InvoicesPage() {
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
   const [vat19Sum, setVat19Sum] = useState(0)
   const [vat7Sum, setVat7Sum] = useState(0)
+  const [totalPaidAmount, setTotalPaidAmount] = useState(0)
 
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
@@ -207,9 +208,11 @@ export default function InvoicesPage() {
       if (data.stats) {
         setVat19Sum(typeof data.stats.totalVat19 === 'number' ? data.stats.totalVat19 : 0)
         setVat7Sum(typeof data.stats.totalVat7 === 'number' ? data.stats.totalVat7 : 0)
+        setTotalPaidAmount(typeof data.stats.totalPaidAmount === 'number' ? data.stats.totalPaidAmount : 0)
       } else {
         setVat19Sum(0)
         setVat7Sum(0)
+        setTotalPaidAmount(0)
       }
 
       setTotalPages(pagination.pages)
@@ -1396,6 +1399,23 @@ export default function InvoicesPage() {
               </div>
               <p className="text-[10px] text-violet-600 leading-tight mt-1">
                 Steuerbetrag (19%)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Total Paid Amount Card */}
+          <Card className={`bg-emerald-50 border-emerald-100 ${totalPaidAmount === 0 ? 'opacity-50' : ''}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-emerald-700">
+                Gesamtbetrag (bezahlt)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-700">
+                {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalPaidAmount)}
+              </div>
+              <p className="text-[10px] text-emerald-600 leading-tight mt-1">
+                nur abgeschlossene Zahlungen
               </p>
             </CardContent>
           </Card>

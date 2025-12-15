@@ -210,12 +210,16 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats for ALL matching invoices (ignoring pagination)
     // We fetch necessary fields to calculate 19% VAT accurately
+    // Calculate stats for ALL matching invoices (ignoring pagination)
+    // We fetch necessary fields to calculate 19% VAT accurately and Total Paid Amount
     const allMatchingStats = await prisma.invoice.findMany({
       where: whereClause,
       select: {
         status: true,
         totalTax: true,
         totalNet: true,
+        totalGross: true, // Needed for total paid amount
+        documentKind: true, // Needed to identify refunds
         items: {
           select: {
             taxRate: true,
@@ -227,11 +231,25 @@ export async function GET(request: NextRequest) {
 
     let totalVat19 = 0
     let totalVat7 = 0
+    let totalPaidAmount = 0
 
     for (const inv of allMatchingStats) {
       // Skip cancelled invoices and non-paid invoices
-      // Only calculate VAT for invoices that are actually PAID
+      // Only calculate VAT and Total Paid for invoices that are actually PAID
       if (inv.status === 'CANCELLED' || inv.status !== 'PAID') continue
+
+      // Calculate Total Paid Amount
+      const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
+        inv.documentKind === 'REFUND_FULL' ||
+        inv.documentKind === 'REFUND_PARTIAL';
+
+      const grossAmount = Number(inv.totalGross || 0);
+
+      if (isRefund) {
+        totalPaidAmount -= grossAmount;
+      } else {
+        totalPaidAmount += grossAmount;
+      }
 
       let invoiceVat19 = 0
       let invoiceVat7 = 0
@@ -284,7 +302,8 @@ export async function GET(request: NextRequest) {
       },
       stats: {
         totalVat19,
-        totalVat7
+        totalVat7,
+        totalPaidAmount
       }
     })
 
