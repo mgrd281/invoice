@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { ensureOrganization } from '@/lib/db-operations';
 
 export async function GET(request: NextRequest) {
     try {
@@ -13,17 +14,31 @@ export async function GET(request: NextRequest) {
 
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            include: { organization: true }
+            select: { organizationId: true }
         });
 
-        if (!user?.organizationId) {
+        let organizationId = user?.organizationId;
+
+        if (!organizationId) {
+            // Fallback: try to find default org or ensure it exists
+            let org = await prisma.organization.findFirst({
+                where: { id: 'default-org' }
+            });
+
+            if (!org) {
+                org = await ensureOrganization();
+            }
+            organizationId = org.id;
+        }
+
+        if (!organizationId) {
             return NextResponse.json({ error: 'No organization found' }, { status: 404 });
         }
 
         // Get all invoices for the organization
         const invoices = await prisma.invoice.findMany({
             where: {
-                organizationId: user.organizationId,
+                organizationId: organizationId,
                 status: { in: ['PAID', 'SENT'] }
             },
             select: {

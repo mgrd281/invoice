@@ -61,8 +61,16 @@ export function AnalyticsDashboard() {
     )
 
     if (error) return (
-        <div className="w-full h-24 flex items-center justify-center bg-red-50 rounded-lg border border-red-100 mb-8 text-red-600">
-            <p>{error}</p>
+        <div className="w-full h-32 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-100 mb-8">
+            <div className="text-center">
+                <p className="text-gray-500 mb-2">{error === 'No organization found' ? 'Organisationsdaten werden eingerichtet...' : 'Analysen konnten nicht geladen werden'}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="text-sm text-blue-600 hover:underline font-medium"
+                >
+                    Seite aktualisieren
+                </button>
+            </div>
         </div>
     )
 
