@@ -16,6 +16,8 @@ import BulkEmailSender from '@/components/bulk-email-sender'
 import CSVExportButton from '@/components/csv-export-button'
 import { CustomerHistoryDrawer } from '@/components/customer-history-drawer'
 import { InvoiceType, ExtendedInvoice } from '@/lib/invoice-types'
+import { AnalyticsDashboard } from '@/components/analytics-dashboard'
+import { BarChart3 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 
@@ -72,6 +74,7 @@ export default function InvoicesPage() {
   // Customer History Drawer State
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
 
   // Abort controller ref to cancel previous requests
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -219,6 +222,18 @@ export default function InvoicesPage() {
     console.log('Invoice update detected, refreshing list...')
     fetchInvoices(true) // Background update
   }, [fetchInvoices])
+
+  // Function to detect duplicates
+  const getDuplicateInvoiceNumbers = () => {
+    const numberCounts: { [key: string]: number } = {}
+    invoices.forEach(invoice => {
+      const number = invoice.number || invoice.invoiceNumber
+      numberCounts[number] = (numberCounts[number] || 0) + 1
+    })
+    return Object.keys(numberCounts).filter(number => numberCounts[number] > 1)
+  }
+
+  const duplicateNumbers = getDuplicateInvoiceNumbers()
 
   // Handle date range changes
   useEffect(() => {
@@ -703,18 +718,7 @@ export default function InvoicesPage() {
     }
   }
 
-  // Function to detect duplicates
-  const getDuplicateInvoiceNumbers = () => {
-    const numberCounts: { [key: string]: number } = {}
-    invoices.forEach(invoice => {
-      const number = invoice.number || invoice.invoiceNumber
-      numberCounts[number] = (numberCounts[number] || 0) + 1
-    })
-    return Object.keys(numberCounts).filter(number => numberCounts[number] > 1)
-  }
 
-
-  const duplicateNumbers = getDuplicateInvoiceNumbers()
 
   if (loading) {
     return (
@@ -791,6 +795,16 @@ export default function InvoicesPage() {
               </h1>
             </div>
             <div className="flex space-x-2">
+              <Button
+                variant={showAnalytics ? "secondary" : "outline"}
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className="text-gray-600 hover:text-gray-700 hover:border-gray-300"
+                title="Analysen & Statistiken anzeigen"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analysen
+              </Button>
+
               {hiddenInvoices.size > 0 && (
                 <Button
                   variant="outline"
@@ -1014,95 +1028,95 @@ export default function InvoicesPage() {
                 </Button>
               </div>
             )}
+
           </div>
-        </div>
 
-        {/* Advanced Filters Panel */}
-        {showAdvancedFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-              
-              {/* Payment Method */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Zahlungsmethode</label>
-                <select
-                  value={filterPaymentMethod}
-                  onChange={(e) => setFilterPaymentMethod(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md text-sm p-2"
-                >
-                  <option value="">Alle</option>
-                  <option value="PayPal">PayPal</option>
-                  <option value="Klarna">Klarna</option>
-                  <option value="Vorkasse">Vorkasse</option>
-                  <option value="Rechnung">Rechnung</option>
-                  <option value="Shopify Payments">Shopify Payments</option>
-                  <option value="Credit Card">Kreditkarte</option>
-                  <option value="Amazon Pay">Amazon Pay</option>
-                </select>
-              </div>
+          {/* Advanced Filters Panel */}
+          {showAdvancedFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
 
-              {/* Amount Range */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Betrag (€)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={filterMinAmount}
-                    onChange={(e) => setFilterMinAmount(e.target.value)}
+                {/* Payment Method */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Zahlungsmethode</label>
+                  <select
+                    value={filterPaymentMethod}
+                    onChange={(e) => setFilterPaymentMethod(e.target.value)}
                     className="w-full border border-gray-300 rounded-md text-sm p-2"
-                  />
-                  <span className="text-gray-400">-</span>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={filterMaxAmount}
-                    onChange={(e) => setFilterMaxAmount(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md text-sm p-2"
-                  />
+                  >
+                    <option value="">Alle</option>
+                    <option value="PayPal">PayPal</option>
+                    <option value="Klarna">Klarna</option>
+                    <option value="Vorkasse">Vorkasse</option>
+                    <option value="Rechnung">Rechnung</option>
+                    <option value="Shopify Payments">Shopify Payments</option>
+                    <option value="Credit Card">Kreditkarte</option>
+                    <option value="Amazon Pay">Amazon Pay</option>
+                  </select>
                 </div>
-              </div>
 
-              {/* Checkboxes Group 1 */}
-              <div className="space-y-2 flex flex-col justify-center">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filterNewCustomers}
-                    onChange={(e) => setFilterNewCustomers(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Nur neue Kunden (30 Tage)</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filterUnsent}
-                    onChange={(e) => setFilterUnsent(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">E-Mail nicht gesendet</span>
-                </label>
-              </div>
+                {/* Amount Range */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Betrag (€)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={filterMinAmount}
+                      onChange={(e) => setFilterMinAmount(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md text-sm p-2"
+                    />
+                    <span className="text-gray-400">-</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={filterMaxAmount}
+                      onChange={(e) => setFilterMaxAmount(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md text-sm p-2"
+                    />
+                  </div>
+                </div>
 
-              {/* Checkboxes Group 2 */}
-              <div className="space-y-2 flex flex-col justify-center">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filterDuplicates}
-                    onChange={(e) => setFilterDuplicates(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Nur Duplikate anzeigen</span>
-                </label>
-              </div>
+                {/* Checkboxes Group 1 */}
+                <div className="space-y-2 flex flex-col justify-center">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterNewCustomers}
+                      onChange={(e) => setFilterNewCustomers(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Nur neue Kunden (30 Tage)</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterUnsent}
+                      onChange={(e) => setFilterUnsent(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">E-Mail nicht gesendet</span>
+                  </label>
+                </div>
 
+                {/* Checkboxes Group 2 */}
+                <div className="space-y-2 flex flex-col justify-center">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterDuplicates}
+                      onChange={(e) => setFilterDuplicates(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Nur Duplikate anzeigen</span>
+                  </label>
+                </div>
+
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
 
       <Dialog open={showBulkStatusUpdate} onOpenChange={setShowBulkStatusUpdate}>
         <DialogContent>
@@ -1129,490 +1143,494 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Main Content */ }
-  <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    {/* Stats Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
-      <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
-        onClick={() => setStatusFilter(null)}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Gesamt
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-gray-900">{totalInvoices}</div>
-          <p className="text-xs text-gray-500">Alle Rechnungen</p>
-        </CardContent>
-      </Card>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-      <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'}`}
-        onClick={() => setStatusFilter('Offen')}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Offen
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-yellow-600">{openInvoices}</div>
-          <p className="text-xs text-gray-500">Unbezahlt</p>
-        </CardContent>
-      </Card>
+        {/* Analytics Section */}
+        {showAnalytics && <AnalyticsDashboard />}
 
-      <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'}`}
-        onClick={() => setStatusFilter('Überfällig')}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Überfällig
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600">{overdueInvoices}</div>
-          <p className="text-xs text-gray-500">Verspätet</p>
-        </CardContent>
-      </Card>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter(null)}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Gesamt
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{totalInvoices}</div>
+              <p className="text-xs text-gray-500">Alle Rechnungen</p>
+            </CardContent>
+          </Card>
 
-      <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'}`}
-        onClick={() => setStatusFilter('Bezahlt')}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Bezahlt
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">{paidInvoices}</div>
-          <p className="text-xs text-gray-500">Abgeschlossen</p>
-        </CardContent>
-      </Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Offen')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Offen
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">{openInvoices}</div>
+              <p className="text-xs text-gray-500">Unbezahlt</p>
+            </CardContent>
+          </Card>
 
-      <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'}`}
-        onClick={() => setStatusFilter('Storniert')}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Storniert
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-gray-500">{cancelledInvoices}</div>
-          <p className="text-xs text-gray-500">Stornos</p>
-        </CardContent>
-      </Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Überfällig')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Überfällig
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{overdueInvoices}</div>
+              <p className="text-xs text-gray-500">Verspätet</p>
+            </CardContent>
+          </Card>
 
-      <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
-        onClick={() => setStatusFilter('Gutschrift')}
-      >
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Gutschriften
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{refundInvoices}</div>
-          <p className="text-xs text-gray-500">Rückerstattungen</p>
-        </CardContent>
-      </Card>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Bezahlt')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Bezahlt
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{paidInvoices}</div>
+              <p className="text-xs text-gray-500">Abgeschlossen</p>
+            </CardContent>
+          </Card>
 
-      <Card className="bg-gray-50 opacity-70">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            Duplikate
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-gray-500">{duplicateCount}</div>
-          <p className="text-xs text-gray-500">Potenziell</p>
-        </CardContent>
-      </Card>
-    </div >
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Storniert')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Storniert
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-500">{cancelledInvoices}</div>
+              <p className="text-xs text-gray-500">Stornos</p>
+            </CardContent>
+          </Card>
 
-    {/* Invoices Table */}
-    <Card>
-      <CardHeader>
-        <CardTitle>Alle Rechnungen</CardTitle>
-        <CardDescription>
-          Übersicht über alle erstellten Rechnungen
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* Bulk Actions Bar */}
-        {selectedInvoices.size > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <div className="flex items-center">
-              <Check className="h-5 w-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-900">
-                {selectedInvoices.size} Rechnung{selectedInvoices.size !== 1 ? 'en' : ''} ausgewählt
-              </span>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteBulk}
-              disabled={deleting}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Ausgewählte löschen ({selectedInvoices.size})
-            </Button>
-          </div>
-        )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={selectedInvoices.size === invoices.length && invoices.length > 0}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  aria-label="Alle auswählen"
-                />
-              </TableHead>
-              <TableHead>Rechnungsnummer</TableHead>
-              <TableHead>Kunde</TableHead>
-              <TableHead>
+          <Card
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
+            onClick={() => setStatusFilter('Gutschrift')}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Gutschriften
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{refundInvoices}</div>
+              <p className="text-xs text-gray-500">Rückerstattungen</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-50 opacity-70">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Duplikate
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-500">{duplicateCount}</div>
+              <p className="text-xs text-gray-500">Potenziell</p>
+            </CardContent>
+          </Card>
+        </div >
+
+        {/* Invoices Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Alle Rechnungen</CardTitle>
+            <CardDescription>
+              Übersicht über alle erstellten Rechnungen
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Bulk Actions Bar */}
+            {selectedInvoices.size > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center">
-                  Datum
-                  <ArrowDown className="h-4 w-4 ml-1 text-blue-600" />
-                  <span className="text-xs text-gray-500 ml-1">(Neueste zuerst)</span>
+                  <Check className="h-5 w-5 text-blue-600 mr-2" />
+                  <span className="text-sm font-medium text-blue-900">
+                    {selectedInvoices.size} Rechnung{selectedInvoices.size !== 1 ? 'en' : ''} ausgewählt
+                  </span>
                 </div>
-              </TableHead>
-              <TableHead>Betrag</TableHead>
-              <TableHead>Zahlung</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayedInvoices.map((invoice) => {
-              const typeDisplay = getInvoiceTypeDisplay(invoice)
-              return (
-                <TableRow
-                  key={invoice.id}
-                  className={duplicateNumbers.includes(invoice.number) ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteBulk}
+                  disabled={deleting}
                 >
-                  <TableCell>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Ausgewählte löschen ({selectedInvoices.size})
+                </Button>
+              </div>
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
                     <input
                       type="checkbox"
-                      checked={selectedInvoices.has(invoice.id)}
-                      onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                      checked={selectedInvoices.size === invoices.length && invoices.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      aria-label={`Rechnung ${invoice.number} auswählen`}
+                      aria-label="Alle auswählen"
                     />
-                  </TableCell>
-                  <TableCell className="font-medium">
+                  </TableHead>
+                  <TableHead>Rechnungsnummer</TableHead>
+                  <TableHead>Kunde</TableHead>
+                  <TableHead>
                     <div className="flex items-center">
-                      {invoice.number}
-                      {duplicateNumbers.includes(invoice.number) && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                          Duplikat
-                        </span>
-                      )}
-                      {invoice.originalInvoiceNumber && (
-                        <span className="ml-2 text-xs text-gray-500">
-                          (Ref: {invoice.originalInvoiceNumber})
-                        </span>
-                      )}
+                      Datum
+                      <ArrowDown className="h-4 w-4 ml-1 text-blue-600" />
+                      <span className="text-xs text-gray-500 ml-1">(Neueste zuerst)</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex flex-col"
-                      onClick={() => handleCustomerClick(invoice.customerEmail || invoice.customer?.email)}
+                  </TableHead>
+                  <TableHead>Betrag</TableHead>
+                  <TableHead>Zahlung</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {displayedInvoices.map((invoice) => {
+                  const typeDisplay = getInvoiceTypeDisplay(invoice)
+                  return (
+                    <TableRow
+                      key={invoice.id}
+                      className={duplicateNumbers.includes(invoice.number) ? 'bg-orange-50 border-l-4 border-l-orange-400' : ''}
                     >
-                      <span>{invoice.customerName || invoice.customer?.name || 'Unbekannter Kunde'}</span>
-                      {(invoice.customerEmail || invoice.customer?.email) && (
-                        <span className="text-xs text-gray-500 no-underline font-normal">
-                          {invoice.customerEmail || invoice.customer?.email}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {invoice.date ? new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
-                      </span>
-                      {invoice.date && (
-                        <span className="text-xs text-gray-500">
-                          {new Date(invoice.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {new Intl.NumberFormat('de-DE', { style: 'currency', currency: invoice.currency || 'EUR' }).format(invoice.amount || invoice.total || 0)}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-gray-700">
-                      {invoice.paymentMethod || invoice.settings?.paymentMethod || '-'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                        {invoice.status}
-                      </span>
-                      {/* E-Mail-Status-Anzeige */}
-                      {emailStatuses[invoice.id]?.sent && (
-                        <div
-                          className="flex items-center text-green-600"
-                          title={`E-Mail gesendet am ${new Date(emailStatuses[invoice.id].sentAt).toLocaleDateString('de-DE')} an ${emailStatuses[invoice.id].sentTo}`}
-                        >
-                          <MailCheck className="h-4 w-4" />
-                          <span className="text-xs ml-1">Versendet</span>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedInvoices.has(invoice.id)}
+                          onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          aria-label={`Rechnung ${invoice.number} auswählen`}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center">
+                          {invoice.number}
+                          {duplicateNumbers.includes(invoice.number) && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                              Duplikat
+                            </span>
+                          )}
+                          {invoice.originalInvoiceNumber && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              (Ref: {invoice.originalInvoiceNumber})
+                            </span>
+                          )}
                         </div>
-                      )}
-
-                      {/* Mahnstatus Anzeige */}
-                      {invoice.vorkasseReminderLevel > 0 && (
+                      </TableCell>
+                      <TableCell>
                         <div
-                          className="flex items-center text-orange-600 ml-2"
-                          title={`Mahnstufe ${invoice.vorkasseReminderLevel} - Letzte: ${invoice.vorkasseLastReminderAt ? new Date(invoice.vorkasseLastReminderAt).toLocaleDateString('de-DE') : 'Unbekannt'}`}
+                          className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex flex-col"
+                          onClick={() => handleCustomerClick(invoice.customerEmail || invoice.customer?.email)}
                         >
-                          <AlertTriangle className="h-4 w-4" />
-                          <span className="text-xs ml-1 font-medium">Mahnung {invoice.vorkasseReminderLevel}</span>
+                          <span>{invoice.customerName || invoice.customer?.name || 'Unbekannter Kunde'}</span>
+                          {(invoice.customerEmail || invoice.customer?.email) && (
+                            <span className="text-xs text-gray-500 no-underline font-normal">
+                              {invoice.customerEmail || invoice.customer?.email}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Link href={`/invoices/${invoice.id}`}>
-                        <Button variant="outline" size="sm" title="Anzeigen">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        title="PDF herunterladen"
-                        onClick={() => handleDownloadPdf(invoice.id, invoice.number)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {invoice.date ? new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                          </span>
+                          {invoice.date && (
+                            <span className="text-xs text-gray-500">
+                              {new Date(invoice.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {new Intl.NumberFormat('de-DE', { style: 'currency', currency: invoice.currency || 'EUR' }).format(invoice.amount || invoice.total || 0)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-700">
+                          {invoice.paymentMethod || invoice.settings?.paymentMethod || '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
+                            {invoice.status}
+                          </span>
+                          {/* E-Mail-Status-Anzeige */}
+                          {emailStatuses[invoice.id]?.sent && (
+                            <div
+                              className="flex items-center text-green-600"
+                              title={`E-Mail gesendet am ${new Date(emailStatuses[invoice.id].sentAt).toLocaleDateString('de-DE')} an ${emailStatuses[invoice.id].sentTo}`}
+                            >
+                              <MailCheck className="h-4 w-4" />
+                              <span className="text-xs ml-1">Versendet</span>
+                            </div>
+                          )}
 
-                      {/* E-Mail-Versand für alle Rechnungstypen */}
-                      <EmailInvoice
-                        invoice={invoice}
-                        onEmailSent={fetchInvoices}
-                      />
-
-                      {/* Storno Button für normale Rechnungen */}
-                      {(invoice.type === InvoiceType.REGULAR || !invoice.type) && invoice.status !== 'Storniert' && (
-                        <Link href={`/invoices/${invoice.id}/cancel`} className="ml-4">
+                          {/* Mahnstatus Anzeige */}
+                          {invoice.vorkasseReminderLevel > 0 && (
+                            <div
+                              className="flex items-center text-orange-600 ml-2"
+                              title={`Mahnstufe ${invoice.vorkasseReminderLevel} - Letzte: ${invoice.vorkasseLastReminderAt ? new Date(invoice.vorkasseLastReminderAt).toLocaleDateString('de-DE') : 'Unbekannt'}`}
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                              <span className="text-xs ml-1 font-medium">Mahnung {invoice.vorkasseReminderLevel}</span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Link href={`/invoices/${invoice.id}`}>
+                            <Button variant="outline" size="sm" title="Anzeigen">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            title="Storno-Rechnung erstellen"
+                            title="PDF herunterladen"
+                            onClick={() => handleDownloadPdf(invoice.id, invoice.number)}
                           >
-                            <X className="h-4 w-4" />
+                            <Download className="h-4 w-4" />
                           </Button>
-                        </Link>
-                      )}
 
-                      {/* Weitere Aktionen */}
-                      {(invoice.type === InvoiceType.REGULAR || !invoice.type) && invoice.status !== 'Storniert' && (
-                        <InvoiceActions
-                          invoice={invoice}
-                          onInvoiceUpdated={fetchInvoices}
-                        />
-                      )}
+                          {/* E-Mail-Versand für alle Rechnungstypen */}
+                          <EmailInvoice
+                            invoice={invoice}
+                            onEmailSent={fetchInvoices}
+                          />
 
-                      {duplicateNumbers.includes(invoice.number) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteByNumber(invoice.number)}
-                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                          disabled={deletingByNumber === invoice.number}
-                          title="Alle Duplikate dieser Rechnung löschen"
-                        >
-                          {deletingByNumber === invoice.number ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-1"></div>
-                          ) : (
-                            <RefreshCw className="h-4 w-4 mr-1" />
+                          {/* Storno Button für normale Rechnungen */}
+                          {(invoice.type === InvoiceType.REGULAR || !invoice.type) && invoice.status !== 'Storniert' && (
+                            <Link href={`/invoices/${invoice.id}/cancel`} className="ml-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Storno-Rechnung erstellen"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </Link>
                           )}
-                          Duplikate
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteSingle(invoice.id, invoice.number)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Rechnung löschen"
-                        disabled={deleting}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
 
-    {/* Empty State (if no invoices or no search results) */}
-    {
-      displayedInvoices.length === 0 && (
-        <Card className="text-center py-12">
-          <CardContent>
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {showSearchResults ? 'Keine Rechnungen gefunden' : 'Noch keine Rechnungen erstellt'}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {showSearchResults
-                ? `Keine Rechnungen entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
-                : 'Erstellen Sie Ihre erste Rechnung oder laden Sie CSV-Daten hoch.'
-              }
-            </p>
-            {showSearchResults ? (
-              <Button onClick={clearSearch} variant="outline">
-                Suche zurücksetzen
-              </Button>
-            ) : (
-              <div className="flex justify-center space-x-4">
-                <Link href="/invoices/new">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Neue Rechnung
-                  </Button>
-                </Link>
-                <Link href="/upload">
-                  <Button variant="outline">
-                    CSV hochladen
-                  </Button>
-                </Link>
-              </div>
-            )}
+                          {/* Weitere Aktionen */}
+                          {(invoice.type === InvoiceType.REGULAR || !invoice.type) && invoice.status !== 'Storniert' && (
+                            <InvoiceActions
+                              invoice={invoice}
+                              onInvoiceUpdated={fetchInvoices}
+                            />
+                          )}
+
+                          {duplicateNumbers.includes(invoice.number) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteByNumber(invoice.number)}
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                              disabled={deletingByNumber === invoice.number}
+                              title="Alle Duplikate dieser Rechnung löschen"
+                            >
+                              {deletingByNumber === invoice.number ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-1"></div>
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                              )}
+                              Duplikate
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteSingle(invoice.id, invoice.number)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Rechnung löschen"
+                            disabled={deleting}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
-      )
-    }
 
-    {/* Pagination Controls */}
-    {
-      displayedInvoices.length > 0 && !showSearchResults && (
-        <div className="flex items-center justify-between py-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Zeige</span>
-            <select
-              value={limit}
-              onChange={(e) => {
-                setLimit(Number(e.target.value))
-                setPage(1) // Reset to first page when limit changes
-              }}
-              className="border border-gray-300 rounded-md text-sm p-1"
-            >
-              <option value="50">50</option>
-              <option value="500">500</option>
-              <option value="100000">Unbegrenzt</option>
-            </select>
-            <span className="text-sm text-gray-600">Einträge pro Seite</span>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1 || loading}
-            >
-              Zurück
-            </Button>
-            <span className="text-sm text-gray-600">
-              Seite {page} von {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages || loading}
-            >
-              Weiter
-            </Button>
-          </div>
-        </div>
-      )
-    }
-
-    {/* Delete Confirmation Dialog */}
-    {
-      showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {deleteTarget.type === 'single'
-                ? 'Rechnung wirklich löschen?'
-                : `${deleteTarget.ids.length} Rechnungen wirklich löschen?`
-              }
-            </h3>
-            {deleteTarget.type === 'single' && deleteTarget.invoiceNumber && (
-              <p className="text-sm text-gray-600 mb-6">
-                Die Rechnung "{deleteTarget.invoiceNumber}" wird unwiderruflich gelöscht.
-              </p>
-            )}
-            {deleteTarget.type === 'bulk' && (
-              <p className="text-sm text-gray-600 mb-6">
-                Die ausgewählten {deleteTarget.ids.length} Rechnungen werden unwiderruflich gelöscht.
-              </p>
-            )}
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeleteConfirm(false)
-                  setDeleteTarget({ type: 'single', ids: [] })
-                }}
-                disabled={deleting}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDelete}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Wird gelöscht...
-                  </>
+        {/* Empty State (if no invoices or no search results) */}
+        {
+          displayedInvoices.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {showSearchResults ? 'Keine Rechnungen gefunden' : 'Noch keine Rechnungen erstellt'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {showSearchResults
+                    ? `Keine Rechnungen entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
+                    : 'Erstellen Sie Ihre erste Rechnung oder laden Sie CSV-Daten hoch.'
+                  }
+                </p>
+                {showSearchResults ? (
+                  <Button onClick={clearSearch} variant="outline">
+                    Suche zurücksetzen
+                  </Button>
                 ) : (
-                  'Ja, löschen'
+                  <div className="flex justify-center space-x-4">
+                    <Link href="/invoices/new">
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Neue Rechnung
+                      </Button>
+                    </Link>
+                    <Link href="/upload">
+                      <Button variant="outline">
+                        CSV hochladen
+                      </Button>
+                    </Link>
+                  </div>
                 )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )
-    }
-  </main>
+              </CardContent>
+            </Card>
+          )
+        }
 
-  {/* Komponente für den Massenversand */ }
-  {
-    showBulkEmailSender && (
-      <BulkEmailSender
-        selectedInvoices={Array.from(selectedInvoices)}
-        onClose={() => setShowBulkEmailSender(false)}
-      />
-    )
-  }
+        {/* Pagination Controls */}
+        {
+          displayedInvoices.length > 0 && !showSearchResults && (
+            <div className="flex items-center justify-between py-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Zeige</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value))
+                    setPage(1) // Reset to first page when limit changes
+                  }}
+                  className="border border-gray-300 rounded-md text-sm p-1"
+                >
+                  <option value="50">50</option>
+                  <option value="500">500</option>
+                  <option value="100000">Unbegrenzt</option>
+                </select>
+                <span className="text-sm text-gray-600">Einträge pro Seite</span>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1 || loading}
+                >
+                  Zurück
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Seite {page} von {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || loading}
+                >
+                  Weiter
+                </Button>
+              </div>
+            </div>
+          )
+        }
+
+        {/* Delete Confirmation Dialog */}
+        {
+          showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {deleteTarget.type === 'single'
+                    ? 'Rechnung wirklich löschen?'
+                    : `${deleteTarget.ids.length} Rechnungen wirklich löschen?`
+                  }
+                </h3>
+                {deleteTarget.type === 'single' && deleteTarget.invoiceNumber && (
+                  <p className="text-sm text-gray-600 mb-6">
+                    Die Rechnung "{deleteTarget.invoiceNumber}" wird unwiderruflich gelöscht.
+                  </p>
+                )}
+                {deleteTarget.type === 'bulk' && (
+                  <p className="text-sm text-gray-600 mb-6">
+                    Die ausgewählten {deleteTarget.ids.length} Rechnungen werden unwiderruflich gelöscht.
+                  </p>
+                )}
+                <div className="flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeleteTarget({ type: 'single', ids: [] })
+                    }}
+                    disabled={deleting}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={confirmDelete}
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Wird gelöscht...
+                      </>
+                    ) : (
+                      'Ja, löschen'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+      </main>
+
+      {/* Komponente für den Massenversand */}
+      {
+        showBulkEmailSender && (
+          <BulkEmailSender
+            selectedInvoices={Array.from(selectedInvoices)}
+            onClose={() => setShowBulkEmailSender(false)}
+          />
+        )
+      }
 
       <CustomerHistoryDrawer
         isOpen={isDrawerOpen}
