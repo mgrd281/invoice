@@ -223,22 +223,30 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     const totalTax = items.reduce((sum: number, item: any) => sum + item.taxAmount, 0)
 
     // Extract payment method from Shopify
+    // Extract payment method from Shopify
     let paymentMethod = '-'
+
+    // 1. Try payment_gateway_names first
     if (order.payment_gateway_names && Array.isArray(order.payment_gateway_names)) {
         const gateways = order.payment_gateway_names as string[]
         if (gateways.length > 0) {
-            // Filter out 'manual' if there are other specific names
             const specificGateways = gateways.filter(g => g.toLowerCase() !== 'manual')
             if (specificGateways.length > 0) {
                 paymentMethod = specificGateways[0]
             } else {
                 paymentMethod = gateways[0]
             }
-            log(`✅ Extracted payment method: ${paymentMethod}`)
         }
-    } else if ((order as any).gateway) {
-        paymentMethod = (order as any).gateway
-        log(`✅ Extracted payment method from gateway: ${paymentMethod}`)
+    }
+
+    // 2. If we didn't find it, or if it's generic 'manual'/'custom', try the legacy 'gateway' field
+    // This field often contains the specific name (e.g. "Vorkasse") even if payment_gateway_names is ['manual']
+    if (paymentMethod === '-' || paymentMethod.toLowerCase() === 'manual' || paymentMethod.toLowerCase() === 'custom') {
+        const legacyGateway = (order as any).gateway
+        if (legacyGateway && legacyGateway.toLowerCase() !== 'manual' && legacyGateway.toLowerCase() !== 'custom') {
+            paymentMethod = legacyGateway
+            log(`✅ Extracted better payment method from legacy gateway: ${paymentMethod}`)
+        }
     }
 
     // If payment method is ambiguous (manual or custom), try to get more info from transactions
