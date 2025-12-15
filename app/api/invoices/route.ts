@@ -208,6 +208,66 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Calculate stats for ALL matching invoices (ignoring pagination)
+    // We fetch necessary fields to calculate 19% VAT accurately
+    const allMatchingStats = await prisma.invoice.findMany({
+      where: whereClause,
+      select: {
+        status: true,
+        totalTax: true,
+        totalNet: true,
+        items: {
+          select: {
+            taxRate: true,
+            taxAmount: true
+          }
+        }
+      }
+    })
+
+    let totalVat19 = 0
+
+    for (const inv of allMatchingStats) {
+      // Skip cancelled invoices
+      if (inv.status === 'CANCELLED') continue
+
+      let invoiceVat = 0
+      let foundItems = false
+
+      if (inv.items && inv.items.length > 0) {
+        // Calculate from items
+        for (const item of inv.items) {
+          const rate = Number(item.taxRate?.rate || 0) * 100 // Assuming rate is stored as decimal e.g. 0.19 -> 19
+          // Or if stored as 19 directly. Let's check both.
+          // In schema: rate Decimal @db.Decimal(5, 4) // e.g., 0.19 for 19%
+          // So 0.19 * 100 = 19.
+
+          const rateVal = Number(item.taxRate?.rate || 0)
+
+          // Check for 0.19 (19%)
+          if (Math.abs(rateVal - 0.19) < 0.001 || Math.abs(rateVal - 19) < 0.1) {
+            invoiceVat += Number(item.taxAmount || 0)
+            foundItems = true
+          }
+        }
+      }
+
+      if (!foundItems) {
+        // Fallback to totalTax if items didn't yield results (or no items)
+        const tax = Number(inv.totalTax || 0)
+        const net = Number(inv.totalNet || 0)
+
+        if (tax > 0 && net > 0) {
+          const ratio = tax / net
+          if (Math.abs(ratio - 0.19) < 0.02) {
+            invoiceVat = tax
+          }
+        }
+      }
+
+      totalVat19 += invoiceVat
+    }
+
     return NextResponse.json({
       invoices: mappedInvoices,
       pagination: {
@@ -215,6 +275,9 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(totalCount / limit),
         page: page,
         limit: limit
+      },
+      stats: {
+        totalVat19
       }
     })
 

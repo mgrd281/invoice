@@ -65,6 +65,7 @@ export default function InvoicesPage() {
   const [limit, setLimit] = useState(50) // Default limit set to 50 as requested
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
+  const [vat19Sum, setVat19Sum] = useState(0)
 
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
@@ -172,6 +173,13 @@ export default function InvoicesPage() {
       // Handle new response format
       const allInvoices = data.invoices || []
       const pagination = data.pagination || { total: 0, pages: 1, page: 1, limit: 20 }
+
+      // Set stats from API
+      if (data.stats && typeof data.stats.totalVat19 === 'number') {
+        setVat19Sum(data.stats.totalVat19)
+      } else {
+        setVat19Sum(0)
+      }
 
       setTotalPages(pagination.pages)
       setTotalInvoicesCount(pagination.total)
@@ -770,45 +778,6 @@ export default function InvoicesPage() {
   const cancelledInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Storniert').length
   const refundInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Gutschrift').length
   const duplicateCount = duplicateNumbers.length
-
-  // Calculate 19% VAT Sum
-  const vat19Sum = statsBaseInvoices
-    .filter((invoice: any) => invoice.status !== 'Storniert')
-    .reduce((sum: number, invoice: any) => {
-      // If items are available, sum up tax for 19% items
-      if (invoice.items && Array.isArray(invoice.items) && invoice.items.length > 0) {
-        const invoiceVat = invoice.items.reduce((itemSum: number, item: any) => {
-          const rate = Number(item.taxRate || 0)
-          if (Math.abs(rate - 19) < 0.1 || Math.abs(rate - 0.19) < 0.001) {
-            return itemSum + Number(item.taxAmount || 0)
-          }
-          return itemSum
-        }, 0)
-        return sum + invoiceVat
-      }
-
-      // Fallback: use taxAmount (mapped from totalTax)
-      // In API response it is mapped to 'taxAmount', but sometimes 'totalTax' might be present if raw
-      const tax = Number(invoice.taxAmount || invoice.totalTax || 0)
-      const net = Number(invoice.subtotal || invoice.totalNet || 0)
-
-      // If we have a tax amount but no net (edge case), or if ratio matches ~19%
-      // Allow for a slightly larger margin of error due to rounding (e.g. 0.02)
-      if (tax > 0) {
-        if (net > 0) {
-          const ratio = tax / net
-          // Check if ratio is close to 0.19 (19%)
-          if (Math.abs(ratio - 0.19) < 0.02) {
-            return sum + tax
-          }
-        } else {
-          // If net is 0 but there is tax, it's weird, but maybe full tax invoice?
-          // Unlikely for 19% VAT.
-        }
-      }
-
-      return sum
-    }, 0)
 
   const getStatusColor = (status: string) => {
     switch (status) {
