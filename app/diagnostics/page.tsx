@@ -186,12 +186,26 @@ export default function DiagnosticPage() {
                                                         if (data.missingCount === 0) {
                                                             resultDiv.innerHTML = `<div class="p-4 bg-green-50 text-green-700 rounded-lg">Keine fehlenden Rechnungen gefunden!</div>`;
                                                         } else {
+                                                            // Store missing numbers in a data attribute for the import button
+                                                            resultDiv.dataset.missing = JSON.stringify(data.missingNumbers);
+
                                                             resultDiv.innerHTML = `
-                                                                <div class="p-4 bg-yellow-50 text-yellow-800 rounded-lg space-y-2">
-                                                                    <p class="font-bold">${data.missingCount} fehlende Rechnungen gefunden:</p>
-                                                                    <div class="text-sm font-mono bg-white p-2 rounded border max-h-40 overflow-y-auto">
-                                                                        ${data.missingNumbers.join(', ')}
+                                                                <div class="p-4 bg-yellow-50 text-yellow-800 rounded-lg space-y-4">
+                                                                    <div>
+                                                                        <p class="font-bold">${data.missingCount} fehlende Rechnungen gefunden:</p>
+                                                                        <div class="text-sm font-mono bg-white p-2 rounded border max-h-40 overflow-y-auto mt-2">
+                                                                            ${data.missingNumbers.join(', ')}
+                                                                        </div>
                                                                     </div>
+                                                                    
+                                                                    <button 
+                                                                        onclick="importMissingInvoices()"
+                                                                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                                                        Diese ${data.missingCount} Rechnungen importieren
+                                                                    </button>
+                                                                    <div id="import-status" class="text-sm mt-2 hidden"></div>
                                                                 </div>
                                                             `;
                                                         }
@@ -206,6 +220,63 @@ export default function DiagnosticPage() {
                                         </Button>
                                     </div>
                                     <div id="missing-results"></div>
+
+                                    {/* Hidden script for import function */}
+                                    <script dangerouslySetInnerHTML={{
+                                        __html: `
+                                            async function importMissingInvoices() {
+                                                const resultDiv = document.getElementById('missing-results');
+                                                const statusDiv = document.getElementById('import-status');
+                                                const btn = resultDiv.querySelector('button');
+                                                
+                                                if (!resultDiv.dataset.missing) return;
+                                                
+                                                const missingNumbers = JSON.parse(resultDiv.dataset.missing);
+                                                
+                                                if (!confirm('Möchten Sie ' + missingNumbers.length + ' Rechnungen aus Shopify importieren? Dies kann einen Moment dauern.')) return;
+                                                
+                                                btn.disabled = true;
+                                                btn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Importiere...';
+                                                statusDiv.classList.remove('hidden');
+                                                statusDiv.innerHTML = 'Bitte warten, Import läuft...';
+                                                
+                                                try {
+                                                    const res = await fetch('/api/diagnostics/import-missing', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ invoiceNumbers: missingNumbers })
+                                                    });
+                                                    
+                                                    const data = await res.json();
+                                                    
+                                                    let statusHtml = '<div class="mt-4 space-y-2">';
+                                                    
+                                                    if (data.results.success.length > 0) {
+                                                        statusHtml += '<div class="text-green-600">✅ ' + data.results.success.length + ' erfolgreich importiert</div>';
+                                                    }
+                                                    
+                                                    if (data.results.notFound.length > 0) {
+                                                        statusHtml += '<div class="text-orange-600">⚠️ ' + data.results.notFound.length + ' nicht in Shopify gefunden</div>';
+                                                    }
+                                                    
+                                                    if (data.results.failed.length > 0) {
+                                                        statusHtml += '<div class="text-red-600">❌ ' + data.results.failed.length + ' fehlgeschlagen</div>';
+                                                    }
+                                                    
+                                                    statusHtml += '</div>';
+                                                    
+                                                    statusDiv.innerHTML = statusHtml;
+                                                    btn.innerHTML = 'Import abgeschlossen';
+                                                    
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    statusDiv.innerHTML = '<span class="text-red-600">Fehler beim Import: ' + err.message + '</span>';
+                                                    btn.disabled = false;
+                                                    btn.innerHTML = 'Erneut versuchen';
+                                                }
+                                            }
+                                        `
+                                    }} />
                                 </div>
                             </CardContent>
                         </Card>
