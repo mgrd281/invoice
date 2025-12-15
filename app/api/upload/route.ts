@@ -111,6 +111,18 @@ function parseDate(dateStr: string): string {
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${(hour || '00').padStart(2, '0')}:${(minute || '00').padStart(2, '0')}:${(second || '00').padStart(2, '0')}`;
   }
 
+  // Try parsing Shopify format (YYYY-MM-DD HH:mm:ss +ZZZZ)
+  // Example: 2025-12-14 22:38:42 +0100
+  const shopifyDateRegex = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\s+([+-]\d{4})$/;
+  const shopifyMatch = dateStr.trim().match(shopifyDateRegex);
+
+  if (shopifyMatch) {
+    const [_, year, month, day, hour, minute, second, offset] = shopifyMatch;
+    // Construct ISO string with offset: YYYY-MM-DDTHH:mm:ss+HH:MM
+    const offsetFormatted = offset.slice(0, 3) + ':' + offset.slice(3);
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}${offsetFormatted}`;
+  }
+
   // Try standard parsing
   const date = new Date(dateStr);
   if (!isNaN(date.getTime())) {
