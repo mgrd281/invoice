@@ -69,13 +69,24 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     // ---------------------------------------------------------
     // AUTO-CANCEL TEST ORDERS
     // ---------------------------------------------------------
-    const firstName = (order.customer?.first_name || order.billing_address?.first_name || '').toLowerCase().trim()
-    const lastName = (order.customer?.last_name || order.billing_address?.last_name || '').toLowerCase().trim()
+    const namesToCheck = [
+        order.customer?.first_name,
+        order.customer?.last_name,
+        order.billing_address?.first_name,
+        order.billing_address?.last_name,
+        order.shipping_address?.first_name,
+        order.shipping_address?.last_name,
+        order.email
+    ]
 
-    const isTestName = firstName === 'test' || firstName === 'tester' || lastName === 'test' || lastName === 'tester'
+    const isTestOrder = namesToCheck.some(name => {
+        if (!name) return false
+        const n = name.toLowerCase().trim()
+        return n === 'test' || n === 'tester' || n.includes('test@')
+    })
 
-    if (isTestName) {
-        log(`🚫 Detected Test Order from "${firstName} ${lastName}". Auto-cancelling...`)
+    if (isTestOrder) {
+        log(`🚫 Detected Test Order (Name/Email match). Auto-cancelling...`)
         try {
             const { ShopifyAPI } = await import('@/lib/shopify-api')
             const api = new ShopifyAPI()
