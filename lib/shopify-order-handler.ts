@@ -103,6 +103,14 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     // ---------------------------------------------------------
 
     // 2. Find/Create Customer
+    // Helper to get address fields with fallback
+    const getAddressField = (field: string) => {
+        return order.billing_address?.[field] ||
+            order.shipping_address?.[field] ||
+            order.customer?.default_address?.[field] ||
+            '';
+    }
+
     const customerData = {
         organizationId: organization.id,
         name: (
@@ -113,10 +121,10 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             'Gast'
         ),
         email: order.email || '',
-        address: order.billing_address?.address1 || '',
-        city: order.billing_address?.city || '',
-        zipCode: order.billing_address?.zip || '',
-        country: order.billing_address?.country_code || 'DE',
+        address: getAddressField('address1'),
+        city: getAddressField('city'),
+        zipCode: getAddressField('zip'),
+        country: order.billing_address?.country_code || order.shipping_address?.country_code || order.customer?.default_address?.country_code || 'DE',
         shopifyCustomerId: String(order.customer?.id || '')
     }
 
