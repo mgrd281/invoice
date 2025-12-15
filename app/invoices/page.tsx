@@ -98,11 +98,11 @@ export default function InvoicesPage() {
 
   // Date Filter State
   const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>(() => {
-    const now = new Date()
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const today = now.toISOString().split('T')[0]
-    return { from: firstDay, to: today }
+    const today = new Date().toISOString().split('T')[0]
+    return { from: today, to: today }
   })
+
+
 
   // Bulk Actions State
   const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false)
@@ -1280,7 +1280,7 @@ export default function InvoicesPage() {
         {showAnalytics && <AnalyticsDashboard />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-9 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
           <Card
             className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
             onClick={() => setStatusFilter(null)}
@@ -1396,23 +1396,6 @@ export default function InvoicesPage() {
               </div>
               <p className="text-[10px] text-violet-600 leading-tight mt-1">
                 Steuerbetrag (19%)
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* 7% VAT Card */}
-          <Card className={`bg-indigo-50 border-indigo-100 ${vat7Sum === 0 ? 'opacity-50' : ''}`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-indigo-700">
-                7 % MwSt
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-indigo-700">
-                {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat7Sum)}
-              </div>
-              <p className="text-[10px] text-indigo-600 leading-tight mt-1">
-                Steuerbetrag (7%)
               </p>
             </CardContent>
           </Card>
