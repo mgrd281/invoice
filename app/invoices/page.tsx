@@ -1374,17 +1374,7 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card className={`bg-gray-50 ${duplicateCount === 0 ? 'opacity-30' : 'opacity-70'}`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Duplikate
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-500">{duplicateCount}</div>
-              <p className="text-xs text-gray-500">Potenziell</p>
-            </CardContent>
-          </Card>
+
 
           {/* 19% VAT Card */}
           <Card className={`bg-violet-50 border-violet-100 ${vat19Sum === 0 ? 'opacity-50' : ''}`}>
