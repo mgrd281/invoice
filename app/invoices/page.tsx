@@ -73,7 +73,10 @@ export default function InvoicesPage() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
 
   // Date Filter State
-  const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>({ from: null, to: null })
+  const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return { from: today, to: today }
+  })
 
   // Bulk Actions State
   const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false)
