@@ -258,11 +258,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             const transactions = await api.getTransactions(order.id)
 
             if (transactions && transactions.length > 0) {
-                // Look for a transaction that might have a specific gateway name
-                // Often the 'gateway' field in transaction is 'manual', but sometimes 'receipt' or 'payment_details' has info?
-                // Actually, sometimes the gateway name IS in the transaction gateway field if it differs from order gateway
-
-                // Let's check if any transaction has a gateway that is NOT manual/custom
+                // 1. Check transaction gateway
                 const specificTx = transactions.find((t: any) =>
                     t.gateway &&
                     t.gateway.toLowerCase() !== 'manual' &&
@@ -271,9 +267,9 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
 
                 if (specificTx) {
                     paymentMethod = specificTx.gateway
-                    log(`✅ Refined payment method from transactions: ${paymentMethod}`)
+                    log(`✅ Refined payment method from transaction gateway: ${paymentMethod}`)
                 } else {
-                    // Check if we can find "Vorkasse" or "Rechnung" in any field
+                    // 2. Check transaction string for keywords
                     const jsonString = JSON.stringify(transactions).toLowerCase()
                     if (jsonString.includes('vorkasse')) {
                         paymentMethod = 'Vorkasse'
@@ -286,6 +282,15 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             }
         } catch (err) {
             log(`⚠️ Failed to fetch transactions for refinement: ${err}`)
+        }
+    }
+
+    // Final fallback: Check order.payment_details if available (sometimes contains credit_card_company or similar)
+    if ((paymentMethod.toLowerCase() === 'manual' || paymentMethod.toLowerCase() === 'custom') && (order as any).payment_details) {
+        const details = (order as any).payment_details
+        if (details.credit_card_company) {
+            paymentMethod = details.credit_card_company
+            log(`✅ Extracted payment method from payment_details: ${paymentMethod}`)
         }
     }
 
