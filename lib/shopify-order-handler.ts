@@ -66,6 +66,31 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         throw new Error('No organization found. Please set up an organization first.')
     }
 
+    // ---------------------------------------------------------
+    // AUTO-CANCEL TEST ORDERS
+    // ---------------------------------------------------------
+    const firstName = (order.customer?.first_name || order.billing_address?.first_name || '').toLowerCase().trim()
+    const lastName = (order.customer?.last_name || order.billing_address?.last_name || '').toLowerCase().trim()
+
+    const isTestName = firstName === 'test' || firstName === 'tester' || lastName === 'test' || lastName === 'tester'
+
+    if (isTestName) {
+        log(`🚫 Detected Test Order from "${firstName} ${lastName}". Auto-cancelling...`)
+        try {
+            const { ShopifyAPI } = await import('@/lib/shopify-api')
+            const api = new ShopifyAPI()
+            await api.cancelOrder(order.id)
+            log(`✅ Test order ${order.name} cancelled in Shopify.`)
+
+            // Update order object to reflect cancellation for local invoice creation
+            order.financial_status = 'voided'
+            order.cancelled_at = new Date().toISOString()
+        } catch (err) {
+            log(`⚠️ Failed to auto-cancel test order: ${err}`)
+        }
+    }
+    // ---------------------------------------------------------
+
     // 2. Find/Create Customer
     const customerData = {
         organizationId: organization.id,
