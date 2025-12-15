@@ -33,6 +33,83 @@ export async function POST(req: Request) {
     const payload = JSON.parse(body)
     log(`📦 Payload parsed. Order ID: ${payload.id}, Financial Status: ${payload.financial_status}`)
 
+    // Handle Cancellation
+    if (topic === 'orders/cancelled' || (topic === 'orders/updated' && payload.cancelled_at)) {
+      log(`🚫 Order cancelled! Updating invoice status...`)
+      try {
+        const { prisma } = await import('@/lib/prisma')
+        const shopifyOrderId = String(payload.id)
+
+        // Find invoice
+        const invoice = await prisma.invoice.findFirst({
+          where: {
+            order: {
+              shopifyOrderId: shopifyOrderId
+            }
+          }
+        })
+
+        if (invoice) {
+          if (invoice.status !== 'CANCELLED') {
+            log(`✅ Found invoice ${invoice.invoiceNumber} for cancelled order. Updating status...`)
+            await prisma.invoice.update({
+              where: { id: invoice.id },
+              data: {
+                status: 'CANCELLED',
+                history: {
+                  create: {
+                    type: 'STATUS_CHANGE',
+                    detail: 'Status automatisch auf Storniert gesetzt (Shopify Order Cancelled)'
+                  }
+                }
+              }
+            })
+            log(`✅ Invoice ${invoice.invoiceNumber} cancelled.`)
+          } else {
+            log(`ℹ️ Invoice ${invoice.invoiceNumber} is already cancelled.`)
+          }
+        } else {
+          log(`⚠️ No invoice found for cancelled Shopify Order ID: ${shopifyOrderId}`)
+        }
+      } catch (error) {
+        log('❌ Error updating invoice status on cancellation:', error)
+      }
+    }
+
+    // Handle Payment (Update to PAID)
+    if (topic === 'orders/updated' && payload.financial_status === 'paid' && !payload.cancelled_at) {
+      log(`💰 Order paid! Updating invoice status...`)
+      try {
+        const { prisma } = await import('@/lib/prisma')
+        const shopifyOrderId = String(payload.id)
+
+        const invoice = await prisma.invoice.findFirst({
+          where: { order: { shopifyOrderId: shopifyOrderId } }
+        })
+
+        if (invoice) {
+          if (invoice.status !== 'PAID') {
+            log(`✅ Found invoice ${invoice.invoiceNumber}. Updating status to PAID...`)
+            await prisma.invoice.update({
+              where: { id: invoice.id },
+              data: {
+                status: 'PAID',
+                history: {
+                  create: {
+                    type: 'STATUS_CHANGE',
+                    detail: 'Status automatisch auf Bezahlt gesetzt (Shopify Order Paid)'
+                  }
+                }
+              }
+            })
+            log(`✅ Invoice ${invoice.invoiceNumber} marked as PAID.`)
+          }
+        }
+      } catch (error) {
+        log('❌ Error updating invoice status on payment:', error)
+      }
+    }
+
     // 2. Route based on topic
     if (topic === 'orders/create' || topic === 'orders/updated') {
       log('🔄 Processing order...')
