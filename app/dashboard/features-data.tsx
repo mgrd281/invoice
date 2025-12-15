@@ -67,20 +67,7 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
 
-    {
-        id: 'automation',
-        href: '/automation',
-        title: 'Automation Hub',
-        description: 'Workflows & Prozesse automatisieren',
-        icon: Zap,
-        iconBg: 'bg-gradient-to-r from-amber-500 to-orange-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-amber-300 bg-gradient-to-br from-white to-amber-50',
-        badge: 'NEU',
-        badgeClass: 'bg-amber-100 text-amber-800',
-        hasPing: true,
-        pingColor: 'bg-amber-400',
-        pingDotColor: 'bg-amber-500'
-    },
+
     {
         id: 'digital-products',
         href: '/digital-products',
@@ -119,17 +106,7 @@ export const DEFAULT_FEATURES = [
         pingColor: 'bg-red-400',
         pingDotColor: 'bg-red-500'
     },
-    {
-        id: 'analytics',
-        href: '/analytics/customers',
-        title: 'Kundenanalyse',
-        description: 'Top Kunden, Produkte & Warenkörbe',
-        icon: TrendingUp,
-        iconBg: 'bg-gradient-to-r from-orange-500 to-red-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-orange-300 bg-gradient-to-br from-white to-orange-50',
-        badge: 'BETA',
-        badgeClass: 'bg-orange-100 text-orange-700'
-    },
+
     {
         id: 'dunning',
         href: '/dunning',
