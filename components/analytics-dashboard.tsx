@@ -9,23 +9,36 @@ export function AnalyticsDashboard() {
     const [data, setData] = useState<any>(null)
     const [topProducts, setTopProducts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        Promise.all([
-            fetch('/api/analytics').then(res => res.json()),
-            fetch('/api/analytics/top-products').then(res => res.json())
-        ])
-            .then(([analyticsData, productsData]) => {
+        const fetchData = async () => {
+            try {
+                const [analyticsRes, productsRes] = await Promise.all([
+                    fetch('/api/analytics'),
+                    fetch('/api/analytics/top-products')
+                ])
+
+                if (!analyticsRes.ok) throw new Error('Failed to fetch analytics')
+
+                const analyticsData = await analyticsRes.json()
                 setData(analyticsData)
-                if (productsData.success) {
-                    setTopProducts(productsData.topProducts)
+
+                if (productsRes.ok) {
+                    const productsData = await productsRes.json()
+                    if (productsData.success) {
+                        setTopProducts(productsData.topProducts || [])
+                    }
                 }
+            } catch (err) {
+                console.error('Analytics error:', err)
+                setError('Fehler beim Laden der Analysen')
+            } finally {
                 setLoading(false)
-            })
-            .catch(err => {
-                console.error(err)
-                setLoading(false)
-            })
+            }
+        }
+
+        fetchData()
     }, [])
 
     if (loading) return (
@@ -37,7 +50,13 @@ export function AnalyticsDashboard() {
         </div>
     )
 
-    if (!data) return null
+    if (error) return (
+        <div className="w-full h-24 flex items-center justify-center bg-red-50 rounded-lg border border-red-100 mb-8 text-red-600">
+            <p>{error}</p>
+        </div>
+    )
+
+    if (!data || !data.monthlyIncome) return null
 
     // Format currency
     const formatCurrency = (val: number) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val)
