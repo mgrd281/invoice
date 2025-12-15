@@ -1387,7 +1387,7 @@ export default function InvoicesPage() {
               <div className="text-2xl font-bold text-violet-700">
                 {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat19Sum)}
               </div>
-              <p className="text-[10px] text-violet-600 leading-tight mt-1">
+              <p className="text-[10px] text-gray-400 mt-1">
                 Steuerbetrag (19%)
               </p>
             </CardContent>
@@ -1404,7 +1404,7 @@ export default function InvoicesPage() {
               <div className="text-2xl font-bold text-emerald-700">
                 {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalPaidAmount)}
               </div>
-              <p className="text-[10px] text-emerald-600 leading-tight mt-1">
+              <p className="text-[10px] text-gray-400 mt-1">
                 nur abgeschlossene Zahlungen
               </p>
             </CardContent>
