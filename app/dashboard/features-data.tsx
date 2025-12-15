@@ -119,20 +119,6 @@ export const DEFAULT_FEATURES = [
         badgeClass: 'bg-red-100 text-red-700'
     },
     {
-        id: 'ustva',
-        href: '/ustva',
-        title: 'UStVA Elster',
-        description: 'Umsatzsteuervoranmeldung direkt an Finanzamt',
-        icon: Shield,
-        iconBg: 'bg-gradient-to-r from-blue-600 to-cyan-500',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50',
-        badge: 'NEU',
-        badgeClass: 'bg-blue-100 text-blue-700',
-        hasPing: true,
-        pingColor: 'bg-green-400',
-        pingDotColor: 'bg-green-500'
-    },
-    {
         id: 'marketing',
         href: '/settings/marketing',
         title: 'Marketing',
