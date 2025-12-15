@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Plus, Trash2, Check, X, ShoppingBag, Package } from 'lucide-react'
+import { Plus, Trash2, Check, X, ShoppingBag, Package, AlertCircle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,13 +26,12 @@ interface ProductBundle {
 }
 
 export function BundleManager() {
-    const searchParams = useSearchParams()
-    const shop = searchParams.get('shop') || ''
-
+    const [shop, setShop] = useState<string>('')
     const [products, setProducts] = useState<ShopifyProduct[]>([])
     const [bundles, setBundles] = useState<ProductBundle[]>([])
     const [loading, setLoading] = useState(true)
     const [creating, setCreating] = useState(false)
+    const [error, setError] = useState<string>('')
 
     // New bundle form state
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -42,29 +40,45 @@ export function BundleManager() {
     const [selectedBundleProducts, setSelectedBundleProducts] = useState<string[]>([])
 
     useEffect(() => {
-        if (shop) {
-            loadData()
-        }
-    }, [shop])
+        loadShopAndData()
+    }, [])
 
-    const loadData = async () => {
+    const loadShopAndData = async () => {
         setLoading(true)
+        setError('')
         try {
+            // Get current user's shop from session
+            const userRes = await fetch('/api/user/me')
+            const userData = await userRes.json()
+
+            if (!userData.success || !userData.user?.organization?.shopifyConnection?.shopDomain) {
+                setError('Keine Shopify-Verbindung gefunden. Bitte verbinden Sie zuerst Ihren Shop in den Einstellungen.')
+                setLoading(false)
+                return
+            }
+
+            const shopDomain = userData.user.organization.shopifyConnection.shopDomain
+            setShop(shopDomain)
+
             // Load products
-            const productsRes = await fetch(`/api/shopify/products?shop=${shop}`)
+            const productsRes = await fetch(`/api/shopify/products?shop=${shopDomain}`)
             const productsData = await productsRes.json()
+
             if (productsData.success) {
                 setProducts(productsData.products)
+            } else {
+                setError(productsData.error || 'Fehler beim Laden der Produkte')
             }
 
             // Load existing bundles
-            const bundlesRes = await fetch(`/api/shopify/bundles?shop=${shop}`)
+            const bundlesRes = await fetch(`/api/shopify/bundles?shop=${shopDomain}`)
             const bundlesData = await bundlesRes.json()
             if (bundlesData.success) {
                 setBundles(bundlesData.bundles)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading data:', error)
+            setError('Fehler beim Laden der Daten: ' + error.message)
         } finally {
             setLoading(false)
         }
@@ -136,33 +150,31 @@ export function BundleManager() {
         return products.find(p => p.id === id)
     }
 
-    if (!shop) {
-        return (
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                    <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Shopify Shop erforderlich</h3>
-                    <p className="text-gray-500 text-center max-w-md mb-4">
-                        Um Product Bundles zu verwalten, müssen Sie diese Seite über Ihren Shopify Admin öffnen.
-                    </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
-                        <p className="text-sm text-blue-900 font-medium mb-2">So öffnen Sie diese Seite:</p>
-                        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-                            <li>Gehen Sie zu Ihrem Shopify Admin</li>
-                            <li>Öffnen Sie die RechnungsProfi App</li>
-                            <li>Navigieren Sie zu "Storefront Widgets"</li>
-                        </ol>
-                    </div>
-                </CardContent>
-            </Card>
-        )
-    }
-
     if (loading) {
         return (
             <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                    <AlertCircle className="w-16 h-16 text-orange-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Shopify-Verbindung erforderlich</h3>
+                    <p className="text-gray-600 text-center max-w-md mb-4">
+                        {error}
+                    </p>
+                    <Button
+                        onClick={() => window.location.href = '/settings'}
+                        className="bg-blue-600 hover:bg-blue-700"
+                    >
+                        Zu den Einstellungen
+                    </Button>
+                </CardContent>
+            </Card>
         )
     }
 
