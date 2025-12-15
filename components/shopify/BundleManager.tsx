@@ -136,6 +136,28 @@ export function BundleManager() {
         return products.find(p => p.id === id)
     }
 
+    if (!shop) {
+        return (
+            <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                    <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Shopify Shop erforderlich</h3>
+                    <p className="text-gray-500 text-center max-w-md mb-4">
+                        Um Product Bundles zu verwalten, müssen Sie diese Seite über Ihren Shopify Admin öffnen.
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
+                        <p className="text-sm text-blue-900 font-medium mb-2">So öffnen Sie diese Seite:</p>
+                        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                            <li>Gehen Sie zu Ihrem Shopify Admin</li>
+                            <li>Öffnen Sie die RechnungsProfi App</li>
+                            <li>Navigieren Sie zu "Storefront Widgets"</li>
+                        </ol>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center p-12">
@@ -186,8 +208,8 @@ export function BundleManager() {
                                             key={product.id}
                                             onClick={() => setSelectedMainProduct(product.id)}
                                             className={`p-3 border rounded-lg text-left transition-all ${selectedMainProduct === product.id
-                                                    ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500'
+                                                : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                         >
                                             {product.image && (
@@ -215,8 +237,8 @@ export function BundleManager() {
                                                 key={product.id}
                                                 onClick={() => toggleBundleProduct(product.id)}
                                                 className={`p-3 border rounded-lg text-left transition-all relative ${selectedBundleProducts.includes(product.id)
-                                                        ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500'
-                                                        : 'border-gray-200 hover:border-gray-300'
+                                                    ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500'
+                                                    : 'border-gray-200 hover:border-gray-300'
                                                     }`}
                                             >
                                                 {selectedBundleProducts.includes(product.id) && (
