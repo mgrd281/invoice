@@ -22,6 +22,14 @@ import { BarChart3 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 
+function getPaymentMethodDisplay(method: string | undefined): string {
+  if (!method) return '-'
+  const m = method.toLowerCase()
+  if (m === 'custom') return 'Vorkasse / Rechnung'
+  if (m === 'credit card') return 'Kreditkarte'
+  return method
+}
+
 export default function InvoicesPage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
@@ -1067,6 +1075,7 @@ export default function InvoicesPage() {
                     <option value="Klarna">Klarna</option>
                     <option value="Vorkasse">Vorkasse</option>
                     <option value="Rechnung">Rechnung</option>
+                    <option value="custom">Vorkasse / Rechnung (Custom)</option>
                     <option value="Shopify Payments">Shopify Payments</option>
                     <option value="Credit Card">Kreditkarte</option>
                     <option value="Amazon Pay">Amazon Pay</option>
@@ -1447,7 +1456,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-700">
-                          {invoice.paymentMethod || invoice.settings?.paymentMethod || '-'}
+                          {getPaymentMethodDisplay(invoice.paymentMethod || invoice.settings?.paymentMethod)}
                         </span>
                       </TableCell>
                       <TableCell>
