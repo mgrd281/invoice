@@ -14,11 +14,9 @@ import {
   CheckCircle,
   AlertCircle,
   Key,
-  Palette,
   Package
 } from 'lucide-react';
 import DigitalProductsView from './DigitalProductsView';
-import WidgetsView from './WidgetsView';
 
 // Types
 interface Invoice {
@@ -307,16 +305,7 @@ function ShopifyEmbeddedContent() {
             Digitale Produkte
           </button>
 
-          <button
-            onClick={() => setActiveTab('widgets')}
-            className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'widgets'
-              ? 'bg-blue-50 text-blue-700'
-              : 'text-gray-600 hover:bg-gray-50'
-              }`}
-          >
-            <Palette className="w-5 h-5 mr-3" />
-            Storefront Widgets
-          </button>
+
         </nav>
 
         <div className="p-4 border-t border-gray-100">
@@ -339,7 +328,6 @@ function ShopifyEmbeddedContent() {
             {activeTab === 'invoices' && 'Alle Rechnungen'}
             {activeTab === 'settings' && 'Einstellungen'}
             {activeTab === 'digital-products' && 'Digitale Produkte'}
-            {activeTab === 'widgets' && 'Storefront Widgets'}
           </h2>
           <button
             onClick={fetchData}
