@@ -25,8 +25,13 @@ import { useAuthenticatedFetch } from '@/lib/api-client'
 function getPaymentMethodDisplay(method: string | undefined): string {
   if (!method) return '-'
   const m = method.toLowerCase()
-  if (m === 'custom') return 'Vorkasse / Rechnung'
-  if (m === 'credit card') return 'Kreditkarte'
+  if (m === 'custom' || m === 'manual') return 'Vorkasse / Rechnung'
+  if (m === 'credit card' || m === 'credit_card') return 'Kreditkarte'
+  if (m.includes('paypal')) return 'PayPal'
+  if (m.includes('shopify_payments') || m.includes('shopify payments')) return 'Shopify Payments'
+  if (m.includes('klarna')) return 'Klarna'
+  if (m.includes('amazon')) return 'Amazon Pay'
+  if (m.includes('sofort')) return 'Sofortüberweisung'
   return method
 }
 
