@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
+import { ensureOrganization } from '@/lib/db-operations';
 
 export async function GET(request: NextRequest) {
     try {
@@ -10,17 +11,31 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get organization ID from user
+        // Get organization ID from user or fallback to default
+        let organizationId: string | undefined;
+
         const user = await prisma.user.findUnique({
             where: { email: session.user.email! },
             select: { organizationId: true }
         });
 
-        if (!user?.organizationId) {
-            return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+        if (user?.organizationId) {
+            organizationId = user.organizationId;
+        } else {
+            // Fallback: try to find default org or ensure it exists
+            let org = await prisma.organization.findFirst({
+                where: { id: 'default-org' }
+            });
+
+            if (!org) {
+                org = await ensureOrganization();
+            }
+            organizationId = org.id;
         }
 
-        const organizationId = user.organizationId;
+        if (!organizationId) {
+            return NextResponse.json({ error: 'Organization not found and could not be created' }, { status: 404 });
+        }
 
         // 1. Fetch all paid invoices
         const paidInvoices = await prisma.invoice.findMany({
