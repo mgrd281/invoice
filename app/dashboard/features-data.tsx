@@ -12,7 +12,6 @@ import {
     CheckCircle,
     Calculator,
     MessageSquare,
-    Bot,
     Key,
     DollarSign,
     AlertCircle,
@@ -21,25 +20,11 @@ import {
     Gift,
     Globe,
     Star,
-    Zap,
-    Home
+    Zap
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
-    {
-        id: 'real-estate',
-        href: '/real-estate',
-        title: 'Immo-Alarm',
-        description: 'Neue Immobilien-Angebote überwachen',
-        icon: Home,
-        iconBg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50',
-        badge: 'NEU',
-        badgeClass: 'bg-indigo-100 text-indigo-700',
-        hasPing: true,
-        pingColor: 'bg-indigo-400',
-        pingDotColor: 'bg-indigo-500'
-    },
+
     {
         id: 'csv-import',
         href: '/upload',
@@ -81,20 +66,7 @@ export const DEFAULT_FEATURES = [
         iconBg: 'bg-gradient-to-r from-blue-500 to-blue-600',
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
-    {
-        id: 'ai-assistant',
-        href: '/chat',
-        title: 'AI-Assistent',
-        description: 'Intelligente Verkaufsanalyse mit GPT-4',
-        icon: Bot,
-        iconBg: 'bg-gradient-to-r from-purple-500 to-indigo-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-purple-300 bg-gradient-to-br from-white to-purple-50',
-        badge: 'NEU',
-        badgeClass: 'bg-purple-100 text-purple-700',
-        hasPing: true,
-        pingColor: 'bg-green-400',
-        pingDotColor: 'bg-green-500'
-    },
+
     {
         id: 'automation',
         href: '/automation',
