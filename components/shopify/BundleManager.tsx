@@ -51,13 +51,25 @@ export function BundleManager() {
             const userRes = await fetch('/api/user/me')
             const userData = await userRes.json()
 
-            if (!userData.success || !userData.user?.organization?.shopifyConnection?.shopDomain) {
-                setError('Keine Shopify-Verbindung gefunden. Bitte verbinden Sie zuerst Ihren Shop in den Einstellungen.')
-                setLoading(false)
-                return
+            let shopDomain = ''
+
+            // Try to get shop from user's organization
+            if (userData.success && userData.user?.organization?.shopifyConnection?.shopDomain) {
+                shopDomain = userData.user.organization.shopifyConnection.shopDomain
+            }
+            // Fallback: Try to get from environment variables (for development/testing)
+            else {
+                const envRes = await fetch('/api/shopify/env-config')
+                const envData = await envRes.json()
+                if (envData.success && envData.shopDomain) {
+                    shopDomain = envData.shopDomain
+                } else {
+                    setError('Keine Shopify-Verbindung gefunden. Bitte verbinden Sie zuerst Ihren Shop in den Einstellungen.')
+                    setLoading(false)
+                    return
+                }
             }
 
-            const shopDomain = userData.user.organization.shopifyConnection.shopDomain
             setShop(shopDomain)
 
             // Load products
