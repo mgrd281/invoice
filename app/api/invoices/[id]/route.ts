@@ -46,7 +46,6 @@ export async function GET(
       include: {
         customer: true,
         items: true,
-        items: true,
         order: true, // Include order to get shopifyOrderId
         history: {
           orderBy: { createdAt: 'desc' }
@@ -104,7 +103,6 @@ export async function GET(
       qrCodeSettings: null,
       // Order details
       order: invoice.order ? {
-        id: invoice.order.id,
         id: invoice.order.id,
         shopifyOrderId: invoice.order.shopifyOrderId
       } : undefined,
