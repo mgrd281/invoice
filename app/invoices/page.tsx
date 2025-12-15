@@ -778,10 +778,7 @@ export default function InvoicesPage() {
       // If items are available, sum up tax for 19% items
       if (invoice.items && Array.isArray(invoice.items) && invoice.items.length > 0) {
         const invoiceVat = invoice.items.reduce((itemSum: number, item: any) => {
-          // Check for 19% tax rate (allow for small float differences or string '19')
-          // Tax rate might be stored as 19 or 0.19
           const rate = Number(item.taxRate || 0)
-          // Check if rate is 19 (percentage) or 0.19 (decimal)
           if (Math.abs(rate - 19) < 0.1 || Math.abs(rate - 0.19) < 0.001) {
             return itemSum + Number(item.taxAmount || 0)
           }
@@ -790,12 +787,24 @@ export default function InvoicesPage() {
         return sum + invoiceVat
       }
 
-      // Fallback: use totalTax if it looks like 19%
-      const net = Number(invoice.totalNet || 0)
-      const tax = Number(invoice.totalTax || 0)
+      // Fallback: use taxAmount (mapped from totalTax)
+      // In API response it is mapped to 'taxAmount', but sometimes 'totalTax' might be present if raw
+      const tax = Number(invoice.taxAmount || invoice.totalTax || 0)
+      const net = Number(invoice.subtotal || invoice.totalNet || 0)
 
-      if (net > 0 && Math.abs((tax / net) - 0.19) < 0.01) {
-        return sum + tax
+      // If we have a tax amount but no net (edge case), or if ratio matches ~19%
+      // Allow for a slightly larger margin of error due to rounding (e.g. 0.02)
+      if (tax > 0) {
+        if (net > 0) {
+          const ratio = tax / net
+          // Check if ratio is close to 0.19 (19%)
+          if (Math.abs(ratio - 0.19) < 0.02) {
+            return sum + tax
+          }
+        } else {
+          // If net is 0 but there is tax, it's weird, but maybe full tax invoice?
+          // Unlikely for 19% VAT.
+        }
       }
 
       return sum
