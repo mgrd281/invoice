@@ -227,7 +227,13 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     if (order.payment_gateway_names && Array.isArray(order.payment_gateway_names)) {
         const gateways = order.payment_gateway_names as string[]
         if (gateways.length > 0) {
-            paymentMethod = gateways[0]
+            // Filter out 'manual' if there are other specific names
+            const specificGateways = gateways.filter(g => g.toLowerCase() !== 'manual')
+            if (specificGateways.length > 0) {
+                paymentMethod = specificGateways[0]
+            } else {
+                paymentMethod = gateways[0]
+            }
             log(`✅ Extracted payment method: ${paymentMethod}`)
         }
     } else if ((order as any).gateway) {
