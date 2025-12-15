@@ -14,6 +14,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ========================================
+  // STEP 1: ACCESS GATE CHECK (Pre-Login Password)
+  // ========================================
+  const isAccessGatePage = pathname === '/access-gate'
+  const accessGateUnlocked = request.cookies.get('access_gate_unlocked')?.value === 'true'
+
+  // If not on access gate page and gate is locked, redirect to access gate
+  if (!isAccessGatePage && !accessGateUnlocked) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/access-gate'
+    // Preserve the original destination
+    if (pathname !== '/') {
+      url.searchParams.set('redirect', pathname)
+    }
+    return NextResponse.redirect(url)
+  }
+
+  // If on access gate page and already unlocked, redirect to login or intended page
+  if (isAccessGatePage && accessGateUnlocked) {
+    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/login'
+    const url = request.nextUrl.clone()
+    url.pathname = redirectTo
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
+  // ========================================
+  // STEP 2: REGULAR AUTH CHECK (NextAuth)
+  // ========================================
   // Get the session token
   // This works for both Google OAuth and Credentials
   const token = await getToken({
@@ -51,7 +80,14 @@ export async function middleware(request: NextRequest) {
       '/invoices',
       '/customers',
       '/settings',
-      '/settings'
+      '/products',
+      '/shopify',
+      '/reviews',
+      '/support',
+      '/digital-products',
+      '/buchhaltung',
+      '/dunning',
+      '/templates'
     ]
 
     if (protectedPageRoutes.some(route => pathname.startsWith(route))) {
