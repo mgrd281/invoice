@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
 import { ensureOrganization, ensureTaxRate, ensureDefaultTemplate } from '@/lib/db-operations'
 import { DocumentStatus } from '@/lib/document-types'
+import { logInvoiceEvent } from '@/lib/invoice-history'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,6 +47,11 @@ export async function POST(request: NextRequest) {
                     status: prismaStatus
                 }
             })
+
+            // Log events
+            await Promise.all(ids.map((id: string) =>
+                logInvoiceEvent(id, 'STATUS_CHANGE', `Status geändert zu ${status}`)
+            ))
 
             return NextResponse.json({
                 success: true,
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
                     })
 
                     if (!existingInvoice) {
-                        await prisma.invoice.create({
+                        const newInvoice = await prisma.invoice.create({
                             data: {
                                 organizationId: org.id,
                                 customerId: customer.id,
@@ -142,6 +148,7 @@ export async function POST(request: NextRequest) {
                                 }
                             }
                         })
+                        await logInvoiceEvent(newInvoice.id, 'CREATED', 'Rechnung importiert')
                     } else {
                         console.log(`Invoice ${invoice.number} already exists. Skipping invoice creation.`)
                     }

@@ -3,6 +3,7 @@ import { getCompanySettings } from '@/lib/company-settings'
 import { prisma } from '@/lib/prisma'
 import { ensureOrganization, ensureCustomer, ensureTaxRate } from '@/lib/db-operations'
 import { Prisma } from '@prisma/client'
+import { logInvoiceEvent } from '@/lib/invoice-history'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -45,7 +46,11 @@ export async function GET(
       include: {
         customer: true,
         items: true,
-        order: true // Include order to get shopifyOrderId
+        items: true,
+        order: true, // Include order to get shopifyOrderId
+        history: {
+          orderBy: { createdAt: 'desc' }
+        }
       }
     })
 
@@ -100,8 +105,10 @@ export async function GET(
       // Order details
       order: invoice.order ? {
         id: invoice.order.id,
+        id: invoice.order.id,
         shopifyOrderId: invoice.order.shopifyOrderId
-      } : undefined
+      } : undefined,
+      history: (invoice as any).history || []
     }
 
     return NextResponse.json(formattedInvoice)
@@ -194,6 +201,10 @@ export async function PUT(
       where: { id: invoiceId },
       data: updateData
     })
+
+    if (updatedData.status && updatedData.status !== mapPrismaStatusToFrontend(existingInvoice.status)) {
+      await logInvoiceEvent(invoiceId, 'STATUS_CHANGE', `Status geändert zu ${updatedData.status}`)
+    }
 
     console.log('Rechnung erfolgreich aktualisiert')
     return NextResponse.json({ success: true, message: 'Rechnung erfolgreich aktualisiert' })

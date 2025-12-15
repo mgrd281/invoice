@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 // ... other imports
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2 } from 'lucide-react'
+import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send } from 'lucide-react'
 import { downloadInvoicePDF } from '@/lib/pdf-generator'
 import { useToast } from '@/components/ui/toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -60,6 +61,13 @@ export default function InvoicesPage() {
 
   // Bulk Actions State
   const [showBulkStatusUpdate, setShowBulkStatusUpdate] = useState(false)
+
+  // Accountant Export
+  const [showAccountantDialog, setShowAccountantDialog] = useState(false)
+  const [accountantEmail, setAccountantEmail] = useState('')
+  const [sendingAccountant, setSendingAccountant] = useState(false)
+
+  // Filter states
   const [isDownloadingZip, setIsDownloadingZip] = useState(false)
 
   // Advanced Filters State
@@ -1026,6 +1034,16 @@ export default function InvoicesPage() {
                   <Edit2 className="h-3 w-3 mr-2" />
                   Status ändern
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setShowAccountantDialog(true)}
+                >
+                  <Send className="h-3 w-3 mr-2" />
+                  An Steuerberater
+                </Button>
               </div>
             )}
 
@@ -1138,6 +1156,63 @@ export default function InvoicesPage() {
                   {status}
                 </Button>
               ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAccountantDialog} onOpenChange={setShowAccountantDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>An Steuerberater senden</DialogTitle>
+            <DialogDescription>
+              Senden Sie {selectedInvoices.size} ausgewählte Rechnungen an Ihren Steuerberater.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">E-Mail-Adresse des Steuerberaters</label>
+              <Input
+                type="email"
+                placeholder="steuerberater@kanzlei.de"
+                value={accountantEmail}
+                onChange={(e) => setAccountantEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowAccountantDialog(false)}>Abbrechen</Button>
+              <Button
+                onClick={async () => {
+                  if (!accountantEmail) return
+                  setSendingAccountant(true)
+                  try {
+                    const response = await fetch('/api/invoices/send-to-accountant', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        invoiceIds: Array.from(selectedInvoices),
+                        accountantEmail
+                      })
+                    })
+                    const result = await response.json()
+                    if (result.success) {
+                      setShowAccountantDialog(false)
+                      // Show success toast (need to implement toast or just alert)
+                      alert(`Erfolgreich an ${accountantEmail} gesendet!`)
+                      setSelectedInvoices(new Set())
+                    } else {
+                      alert('Fehler: ' + result.error)
+                    }
+                  } catch (e) {
+                    alert('Fehler beim Senden')
+                  } finally {
+                    setSendingAccountant(false)
+                  }
+                }}
+                disabled={sendingAccountant || !accountantEmail}
+              >
+                {sendingAccountant ? 'Sende...' : 'Senden'}
+              </Button>
             </div>
           </div>
         </DialogContent>

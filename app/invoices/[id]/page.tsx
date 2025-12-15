@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { renderRecipientBlock } from '@/lib/recipient-renderer'
+import { InvoiceTimeline } from '@/components/invoice-timeline'
 
 interface InvoiceItem {
   id: string
@@ -69,6 +70,7 @@ interface Invoice {
     id: string
     shopifyOrderId?: string
   }
+  history?: any[]
 }
 
 export default function InvoiceViewPage({ params }: { params: { id: string } }) {
@@ -1065,6 +1067,16 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                     </>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Timeline */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Verlauf</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <InvoiceTimeline history={(invoice as any).history || []} />
               </CardContent>
             </Card>
           </div>

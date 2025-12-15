@@ -3,6 +3,7 @@ import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
 import { ensureOrganization, ensureCustomer, ensureTaxRate, ensureDefaultTemplate } from '@/lib/db-operations'
 import { Prisma } from '@prisma/client'
+import { logInvoiceEvent } from '@/lib/invoice-history'
 
 // Mock storage for Email Status (shared with [id]/email-status/route.ts)
 declare global {
@@ -337,6 +338,9 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('✅ Invoice created in Prisma:', invoice.id)
+
+    // Log history
+    await logInvoiceEvent(invoice.id, 'CREATED', 'Rechnung erstellt')
 
     return NextResponse.json(invoice, { status: 201 })
 

@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendInvoiceEmail, verifyEmailConfig } from '@/lib/email-service'
 import { getCompanySettings } from '@/lib/company-settings'
+import { logInvoiceEvent } from '@/lib/invoice-history'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
-      invoiceId, 
-      customerEmail, 
-      customerName, 
+    const {
+      invoiceId,
+      customerEmail,
+      customerName,
       invoiceNumber,
       emailSubject,
       emailMessage,
@@ -75,14 +76,17 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Email sent successfully to ${customerEmail}`)
       console.log(`📝 Message ID: ${result.messageId}`)
       console.log(`📊 Log ID: ${result.logId}`)
-      
+
       let successMessage = `Rechnung ${invoiceNumber} wurde erfolgreich an ${customerEmail} gesendet.`
-      
+
+      // Log history
+      await logInvoiceEvent(invoiceId, 'SENT', `E-Mail an ${customerEmail} gesendet`)
+
       // Add CC confirmation if CC is configured
       if (process.env.EMAIL_CC) {
         successMessage += ` Eine Kopie wurde an ${process.env.EMAIL_CC} gesendet.`
       }
-      
+
       return NextResponse.json({
         success: true,
         message: successMessage,
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in email API endpoint:', error)
-    
+
     // Provide specific error messages based on error type
     let errorMessage = 'Fehler beim Senden der E-Mail. Bitte versuchen Sie es später erneut.'
     let statusCode = 500
@@ -119,7 +123,7 @@ export async function POST(request: NextRequest) {
         statusCode = 429
       }
     }
-    
+
     return NextResponse.json(
       {
         success: false,

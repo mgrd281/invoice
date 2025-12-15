@@ -274,6 +274,17 @@ model Invoice {
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId, issueDate(sort: Desc), invoiceNumber(sort: Desc)])
+
+  history         InvoiceHistory[]
+}
+
+model InvoiceHistory {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type      String   // CREATED, SENT, VIEWED, PAID, REMINDER, CANCELLED, STATUS_CHANGE
+  detail    String?
+  createdAt DateTime @default(now())
 }
 
 model InvoiceItem {
