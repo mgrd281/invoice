@@ -225,7 +225,7 @@ export const DEFAULT_FEATURES = [
     },
     {
         id: 'storefront-widgets',
-        href: '/shopify?tab=widgets',
+        href: '/storefront-widgets',
         title: 'Storefront Widgets',
         description: 'Professionelle Elemente für Ihren Shop',
         icon: Palette,
