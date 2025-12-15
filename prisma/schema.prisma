@@ -105,6 +105,8 @@ model Organization {
   reviewIncentiveSettings ReviewIncentiveSettings?
   abandonedCarts    AbandonedCart[]
   realEstateProfiles RealEstateSearchProfile[]
+  productBundles    ProductBundle[]
+  shopifySettings   ShopifySettings?
 }
 
 model WidgetSettings {
@@ -899,3 +901,34 @@ model RealEstateSeenListing {
   
   @@unique([profileId, externalId])
 }
+
+model ProductBundle {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  title            String
+  mainProductId    String       // Shopify Product ID
+  bundleProductIds String[]     // Array of Shopify Product IDs
+  
+  active           Boolean      @default(true)
+  
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  @@index([organizationId])
+}
+
+model ShopifySettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  shopDomain     String
+  accessToken    String
+  apiVersion     String       @default("2024-01")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
