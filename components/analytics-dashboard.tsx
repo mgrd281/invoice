@@ -7,13 +7,19 @@ import { Users, CreditCard, TrendingUp, DollarSign } from 'lucide-react'
 
 export function AnalyticsDashboard() {
     const [data, setData] = useState<any>(null)
+    const [topProducts, setTopProducts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch('/api/analytics')
-            .then(res => res.json())
-            .then(data => {
-                setData(data)
+        Promise.all([
+            fetch('/api/analytics').then(res => res.json()),
+            fetch('/api/analytics/top-products').then(res => res.json())
+        ])
+            .then(([analyticsData, productsData]) => {
+                setData(analyticsData)
+                if (productsData.success) {
+                    setTopProducts(productsData.topProducts)
+                }
                 setLoading(false)
             })
             .catch(err => {
@@ -173,6 +179,36 @@ export function AnalyticsDashboard() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Popular Products Section */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Beliebte Produkte</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {topProducts.map((product: any, i: number) => (
+                            <div key={i} className="flex items-center">
+                                <div className="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold mr-3">
+                                    {i + 1}
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                    <p className="text-sm font-medium leading-none">{product.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {product.quantity} {product.quantity === 1 ? 'Stück' : 'Stück'} verkauft
+                                    </p>
+                                </div>
+                                <div className="font-medium text-sm">
+                                    {formatCurrency(product.revenue)}
+                                </div>
+                            </div>
+                        ))}
+                        {topProducts.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">Keine Daten verfügbar</p>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     )
 }
