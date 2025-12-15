@@ -22,19 +22,42 @@ import { BarChart3 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 
-function getPaymentMethodDisplay(method: string | undefined): string {
-  if (!method) return '-'
-  const m = method.toLowerCase()
-  if (m === 'custom') return 'Rechnung'
-  if (m === 'manual') return 'Manuell'
-  if (m.includes('vorkasse')) return 'Vorkasse'
-  if (m === 'credit card' || m === 'credit_card') return 'Kreditkarte'
-  if (m.includes('paypal')) return 'PayPal'
-  if (m.includes('shopify_payments') || m.includes('shopify payments')) return 'Shopify Payments'
-  if (m.includes('klarna')) return 'Klarna'
-  if (m.includes('amazon')) return 'Amazon Pay'
-  if (m.includes('sofort')) return 'Sofortüberweisung'
-  return method
+function getPaymentMethodDisplay(method: string | undefined) {
+  if (!method) return <span className="text-gray-400">-</span>
+
+  let label = method
+  let className = "bg-gray-100 text-gray-800"
+
+  const lowerMethod = method.toLowerCase()
+
+  if (lowerMethod.includes('paypal')) {
+    label = 'PayPal'
+    className = "bg-[#003087]/10 text-[#003087]"
+  } else if (lowerMethod.includes('credit') || lowerMethod.includes('kredit')) {
+    label = 'Kreditkarte'
+    className = "bg-purple-100 text-purple-800"
+  } else if (lowerMethod.includes('klarna')) {
+    label = 'Klarna'
+    className = "bg-pink-100 text-pink-800"
+  } else if (lowerMethod.includes('sofort')) {
+    label = 'Sofort'
+    className = "bg-orange-100 text-orange-800"
+  } else if (lowerMethod.includes('amazon')) {
+    label = 'Amazon Pay'
+    className = "bg-cyan-100 text-cyan-800"
+  } else if (lowerMethod === 'custom' || lowerMethod.includes('vorkasse') || lowerMethod.includes('manual')) {
+    label = 'Vorkasse / Rechnung'
+    className = "bg-yellow-100 text-yellow-800"
+  } else if (lowerMethod.includes('shopify')) {
+    label = 'Shopify Payments'
+    className = "bg-green-100 text-green-800"
+  }
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      {label}
+    </span>
+  )
 }
 
 export default function InvoicesPage() {
@@ -66,6 +89,7 @@ export default function InvoicesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
   const [vat19Sum, setVat19Sum] = useState(0)
+  const [vat7Sum, setVat7Sum] = useState(0)
 
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
@@ -74,8 +98,10 @@ export default function InvoicesPage() {
 
   // Date Filter State
   const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>(() => {
-    const today = new Date().toISOString().split('T')[0]
-    return { from: today, to: today }
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const today = now.toISOString().split('T')[0]
+    return { from: firstDay, to: today }
   })
 
   // Bulk Actions State
@@ -178,10 +204,12 @@ export default function InvoicesPage() {
       const pagination = data.pagination || { total: 0, pages: 1, page: 1, limit: 20 }
 
       // Set stats from API
-      if (data.stats && typeof data.stats.totalVat19 === 'number') {
-        setVat19Sum(data.stats.totalVat19)
+      if (data.stats) {
+        setVat19Sum(typeof data.stats.totalVat19 === 'number' ? data.stats.totalVat19 : 0)
+        setVat7Sum(typeof data.stats.totalVat7 === 'number' ? data.stats.totalVat7 : 0)
       } else {
         setVat19Sum(0)
+        setVat7Sum(0)
       }
 
       setTotalPages(pagination.pages)
@@ -1252,7 +1280,7 @@ export default function InvoicesPage() {
         {showAnalytics && <AnalyticsDashboard />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-9 gap-4 mb-8">
           <Card
             className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
             onClick={() => setStatusFilter(null)}
@@ -1269,7 +1297,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'}`}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Offen' ? 'ring-2 ring-yellow-500 shadow-md bg-yellow-50/50' : 'hover:bg-gray-50'} ${openInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Offen')}
           >
             <CardHeader className="pb-2">
@@ -1284,7 +1312,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'}`}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Überfällig' ? 'ring-2 ring-red-500 shadow-md bg-red-50/50' : 'hover:bg-gray-50'} ${overdueInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Überfällig')}
           >
             <CardHeader className="pb-2">
@@ -1299,7 +1327,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'}`}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Bezahlt' ? 'ring-2 ring-green-500 shadow-md bg-green-50/50' : 'hover:bg-gray-50'} ${paidInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Bezahlt')}
           >
             <CardHeader className="pb-2">
@@ -1314,7 +1342,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'}`}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Storniert' ? 'ring-2 ring-gray-500 shadow-md bg-gray-50/50' : 'hover:bg-gray-50'} ${cancelledInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Storniert')}
           >
             <CardHeader className="pb-2">
@@ -1329,7 +1357,7 @@ export default function InvoicesPage() {
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === 'Gutschrift' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'} ${refundInvoices === 0 ? 'opacity-50' : ''}`}
             onClick={() => setStatusFilter('Gutschrift')}
           >
             <CardHeader className="pb-2">
@@ -1343,7 +1371,7 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-50 opacity-70">
+          <Card className={`bg-gray-50 ${duplicateCount === 0 ? 'opacity-30' : 'opacity-70'}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Duplikate
@@ -1355,8 +1383,8 @@ export default function InvoicesPage() {
             </CardContent>
           </Card>
 
-          {/* New 19% VAT Card */}
-          <Card className="bg-violet-50 border-violet-100">
+          {/* 19% VAT Card */}
+          <Card className={`bg-violet-50 border-violet-100 ${vat19Sum === 0 ? 'opacity-50' : ''}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-violet-700">
                 19 % MwSt
@@ -1367,7 +1395,24 @@ export default function InvoicesPage() {
                 {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat19Sum)}
               </div>
               <p className="text-[10px] text-violet-600 leading-tight mt-1">
-                Steuerbetrag (bezahlt & nicht storniert)
+                Steuerbetrag (19%)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* 7% VAT Card */}
+          <Card className={`bg-indigo-50 border-indigo-100 ${vat7Sum === 0 ? 'opacity-50' : ''}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-indigo-700">
+                7 % MwSt
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-indigo-700">
+                {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat7Sum)}
+              </div>
+              <p className="text-[10px] text-indigo-600 leading-tight mt-1">
+                Steuerbetrag (7%)
               </p>
             </CardContent>
           </Card>
