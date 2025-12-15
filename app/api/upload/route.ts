@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
         order.grund = getColumnValue(record, ['Grund']) || ''
         order.originalRechnung = getColumnValue(record, ['Original_Rechnung', 'Originalrechnung']) || ''
         order.financialStatus = getColumnValue(record, ['Financial Status', 'Finanzstatus']) || ''
-        order.paymentMethod = getColumnValue(record, ['Payment Method', 'Payment', 'Zahlungsmethode', 'Zahlungsart']) || ''
+        order.paymentMethod = getColumnValue(record, ['Payment Method', 'Payment Gateway Names', 'Gateway', 'Payment', 'Zahlungsmethode', 'Zahlungsart']) || ''
 
         // Calculate tax amount if not provided - unitPrice already includes tax (Brutto)
         if (!order.taxAmount) {
