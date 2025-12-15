@@ -229,8 +229,9 @@ export async function GET(request: NextRequest) {
     let totalVat7 = 0
 
     for (const inv of allMatchingStats) {
-      // Skip cancelled invoices
-      if (inv.status === 'CANCELLED') continue
+      // Skip cancelled invoices and non-paid invoices
+      // Only calculate VAT for invoices that are actually PAID
+      if (inv.status === 'CANCELLED' || inv.status !== 'PAID') continue
 
       let invoiceVat19 = 0
       let invoiceVat7 = 0
