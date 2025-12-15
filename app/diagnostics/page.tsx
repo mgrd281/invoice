@@ -3,8 +3,12 @@
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Mail, Key, FileText } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Mail, Key, FileText, Search } from 'lucide-react'
 
 export default function DiagnosticPage() {
     const [isChecking, setIsChecking] = useState(false)
@@ -134,6 +138,74 @@ export default function DiagnosticPage() {
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-gray-600">Verfügbare Keys:</span>
                                     <Badge variant="outline">{results.availableKeysCount || 0}</Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Missing Invoices Checker */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Search className="h-5 w-5" />
+                                    Fehlende Rechnungen prüfen
+                                </CardTitle>
+                                <CardDescription>
+                                    Suchen Sie nach Lücken in den Rechnungsnummern
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="flex gap-4 items-end">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Start</label>
+                                            <Input
+                                                type="number"
+                                                defaultValue="1001"
+                                                id="start-range"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Ende</label>
+                                            <Input
+                                                type="number"
+                                                defaultValue="3591"
+                                                id="end-range"
+                                            />
+                                        </div>
+                                        <Button
+                                            onClick={async () => {
+                                                const start = (document.getElementById('start-range') as HTMLInputElement).value;
+                                                const end = (document.getElementById('end-range') as HTMLInputElement).value;
+
+                                                try {
+                                                    const res = await fetch(`/api/diagnostics/missing-invoices?start=${start}&end=${end}`);
+                                                    const data = await res.json();
+
+                                                    const resultDiv = document.getElementById('missing-results');
+                                                    if (resultDiv) {
+                                                        if (data.missingCount === 0) {
+                                                            resultDiv.innerHTML = `<div class="p-4 bg-green-50 text-green-700 rounded-lg">Keine fehlenden Rechnungen gefunden!</div>`;
+                                                        } else {
+                                                            resultDiv.innerHTML = `
+                                                                <div class="p-4 bg-yellow-50 text-yellow-800 rounded-lg space-y-2">
+                                                                    <p class="font-bold">${data.missingCount} fehlende Rechnungen gefunden:</p>
+                                                                    <div class="text-sm font-mono bg-white p-2 rounded border max-h-40 overflow-y-auto">
+                                                                        ${data.missingNumbers.join(', ')}
+                                                                    </div>
+                                                                </div>
+                                                            `;
+                                                        }
+                                                    }
+                                                } catch (err) {
+                                                    console.error(err);
+                                                }
+                                            }}
+                                            variant="outline"
+                                        >
+                                            Prüfen
+                                        </Button>
+                                    </div>
+                                    <div id="missing-results"></div>
                                 </div>
                             </CardContent>
                         </Card>
