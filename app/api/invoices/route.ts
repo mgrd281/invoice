@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       return {
         id: inv.id,
         number: inv.invoiceNumber,
-        date: inv.issueDate.toISOString().split('T')[0],
+        date: inv.issueDate.toISOString(),
         dueDate: inv.dueDate.toISOString().split('T')[0],
         subtotal: Number(inv.totalNet),
         taxRate: 19, // Approximation, ideally fetch from items or store on invoice
