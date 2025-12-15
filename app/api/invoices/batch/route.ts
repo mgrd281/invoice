@@ -125,6 +125,9 @@ export async function POST(request: NextRequest) {
                                 totalTax: invoice.taxAmount,
                                 totalGross: invoice.total,
                                 documentKind: invoice.document_kind,
+                                settings: {
+                                    paymentMethod: invoice.paymentMethod || '-'
+                                },
                                 items: {
                                     create: invoice.items.map((item: any) => ({
                                         description: item.description,
