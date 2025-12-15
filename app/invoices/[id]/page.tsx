@@ -71,6 +71,7 @@ interface Invoice {
     shopifyOrderId?: string
   }
   history?: any[]
+  paymentMethod?: string
 }
 
 export default function InvoiceViewPage({ params }: { params: { id: string } }) {
@@ -933,6 +934,35 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
                     </>
                   )
                 })()}
+
+                {/* Payment Method */}
+                <div className="border-t pt-4 space-y-2">
+                  <h4 className="font-medium text-gray-900">Zahlungsmethode</h4>
+                  {isEditing && editableInvoice ? (
+                    <Select
+                      value={(editableInvoice as any).paymentMethod || ''}
+                      onValueChange={(value) => updateEditableInvoice('paymentMethod' as any, value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Zahlungsmethode wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PayPal">PayPal</SelectItem>
+                        <SelectItem value="PayPal Express Checkout">PayPal Express Checkout</SelectItem>
+                        <SelectItem value="Kreditkarte">Kreditkarte</SelectItem>
+                        <SelectItem value="Vorkasse">Vorkasse</SelectItem>
+                        <SelectItem value="Rechnung">Rechnung</SelectItem>
+                        <SelectItem value="Sofort/Klarna">Sofort/Klarna</SelectItem>
+                        <SelectItem value="Apple Pay">Apple Pay</SelectItem>
+                        <SelectItem value="Google Pay">Google Pay</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-gray-600">
+                      {(invoice as any).paymentMethod || '-'}
+                    </p>
+                  )}
+                </div>
 
                 {/* Bank Details */}
                 <div className="border-t pt-4 space-y-2">

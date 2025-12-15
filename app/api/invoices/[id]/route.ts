@@ -96,6 +96,7 @@ export async function GET(
       // Document type fields
       document_kind: (invoice as any).documentKind,
       reference_number: (invoice as any).referenceNumber,
+      paymentMethod: (invoice.settings as any)?.paymentMethod, // Get from settings
       original_invoice_date: (invoice as any).originalDate?.toISOString().split('T')[0],
       grund: (invoice as any).reason,
       refund_amount: (invoice as any).refundAmount ? Number((invoice as any).refundAmount) : undefined,
@@ -168,6 +169,14 @@ export async function PUT(
     if (updatedData.subtotal) updateData.totalNet = updatedData.subtotal
     if (updatedData.total) updateData.totalGross = updatedData.total
     if (updatedData.taxAmount) updateData.totalTax = updatedData.taxAmount
+
+    if (updatedData.paymentMethod) {
+      const currentSettings = (existingInvoice.settings as any) || {}
+      updateData.settings = {
+        ...currentSettings,
+        paymentMethod: updatedData.paymentMethod
+      }
+    }
 
     // Update items if provided
     if (updatedData.items) {
