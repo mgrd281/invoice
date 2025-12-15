@@ -812,7 +812,7 @@ export default function InvoicesPage() {
                 Rechnungen
                 {user?.isAdmin && (
                   <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full border border-red-200">
-                    ADMIN - Alle Rechnungen
+                    ADMIN
                   </span>
                 )}
               </h1>
