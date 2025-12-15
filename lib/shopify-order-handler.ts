@@ -241,6 +241,46 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         log(`✅ Extracted payment method from gateway: ${paymentMethod}`)
     }
 
+    // If payment method is ambiguous (manual or custom), try to get more info from transactions
+    if (paymentMethod.toLowerCase() === 'manual' || paymentMethod.toLowerCase() === 'custom') {
+        try {
+            // We need to dynamically import ShopifyAPI to avoid circular dependencies if any
+            const { ShopifyAPI } = await import('@/lib/shopify-api')
+            const api = new ShopifyAPI()
+            const transactions = await api.getTransactions(order.id)
+
+            if (transactions && transactions.length > 0) {
+                // Look for a transaction that might have a specific gateway name
+                // Often the 'gateway' field in transaction is 'manual', but sometimes 'receipt' or 'payment_details' has info?
+                // Actually, sometimes the gateway name IS in the transaction gateway field if it differs from order gateway
+
+                // Let's check if any transaction has a gateway that is NOT manual/custom
+                const specificTx = transactions.find((t: any) =>
+                    t.gateway &&
+                    t.gateway.toLowerCase() !== 'manual' &&
+                    t.gateway.toLowerCase() !== 'custom'
+                )
+
+                if (specificTx) {
+                    paymentMethod = specificTx.gateway
+                    log(`✅ Refined payment method from transactions: ${paymentMethod}`)
+                } else {
+                    // Check if we can find "Vorkasse" or "Rechnung" in any field
+                    const jsonString = JSON.stringify(transactions).toLowerCase()
+                    if (jsonString.includes('vorkasse')) {
+                        paymentMethod = 'Vorkasse'
+                        log(`✅ Detected 'Vorkasse' in transaction details`)
+                    } else if (jsonString.includes('rechnung') || jsonString.includes('invoice')) {
+                        paymentMethod = 'Rechnung'
+                        log(`✅ Detected 'Rechnung' in transaction details`)
+                    }
+                }
+            }
+        } catch (err) {
+            log(`⚠️ Failed to fetch transactions for refinement: ${err}`)
+        }
+    }
+
     // Get or create tax rate
     let taxRate = await prisma.taxRate.findFirst({
         where: { organizationId: organization.id, rate: 0.19 }

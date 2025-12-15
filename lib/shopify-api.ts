@@ -829,6 +829,20 @@ export class ShopifyAPI {
   }
 
   /**
+   * Get transactions for an order
+   */
+  async getTransactions(orderId: number): Promise<any[]> {
+    try {
+      const response = await this.makeRequest(`/orders/${orderId}/transactions.json`)
+      const data = await response.json()
+      return data.transactions || []
+    } catch (error) {
+      console.error(`Error fetching transactions for order ${orderId}:`, error)
+      return []
+    }
+  }
+
+  /**
    * Create a discount code for abandoned cart recovery
    */
   async createDiscountCode(code: string, percentage: number): Promise<string | null> {
