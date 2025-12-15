@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Palette, LayoutGrid, ShoppingBag } from "lucide-react";
+import { ProductBundlesWidget } from '@/components/shopify/ProductBundlesWidget';
 import WidgetsView from '@/app/shopify/WidgetsView';
 
 export default function StorefrontWidgetsPage() {
     const router = useRouter();
+    const [activeWidget, setActiveWidget] = useState<'variant-selector' | 'product-bundles'>('variant-selector');
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -50,19 +52,35 @@ export default function StorefrontWidgetsPage() {
                             Diese Widgets funktionieren unabhängig von Apps und benötigen keine monatlichen Gebühren.
                         </p>
                         <div className="flex gap-4">
-                            <div className="flex items-center text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                            <button
+                                onClick={() => setActiveWidget('variant-selector')}
+                                className={`flex items-center text-sm px-3 py-1 rounded-full transition-colors ${activeWidget === 'variant-selector'
+                                    ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
+                                    : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                                    }`}
+                            >
                                 <LayoutGrid className="w-4 h-4 mr-2" />
                                 Variant Selector
-                            </div>
-                            <div className="flex items-center text-sm text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                            </button>
+                            <button
+                                onClick={() => setActiveWidget('product-bundles')}
+                                className={`flex items-center text-sm px-3 py-1 rounded-full transition-colors ${activeWidget === 'product-bundles'
+                                    ? 'bg-purple-50 text-purple-600 ring-1 ring-purple-200'
+                                    : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                                    }`}
+                            >
                                 <ShoppingBag className="w-4 h-4 mr-2" />
-                                Product Bundles (Bald verfügbar)
-                            </div>
+                                Product Bundles
+                            </button>
                         </div>
                     </div>
 
                     {/* Main Widget View */}
-                    <WidgetsView />
+                    {activeWidget === 'variant-selector' ? (
+                        <WidgetsView />
+                    ) : (
+                        <ProductBundlesWidget />
+                    )}
                 </div>
             </main>
         </div>
