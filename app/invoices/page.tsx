@@ -44,7 +44,7 @@ export default function InvoicesPage() {
 
   // Pagination State
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20) // Reduced default limit for better performance
+  const [limit, setLimit] = useState(50) // Default limit set to 50 as requested
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
 
@@ -1373,15 +1373,9 @@ export default function InvoicesPage() {
                   }}
                   className="border border-gray-300 rounded-md text-sm p-1"
                 >
-                  <option value="10">10</option>
-                  <option value="25">25</option>
                   <option value="50">50</option>
-                  <option value="100">100</option>
-                  <option value="250">250</option>
                   <option value="500">500</option>
-                  <option value="1000">1000</option>
-                  <option value="2000">2000</option>
-                  <option value="3000">3000</option>
+                  <option value="100000">Unbegrenzt</option>
                 </select>
                 <span className="text-sm text-gray-600">Einträge pro Seite</span>
               </div>
