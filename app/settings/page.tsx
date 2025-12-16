@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Building2, Shield, Save, Loader2, ArrowLeft, Settings, Trash2 } from 'lucide-react'
+import { Building2, Shield, Save, Loader2, ArrowLeft, Settings, Trash2, Database, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { setCompanySettingsClient } from '@/lib/company-settings'
 
@@ -492,6 +492,37 @@ export default function SettingsPage() {
                   Konfigurieren
                 </Button>
               </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Data Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Database className="h-5 w-5 mr-2 text-green-600" />
+              Datenverwaltung & Backup
+            </CardTitle>
+            <CardDescription>
+              Sichern Sie Ihre Daten oder exportieren Sie sie für die Buchhaltung
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Vollständiges Backup herunterladen</Label>
+                <p className="text-sm text-muted-foreground">
+                  Laden Sie eine Kopie aller Ihrer Daten (Kunden, Rechnungen, Einstellungen) herunter.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/api/backup/download', '_blank')}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Backup erstellen
+              </Button>
             </div>
           </CardContent>
         </Card>
