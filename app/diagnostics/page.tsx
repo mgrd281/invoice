@@ -240,19 +240,21 @@ export default function DiagnosticsPage() {
                                             pageCount++
                                             setStatus(`Importiere Seite ${pageCount}... (Importiert: ${totalImported})`)
 
-                                            const res = await fetch('/api/diagnostics/import-shopify', {
+                                            // @ts-ignore
+                                            const currentBatchResponse = await fetch('/api/diagnostics/import-shopify', {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({ page_info: pageInfo, limit: 50 })
                                             })
 
-                                            const data = await res.json()
-                                            if (!res.ok) throw new Error(data.error)
+                                            // @ts-ignore
+                                            const currentBatchData = await currentBatchResponse.json()
+                                            if (!currentBatchResponse.ok) throw new Error(currentBatchData.error)
 
-                                            totalImported += data.imported
-                                            totalSkipped += data.skipped
-                                            pageInfo = data.next_page_info
-                                            hasMore = data.has_more
+                                            totalImported += currentBatchData.imported
+                                            totalSkipped += currentBatchData.skipped
+                                            pageInfo = currentBatchData.next_page_info
+                                            hasMore = currentBatchData.has_more
 
                                             // Artificial progress since we don't know total pages
                                             setProgress((prev) => Math.min(prev + 5, 95))
