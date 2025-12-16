@@ -33,31 +33,40 @@ export async function POST(req: Request) {
 
         const body = await req.json()
 
+        // 1. Find ANY existing organization first to avoid unique constraint errors
+        let org = await prisma.organization.findFirst()
+
+        // 2. If no organization exists, create a default one
+        if (!org) {
+            org = await prisma.organization.create({
+                data: {
+                    name: 'Default Organization',
+                    slug: 'default-org-' + Date.now(), // Ensure uniqueness
+                    address: 'Musterstraße 1',
+                    zipCode: '12345',
+                    city: 'Musterstadt'
+                }
+            })
+        }
+
         const product = await prisma.digitalProduct.create({
             data: {
                 title: body.title,
                 shopifyProductId: body.shopifyProductId,
-                // Removed isActive as it's not in schema
                 organization: {
-                    connectOrCreate: {
-                        where: { id: 'default-org-id' },
-                        create: {
-                            id: 'default-org-id',
-                            name: 'Default Organization',
-                            slug: 'default-org',
-                            address: 'Musterstraße 1',
-                            zipCode: '12345',
-                            city: 'Musterstadt'
-                        }
-                    }
+                    connect: { id: org.id }
                 }
             }
         })
 
         return NextResponse.json(product)
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating digital product:', error)
-        return new NextResponse('Internal Error', { status: 500 })
+        // Return JSON error with message to help debugging
+        return NextResponse.json(
+            { error: error.message || 'Internal Server Error' },
+            { status: 500 }
+        )
     }
 }
