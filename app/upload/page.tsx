@@ -12,8 +12,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
+// import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
 import { cn } from '@/lib/utils'
+import dynamicImport from 'next/dynamic'
+
+const InvoicePreviewDialog = dynamicImport(() => import('@/components/invoice-preview-dialog').then(mod => mod.InvoicePreviewDialog), {
+  ssr: false
+})
+
+export const dynamic = 'force-dynamic'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
