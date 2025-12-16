@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth-middleware'
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: any }
 ) {
     try {
         const authResult = requireAuth(request)
@@ -16,6 +16,7 @@ export async function PUT(
 
         const body = await request.json()
         const { description, category, amount, date } = body
+        // ... existing code ...
 
         const organization = await prisma.organization.findFirst({
             where: { users: { some: { id: user.id } } }
@@ -90,7 +91,7 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: any }
 ) {
     try {
         const authResult = requireAuth(request)
