@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: any }
 ) {
     try {
-        const id = params.id
+        const { id } = await params
         const body = await request.json().catch(() => ({})) // Handle empty body safely
         const action = body.action || 'helpful' // Default to helpful for backward compatibility
 

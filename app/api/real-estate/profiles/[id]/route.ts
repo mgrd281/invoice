@@ -5,7 +5,33 @@ import { ensureOrganization } from '@/lib/db-operations'
 
 export const dynamic = 'force-dynamic'
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: any }) {
+    const { id } = await params
+    const authResult = requireAuth(request)
+    if ('error' in authResult) return authResult.error
+
+    try {
+        const org = await ensureOrganization()
+        const profile = await prisma.realEstateSearchProfile.findFirst({
+            where: {
+                id: id,
+                organizationId: org.id
+            }
+        })
+
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found or access denied' }, { status: 404 })
+        }
+
+        return NextResponse.json(profile)
+    } catch (error) {
+        console.error('Error fetching profile:', error)
+        return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
+    }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: any }) {
+    const { id } = await params
     const authResult = requireAuth(request)
     if ('error' in authResult) return authResult.error
 
@@ -13,7 +39,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         const org = await ensureOrganization()
         await prisma.realEstateSearchProfile.deleteMany({
             where: {
-                id: params.id,
+                id: id,
                 organizationId: org.id
             }
         })
@@ -24,7 +50,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: any }) {
+    const { id } = await params
     const authResult = requireAuth(request)
     if ('error' in authResult) return authResult.error
 
@@ -35,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         // Use updateMany to ensure organization ownership
         const result = await prisma.realEstateSearchProfile.updateMany({
             where: {
-                id: params.id,
+                id: id,
                 organizationId: org.id
             },
             data: {

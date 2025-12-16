@@ -41,13 +41,14 @@ if (!global.organizations) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
+  const { id } = await params
   try {
-    console.log('Fetching organization with ID:', params.id)
-    
+    console.log('Fetching organization with ID:', id)
+
     const organization = global.organizations?.find(org => org.id === params.id)
-    
+
     if (!organization) {
       return NextResponse.json(
         { error: 'Organization not found' },
@@ -68,18 +69,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
+  const { id } = await params
   try {
     const body = await request.json()
-    console.log('Updating organization:', params.id, 'with data:', body)
-
-    if (!global.organizations) {
-      global.organizations = []
-    }
-
     const organizationIndex = global.organizations.findIndex(org => org.id === params.id)
-    
+
     if (organizationIndex === -1) {
       return NextResponse.json(
         { error: 'Organization not found' },
@@ -92,7 +88,7 @@ export async function PUT(
     for (const field of requiredFields) {
       if (!body[field] || body[field].trim() === '') {
         return NextResponse.json(
-          { 
+          {
             error: 'Validation failed',
             message: `Field '${field}' is required`,
             field: field
@@ -106,7 +102,7 @@ export async function PUT(
     const ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/
     if (!ibanRegex.test(body.iban.replace(/\s/g, ''))) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           message: 'Invalid IBAN format',
           field: 'iban'
@@ -118,7 +114,7 @@ export async function PUT(
     // Validate Tax ID format (basic validation for German tax ID)
     if (body.taxId && !body.taxId.match(/^DE[0-9]{9}$/)) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           message: 'Invalid Tax ID format. Should be DE followed by 9 digits',
           field: 'taxId'
@@ -151,7 +147,7 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating organization:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update organization',
         message: 'Ein Fehler ist beim Aktualisieren der Organisation aufgetreten'
       },
@@ -162,17 +158,18 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
+  const { id } = params
   try {
-    console.log('Deleting organization with ID:', params.id)
+    console.log('Deleting organization with ID:', id)
 
     if (!global.organizations) {
       global.organizations = []
     }
 
-    const organizationIndex = global.organizations.findIndex(org => org.id === params.id)
-    
+    const organizationIndex = global.organizations.findIndex(org => org.id === id)
+
     if (organizationIndex === -1) {
       return NextResponse.json(
         { error: 'Organization not found' },
@@ -194,7 +191,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting organization:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete organization',
         message: 'Ein Fehler ist beim Löschen der Organisation aufgetreten'
       },

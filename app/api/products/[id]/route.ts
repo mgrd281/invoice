@@ -3,13 +3,60 @@ import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 import { prisma } from '@/lib/prisma'
 
+export async function GET(
+    request: NextRequest,
+    { params }: { params: any }
+) {
+    const { id } = await params
+    try {
+        const productId = id // Assuming 'id' from params is the product ID
+        if (!productId) {
+            return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
+        }
+
+        console.log(`Attempting to retrieve product ${productId}`)
+
+        const shopifySettings = getShopifySettings()
+        if (!shopifySettings.accessToken || !shopifySettings.shopDomain) {
+            return NextResponse.json({ error: 'Shopify settings are not configured' }, { status: 500 })
+        }
+
+        const api = new ShopifyAPI(shopifySettings)
+
+        // 1. Fetch from Shopify
+        const shopifyProduct = await api.getProduct(productId)
+        if (!shopifyProduct) {
+            return NextResponse.json({ error: 'Product not found in Shopify' }, { status: 404 })
+        }
+        console.log(`Shopify product ${productId} retrieved successfully`)
+
+        // 2. Fetch related local data (e.g., DigitalProduct)
+        const digitalProduct = await prisma.digitalProduct.findUnique({
+            where: {
+                shopifyProductId: id // Use string ID directly
+            }
+        })
+
+        return NextResponse.json({
+            success: true,
+            product: shopifyProduct,
+            digitalProduct: digitalProduct
+        })
+
+    } catch (error) {
+        console.error('Error in GET route:', error)
+        return NextResponse.json({ error: 'Failed to retrieve product' }, { status: 500 })
+    }
+}
+
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: any }
 ) {
+    const { id } = await params
     try {
-        const productId = params.id
-        if (!productId) {
+        const productId = parseInt(id)
+        if (isNaN(productId)) {
             return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
         }
 
@@ -73,10 +120,11 @@ export async function DELETE(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: any }
 ) {
+    const { id } = await params
     try {
-        const productId = parseInt(params.id)
+        const productId = parseInt(id)
         if (isNaN(productId)) {
             return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
         }

@@ -24,13 +24,41 @@ export async function DELETE(
     }
 }
 
-export async function PATCH(
-    req: Request,
-    { params }: { params: { id: string } }
+export async function GET(
+    request: NextRequest,
+    { params }: { params: any }
 ) {
     try {
-        const ticketId = params.id
-        const body = await req.json()
+        const { id } = await params // Assuming params is an object with an 'id' property, and potentially awaitable
+        const ticketId = id as string // Cast to string for type safety with prisma
+
+        if (!ticketId) {
+            return NextResponse.json({ error: 'Ticket ID required' }, { status: 400 })
+        }
+
+        const ticket = await prisma.supportTicket.findUnique({
+            where: { id: ticketId }
+        })
+
+        if (!ticket) {
+            return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
+        }
+
+        return NextResponse.json({ success: true, data: ticket })
+    } catch (error) {
+        console.error('Error fetching ticket:', error)
+        return NextResponse.json({ error: 'Failed to fetch ticket' }, { status: 500 })
+    }
+}
+
+export async function PATCH(
+    request: NextRequest, // Changed req: Request to request: NextRequest
+    { params }: { params: any } // Changed params type to any
+) {
+    try {
+        const { id } = await params // Changed how id is extracted
+        const ticketId = id as string // Cast to string for type safety with prisma
+        const body = await request.json() // Changed req.json() to request.json()
         const { status, subject } = body
 
         if (!ticketId) {

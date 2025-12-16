@@ -5,7 +5,7 @@ import { InvoiceType, generateInvoiceNumber } from '@/lib/invoice-types'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
   try {
     const {
@@ -15,7 +15,7 @@ export async function POST(
       date: providedDate,
       refundMethod
     } = await request.json()
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
 
     // 1. Fetch original invoice from Prisma
     const originalInvoice = await prisma.invoice.findUnique({

@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: any }
 ) {
     try {
-        const invoiceId = params.id
+        const { id: invoiceId } = await params
 
         // Fetch real invoice data
         const invoice = await prisma.invoice.findUnique({

@@ -7,9 +7,10 @@ import { getUserStoragePath, getFileInfo, deleteUserFile } from '@/lib/file-mana
 // GET - Datei herunterladen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: any }
 ) {
   try {
+    const { filename } = await params
     // Benutzerinformationen extrahieren oder Standard-Benutzer verwenden
     let user = extractUserFromRequest(request)
     if (!user) {

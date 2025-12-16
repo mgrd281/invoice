@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
   try {
     // Require authentication
@@ -18,7 +18,7 @@ export async function GET(
       return authResult.error
     }
 
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     console.log('📄 Generating PDF download for invoice:', invoiceId)
 
     // Fetch invoice from Prisma

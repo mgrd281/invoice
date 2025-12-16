@@ -17,10 +17,10 @@ if (!global.invoiceEmailStatus) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     const status = global.invoiceEmailStatus![invoiceId] || {
       sent: false
     }

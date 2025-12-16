@@ -12,17 +12,17 @@ if (!global.csvInvoices) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
   try {
-    const { 
-      refundItems, 
-      reason, 
-      refundMethod, 
-      processingNotes 
+    const {
+      refundItems,
+      reason,
+      refundMethod,
+      processingNotes
     } = await request.json()
-    
-    const invoiceId = params.id
+
+    const { id: invoiceId } = await params
 
     // Validierung der Eingabedaten
     if (!refundItems || Object.keys(refundItems).length === 0) {
@@ -34,7 +34,7 @@ export async function POST(
 
     // Ursprüngliche Rechnung finden
     const originalInvoice = global.csvInvoices?.find(inv => inv.id === invoiceId)
-    
+
     if (!originalInvoice) {
       return NextResponse.json(
         { error: 'Rechnung nicht gefunden' },
@@ -66,7 +66,7 @@ export async function POST(
           { status: 400 }
         )
       }
-      
+
       const refundQuantity = Number(quantity)
       if (refundQuantity > originalItem.quantity) {
         return NextResponse.json(
@@ -78,13 +78,13 @@ export async function POST(
 
     // Neue Rechnungsnummer für Gutschrift generieren
     const refundNumber = generateInvoiceNumber(
-      InvoiceType.REFUND, 
+      InvoiceType.REFUND,
       (global.csvInvoices?.length || 0) + 1
     )
 
     // Rückerstattungs-Positionen erstellen
     const refundItemsList = createRefundItems(originalInvoice.items, refundItems)
-    
+
     // Rückerstattungsbeträge berechnen
     const refundSubtotal = refundItemsList.reduce((sum, item) => sum + item.total, 0)
     const refundTaxAmount = refundSubtotal * (originalInvoice.taxRate / 100)
@@ -113,7 +113,7 @@ export async function POST(
       statusColor: 'bg-blue-100 text-blue-800',
       amount: `€${Math.abs(refundTotal).toFixed(2)}`,
       createdAt: new Date().toISOString(),
-      
+
       // Rückerstattungs-spezifische Felder
       originalInvoiceId: originalInvoice.id,
       originalInvoiceNumber: originalInvoice.number,
@@ -131,7 +131,7 @@ export async function POST(
       const existingNotes = originalInvoice.processingNotes || ''
       global.csvInvoices![originalIndex] = {
         ...originalInvoice,
-        processingNotes: existingNotes + 
+        processingNotes: existingNotes +
           `\nTeilrückerstattung ${refundNumber} am ${new Date().toLocaleDateString('de-DE')} über €${Math.abs(refundTotal).toFixed(2)}`
       }
     }

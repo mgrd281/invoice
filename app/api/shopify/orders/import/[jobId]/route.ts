@@ -7,10 +7,10 @@ import { IdempotencyManager } from '@/lib/idempotency'
 // GET - Details zu einem bestimmten Job abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: any }
 ) {
   try {
-    const { jobId } = params
+    const { jobId } = await params
 
     if (!jobId) {
       return NextResponse.json(
