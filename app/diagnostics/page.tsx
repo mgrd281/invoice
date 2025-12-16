@@ -31,29 +31,66 @@ export default function DiagnosticsPage() {
         }
     }
 
+    const [progress, setProgress] = useState(0)
+    const [status, setStatus] = useState('')
+
     const handleUpload = async () => {
         if (!file) return
 
         setUploading(true)
+        setProgress(0)
+        setStatus('Wird hochgeladen...')
+
         const formData = new FormData()
         formData.append('file', file)
         formData.append('type', 'restore')
 
         try {
-            const res = await fetch('/api/diagnostics/upload', {
+            // Step 1: Upload File
+            const uploadRes = await fetch('/api/diagnostics/upload', {
                 method: 'POST',
                 body: formData
             })
 
-            if (!res.ok) throw new Error('Upload failed')
+            if (!uploadRes.ok) throw new Error('Upload failed')
 
-            const data = await res.json()
-            alert(`Erfolg! ${data.count} Datensätze wurden wiederhergestellt.`)
+            const uploadData = await uploadRes.json()
+            const filename = uploadData.filename
+
+            // Step 2: Process in Chunks
+            setStatus('Daten werden verarbeitet...')
+            let offset = 0
+            let done = false
+            let total = 0
+
+            while (!done) {
+                const importRes = await fetch('/api/diagnostics/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, offset, limit: 50 })
+                })
+
+                if (!importRes.ok) throw new Error('Import failed')
+
+                const importData = await importRes.json()
+                offset = importData.offset
+                done = importData.done
+                total = importData.total
+
+                // Update Progress
+                const percentage = Math.min(100, Math.round((offset / total) * 100))
+                setProgress(percentage)
+                setStatus(`Verarbeite ${Math.min(offset, total)} von ${total} Einträgen...`)
+            }
+
+            alert(`Erfolg! Alle Daten wurden wiederhergestellt.`)
             fetchDiagnostics()
             setFile(null)
+            setProgress(0)
+            setStatus('')
         } catch (error) {
-            console.error('Upload error:', error)
-            alert('Fehler beim Hochladen der Datei.')
+            console.error('Process error:', error)
+            alert('Fehler bei der Verarbeitung. Bitte versuchen Sie es erneut.')
         } finally {
             setUploading(false)
         }
@@ -149,10 +186,18 @@ export default function DiagnosticsPage() {
                                 onClick={handleUpload}
                             >
                                 {uploading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Wird hochgeladen...
-                                    </>
+                                    <div className="flex flex-col items-center w-full gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span>{status} ({progress}%)</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-600 transition-all duration-300"
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
+                                    </div>
                                 ) : (
                                     'JSON Datei hochladen'
                                 )}
