@@ -1,15 +1,27 @@
 import { PrismaClient } from '@prisma/client'
 
-// Enforce connection limit for Xata/Serverless to prevent "Too many connections" errors
-if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('connection_limit')) {
-  const separator = process.env.DATABASE_URL.includes('?') ? '&' : '?'
-  process.env.DATABASE_URL = `${process.env.DATABASE_URL}${separator}connection_limit=1&pgbouncer=true`
-}
-
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
+
+// Function to get the database URL with enforced connection limits
+const getDatabaseUrl = () => {
+  let url = process.env.DATABASE_URL
+  if (!url) return undefined
+
+  if (!url.includes('connection_limit')) {
+    const separator = url.includes('?') ? '&' : '?'
+    url = `${url}${separator}connection_limit=1&pgbouncer=true`
+  }
+  return url
+}
 
 export const prisma =
   globalForPrisma.prisma ||
-  new PrismaClient()
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: getDatabaseUrl(),
+      },
+    },
+  })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
