@@ -11,7 +11,7 @@ import { getShopifySettings } from '@/lib/shopify-settings'
 export async function GET(req: Request) {
     try {
         // Security: Verify a secret token to prevent unauthorized access
-        const authHeader = headers().get('authorization')
+        const authHeader = (await headers()).get('authorization')
         if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }

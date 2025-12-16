@@ -17,7 +17,7 @@ export interface AuthResult {
 // Funktion zur serverseitigen Authentifizierungsprüfung
 export async function getServerAuth(): Promise<AuthResult> {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {

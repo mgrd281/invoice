@@ -19,7 +19,7 @@ async function getUserByEmail(email: string) {
 export async function POST(request: NextRequest) {
   try {
     const { email, code } = await request.json()
-    
+
     if (!email || !code) {
       return NextResponse.json({ error: 'Email and code are required' }, { status: 400 })
     }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     )
 
     // Set cookie
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     cookieStore.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

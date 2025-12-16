@@ -9,7 +9,7 @@ import { getShopifySettings } from '@/lib/shopify-settings'
 export async function POST(req: Request) {
   try {
     const body = await req.text()
-    const headersList = headers()
+    const headersList = await headers()
     const topic = headersList.get('x-shopify-topic') || ''
     const hmac = headersList.get('x-shopify-hmac-sha256') || ''
     const shop = headersList.get('x-shopify-shop-domain') || ''

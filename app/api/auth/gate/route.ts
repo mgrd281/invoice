@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
 // Optional: GET endpoint to check if gate is unlocked
 export async function GET(request: NextRequest) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const isUnlocked = cookieStore.get('access_gate_unlocked')?.value === 'true';
 
     return NextResponse.json({ unlocked: isUnlocked });

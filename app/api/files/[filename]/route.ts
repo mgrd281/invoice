@@ -100,9 +100,10 @@ export async function GET(
 // DELETE - Datei löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: any }
 ) {
   try {
+    const { filename } = await params
     // Benutzerinformationen extrahieren oder Standard-Benutzer verwenden
     let user = extractUserFromRequest(request)
     if (!user) {
@@ -113,7 +114,7 @@ export async function DELETE(
     const { searchParams } = new URL(request.url)
     const subDirectory = searchParams.get('dir') || 'uploads'
 
-    const fileName = decodeURIComponent(params.filename)
+    const fileName = decodeURIComponent(filename)
     const userPath = getUserStoragePath(user.userId)
     const filePath = path.join(userPath, subDirectory, fileName)
 
@@ -164,9 +165,10 @@ export async function DELETE(
 // PUT - Dateiinformationen
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: any }
 ) {
   try {
+    const { filename } = await params
     // Benutzerinformationen extrahieren oder Standard-Benutzer verwenden
     let user = extractUserFromRequest(request)
     if (!user) {
@@ -177,7 +179,7 @@ export async function PUT(
     const { searchParams } = new URL(request.url)
     const subDirectory = searchParams.get('dir') || 'uploads'
 
-    const fileName = decodeURIComponent(params.filename)
+    const fileName = decodeURIComponent(filename)
 
     // Dateiinformationen abrufen
     const fileInfo = await getFileInfo(user.userId, fileName, subDirectory)

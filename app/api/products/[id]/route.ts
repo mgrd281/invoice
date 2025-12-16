@@ -87,7 +87,7 @@ export async function DELETE(
             // Delete Reviews
             const deletedReviews = await prisma.review.deleteMany({
                 where: {
-                    productId: productId
+                    productId: productId.toString()
                 }
             })
             console.log(`Deleted ${deletedReviews.count} local reviews for product ${productId}`)
@@ -98,7 +98,7 @@ export async function DELETE(
             try {
                 const deletedDigitalProduct = await prisma.digitalProduct.deleteMany({
                     where: {
-                        shopifyProductId: productId
+                        shopifyProductId: productId.toString()
                     }
                 })
                 console.log(`Deleted ${deletedDigitalProduct.count} digital products for product ${productId}`)

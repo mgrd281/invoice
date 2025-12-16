@@ -52,10 +52,10 @@ export async function GET(
 // PATCH - Job-Status aktualisieren
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: any }
 ) {
   try {
-    const { jobId } = params
+    const { jobId } = await params
     const { action, ...updates } = await request.json()
 
     if (!jobId) {
@@ -189,10 +189,10 @@ export async function PATCH(
 // DELETE - Job löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: any }
 ) {
   try {
-    const { jobId } = params
+    const { jobId } = await params
 
     if (!jobId) {
       return NextResponse.json(

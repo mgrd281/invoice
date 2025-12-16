@@ -7,7 +7,7 @@ import crypto from 'crypto'
 export async function POST(req: Request) {
     try {
         const body = await req.text()
-        const headerList = headers()
+        const headerList = await headers()
         const hmac = headerList.get('x-shopify-hmac-sha256')
         const topic = headerList.get('x-shopify-topic')
         const shopDomain = headerList.get('x-shopify-shop-domain')

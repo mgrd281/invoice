@@ -40,10 +40,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: any }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     const { sent, sentTo, messageId } = await request.json()
 
     // E-Mail-Status aktualisieren

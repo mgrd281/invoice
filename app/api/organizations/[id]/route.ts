@@ -47,7 +47,7 @@ export async function GET(
   try {
     console.log('Fetching organization with ID:', id)
 
-    const organization = global.organizations?.find(org => org.id === params.id)
+    const organization = global.organizations?.find(org => org.id === id)
 
     if (!organization) {
       return NextResponse.json(
@@ -74,7 +74,12 @@ export async function PUT(
   const { id } = await params
   try {
     const body = await request.json()
-    const organizationIndex = global.organizations.findIndex(org => org.id === params.id)
+
+    if (!global.organizations) {
+      global.organizations = []
+    }
+
+    const organizationIndex = global.organizations.findIndex(org => org.id === id)
 
     if (organizationIndex === -1) {
       return NextResponse.json(
@@ -160,7 +165,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: any }
 ) {
-  const { id } = params
+  const { id } = await params
   try {
     console.log('Deleting organization with ID:', id)
 

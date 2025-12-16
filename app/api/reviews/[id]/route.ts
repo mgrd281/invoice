@@ -21,10 +21,10 @@ export async function DELETE(
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: any }
 ) {
     try {
-        const id = params.id
+        const { id } = await params
         const body = await request.json()
 
         const review = await prisma.review.update({

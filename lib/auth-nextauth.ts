@@ -21,7 +21,7 @@ export async function getServerAuth(request?: NextRequest): Promise<AuthResult> 
   try {
     // Try NextAuth session first
     const session = await getServerSession()
-    
+
     if (session?.user?.email) {
       // Convert NextAuth session to our User format
       const user: User = {
@@ -30,7 +30,7 @@ export async function getServerAuth(request?: NextRequest): Promise<AuthResult> 
         name: session.user.name || session.user.email.split('@')[0],
         role: 'user'
       }
-      
+
       return {
         isAuthenticated: true,
         user: user
@@ -38,7 +38,7 @@ export async function getServerAuth(request?: NextRequest): Promise<AuthResult> 
     }
 
     // Fallback to legacy JWT token system
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {
