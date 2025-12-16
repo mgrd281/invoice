@@ -226,25 +226,64 @@ export default function DiagnosticsPage() {
                                     if (!confirm('Möchten Sie wirklich alle fehlenden Bestellungen von Shopify importieren? Dies kann einige Minuten dauern.')) return;
 
                                     setUploading(true)
-                                    try {
-                                        const res = await fetch('/api/diagnostics/import-shopify', { method: 'POST' })
-                                        const data = await res.json()
-                                        if (!res.ok) throw new Error(data.error)
+                                    setStatus('Starte Import...')
+                                    setProgress(0)
 
-                                        alert(`Import abgeschlossen!\nImportiert: ${data.imported}\nÜbersprungen: ${data.skipped}`)
+                                    try {
+                                        let pageInfo = null
+                                        let hasMore = true
+                                        let totalImported = 0
+                                        let totalSkipped = 0
+                                        let pageCount = 0
+
+                                        while (hasMore) {
+                                            pageCount++
+                                            setStatus(`Importiere Seite ${pageCount}... (Importiert: ${totalImported})`)
+
+                                            const res = await fetch('/api/diagnostics/import-shopify', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ page_info: pageInfo, limit: 50 })
+                                            })
+
+                                            const data = await res.json()
+                                            if (!res.ok) throw new Error(data.error)
+
+                                            totalImported += data.imported
+                                            totalSkipped += data.skipped
+                                            pageInfo = data.next_page_info
+                                            hasMore = data.has_more
+
+                                            // Artificial progress since we don't know total pages
+                                            setProgress((prev) => Math.min(prev + 5, 95))
+                                        }
+
+                                        setProgress(100)
+                                        alert(`Import erfolgreich abgeschlossen!\nImportiert: ${totalImported}\nÜbersprungen: ${totalSkipped}`)
                                         fetchDiagnostics()
                                     } catch (e: any) {
+                                        console.error(e)
                                         alert(`Fehler: ${e.message}`)
                                     } finally {
                                         setUploading(false)
+                                        setStatus('')
+                                        setProgress(0)
                                     }
                                 }}
                             >
                                 {uploading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Importiere...
-                                    </>
+                                    <div className="flex flex-col items-center w-full gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span>{status}</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-600 transition-all duration-300"
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
+                                    </div>
                                 ) : (
                                     'Fehlende Rechnungen importieren'
                                 )}

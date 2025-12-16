@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { InvoiceStatus } from '@prisma/client'
+import { getShopifySettings } from '@/lib/shopify-settings'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,12 +15,53 @@ export async function POST(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
+        const body = await req.json()
+        const { page_info, limit = 50 } = body
+
         const api = new ShopifyAPI()
 
-        // 1. Fetch all orders from Shopify
-        console.log('Fetching all orders from Shopify...')
-        const orders = await api.getOrders({ limit: 999999, status: 'any' })
-        console.log(`Fetched ${orders.length} orders from Shopify.`)
+        // Fetch ONE page of orders
+        // We need to access the private makeRequest or use a modified getOrders that returns pagination info
+        // Since getOrders in the library abstracts this away, we might need to use a direct request here or modify the library.
+        // For safety/speed without modifying the library too much, let's use the library's internal logic if possible, 
+        // OR just use the raw fetch logic here for this specific "restore" purpose.
+
+        // Let's use a direct fetch approach here to get full control over pagination headers
+        const settings = await getShopifySettings()
+        const baseUrl = `https://${settings.shopDomain}/admin/api/${settings.apiVersion}`
+
+        const params = new URLSearchParams()
+        params.set('limit', limit.toString())
+        params.set('status', 'any')
+
+        if (page_info) {
+            params.set('page_info', page_info)
+        }
+
+        const response = await fetch(`${baseUrl}/orders.json?${params}`, {
+            headers: {
+                'X-Shopify-Access-Token': settings.accessToken,
+                'Content-Type': 'application/json'
+            }
+        })
+
+        if (!response.ok) {
+            throw new Error(`Shopify API Error: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        const orders = data.orders || []
+
+        // Parse Link header for next page
+        const linkHeader = response.headers.get('Link')
+        let nextPageInfo = null
+        if (linkHeader) {
+            const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
+            if (match) {
+                const url = new URL(match[1])
+                nextPageInfo = url.searchParams.get('page_info')
+            }
+        }
 
         let importedCount = 0
         let skippedCount = 0
@@ -113,7 +155,8 @@ export async function POST(req: Request) {
             success: true,
             imported: importedCount,
             skipped: skippedCount,
-            total: orders.length
+            next_page_info: nextPageInfo,
+            has_more: !!nextPageInfo
         })
 
     } catch (error: any) {
