@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { Users, CreditCard, TrendingUp, DollarSign } from 'lucide-react'
 
@@ -192,6 +192,7 @@ export function AnalyticsDashboard() {
                 <Card className="col-span-1 lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Top Kunden</CardTitle>
+                        <CardDescription>Nur bezahlte und nicht erstattete Umsätze</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">

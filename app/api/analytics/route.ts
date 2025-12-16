@@ -53,11 +53,27 @@ export async function GET(request: NextRequest) {
         // Let's use PAID for strict revenue.
         const strictlyPaidInvoices = paidInvoices.filter(inv => inv.status === 'PAID');
 
-        // 2. Calculate Total Revenue
-        const totalRevenue = strictlyPaidInvoices.reduce((sum, inv) => sum + Number(inv.totalGross), 0);
+        // 2. Calculate Total Revenue (Net after refunds)
+        const totalRevenue = strictlyPaidInvoices.reduce((sum, inv) => {
+            const gross = Number(inv.totalGross);
+            const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
+                inv.documentKind === 'REFUND_FULL' ||
+                inv.documentKind === 'REFUND_PARTIAL';
 
-        // 3. Paid Invoices Count
-        const paidInvoicesCount = strictlyPaidInvoices.length;
+            if (isRefund) {
+                return sum - gross;
+            }
+            // Subtract partial refund amount if present on the invoice
+            const refundAmount = inv.refundAmount ? Number(inv.refundAmount) : 0;
+            return sum + gross - refundAmount;
+        }, 0);
+
+        // 3. Paid Invoices Count (excluding refunds/credit notes from count if desired, but usually we just count 'sales'. 
+        // For now, let's keep it simple: count all PAID documents or just INVOICE types? 
+        // Let's count only INVOICE types as "Paid Invoices" to be more accurate)
+        const paidInvoicesCount = strictlyPaidInvoices.filter(inv =>
+            inv.documentKind === 'INVOICE' || !inv.documentKind
+        ).length;
 
         // 4. Average Invoice Value
         const averageInvoiceValue = paidInvoicesCount > 0 ? totalRevenue / paidInvoicesCount : 0;
@@ -73,12 +89,27 @@ export async function GET(request: NextRequest) {
                     email: inv.customer.email || '',
                     totalSpent: 0
                 };
-                current.totalSpent += Number(inv.totalGross);
+
+                const gross = Number(inv.totalGross);
+                const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
+                    inv.documentKind === 'REFUND_FULL' ||
+                    inv.documentKind === 'REFUND_PARTIAL';
+
+                if (isRefund) {
+                    current.totalSpent -= gross;
+                } else {
+                    current.totalSpent += gross;
+                    if (inv.refundAmount) {
+                        current.totalSpent -= Number(inv.refundAmount);
+                    }
+                }
+
                 customerMap.set(customerId, current);
             }
         });
 
         const topCustomers = Array.from(customerMap.values())
+            .filter(c => c.totalSpent > 0) // Only show customers with positive total spent
             .sort((a, b) => b.totalSpent - a.totalSpent)
             .slice(0, 5);
 
