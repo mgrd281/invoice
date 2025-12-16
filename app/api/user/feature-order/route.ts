@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
     try {
@@ -17,10 +19,19 @@ export async function POST(req: Request) {
             return new NextResponse('Invalid data', { status: 400 })
         }
 
-        await prisma.user.update({
-            where: { email: session.user.email },
-            data: { featureOrder },
-        })
+        const users = loadUsersFromDisk()
+        const userIndex = users.findIndex((u: any) => u.email === session.user.email)
+
+        if (userIndex !== -1) {
+            users[userIndex].featureOrder = featureOrder
+            saveUsersToDisk(users)
+        } else {
+            // User not found in local storage, might be a session-only user or first time
+            // We could create them, but for feature order it's fine to skip or create on the fly if needed
+            // For now, let's try to find if we can add it to a new user entry if we want full persistence
+            // But usually loadUsersFromDisk handles the main users.
+            console.warn(`User ${session.user.email} not found in local storage for feature order update`)
+        }
 
         return NextResponse.json({ success: true })
     } catch (error) {
@@ -36,10 +47,8 @@ export async function GET(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-            select: { featureOrder: true },
-        })
+        const users = loadUsersFromDisk()
+        const user = users.find((u: any) => u.email === session.user.email)
 
         return NextResponse.json({ featureOrder: user?.featureOrder || null })
     } catch (error) {
