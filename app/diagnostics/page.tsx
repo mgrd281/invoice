@@ -207,6 +207,50 @@ export default function DiagnosticsPage() {
                             </Button>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <ShoppingBag className="h-5 w-5" />
+                                Shopify Import
+                            </CardTitle>
+                            <CardDescription>
+                                Importieren Sie fehlende Bestellungen direkt von Shopify.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                className="w-full"
+                                disabled={loading || !!uploading}
+                                onClick={async () => {
+                                    if (!confirm('Möchten Sie wirklich alle fehlenden Bestellungen von Shopify importieren? Dies kann einige Minuten dauern.')) return;
+
+                                    setUploading(true)
+                                    try {
+                                        const res = await fetch('/api/diagnostics/import-shopify', { method: 'POST' })
+                                        const data = await res.json()
+                                        if (!res.ok) throw new Error(data.error)
+
+                                        alert(`Import abgeschlossen!\nImportiert: ${data.imported}\nÜbersprungen: ${data.skipped}`)
+                                        fetchDiagnostics()
+                                    } catch (e: any) {
+                                        alert(`Fehler: ${e.message}`)
+                                    } finally {
+                                        setUploading(false)
+                                    }
+                                }}
+                            >
+                                {uploading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Importiere...
+                                    </>
+                                ) : (
+                                    'Fehlende Rechnungen importieren'
+                                )}
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
