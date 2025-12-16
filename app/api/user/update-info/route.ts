@@ -16,14 +16,38 @@ export async function POST(request: NextRequest) {
         const country = request.headers.get('x-vercel-ip-country') || 'unknown'
 
         // Update user
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                lastIp: ip,
-                country: country,
-                lastLoginAt: new Date()
-            }
-        })
+        // Update user
+        // First try to find by ID
+        let dbUser = await prisma.user.findUnique({ where: { id: user.id } })
+
+        // If not found, try by email to avoid unique constraint errors on creation
+        if (!dbUser) {
+            dbUser = await prisma.user.findUnique({ where: { email: user.email } })
+        }
+
+        if (dbUser) {
+            // Update existing user
+            await prisma.user.update({
+                where: { id: dbUser.id },
+                data: {
+                    lastIp: ip,
+                    country: country,
+                    lastLoginAt: new Date()
+                }
+            })
+        } else {
+            // Create new user if not found
+            await prisma.user.create({
+                data: {
+                    id: user.id,
+                    email: user.email,
+                    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0],
+                    lastIp: ip,
+                    country: country,
+                    lastLoginAt: new Date()
+                }
+            })
+        }
 
         return NextResponse.json({ success: true })
     } catch (error) {
