@@ -51,6 +51,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
         '#d946ef', // Fuchsia
     ]
 
+    if (!data) return null
+
     const { customer, invoiceData, items, settings } = data
 
     // Initialize local settings from props
