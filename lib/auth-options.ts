@@ -37,6 +37,7 @@ export const authOptions: NextAuthOptions = {
                     }
                 })
 
+                // Check password hash
                 if (!user || !user.passwordHash) {
                     return null
                 }
