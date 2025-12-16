@@ -9,7 +9,7 @@ const getDatabaseUrl = () => {
 
   if (!url.includes('connection_limit')) {
     const separator = url.includes('?') ? '&' : '?'
-    url = `${url}${separator}connection_limit=1&pgbouncer=true`
+    url = `${url}${separator}connection_limit=1`
   }
   return url
 }
