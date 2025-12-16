@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/toast'
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
-import { InvoiceTemplate as RechnungsTemplate, getDefaultTemplate } from '@/lib/invoice-templates'
+// Removed problematic import
 import { DocumentKind } from '@/lib/document-types'
 
 interface InvoiceItem {
@@ -129,6 +129,11 @@ export default function NewInvoicePage() {
   const [templateName, setTemplateName] = useState('')
 
   // Invoice Template management (for invoice layout/texts)
+  interface RechnungsTemplate {
+    id: string
+    name: string
+    isDefault: boolean
+  }
   const [invoiceTemplates, setInvoiceTemplates] = useState<RechnungsTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<RechnungsTemplate | null>(null)
 
@@ -165,8 +170,7 @@ export default function NewInvoicePage() {
     } catch (error) {
       console.error('Error loading invoice templates:', error)
       // Use fallback default template
-      const fallbackTemplate = getDefaultTemplate()
-      setSelectedTemplate(fallbackTemplate)
+      setSelectedTemplate(null)
     }
   }
 
