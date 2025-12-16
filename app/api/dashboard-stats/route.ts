@@ -1,112 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
-import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
-
-interface DashboardStats {
-  totalInvoices: number
-  totalCustomers: number
-  totalRevenue: number
-  paidInvoicesCount: number
-  paidInvoicesAmount: number
-  openInvoicesCount: number
-  openInvoicesAmount: number
-  overdueInvoicesCount: number
-  overdueInvoicesAmount: number
-  refundInvoicesCount: number
-  refundInvoicesAmount: number
-  cancelledInvoicesCount: number
-  cancelledInvoicesAmount: number
-}
+import { requireAuth } from '@/lib/auth-middleware'
+import { loadInvoicesFromDisk, loadCustomersFromDisk } from '@/lib/server-storage'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Fetching dashboard statistics from Prisma...')
-
-    // Authenticate user
     const auth = requireAuth(request)
-    if ('error' in auth) {
-      return auth.error
-    }
-    const { user } = auth
-    const isAdmin = shouldShowAllData(user)
+    if ('error' in auth) return auth.error
 
-    console.log(`👤 Current user: ${user.email} (Admin: ${isAdmin})`)
+    const invoices = loadInvoicesFromDisk()
+    const customers = loadCustomersFromDisk()
 
-    // Build query filters
-    const invoiceWhere: Prisma.InvoiceWhereInput = {}
-    const customerWhere: Prisma.CustomerWhereInput = {}
-
-    if (!isAdmin) {
-      // If not admin, filter by organization
-      // Assuming user has organizationId. If not, we might need to look it up.
-      // For now, let's assume we filter by organizationId if available on the user object
-      // or if we can derive it.
-
-      // Ideally, we should filter by organizationId. 
-      // Let's check if the user object from requireAuth has organizationId.
-      // If not, we might need to fetch the user from DB to get organizationId.
-
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { organizationId: true }
-      })
-
-      if (dbUser?.organizationId) {
-        invoiceWhere.organizationId = dbUser.organizationId
-        customerWhere.organizationId = dbUser.organizationId
-      } else {
-        // Fallback: if no org, maybe filter by createdBy or similar?
-        // But the schema links invoices to Organization.
-        // If user has no org, they probably shouldn't see anything or just their own if there was a userId field.
-        // The schema has organizationId on Invoice.
-        console.warn('User has no organizationId, returning empty stats')
-        return NextResponse.json({
-          success: true,
-          data: {
-            totalInvoices: 0,
-            totalCustomers: 0,
-            totalRevenue: 0,
-            paidInvoicesCount: 0,
-            paidInvoicesAmount: 0,
-            openInvoicesCount: 0,
-            openInvoicesAmount: 0,
-            overdueInvoicesCount: 0,
-            overdueInvoicesAmount: 0,
-            refundInvoicesCount: 0,
-            refundInvoicesAmount: 0,
-            cancelledInvoicesCount: 0,
-            cancelledInvoicesAmount: 0
-          }
-        })
-      }
-    }
-
-    // Fetch data in parallel
-    const [invoices, customerCount] = await Promise.all([
-      prisma.invoice.findMany({
-        where: invoiceWhere,
-        select: {
-          id: true,
-          invoiceNumber: true,
-          totalGross: true,
-          status: true,
-          // We might need refundAmount if we track refunds separately
-          refundAmount: true,
-          documentKind: true
-        }
-      }),
-      prisma.customer.count({
-        where: customerWhere
-      })
-    ])
-
-    console.log(`📊 Fetched ${invoices.length} invoices and ${customerCount} customers`)
-
-    // Calculate statistics
     const totalInvoices = invoices.length
-    const totalCustomers = customerCount
+    const totalCustomers = customers.length
 
     let totalRevenue = 0
     let paidInvoicesCount = 0
@@ -121,97 +27,63 @@ export async function GET(request: NextRequest) {
     let cancelledInvoicesAmount = 0
 
     for (const invoice of invoices) {
-      const amount = Number(invoice.totalGross) || 0
+      const amount = Number(invoice.subtotalGross || invoice.totalGross || invoice.total || 0)
       const status = invoice.status
-      const kind = (invoice as any).documentKind // Cast because it might be missing in types if not updated
+      const kind = invoice.documentKind || invoice.document_kind
 
-      // Calculate Total Revenue (Gesamtumsatz) - Sum of EVERYTHING (Paid, Open, Overdue, Cancelled, Refunded)
-      // We exclude only Drafts from the financial total
-      if (status !== 'DRAFT') {
-        // For refunds/cancellations stored with negative values, this correctly subtracts them.
-        // If the user wants "Volume" (absolute sum), we would use Math.abs(), but "Umsatz" usually implies the net financial result.
-        // However, if the user wants to see the "Total Invoiced Volume" before deductions, that's different.
-        // Based on "everything with refunds", I'll assume Net Revenue (Invoices - Refunds).
+      // Status aggregation
+      if (status === 'Bezahlt' || status === 'PAID') {
+        paidInvoicesCount++
+        paidInvoicesAmount += amount
         totalRevenue += amount
-      }
-
-      // Check for Refund/Cancellation documents first if documentKind is available
-      if (kind === 'REFUND_FULL' || kind === 'REFUND_PARTIAL' || kind === 'CREDIT_NOTE') {
+      } else if (status === 'Offen' || status === 'SENT') {
+        openInvoicesCount++
+        openInvoicesAmount += amount
+        totalRevenue += amount
+      } else if (status === 'Mahnung' || status === 'OVERDUE') {
+        overdueInvoicesCount++
+        overdueInvoicesAmount += amount
+        totalRevenue += amount
+      } else if (status === 'Storniert' || status === 'CANCELLED') {
+        cancelledInvoicesCount++
+        cancelledInvoicesAmount += amount
+      } else if (status === 'Gutschrift' || kind === 'CREDIT_NOTE' || kind === 'REFUND_FULL') {
         refundInvoicesCount++
-        // Track refund volume as positive number for the "Refunded" card
-        refundInvoicesAmount += Math.abs(Number((invoice as any).refundAmount) || amount)
-
-        // We still want to count them in specific stats below if needed, or just skip status check?
-        // Refunds usually have status PAID or similar.
-      }
-
-      // Status-based aggregation
-      switch (status) {
-        case 'PAID':
-          paidInvoicesCount++
-          paidInvoicesAmount += amount
-          break
-        case 'SENT': // Offen
+        refundInvoicesAmount += amount
+        // Refunds reduce revenue
+        totalRevenue -= amount
+      } else {
+        // Treat unknown as open if amount > 0?
+        // Or just ignore.
+        if (amount > 0 && status !== 'DRAFT' && status !== 'Entwurf') {
           openInvoicesCount++
           openInvoicesAmount += amount
-          break
-        case 'OVERDUE': // Mahnung/Überfällig
-          overdueInvoicesCount++
-          overdueInvoicesAmount += amount
-          // Overdue is technically still open revenue-wise, but usually tracked separately
-          // If you want to count overdue as open for "total outstanding", add it here.
-          // For now, keeping them separate as per dashboard design.
-          break
-        case 'CANCELLED': // Storniert
-          cancelledInvoicesCount++
-          cancelledInvoicesAmount += amount
-          break
-        case 'DRAFT':
-          // Drafts usually don't count towards stats
-          break
-        default:
-          // Treat unknown as open? Or ignore?
-          // Let's treat as open if it has an amount
-          if (amount > 0) {
-            openInvoicesCount++
-            openInvoicesAmount += amount
-            totalRevenue += amount
-          }
-          break
+          totalRevenue += amount
+        }
       }
     }
-
-    const stats: DashboardStats = {
-      totalInvoices,
-      totalCustomers,
-      totalRevenue: Math.round(totalRevenue * 100) / 100,
-      paidInvoicesCount,
-      paidInvoicesAmount: Math.round(paidInvoicesAmount * 100) / 100,
-      openInvoicesCount,
-      openInvoicesAmount: Math.round(openInvoicesAmount * 100) / 100,
-      overdueInvoicesCount,
-      overdueInvoicesAmount: Math.round(overdueInvoicesAmount * 100) / 100,
-      refundInvoicesCount,
-      refundInvoicesAmount: Math.round(refundInvoicesAmount * 100) / 100,
-      cancelledInvoicesCount,
-      cancelledInvoicesAmount: Math.round(cancelledInvoicesAmount * 100) / 100
-    }
-
-    console.log('📈 Dashboard statistics calculated:', stats)
 
     return NextResponse.json({
       success: true,
-      data: stats
+      data: {
+        totalInvoices,
+        totalCustomers,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        paidInvoicesCount,
+        paidInvoicesAmount: Math.round(paidInvoicesAmount * 100) / 100,
+        openInvoicesCount,
+        openInvoicesAmount: Math.round(openInvoicesAmount * 100) / 100,
+        overdueInvoicesCount,
+        overdueInvoicesAmount: Math.round(overdueInvoicesAmount * 100) / 100,
+        refundInvoicesCount,
+        refundInvoicesAmount: Math.round(refundInvoicesAmount * 100) / 100,
+        cancelledInvoicesCount,
+        cancelledInvoicesAmount: Math.round(cancelledInvoicesAmount * 100) / 100
+      }
     })
 
   } catch (error) {
     console.error('Error fetching dashboard statistics:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to fetch dashboard statistics',
-        message: 'Ein Fehler ist beim Laden der Statistiken aufgetreten'
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
   }
 }

@@ -1,304 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth, shouldShowAllData } from '@/lib/auth-middleware'
-import { prisma } from '@/lib/prisma'
-import { ensureOrganization, ensureCustomer, ensureTaxRate, ensureDefaultTemplate } from '@/lib/db-operations'
-import { Prisma } from '@prisma/client'
-import { logInvoiceEvent } from '@/lib/invoice-history'
-
-// Mock storage for Email Status (shared with [id]/email-status/route.ts)
-declare global {
-  var invoiceEmailStatus: Record<string, {
-    sent: boolean
-    sentAt?: string
-    sentTo?: string
-    messageId?: string
-    lastAttempt?: string
-  }> | undefined
-}
+import { requireAuth } from '@/lib/auth-middleware'
+import { loadInvoicesFromDisk, saveInvoicesToDisk } from '@/lib/server-storage'
 
 export const dynamic = 'force-dynamic'
 
-// Helper to map Prisma status to Frontend status
-function mapPrismaStatusToFrontend(status: string): string {
-  switch (status) {
-    case 'PAID': return 'Bezahlt'
-    case 'SENT': return 'Offen'
-    case 'OVERDUE': return 'Mahnung'
-    case 'CANCELLED': return 'Storniert'
-    case 'DRAFT': return 'Entwurf'
-    default: return 'Offen'
-  }
-}
-
-// Helper to map Frontend status to Prisma status
-function mapFrontendStatusToPrisma(status: string): 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED' {
-  switch (status) {
-    case 'Bezahlt': return 'PAID'
-    case 'Offen': return 'SENT'
-    case 'Mahnung': return 'OVERDUE'
-    case 'Storniert': return 'CANCELLED'
-    case 'Erstattet': return 'PAID' // Map refunded to paid for now, or add REFUNDED to enum
-    default: return 'SENT'
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
-    // Require authentication
     const authResult = requireAuth(request)
     if ('error' in authResult) {
       return authResult.error
     }
-    const { user } = authResult
 
-    // Ensure organization exists (read-only check first for performance)
-    // We use 'default-org' as fallback ID matching ensureOrganization logic
-    let org = await prisma.organization.findFirst({
-      where: { id: 'default-org' } // In a real app, this might come from session/settings
-    })
-
-    if (!org) {
-      org = await ensureOrganization()
-    }
-
-    // Pagination parameters
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const search = searchParams.get('search') || ''
-    const skip = (page - 1) * limit
-
-    // Fetch invoices from Prisma
-    const whereClause: Prisma.InvoiceWhereInput = {}
-
-    // If not admin, restrict to specific organization
-    if (!shouldShowAllData(user)) {
-      whereClause.organizationId = org.id
-    }
-
-    // Date range filter
     const from = searchParams.get('from')
     const to = searchParams.get('to')
 
-    if (from || to) {
-      whereClause.issueDate = {}
-      if (from) {
-        whereClause.issueDate.gte = new Date(from)
+    // Load from disk
+    let allInvoices = loadInvoicesFromDisk()
+
+    // Filter
+    let filtered = allInvoices.filter((inv: any) => {
+      // Search
+      if (search) {
+        const term = search.toLowerCase()
+        const matchesNumber = (inv.number || inv.invoiceNumber || '').toLowerCase().includes(term)
+        const matchesCustomer = (inv.customer?.name || '').toLowerCase().includes(term) || (inv.customer?.email || '').toLowerCase().includes(term)
+        const matchesOrder = (inv.orderNumber || '').toLowerCase().includes(term)
+        if (!matchesNumber && !matchesCustomer && !matchesOrder) return false
       }
+
+      // Date
+      const invDate = new Date(inv.date || inv.issueDate)
+      if (from && invDate < new Date(from)) return false
       if (to) {
-        // Set 'to' date to end of day
         const toDate = new Date(to)
         toDate.setHours(23, 59, 59, 999)
-        whereClause.issueDate.lte = toDate
+        if (invDate > toDate) return false
       }
-    }
 
-    // Advanced Filters
-    const paymentMethod = searchParams.get('paymentMethod')
-    const minAmount = searchParams.get('minAmount')
-    const maxAmount = searchParams.get('maxAmount')
-    const newCustomers = searchParams.get('newCustomers') === 'true'
-
-    if (paymentMethod) {
-      whereClause.settings = {
-        path: ['paymentMethod'],
-        equals: paymentMethod
-      }
-    }
-
-    if (minAmount || maxAmount) {
-      whereClause.totalGross = {}
-      if (minAmount) whereClause.totalGross.gte = Number(minAmount)
-      if (maxAmount) whereClause.totalGross.lte = Number(maxAmount)
-    }
-
-    if (newCustomers) {
-      // Define "New Customer" as created in the last 30 days
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      whereClause.customer = {
-        createdAt: {
-          gte: thirtyDaysAgo
-        }
-      }
-    }
-
-    // Add search filter if query is present
-    if (search) {
-      const searchTerms = search.trim().split(/[\s,]+/) // Split by space or comma
-
-      // Create AND condition for multiple terms (all terms must match something)
-      // OR create OR condition if you want any term to match
-      // Let's stick to simple "contains" logic for the whole string or split terms
-
-      const termConditions = searchTerms.map(term => ({
-        OR: [
-          { invoiceNumber: { contains: term, mode: 'insensitive' } },
-          { customer: { name: { contains: term, mode: 'insensitive' } } },
-          { customer: { email: { contains: term, mode: 'insensitive' } } },
-          { order: { orderNumber: { contains: term, mode: 'insensitive' } } }
-        ]
-      }))
-
-      whereClause.AND = termConditions as any
-    }
-
-    // Get total count for pagination
-    const totalCount = await prisma.invoice.count({
-      where: whereClause
+      return true
     })
 
-    const invoices = await prisma.invoice.findMany({
-      where: whereClause,
-      include: {
-        customer: true,
-        // items: true, // Removed for performance - not needed in list view
-        order: true
-      },
-      orderBy: [
-        { issueDate: 'desc' },
-        { invoiceNumber: 'desc' }
-      ],
-      skip: skip,
-      take: limit
+    // Sort (Newest first)
+    filtered.sort((a: any, b: any) => {
+      const dateA = new Date(a.date || a.issueDate).getTime()
+      const dateB = new Date(b.date || b.issueDate).getTime()
+      return dateB - dateA
     })
 
-    // Map to frontend format
-    const mappedInvoices = invoices.map(inv => {
-      let status = mapPrismaStatusToFrontend(inv.status)
+    // Pagination
+    const totalCount = filtered.length
+    const paginated = filtered.slice((page - 1) * limit, page * limit)
 
-      // Override status for Credit Notes and Refunds
-      // If it's a credit note/refund but marked as PAID in DB, show as Gutschrift/Erstattet
-      if ((inv as any).documentKind === 'CREDIT_NOTE' ||
-        (inv as any).documentKind === 'REFUND_FULL' ||
-        (inv as any).documentKind === 'REFUND_PARTIAL') {
-        status = 'Gutschrift' // Or 'Erstattet' if preferred, but Gutschrift is standard
-      }
+    // Map to Frontend
+    const mapped = paginated.map((inv: any) => ({
+      id: inv.id,
+      number: inv.number || inv.invoiceNumber,
+      date: inv.date || inv.issueDate,
+      dueDate: inv.dueDate,
+      subtotal: Number(inv.subtotal || inv.totalNet || 0),
+      taxRate: Number(inv.taxRate || 19),
+      taxAmount: Number(inv.taxAmount || inv.totalTax || 0),
+      total: Number(inv.subtotalGross || inv.totalGross || inv.total || 0),
+      status: inv.status || 'Offen',
+      paymentMethod: inv.paymentMethod || '-',
+      customer: inv.customer,
+      items: [], // List view doesn't need items
+      emailStatus: inv.emailStatus || { sent: false },
+      orderNumber: inv.orderNumber,
+      document_kind: inv.documentKind || inv.document_kind
+    }))
 
-      return {
-        id: inv.id,
-        number: inv.invoiceNumber,
-        date: inv.issueDate.toISOString(),
-        dueDate: inv.dueDate.toISOString().split('T')[0],
-        subtotal: Number(inv.totalNet),
-        taxRate: 19, // Approximation, ideally fetch from items or store on invoice
-        taxAmount: Number(inv.totalTax),
-        total: Number(inv.totalGross),
-        status: status,
-        paymentMethod: (inv.settings as any)?.paymentMethod || '-', // Extract from settings JSON
-        customer: {
-          name: inv.customer.name,
-          email: inv.customer.email,
-          address: inv.customer.address,
-          zipCode: inv.customer.zipCode,
-          city: inv.customer.city,
-          country: inv.customer.country,
-          companyName: '' // Add to schema if needed
-        },
-        items: [], // Items not fetched for list view performance
-        document_kind: (inv as any).documentKind,
-        reference_number: (inv as any).referenceNumber,
-        original_invoice_date: (inv as any).originalDate?.toISOString().split('T')[0],
-        grund: (inv as any).reason,
-        refund_amount: (inv as any).refundAmount ? Number((inv as any).refundAmount) : undefined,
-        orderNumber: inv.order?.orderNumber,
-        vorkasseReminderLevel: inv.order?.vorkasseReminderLevel,
-        vorkasseLastReminderAt: inv.order?.vorkasseLastReminderAt,
-        emailStatus: global.invoiceEmailStatus?.[inv.id] || { sent: false }
-      }
-    })
-
-    // Calculate stats for ALL matching invoices (ignoring pagination)
-    // We fetch necessary fields to calculate 19% VAT accurately
-    // Calculate stats for ALL matching invoices (ignoring pagination)
-    // We fetch necessary fields to calculate 19% VAT accurately and Total Paid Amount
-    const allMatchingStats = await prisma.invoice.findMany({
-      where: whereClause,
-      select: {
-        status: true,
-        totalTax: true,
-        totalNet: true,
-        totalGross: true, // Needed for total paid amount
-        documentKind: true, // Needed to identify refunds
-        items: {
-          select: {
-            taxRate: true,
-            taxAmount: true
-          }
-        }
-      }
-    })
-
+    // Stats
     let totalVat19 = 0
     let totalVat7 = 0
     let totalPaidAmount = 0
 
-    for (const inv of allMatchingStats) {
-      // Skip cancelled invoices and non-paid invoices
-      // Only calculate VAT and Total Paid for invoices that are actually PAID
-      if (inv.status === 'CANCELLED' || inv.status !== 'PAID') continue
-
-      // Calculate Total Paid Amount
-      const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
-        inv.documentKind === 'REFUND_FULL' ||
-        inv.documentKind === 'REFUND_PARTIAL';
-
-      const grossAmount = Number(inv.totalGross || 0);
-
-      if (isRefund) {
-        totalPaidAmount -= grossAmount;
-      } else {
-        totalPaidAmount += grossAmount;
+    filtered.forEach((inv: any) => {
+      if (inv.status === 'Bezahlt' || inv.status === 'PAID') {
+        const amount = Number(inv.subtotalGross || inv.totalGross || inv.total || 0)
+        totalPaidAmount += amount
+        // Simplified VAT calc for stats
+        const tax = Number(inv.taxAmount || inv.totalTax || 0)
+        totalVat19 += tax // Assume 19 for now or check taxRate
       }
-
-      let invoiceVat19 = 0
-      let invoiceVat7 = 0
-      let foundItems = false
-
-      if (inv.items && inv.items.length > 0) {
-        // Calculate from items
-        for (const item of inv.items) {
-          const rateVal = Number(item.taxRate?.rate || 0)
-
-          // Check for 19%
-          if (Math.abs(rateVal - 0.19) < 0.001 || Math.abs(rateVal - 19) < 0.1) {
-            invoiceVat19 += Number(item.taxAmount || 0)
-            foundItems = true
-          }
-          // Check for 7%
-          else if (Math.abs(rateVal - 0.07) < 0.001 || Math.abs(rateVal - 7) < 0.1) {
-            invoiceVat7 += Number(item.taxAmount || 0)
-            foundItems = true
-          }
-        }
-      }
-
-      if (!foundItems) {
-        // Fallback to totalTax if items didn't yield results
-        const tax = Number(inv.totalTax || 0)
-        const net = Number(inv.totalNet || 0)
-
-        if (tax > 0 && net > 0) {
-          const ratio = tax / net
-          if (Math.abs(ratio - 0.19) < 0.02) {
-            invoiceVat19 = tax
-          } else if (Math.abs(ratio - 0.07) < 0.01) {
-            invoiceVat7 = tax
-          }
-        }
-      }
-
-      totalVat19 += invoiceVat19
-      totalVat7 += invoiceVat7
-    }
+    })
 
     return NextResponse.json({
-      invoices: mappedInvoices,
+      invoices: mapped,
       pagination: {
         total: totalCount,
         pages: Math.ceil(totalCount / limit),
-        page: page,
-        limit: limit
+        page,
+        limit
       },
       stats: {
         totalVat19,
@@ -309,135 +106,46 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching invoices:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch invoices' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Require authentication
     const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
-    }
-    const { user } = authResult
+    if ('error' in authResult) return authResult.error
 
     const body = await request.json()
-    const {
-      invoiceNumber,
-      date,
-      dueDate,
-      deliveryDate,
-      customer,
-      items,
-      settings,
-      status,
-      // Support both camelCase and snake_case
-      documentKind, document_kind,
-      referenceNumber, reference_number,
-      originalInvoiceDate, original_invoice_date,
-      reason, grund,
-      refundAmount, refund_amount
-    } = body
 
-    // Calculate totals if not provided
-    // We assume items have total (gross) and we know tax rate from settings or default
-    const taxRate = settings?.vatRegulation === 'In Deutschland' ? 19 : 0 // Simplified logic
+    // Basic calculation if needed, but assuming frontend sends correct data
+    const newInvoice = {
+      id: crypto.randomUUID(),
+      ...body,
+      // Map to JSON schema fields
+      number: body.invoiceNumber,
+      date: body.date,
+      issueDate: body.date, // Store both for compatibility
+      invoiceNumber: body.invoiceNumber,
 
-    let totalGross = 0
-    let totalNet = 0
-    let totalTax = 0
+      totalNet: Number(body.totalNet || 0),
+      totalGross: Number(body.totalGross || 0),
+      totalTax: Number(body.totalTax || 0),
 
-    const processedItems = items.map((item: any) => {
-      const quantity = Number(item.quantity)
-      const unitPrice = Number(item.unitPrice) // Net or Gross? Frontend says Net in table header, but logic was mixed.
-      // In the new frontend, we calculate item.total = quantity * unitPrice * (1-discount)
-      // And we sum up totals to get Net Total, then add VAT.
-      // So item.total is Net.
+      subtotal: Number(body.totalNet || 0), // JSON schema compatibility
+      subtotalGross: Number(body.totalGross || 0),
+      taxAmount: Number(body.totalTax || 0),
 
-      const net = Number(item.total)
-      const vatPercent = Number(item.vat || taxRate)
-      const tax = net * (vatPercent / 100)
-      const gross = net + tax
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
 
-      totalNet += net
-      totalTax += tax
-      totalGross += gross
+    const invoices = loadInvoicesFromDisk()
+    invoices.push(newInvoice)
+    saveInvoicesToDisk(invoices)
 
-      return {
-        description: item.description,
-        quantity: quantity,
-        unitPrice: unitPrice,
-        taxRateId: null, // Will be set later
-        netAmount: net,
-        grossAmount: gross,
-        taxAmount: tax,
-        ean: item.ean
-      }
-    })
-
-    // Ensure dependencies exist
-    const org = await ensureOrganization()
-    const taxRateObj = await ensureTaxRate(org.id, taxRate)
-    const templateObj = await ensureDefaultTemplate(org.id)
-    const customerObj = await ensureCustomer(org.id, customer)
-
-    // Create Invoice in Prisma
-    const invoice = await prisma.invoice.create({
-      data: {
-        organizationId: org.id,
-        customerId: customerObj.id,
-        templateId: templateObj.id,
-        invoiceNumber: invoiceNumber,
-        issueDate: new Date(date),
-        dueDate: new Date(dueDate),
-        serviceDate: deliveryDate ? new Date(deliveryDate) : undefined,
-        totalNet: totalNet,
-        totalGross: totalGross,
-        totalTax: totalTax,
-        status: mapFrontendStatusToPrisma(status || 'Offen'),
-        documentKind: documentKind || document_kind || 'INVOICE',
-        referenceNumber: referenceNumber || reference_number,
-        originalDate: (originalInvoiceDate || original_invoice_date) ? new Date(originalInvoiceDate || original_invoice_date) : null,
-        reason: reason || grund,
-        refundAmount: (refundAmount || refund_amount) ? Number(refundAmount || refund_amount) : null,
-
-        // New fields
-        headerSubject: settings?.headerSubject,
-        headerText: settings?.headerText,
-        footerText: settings?.footerText,
-        settings: settings || Prisma.JsonNull,
-
-        items: {
-          create: processedItems.map((item: any) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            taxRateId: taxRateObj.id,
-            netAmount: item.netAmount,
-            grossAmount: item.grossAmount,
-            taxAmount: item.taxAmount,
-            ean: item.ean
-          }))
-        }
-      } as any
-    })
-
-    console.log('✅ Invoice created in Prisma:', invoice.id)
-
-    // Log history
-    await logInvoiceEvent(invoice.id, 'CREATED', 'Rechnung erstellt')
-
-    return NextResponse.json(invoice, { status: 201 })
-
+    return NextResponse.json(newInvoice, { status: 201 })
   } catch (error) {
     console.error('Error creating invoice:', error)
-    return NextResponse.json(
-      { error: 'Failed to create invoice: ' + (error as Error).message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 })
   }
 }
