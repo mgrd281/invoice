@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/shopify/webhooks') || // Allow Shopify webhooks
     pathname.startsWith('/api/webhooks') || // Allow other webhooks
     pathname.startsWith('/api/cron') || // Allow cron jobs
+    pathname.startsWith('/api/reviews/public') || // Allow public reviews API
+    pathname.startsWith('/api/marketing/public') || // Allow public marketing API
     pathname.includes('.') ||
     pathname === '/favicon.ico'
   ) {
