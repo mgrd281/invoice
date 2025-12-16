@@ -67,10 +67,13 @@ export default function DiagnosticsPage() {
                 const importRes = await fetch('/api/diagnostics/import', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename, offset, limit: 50 })
+                    body: JSON.stringify({ filename, offset, limit: 10 })
                 })
 
-                if (!importRes.ok) throw new Error('Import failed')
+                if (!importRes.ok) {
+                    const errorData = await importRes.json()
+                    throw new Error(errorData.error || 'Import failed')
+                }
 
                 const importData = await importRes.json()
                 offset = importData.offset
@@ -88,9 +91,9 @@ export default function DiagnosticsPage() {
             setFile(null)
             setProgress(0)
             setStatus('')
-        } catch (error) {
+        } catch (error: any) {
             console.error('Process error:', error)
-            alert('Fehler bei der Verarbeitung. Bitte versuchen Sie es erneut.')
+            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`)
         } finally {
             setUploading(false)
         }

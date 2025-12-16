@@ -41,28 +41,35 @@ export async function POST(req: Request) {
         if (isInvoices) {
             for (const inv of chunk) {
                 try {
+                    // Skip if no invoice number
+                    if (!inv.invoiceNumber) continue
+
                     // Ensure customer exists
                     let customerId = 'legacy-customer'
                     if (inv.customer) {
-                        const customer = await prisma.customer.upsert({
-                            where: {
-                                unique_shopify_customer_per_organization: {
-                                    organizationId: 'default-org-id',
+                        try {
+                            const customer = await prisma.customer.upsert({
+                                where: {
+                                    unique_shopify_customer_per_organization: {
+                                        organizationId: 'default-org-id',
+                                        shopifyCustomerId: inv.customer.email || `legacy-${inv.customer.name}`
+                                    }
+                                },
+                                update: {},
+                                create: {
+                                    organization: { connect: { id: 'default-org-id' } },
+                                    name: inv.customer.name || 'Unknown',
+                                    email: inv.customer.email,
+                                    address: inv.customer.address || '',
+                                    zipCode: inv.customer.zipCode || '',
+                                    city: inv.customer.city || '',
                                     shopifyCustomerId: inv.customer.email || `legacy-${inv.customer.name}`
                                 }
-                            },
-                            update: {},
-                            create: {
-                                organization: { connect: { id: 'default-org-id' } },
-                                name: inv.customer.name || 'Unknown',
-                                email: inv.customer.email,
-                                address: inv.customer.address || '',
-                                zipCode: inv.customer.zipCode || '',
-                                city: inv.customer.city || '',
-                                shopifyCustomerId: inv.customer.email || `legacy-${inv.customer.name}`
-                            }
-                        })
-                        customerId = customer.id
+                            })
+                            customerId = customer.id
+                        } catch (e) {
+                            console.error('Customer upsert failed, using default', e)
+                        }
                     }
 
                     // Create Invoice
@@ -98,10 +105,13 @@ export async function POST(req: Request) {
                         }
                     }).catch(e => {
                         // Ignore duplicates silently
+                        if (!e.message.includes('Unique constraint')) {
+                            console.error(`Failed to import invoice ${inv.invoiceNumber}:`, e.message)
+                        }
                     })
                     processedCount++
                 } catch (e) {
-                    console.error('Error processing invoice:', e)
+                    console.error('Error processing invoice record:', e)
                 }
             }
         } else if (isCustomers) {
