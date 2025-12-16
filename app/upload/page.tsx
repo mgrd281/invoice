@@ -93,31 +93,41 @@ export default function UploadPage() {
 
   // Check for duplicates when previewInvoices changes
   useEffect(() => {
-    if (previewInvoices.length === 0) return
-
     const checkDuplicates = async () => {
-      const numbers = previewInvoices.map(inv => inv.number)
-      if (numbers.length === 0) return
+      if (previewInvoices.length === 0) return
 
       try {
-        const response = await fetch('/api/invoices/check-duplicates', {
+        const numbers = previewInvoices.map(inv => inv.number)
+        if (numbers.length === 0) return
+
+        const res = await fetch('/api/invoices/check-duplicates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ invoiceNumbers: numbers })
+          body: JSON.stringify({ numbers })
         })
-
-        if (response.ok) {
-          const data = await response.json()
+        const data = await res.json()
+        if (data && Array.isArray(data.duplicates)) {
           setDuplicates(new Set(data.duplicates))
         }
-      } catch (err) {
-        console.error('Failed to check duplicates:', err)
+      } catch (error) {
+        console.error('Failed to check duplicates:', error)
       }
     }
 
     checkDuplicates()
   }, [previewInvoices])
 
+  // Load settings
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.accountingType) {
+          setAccountingType(data.accountingType)
+        }
+      })
+      .catch(err => console.error('Failed to load settings:', err))
+  }, [])
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
