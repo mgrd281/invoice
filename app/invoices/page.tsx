@@ -1458,7 +1458,7 @@ export default function InvoicesPage() {
                       aria-label="Alle auswählen"
                     />
                   </TableHead>
-                  <TableHead>Rechnungsnummer</TableHead>
+                  <TableHead>Bestellnummer</TableHead>
                   <TableHead>Kunde</TableHead>
                   <TableHead>
                     <div className="flex items-center">

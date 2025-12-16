@@ -103,30 +103,61 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     // ---------------------------------------------------------
 
     // 2. Find/Create Customer
-    // Helper to get address fields with fallback
+    // Helper to get address fields with fallback - improved to check all sources
     const getAddressField = (field: string) => {
-        return order.billing_address?.[field] ||
-            order.shipping_address?.[field] ||
-            order.customer?.default_address?.[field] ||
-            '';
+        // Try billing address first (most reliable for invoicing)
+        if (order.billing_address?.[field]) {
+            return order.billing_address[field];
+        }
+        // Then shipping address
+        if (order.shipping_address?.[field]) {
+            return order.shipping_address[field];
+        }
+        // Then customer default address
+        if (order.customer?.default_address?.[field]) {
+            return order.customer.default_address[field];
+        }
+        // Finally check customer object directly (some Shopify versions)
+        if (order.customer?.[field]) {
+            return order.customer[field];
+        }
+        return '';
+    }
+
+    // Get customer name with better fallback logic
+    const getCustomerName = () => {
+        // Try customer object first
+        const customerName = `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim();
+        if (customerName) return customerName;
+
+        // Try billing address
+        const billingName = `${order.billing_address?.first_name || ''} ${order.billing_address?.last_name || ''}`.trim();
+        if (billingName) return billingName;
+
+        // Try shipping address
+        const shippingName = `${order.shipping_address?.first_name || ''} ${order.shipping_address?.last_name || ''}`.trim();
+        if (shippingName) return shippingName;
+
+        // Try email
+        if (order.email) return order.email;
+
+        // Last resort
+        return 'Gast';
     }
 
     const customerData = {
         organizationId: organization.id,
-        name: (
-            `${order.customer?.first_name || ''} ${order.customer?.last_name || ''}`.trim() ||
-            `${order.billing_address?.first_name || ''} ${order.billing_address?.last_name || ''}`.trim() ||
-            `${order.shipping_address?.first_name || ''} ${order.shipping_address?.last_name || ''}`.trim() ||
-            order.email ||
-            'Gast'
-        ),
-        email: order.email || '',
+        name: getCustomerName(),
+        email: order.email || order.customer?.email || '',
         address: getAddressField('address1'),
         city: getAddressField('city'),
         zipCode: getAddressField('zip'),
-        country: order.billing_address?.country_code || order.shipping_address?.country_code || order.customer?.default_address?.country_code || 'DE',
+        country: order.billing_address?.country_code || order.shipping_address?.country_code || order.customer?.default_address?.country_code || order.customer?.country_code || 'DE',
         shopifyCustomerId: String(order.customer?.id || '')
     }
+
+    // Log customer data for debugging
+    log(`📋 Customer Data: Name="${customerData.name}", Email="${customerData.email}", City="${customerData.city}", Zip="${customerData.zipCode}", Address="${customerData.address}"`)
 
     // Upsert customer
     // Note: shopifyCustomerId is unique per organization in our schema logic (ideally)

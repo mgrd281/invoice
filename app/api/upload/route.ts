@@ -305,24 +305,83 @@ export async function POST(request: NextRequest) {
 
         // Map common Shopify CSV fields with more flexibility - prioritize Bestellnummer
         const order: ShopifyOrder = {
-          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order']) || `ORD-${Date.now()}-${i}`,
-          customerName: getColumnValue(record, ['Billing Name', 'Shipping Name', 'Customer Name', 'Name', 'Kundenname', 'Rechnungsname', 'Liefername', 'Customer']) || 'Unbekannter Kunde',
-          customerCompany: getColumnValue(record, ['Company', 'Billing Company', 'Shipping Company', 'Firma', 'Unternehmen', 'Lieferfirma']) || '',
-          customerEmail: getColumnValue(record, ['Email', 'Customer Email', 'E-Mail', 'Billing Email', 'Shipping Email', 'Lieferemail']) || `kunde${i}@example.com`,
-          customerAddress: getColumnValue(record, ['Billing Address1', 'Shipping Address1', 'Address1', 'Adresse', 'Billing Address', 'Shipping Address', 'Street', 'Straße', 'Rechnungsadresse', 'Lieferadresse']) || 'Musterstraße 1',
-          customerCity: getColumnValue(record, ['Billing City', 'Shipping City', 'City', 'Stadt', 'Ort', 'Rechnungsstadt', 'Lieferstadt']) || 'Berlin',
-          customerZip: getColumnValue(record, ['Billing Zip', 'Shipping Zip', 'Zip', 'PLZ', 'Postal Code', 'Postleitzahl', 'RechnungsPLZ', 'LieferPLZ']) || '12345',
-          customerCountry: getColumnValue(record, ['Billing Country', 'Shipping Country', 'Country', 'Land', 'Country Code', 'Rechnungsland', 'Lieferland']) || 'DE',
-          orderDate: parseDate(getColumnValue(record, ['Fulfilled at', 'Erfüllt am', 'Created at', 'Date', 'Bestelldatum', 'Order Date', 'Paid at'])),
-          productName: getColumnValue(record, ['Lineitem name', 'Product', 'Item', 'Produktname', 'Product Name']) || 'Produkt',
-          quantity: parseInt(getColumnValue(record, ['Lineitem quantity', 'Quantity', 'Menge', 'Qty']) || '1'),
-          unitPrice: parseFloat(getColumnValue(record, ['Lineitem price', 'Price', 'Unit Price', 'Preis', 'Einzelpreis']) || '0'),
-          totalPrice: parseFloat(getColumnValue(record, ['Total', 'Amount', 'Gesamt', 'Line Total']) || '0'),
+          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order', 'Auftragsnummer', 'Bestellung']) || `ORD-${Date.now()}-${i}`,
+          customerName: getColumnValue(record, [
+            'Billing Name', 'Rechnungsname',
+            'Shipping Name', 'Liefername',
+            'Customer Name', 'Kundenname',
+            'Name', 'Customer'
+          ]) || 'Unbekannter Kunde',
+          customerCompany: getColumnValue(record, [
+            'Company', 'Firma', 'Unternehmen',
+            'Billing Company', 'Rechnungsfirma',
+            'Shipping Company', 'Lieferfirma'
+          ]) || '',
+          customerEmail: getColumnValue(record, [
+            'Email', 'E-Mail',
+            'Customer Email', 'Kunden-E-Mail',
+            'Billing Email', 'Rechnungs-E-Mail',
+            'Shipping Email', 'Liefer-E-Mail'
+          ]) || `kunde${i}@example.com`,
+          customerAddress: getColumnValue(record, [
+            'Billing Address1', 'Rechnungsadresse',
+            'Shipping Address1', 'Lieferadresse',
+            'Address1', 'Adresse', 'Straße', 'Street',
+            'Billing Address', 'Shipping Address'
+          ]) || 'Musterstraße 1',
+          customerCity: getColumnValue(record, [
+            'Billing City', 'Rechnungsstadt',
+            'Shipping City', 'Lieferstadt',
+            'City', 'Stadt', 'Ort'
+          ]) || 'Berlin',
+          customerZip: getColumnValue(record, [
+            'Billing Zip', 'RechnungsPLZ',
+            'Shipping Zip', 'LieferPLZ',
+            'Zip', 'PLZ', 'Postal Code', 'Postleitzahl'
+          ]) || '12345',
+          customerCountry: getColumnValue(record, [
+            'Billing Country', 'Rechnungsland',
+            'Shipping Country', 'Lieferland',
+            'Country', 'Land', 'Country Code', 'Ländercode'
+          ]) || 'DE',
+          orderDate: parseDate(getColumnValue(record, [
+            'Created at', 'Erstellt am',
+            'Fulfilled at', 'Erfüllt am',
+            'Date', 'Datum', 'Bestelldatum',
+            'Order Date', 'Paid at', 'Bezahlt am'
+          ])),
+          productName: getColumnValue(record, [
+            'Lineitem name', 'Produktname',
+            'Product', 'Produkt',
+            'Item', 'Artikel',
+            'Product Name'
+          ]) || 'Produkt',
+          quantity: parseInt(getColumnValue(record, [
+            'Lineitem quantity', 'Menge',
+            'Quantity', 'Qty', 'Anzahl'
+          ]) || '1'),
+          unitPrice: parseFloat(getColumnValue(record, [
+            'Lineitem price', 'Einzelpreis',
+            'Price', 'Preis',
+            'Unit Price', 'Stückpreis'
+          ]) || '0'),
+          totalPrice: parseFloat(getColumnValue(record, [
+            'Total', 'Gesamt',
+            'Amount', 'Betrag',
+            'Line Total', 'Zeilensumme'
+          ]) || '0'),
           taxRate: 19, // Default German VAT
           taxAmount: 0,
           // Identifiers from CSV (flexible header names)
-          sku: getColumnValue(record, ['Lineitem sku', 'SKU', 'Artikelnummer', 'Art.-Nr.']) || '',
-          ean: getColumnValue(record, ['Lineitem sku', 'EAN', 'Barcode', 'GTIN']) || ''
+          sku: getColumnValue(record, [
+            'Lineitem sku', 'SKU',
+            'Artikelnummer', 'Art.-Nr.',
+            'Article Number', 'Item Number'
+          ]) || '',
+          ean: getColumnValue(record, [
+            'EAN', 'Barcode', 'GTIN',
+            'Lineitem sku', 'SKU'
+          ]) || ''
         }
 
         // Add additional fields for invoice type detection
