@@ -13,7 +13,6 @@ export async function GET() {
         }
 
         const products = await prisma.digitalProduct.findMany({
-            where: { isActive: true },
             orderBy: { createdAt: 'desc' }
         })
 
@@ -37,11 +36,11 @@ export async function POST(req: Request) {
         const product = await prisma.digitalProduct.create({
             data: {
                 title: body.title,
-                description: body.description,
-                price: body.price,
                 shopifyProductId: body.shopifyProductId,
-                shopifyVariantId: body.shopifyVariantId,
-                isActive: true
+                // Removed isActive as it's not in schema
+                organization: {
+                    connect: { id: 'default-org-id' } // Placeholder, needs real org logic if multi-tenant
+                }
             }
         })
 
