@@ -25,10 +25,17 @@ export async function POST(req: Request) {
         const filePath = path.join(storageDir, filename)
 
         const fileContent = await readFile(filePath, 'utf-8')
-        const data = JSON.parse(fileContent)
+        let data = JSON.parse(fileContent)
+
+        // Handle wrapped JSON (e.g. { invoices: [...] })
+        if (!Array.isArray(data) && data.invoices && Array.isArray(data.invoices)) {
+            data = data.invoices
+        } else if (!Array.isArray(data) && data.customers && Array.isArray(data.customers)) {
+            data = data.customers
+        }
 
         if (!Array.isArray(data)) {
-            return NextResponse.json({ error: 'Invalid JSON format' }, { status: 400 })
+            return NextResponse.json({ error: 'Invalid JSON format: Expected an array or object with "invoices" key' }, { status: 400 })
         }
 
         const chunk = data.slice(offset, offset + limit)
