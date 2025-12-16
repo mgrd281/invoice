@@ -34,10 +34,10 @@ function mapFrontendStatusToPrisma(status: string): 'DRAFT' | 'SENT' | 'PAID' | 
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     console.log('Fetching invoice with ID:', invoiceId)
 
     // Fetch from Prisma
@@ -123,10 +123,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     const updatedData = await request.json()
 
     console.log('Aktualisiere Rechnung mit ID:', invoiceId)
@@ -227,10 +227,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     console.log('Lösche Rechnung mit ID:', invoiceId)
 
     const invoice = await prisma.invoice.findUnique({
@@ -243,9 +243,6 @@ export async function DELETE(
         { status: 404 }
       )
     }
-
-    // Check status - Restriction removed as per user request
-    // if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') { ... }
 
     // Hard delete for now as we don't have deletedAt
     await prisma.invoice.delete({
