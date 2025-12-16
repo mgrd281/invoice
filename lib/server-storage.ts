@@ -1,13 +1,13 @@
+import 'server-only'
+import fs from 'fs'
+import path from 'path'
+
 // Lightweight server-side JSON storage utilities
 // Uses a user-storage directory in the project root to persist small pieces of state
-
-// We intentionally use require to avoid ESM import issues in Next.js route handlers
-// and to work reliably in the server runtime only.
 
 export type JsonValue = any
 
 function getPaths() {
-  const path = require('path')
   // Hardcode absolute path to ensure consistency
   const root = '/Users/m/Desktop/rechnung 6'
   const storageDir = path.join(process.cwd(), 'user-storage')
@@ -16,7 +16,6 @@ function getPaths() {
 
 function ensureDir(dir: string) {
   try {
-    const fs = require('fs')
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
@@ -27,11 +26,7 @@ function ensureDir(dir: string) {
 
 export function readJson(fileName: string, fallback: JsonValue = null, namespace?: string): JsonValue {
   try {
-    // Only run on server
-    if (typeof window !== 'undefined') return fallback
-
-    const fs = require('fs')
-    const { path, storageDir } = getPaths()
+    const { storageDir } = getPaths()
     ensureDir(storageDir)
 
     // If namespace is provided, prefix the filename
@@ -50,10 +45,7 @@ export function readJson(fileName: string, fallback: JsonValue = null, namespace
 
 export function writeJson(fileName: string, data: JsonValue, namespace?: string): boolean {
   try {
-    if (typeof window !== 'undefined') return false
-
-    const fs = require('fs')
-    const { path, storageDir } = getPaths()
+    const { storageDir } = getPaths()
     ensureDir(storageDir)
 
     // If namespace is provided, prefix the filename
