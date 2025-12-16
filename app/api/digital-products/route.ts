@@ -8,15 +8,41 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
     try {
         const session = await getServerSession(authOptions)
-        if (!session) {
+        if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const products = await prisma.digitalProduct.findMany({
-            orderBy: { createdAt: 'desc' }
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            include: { organization: true }
         })
 
-        return NextResponse.json(products)
+        if (!user?.organizationId) {
+            return NextResponse.json({ success: true, data: [] })
+        }
+
+        const products = await prisma.digitalProduct.findMany({
+            where: {
+                organizationId: user.organizationId
+            },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                keys: {
+                    where: { isUsed: false },
+                    select: { id: true }
+                }
+            }
+        })
+
+        const formattedProducts = products.map(p => ({
+            ...p,
+            _count: {
+                keys: p.keys.length
+            },
+            keys: undefined
+        }))
+
+        return NextResponse.json({ success: true, data: formattedProducts })
 
     } catch (error) {
         console.error('Error fetching digital products:', error)
