@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ShopifyAPI } from '@/lib/shopify-api'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,24 @@ export async function GET(request: NextRequest) {
             prisma.review.count({ where })
         ])
 
+        // Enhance reviews with Shopify images if missing
+        const shopifyApi = new ShopifyAPI()
+        const enhancedReviews = await Promise.all(reviews.map(async (review) => {
+            if (!review.productImage && review.productId) {
+                try {
+                    const shopifyProduct = await shopifyApi.getProduct(review.productId)
+                    if (shopifyProduct && shopifyProduct.images && shopifyProduct.images.length > 0) {
+                        return { ...review, productImage: shopifyProduct.images[0].src }
+                    }
+                } catch (e) {
+                    // Ignore error
+                }
+            }
+            return review
+        }))
+
         return NextResponse.json({
-            reviews,
+            reviews: enhancedReviews,
             pagination: {
                 total,
                 page,

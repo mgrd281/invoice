@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ShopifyAPI } from '@/lib/shopify-api'
 
 export async function GET(request: NextRequest) {
     try {
@@ -33,13 +34,32 @@ export async function GET(request: NextRequest) {
         })
 
         // Format the response
-        const productStats = groupedReviews.map(group => ({
-            productId: group.productId,
-            productTitle: group._max.productTitle || 'Unbekanntes Produkt',
-            productImage: group._max.productImage,
-            reviewCount: group._count.id,
-            averageRating: group._avg.rating || 0,
-            lastReviewDate: group._max.createdAt
+        // Format the response
+        const shopifyApi = new ShopifyAPI()
+
+        const productStats = await Promise.all(groupedReviews.map(async (group) => {
+            let image = group._max.productImage
+
+            // If no image in DB, try to fetch from Shopify
+            if (!image) {
+                try {
+                    const shopifyProduct = await shopifyApi.getProduct(group.productId)
+                    if (shopifyProduct && shopifyProduct.images && shopifyProduct.images.length > 0) {
+                        image = shopifyProduct.images[0].src
+                    }
+                } catch (e) {
+                    console.error(`Failed to fetch Shopify product ${group.productId}`, e)
+                }
+            }
+
+            return {
+                productId: group.productId,
+                productTitle: group._max.productTitle || 'Unbekanntes Produkt',
+                productImage: image,
+                reviewCount: group._count.id,
+                averageRating: group._avg.rating || 0,
+                lastReviewDate: group._max.createdAt
+            }
         }))
 
         return NextResponse.json(productStats)
