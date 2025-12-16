@@ -49,8 +49,14 @@ export async function POST(req: Request) {
             })
         }
 
-        const product = await prisma.digitalProduct.create({
-            data: {
+        const product = await prisma.digitalProduct.upsert({
+            where: {
+                shopifyProductId: body.shopifyProductId
+            },
+            update: {
+                title: body.title,
+            },
+            create: {
                 title: body.title,
                 shopifyProductId: body.shopifyProductId,
                 organization: {
