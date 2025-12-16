@@ -3,13 +3,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Loader2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Database, Server, ShoppingBag, Upload } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Database, Server, ShoppingBag, Upload, Download } from 'lucide-react'
 
 export default function DiagnosticsPage() {
     const [report, setReport] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
-    const [uploading, setUploading] = useState<string | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [uploading, setUploading] = useState(false)
+    const [file, setFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        fetchDiagnostics()
+    }, [])
 
     const fetchDiagnostics = async () => {
         setLoading(true)
@@ -18,24 +25,19 @@ export default function DiagnosticsPage() {
             const data = await res.json()
             setReport(data)
         } catch (error) {
-            console.error('Failed to load diagnostics', error)
+            console.error('Failed to fetch diagnostics:', error)
         } finally {
             setLoading(false)
         }
     }
 
-    useEffect(() => {
-        fetchDiagnostics()
-    }, [])
+    const handleUpload = async () => {
+        if (!file) return
 
-    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return
-
-        const file = e.target.files[0]
+        setUploading(true)
         const formData = new FormData()
         formData.append('file', file)
-
-        setUploading(file.name)
+        formData.append('type', 'restore')
 
         try {
             const res = await fetch('/api/diagnostics/upload', {
@@ -43,18 +45,17 @@ export default function DiagnosticsPage() {
                 body: formData
             })
 
-            if (res.ok) {
-                alert(`${file.name} erfolgreich hochgeladen!`)
-                fetchDiagnostics()
-            } else {
-                const data = await res.json()
-                alert(`Fehler: ${data.error}`)
-            }
+            if (!res.ok) throw new Error('Upload failed')
+
+            const data = await res.json()
+            alert(`Erfolg! ${data.count} Datensätze wurden wiederhergestellt.`)
+            fetchDiagnostics()
+            setFile(null)
         } catch (error) {
-            alert('Upload fehlgeschlagen')
+            console.error('Upload error:', error)
+            alert('Fehler beim Hochladen der Datei.')
         } finally {
-            setUploading(null)
-            if (fileInputRef.current) fileInputRef.current.value = ''
+            setUploading(false)
         }
     }
 
