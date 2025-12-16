@@ -83,22 +83,81 @@ export default function DiagnosticsPage() {
                         <p className="text-gray-500">Überprüfen Sie den Status Ihres Systems und Ihrer Daten.</p>
                     </div>
                     <div className="flex gap-3">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept=".json"
-                            onChange={handleUpload}
-                        />
-                        <Button variant="outline" onClick={triggerUpload} disabled={!!uploading}>
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploading ? 'Wird hochgeladen...' : 'JSON Datei hochladen'}
-                        </Button>
                         <Button onClick={fetchDiagnostics} disabled={loading}>
                             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                             Aktualisieren
                         </Button>
                     </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Download className="h-5 w-5" />
+                                Backup erstellen
+                            </CardTitle>
+                            <CardDescription>
+                                Laden Sie eine vollständige Sicherungskopie Ihrer Datenbank herunter.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                className="w-full"
+                                onClick={async () => {
+                                    try {
+                                        const res = await fetch('/api/diagnostics/backup')
+                                        if (!res.ok) throw new Error('Backup failed')
+                                        const blob = await res.blob()
+                                        const url = window.URL.createObjectURL(blob)
+                                        const a = document.createElement('a')
+                                        a.href = url
+                                        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`
+                                        document.body.appendChild(a)
+                                        a.click()
+                                        window.URL.revokeObjectURL(url)
+                                        document.body.removeChild(a)
+                                    } catch (e) {
+                                        alert('Fehler beim Erstellen des Backups')
+                                    }
+                                }}
+                            >
+                                Backup herunterladen (JSON)
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Upload className="h-5 w-5" />
+                                Daten wiederherstellen
+                            </CardTitle>
+                            <CardDescription>
+                                Laden Sie JSON-Dateien hoch, um fehlende Daten wiederherzustellen.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid w-full max-w-sm items-center gap-1.5">
+                                <Label htmlFor="file-upload">JSON Datei auswählen</Label>
+                                <Input id="file-upload" type="file" accept=".json" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                            </div>
+                            <Button
+                                className="w-full"
+                                disabled={!file || !!uploading}
+                                onClick={handleUpload}
+                            >
+                                {uploading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Wird hochgeladen...
+                                    </>
+                                ) : (
+                                    'JSON Datei hochladen'
+                                )}
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
