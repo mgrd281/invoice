@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Loader2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Database, Server, ShoppingBag } from 'lucide-react'
+import { Loader2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Database, Server, ShoppingBag, Upload } from 'lucide-react'
 
 export default function DiagnosticsPage() {
     const [report, setReport] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [uploading, setUploading] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const fetchDiagnostics = async () => {
         setLoading(true)
@@ -25,6 +27,40 @@ export default function DiagnosticsPage() {
     useEffect(() => {
         fetchDiagnostics()
     }, [])
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return
+
+        const file = e.target.files[0]
+        const formData = new FormData()
+        formData.append('file', file)
+
+        setUploading(file.name)
+
+        try {
+            const res = await fetch('/api/diagnostics/upload', {
+                method: 'POST',
+                body: formData
+            })
+
+            if (res.ok) {
+                alert(`${file.name} erfolgreich hochgeladen!`)
+                fetchDiagnostics()
+            } else {
+                const data = await res.json()
+                alert(`Fehler: ${data.error}`)
+            }
+        } catch (error) {
+            alert('Upload fehlgeschlagen')
+        } finally {
+            setUploading(null)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    const triggerUpload = () => {
+        fileInputRef.current?.click()
+    }
 
     const StatusIcon = ({ status }: { status: boolean }) => {
         return status ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />
@@ -46,10 +82,23 @@ export default function DiagnosticsPage() {
                         <h1 className="text-3xl font-bold text-gray-900">System Diagnostics</h1>
                         <p className="text-gray-500">Überprüfen Sie den Status Ihres Systems und Ihrer Daten.</p>
                     </div>
-                    <Button onClick={fetchDiagnostics} disabled={loading}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Aktualisieren
-                    </Button>
+                    <div className="flex gap-3">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept=".json"
+                            onChange={handleUpload}
+                        />
+                        <Button variant="outline" onClick={triggerUpload} disabled={!!uploading}>
+                            <Upload className="w-4 h-4 mr-2" />
+                            {uploading ? 'Wird hochgeladen...' : 'JSON Datei hochladen'}
+                        </Button>
+                        <Button onClick={fetchDiagnostics} disabled={loading}>
+                            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                            Aktualisieren
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -86,6 +135,11 @@ export default function DiagnosticsPage() {
                                     Error: {report.storage.error}
                                 </div>
                             )}
+
+                            <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                                <p className="font-semibold mb-1">Daten wiederherstellen:</p>
+                                <p>Wenn Dateien fehlen (rotes X), laden Sie bitte Ihre lokalen <code>invoices.json</code> oder <code>customers.json</code> Dateien über den "JSON Datei hochladen" Button oben rechts hoch.</p>
+                            </div>
                         </CardContent>
                     </Card>
 
