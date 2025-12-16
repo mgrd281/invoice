@@ -39,7 +39,17 @@ export async function POST(req: Request) {
                 shopifyProductId: body.shopifyProductId,
                 // Removed isActive as it's not in schema
                 organization: {
-                    connect: { id: 'default-org-id' } // Placeholder, needs real org logic if multi-tenant
+                    connectOrCreate: {
+                        where: { id: 'default-org-id' },
+                        create: {
+                            id: 'default-org-id',
+                            name: 'Default Organization',
+                            slug: 'default-org',
+                            address: 'Musterstraße 1',
+                            zipCode: '12345',
+                            city: 'Musterstadt'
+                        }
+                    }
                 }
             }
         })
