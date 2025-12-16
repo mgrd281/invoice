@@ -37,24 +37,25 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Organization not found and could not be created' }, { status: 404 });
         }
 
-        // 1. Fetch all paid invoices
-        const paidInvoices = await prisma.invoice.findMany({
+        // 1. Fetch relevant documents:
+        // - Invoices: Must be PAID (or SENT if we want to include open, but user said "Nur Bezahlt") -> Let's stick to PAID for positive revenue.
+        // - Credit Notes / Refunds: Any status except CANCELLED should count as a deduction.
+        const allDocuments = await prisma.invoice.findMany({
             where: {
                 organizationId,
-                status: { in: ['PAID', 'SENT'] } // Consider SENT as potentially valid for analytics depending on logic, but usually PAID is best. Let's stick to PAID for revenue.
-                // Actually, for revenue we usually count PAID.
+                status: { not: 'CANCELLED' }, // Exclude cancelled globally
+                OR: [
+                    { status: 'PAID' }, // Paid invoices
+                    { documentKind: { in: ['CREDIT_NOTE', 'REFUND_FULL', 'REFUND_PARTIAL'] } } // Any valid credit note
+                ]
             },
             include: {
                 customer: true
             }
         });
 
-        // Filter strictly for PAID for revenue calculations if needed, or include SENT if that's the business logic.
-        // Let's use PAID for strict revenue.
-        const strictlyPaidInvoices = paidInvoices.filter(inv => inv.status === 'PAID');
-
         // 2. Calculate Total Revenue (Net after refunds)
-        const totalRevenue = strictlyPaidInvoices.reduce((sum, inv) => {
+        const totalRevenue = allDocuments.reduce((sum, inv) => {
             const gross = Number(inv.totalGross);
             const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                 inv.documentKind === 'REFUND_FULL' ||
@@ -63,16 +64,20 @@ export async function GET(request: NextRequest) {
             if (isRefund) {
                 return sum - gross;
             }
-            // Subtract partial refund amount if present on the invoice
-            const refundAmount = inv.refundAmount ? Number(inv.refundAmount) : 0;
-            return sum + gross - refundAmount;
+
+            // For normal invoices, only count if PAID
+            if (inv.status === 'PAID') {
+                // Subtract partial refund amount if present on the invoice
+                const refundAmount = inv.refundAmount ? Number(inv.refundAmount) : 0;
+                return sum + gross - refundAmount;
+            }
+
+            return sum;
         }, 0);
 
-        // 3. Paid Invoices Count (excluding refunds/credit notes from count if desired, but usually we just count 'sales'. 
-        // For now, let's keep it simple: count all PAID documents or just INVOICE types? 
-        // Let's count only INVOICE types as "Paid Invoices" to be more accurate)
-        const paidInvoicesCount = strictlyPaidInvoices.filter(inv =>
-            inv.documentKind === 'INVOICE' || !inv.documentKind
+        // 3. Paid Invoices Count (Only count actual sales invoices)
+        const paidInvoicesCount = allDocuments.filter(inv =>
+            inv.status === 'PAID' && (inv.documentKind === 'INVOICE' || !inv.documentKind)
         ).length;
 
         // 4. Average Invoice Value
@@ -81,7 +86,7 @@ export async function GET(request: NextRequest) {
         // 5. Top Customers
         const customerMap = new Map<string, { name: string; email: string; totalSpent: number }>();
 
-        strictlyPaidInvoices.forEach(inv => {
+        allDocuments.forEach(inv => {
             if (inv.customer) {
                 const customerId = inv.customer.id;
                 const current = customerMap.get(customerId) || {
@@ -97,7 +102,8 @@ export async function GET(request: NextRequest) {
 
                 if (isRefund) {
                     current.totalSpent -= gross;
-                } else {
+                } else if (inv.status === 'PAID') {
+                    // Only add positive revenue for PAID invoices
                     current.totalSpent += gross;
                     if (inv.refundAmount) {
                         current.totalSpent -= Number(inv.refundAmount);
@@ -124,11 +130,28 @@ export async function GET(request: NextRequest) {
             monthlyIncomeMap.set(key, 0);
         }
 
-        strictlyPaidInvoices.forEach(inv => {
+        allDocuments.forEach(inv => {
             const d = new Date(inv.issueDate);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             if (monthlyIncomeMap.has(key)) {
-                monthlyIncomeMap.set(key, (monthlyIncomeMap.get(key) || 0) + Number(inv.totalGross));
+                const gross = Number(inv.totalGross);
+                const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
+                    inv.documentKind === 'REFUND_FULL' ||
+                    inv.documentKind === 'REFUND_PARTIAL';
+
+                let amountToAdd = 0;
+                if (isRefund) {
+                    amountToAdd = -gross;
+                } else if (inv.status === 'PAID') {
+                    amountToAdd = gross;
+                    if (inv.refundAmount) {
+                        amountToAdd -= Number(inv.refundAmount);
+                    }
+                }
+
+                if (amountToAdd !== 0) {
+                    monthlyIncomeMap.set(key, (monthlyIncomeMap.get(key) || 0) + amountToAdd);
+                }
             }
         });
 
