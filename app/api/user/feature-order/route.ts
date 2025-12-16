@@ -8,7 +8,9 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session?.user?.email) {
+        const userEmail = session?.user?.email
+
+        if (!userEmail) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
@@ -20,17 +22,13 @@ export async function POST(req: Request) {
         }
 
         const users = loadUsersFromDisk()
-        const userIndex = users.findIndex((u: any) => u.email === session.user.email)
+        const userIndex = users.findIndex((u: any) => u.email === userEmail)
 
         if (userIndex !== -1) {
             users[userIndex].featureOrder = featureOrder
             saveUsersToDisk(users)
         } else {
-            // User not found in local storage, might be a session-only user or first time
-            // We could create them, but for feature order it's fine to skip or create on the fly if needed
-            // For now, let's try to find if we can add it to a new user entry if we want full persistence
-            // But usually loadUsersFromDisk handles the main users.
-            console.warn(`User ${session.user.email} not found in local storage for feature order update`)
+            console.warn(`User ${userEmail} not found in local storage for feature order update`)
         }
 
         return NextResponse.json({ success: true })
@@ -43,12 +41,14 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session?.user?.email) {
+        const userEmail = session?.user?.email
+
+        if (!userEmail) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
         const users = loadUsersFromDisk()
-        const user = users.find((u: any) => u.email === session.user.email)
+        const user = users.find((u: any) => u.email === userEmail)
 
         return NextResponse.json({ featureOrder: user?.featureOrder || null })
     } catch (error) {
