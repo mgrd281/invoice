@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { ShopifyAPI } from '@/lib/shopify-api'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,12 +35,27 @@ export async function GET() {
             }
         })
 
-        const formattedProducts = products.map(p => ({
-            ...p,
-            _count: {
-                keys: p.keys.length
-            },
-            keys: undefined
+        // Fetch images from Shopify for each product
+        const shopifyApi = new ShopifyAPI()
+        const formattedProducts = await Promise.all(products.map(async (p) => {
+            let image = null
+            try {
+                const shopifyProduct = await shopifyApi.getProduct(p.shopifyProductId)
+                if (shopifyProduct && shopifyProduct.images && shopifyProduct.images.length > 0) {
+                    image = shopifyProduct.images[0].src
+                }
+            } catch (e) {
+                console.error(`Failed to fetch Shopify product ${p.shopifyProductId}`, e)
+            }
+
+            return {
+                ...p,
+                image,
+                _count: {
+                    keys: p.keys.length
+                },
+                keys: undefined
+            }
         }))
 
         return NextResponse.json({ success: true, data: formattedProducts })
