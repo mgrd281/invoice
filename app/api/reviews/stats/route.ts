@@ -105,13 +105,36 @@ export async function GET(request: NextRequest) {
             where: { organizationId: org.id, rating: { lte: 2 } }
         }) / totalReviews) * 100) : 0
 
+        // Helper to enhance reviews with Shopify images
+        const enhanceReviewsWithImages = async (reviews: any[]) => {
+            const { ShopifyAPI } = await import('@/lib/shopify-api')
+            const shopifyApi = new ShopifyAPI()
+
+            return Promise.all(reviews.map(async (review) => {
+                if (!review.productImage && review.productId) {
+                    try {
+                        const product = await shopifyApi.getProduct(review.productId)
+                        if (product && product.images && product.images.length > 0) {
+                            return { ...review, productImage: product.images[0].src }
+                        }
+                    } catch (e) {
+                        // Ignore error
+                    }
+                }
+                return review
+            }))
+        }
+
+        const enhancedRecentReviews = await enhanceReviewsWithImages(recentReviews)
+        const enhancedNegativeReviews = await enhanceReviewsWithImages(negativeReviews)
+
         return NextResponse.json({
             totalReviews,
             averageRating: parseFloat(averageRating.toFixed(1)),
             photoReviews,
             pendingReviews,
-            recentReviews,
-            negativeReviews,
+            recentReviews: enhancedRecentReviews,
+            negativeReviews: enhancedNegativeReviews,
             analysis: {
                 trend,
                 trendDirection,

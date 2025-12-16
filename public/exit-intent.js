@@ -1,5 +1,14 @@
 (function () {
-    const BASE_URL = 'https://invoice-production-8cd6.up.railway.app'; // Updated to actual deployed URL
+    // Dynamically determine BASE_URL from the script tag's source
+    let BASE_URL = 'https://invoice-production-8cd6.up.railway.app'; // Fallback
+    try {
+        const scriptUrl = document.currentScript ? document.currentScript.src : null;
+        if (scriptUrl) {
+            BASE_URL = new URL(scriptUrl).origin;
+        }
+    } catch (e) {
+        console.error('Failed to determine BASE_URL from script source, using fallback', e);
+    }
 
     function initExitIntent() {
         // Check if already shown in this session

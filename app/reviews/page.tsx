@@ -160,6 +160,11 @@ function useShopifyProducts() {
 export default function ReviewsPage() {
     const [activeTab, setActiveTab] = useState('overview')
     const { products: shopifyProducts } = useShopifyProducts()
+    const [origin, setOrigin] = useState('')
+
+    useEffect(() => {
+        setOrigin(window.location.origin)
+    }, [])
 
     // Stats State
     const [stats, setStats] = useState({
@@ -1491,7 +1496,10 @@ export default function ReviewsPage() {
                                                             key={stat.productId}
                                                             className="group bg-white rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:scale-[1.02] transition-all duration-300 cursor-pointer p-5 flex items-center gap-5 relative overflow-hidden"
                                                             onClick={() => {
-                                                                setSelectedProductStat(stat)
+                                                                setSelectedProductStat({
+                                                                    ...stat,
+                                                                    productImage: productImage
+                                                                })
                                                                 setViewMode('details')
                                                             }}
                                                         >
@@ -2333,13 +2341,13 @@ export default function ReviewsPage() {
                                     <Label>1. Script einbinden (theme.liquid)</Label>
                                     <p className="text-sm text-gray-500">Fügen Sie dies vor dem schließenden <code>&lt;/body&gt;</code> Tag ein:</p>
                                     <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm relative group">
-                                        <code>&lt;script src="https://invoice-production-8cd6.up.railway.app/review-widget.js" async&gt;&lt;/script&gt;</code>
+                                        <code>&lt;script src="{origin || 'https://your-domain.com'}/review-widget.js" async&gt;&lt;/script&gt;</code>
                                         <Button
                                             size="sm"
                                             variant="secondary"
                                             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={() => {
-                                                navigator.clipboard.writeText('<script src="https://invoice-production-8cd6.up.railway.app/review-widget.js" async></script>')
+                                                navigator.clipboard.writeText(`<script src="${origin}/review-widget.js" async></script>`)
                                                 toast.success('Code kopiert!')
                                             }}
                                         >
