@@ -19,7 +19,7 @@ export async function GET() {
 
     // 1. Check Storage Files
     try {
-        const storageDir = process.env.NODE_ENV === 'production' ? '/tmp/user-storage' : path.join(process.cwd(), 'user-storage')
+        const storageDir = path.join(process.cwd(), 'user-storage')
 
         const checkFile = (filename: string, loader: () => any[]) => {
             const filePath = path.join(storageDir, filename)
