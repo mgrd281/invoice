@@ -5,7 +5,7 @@ import { sendInvoiceEmail } from '@/lib/email-service'
 import { log } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60; // Set timeout to 60 seconds (Vercel limit for hobby)
+export const maxDuration = 300; // Set timeout to 300 seconds (5 minutes)
 
 export async function GET(req: Request) {
     try {
