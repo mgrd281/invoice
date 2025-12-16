@@ -75,6 +75,16 @@ export default function NewDigitalProductPage() {
     const handleBulkActivate = async () => {
         if (selectedProducts.length === 0) return
 
+        // DEBUG: Check types
+        const firstId = selectedProducts[0]
+        const found = products.find(p => p.id === firstId)
+        if (!found) {
+            const productType = products.length > 0 ? typeof products[0].id : 'empty'
+            const selectedType = typeof firstId
+            alert(`DEBUG ERROR: Product not found in list!\nSelected ID: ${firstId} (${selectedType})\nFirst Product ID: ${products[0]?.id} (${productType})`)
+            return
+        }
+
         setIsActivating(true)
         let successCount = 0
         let errorCount = 0
@@ -98,9 +108,14 @@ export default function NewDigitalProductPage() {
                     if (res.ok) {
                         successCount++
                     } else {
+                        const errorData = await res.json().catch(() => ({}))
+                        console.error('Activation failed:', errorData)
+                        alert(`Fehler bei Produkt ${product.title}: ${errorData.error || res.statusText}`)
                         errorCount++
                     }
-                } catch (e) {
+                } catch (e: any) {
+                    console.error('Request failed:', e)
+                    alert(`Netzwerkfehler bei Produkt ${product.title}: ${e.message}`)
                     errorCount++
                 }
             }
@@ -114,6 +129,8 @@ export default function NewDigitalProductPage() {
                 } else {
                     alert(`${successCount} Produkte aktiviert. ${errorCount} Fehler aufgetreten.`)
                 }
+            } else if (errorCount > 0) {
+                // Alert already shown in loop
             } else {
                 alert('Fehler beim Aktivieren der Produkte.')
             }
