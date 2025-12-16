@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield, AlertTriangle } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield, AlertTriangle, Calculator, Loader2, ArrowRight, FileSpreadsheet } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
+import { cn } from '@/lib/utils'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -218,12 +219,6 @@ export default function UploadPage() {
     const failedInvoices: any[] = []
     const startTime = Date.now()
 
-    // Let's create a Set of indices to remove for efficient lookup
-    const indicesToRemoveSet = new Set(indicesToRemove)
-
-    // We need to map the original indices to the actual invoice objects to know what we are saving.
-    // invoicesToSave is already passed in.
-
     // Let's iterate through chunks of invoicesToSave
     for (let i = 0; i < totalToSave; i += chunkSize) {
       const chunk = invoicesToSave.slice(i, i + chunkSize)
@@ -264,22 +259,14 @@ export default function UploadPage() {
           savedCount += chunk.length
 
           // Remove these specific invoices from previewInvoices
-          // We can't rely on indices anymore because the array might have changed (if we did this async/parallel, but here it's sequential).
-          // But to be safe and simple: We know `chunk` contains the exact objects we just saved.
           setPreviewInvoices(prev => prev.filter(inv => !chunk.includes(inv)))
 
-          // Also update selectedIndices. This is harder because indices shift.
-          // Easiest is to just clear selection or re-calculate. 
-          // If we are saving "Selected", we probably want to clear them as they are saved.
+          // Clear selection
           setSelectedIndices(prev => new Set())
 
         } else {
           console.error('Chunk failed', await response.json())
           failedInvoices.push(...chunk)
-          // If a chunk fails, we might want to stop or continue? 
-          // User said: "If a problem occurs... only remaining invoices should stay".
-          // So we continue to the next chunk? Or stop?
-          // Usually better to try next chunks.
         }
       } catch (error) {
         console.error('Chunk error', error)
@@ -327,9 +314,6 @@ export default function UploadPage() {
     const newInvoices = [...previewInvoices]
     newInvoices.splice(index, 1)
     setPreviewInvoices(newInvoices)
-
-    // Update selection indices - this is tricky, simpler to just clear selection or re-calculate
-    // For simplicity, let's clear selection if we delete something to avoid index mismatch
     setSelectedIndices(new Set())
   }
 
@@ -365,18 +349,18 @@ export default function UploadPage() {
     // Construct data object for InvoicePreviewDialog
     const data = {
       customer: {
-        companyName: invoice.customerName, // Assuming name is company or person
+        companyName: invoice.customerName,
         name: invoice.customerName,
         address: invoice.customerAddress,
         zipCode: invoice.customerZip,
         city: invoice.customerCity,
         country: invoice.customerCountry,
-        type: 'company' // Default to company for now
+        type: 'company'
       },
       invoiceData: {
         invoiceNumber: invoice.number,
         date: invoice.date,
-        deliveryDate: invoice.date, // Default to invoice date
+        deliveryDate: invoice.date,
         headerSubject: `Rechnung Nr. ${invoice.number}`,
         headerText: 'Vielen Dank für Ihren Auftrag. Wir stellen Ihnen folgende Leistungen in Rechnung:',
         footerText: 'Bitte überweisen Sie den Betrag innerhalb von 14 Tagen.'
@@ -418,318 +402,198 @@ export default function UploadPage() {
     }
   }
 
+  const steps = [
+    { id: 1, name: 'Datei hochladen' },
+    { id: 2, name: 'Vorschau & Prüfung' },
+    { id: 3, name: 'Import abschließen' }
+  ]
+
+  const currentStep = previewInvoices.length > 0 ? 2 : 1
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück
-                </Button>
-              </Link>
-              <FileText className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">
-                CSV/Excel Import
-              </h1>
+      <header className="bg-white border-b sticky top-0 z-30 backdrop-blur-xl bg-white/80">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/invoices">
+              <Button variant="ghost" size="sm" className="gap-2 text-gray-500 hover:text-gray-900">
+                <ArrowLeft className="h-4 w-4" />
+                Zurück
+              </Button>
+            </Link>
+            <div className="h-6 w-px bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-100 rounded-lg">
+                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+              </div>
+              <h1 className="font-semibold text-gray-900">CSV/Excel Import</h1>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        {/* Preview Section */}
-        {previewInvoices.length > 0 ? (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Vorschau ({previewInvoices.length} Rechnungen)</CardTitle>
-                  <CardDescription>
-                    Bitte überprüfen Sie die importierten Daten und bestätigen Sie die Speicherung.
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-4">
-                  {/* Template Selector */}
-                  <div className="w-[200px]">
-                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Vorlage wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templates.map(t => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Steps */}
+        <div className="mb-12">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-between">
+              {steps.map((step) => {
+                const isCompleted = currentStep > step.id
+                const isCurrent = currentStep === step.id
+                return (
+                  <div key={step.name} className="flex flex-col items-center bg-gray-50 px-4 relative z-10">
+                    <div className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
+                      isCompleted ? "border-blue-600 bg-blue-600 text-white" :
+                        isCurrent ? "border-blue-600 bg-white text-blue-600" :
+                          "border-gray-300 bg-white text-gray-400"
+                    )}>
+                      {isCompleted ? <Check className="h-4 w-4" /> : <span className="text-xs font-bold">{step.id}</span>}
+                    </div>
+                    <span className={cn(
+                      "mt-2 text-xs font-medium",
+                      isCurrent ? "text-blue-600" : "text-gray-500"
+                    )}>{step.name}</span>
                   </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
 
-                  <div className="space-x-2">
-                    {saving ? (
-                      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-500">
-                        <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 w-[400px] flex flex-col items-center transform scale-100 transition-all">
-
-                          {/* Icon & Title */}
-                          <div className="mb-6 flex flex-col items-center">
-                            <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 relative">
-                              <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
-                              <Save className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900">Speichere Rechnungen</h3>
-                            <p className="text-sm text-gray-500 mt-1">Bitte warten, Daten werden verarbeitet...</p>
-                          </div>
-
-                          {/* Progress Bar */}
-                          <div className="w-full mb-2">
-                            <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
-                              <span>Fortschritt</span>
-                              <span className="text-blue-600">{saveProgress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
-                              <div
-                                className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg relative overflow-hidden"
-                                style={{ width: `${saveProgress}%` }}
-                              >
-                                <div className="absolute inset-0 bg-white/30 w-full h-full animate-[shimmer_2s_infinite]"></div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Time Estimate */}
-                          {saveEstimatedTime > 0 && (
-                            <div className="flex items-center gap-2 mt-4 bg-blue-50 px-4 py-2 rounded-full text-blue-700 text-sm font-medium">
-                              <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                              </span>
-                              Noch ca. {Math.floor(saveEstimatedTime / 60)}:{String(Math.floor(saveEstimatedTime % 60)).padStart(2, '0')} verbleibend
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <Button variant="destructive" onClick={handleDeleteAll}>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Alle löschen
-                        </Button>
-                        <Button
-                          onClick={selectedIndices.size > 0 ? handleConfirmSelected : handleConfirmAll}
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          {selectedIndices.size > 0 ? `${selectedIndices.size} speichern` : 'Alle speichern'}
-                        </Button>
-                      </>
-                    )}
+        {currentStep === 1 && (
+          <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="border-none shadow-lg shadow-gray-200/50 overflow-hidden">
+              <CardHeader className="bg-white border-b border-gray-100 pb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Upload className="h-5 w-5 text-blue-600" />
                   </div>
+                  <CardTitle>Datei hochladen</CardTitle>
                 </div>
+                <CardDescription>
+                  Laden Sie Ihre Shopify-Bestellungen als CSV, Excel oder Numbers Datei hoch.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">
-                        <Checkbox
-                          checked={previewInvoices.length > 0 && selectedIndices.size === previewInvoices.length}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </TableHead>
-                      <TableHead>Bestellnummer</TableHead>
-                      <TableHead>Kunde</TableHead>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Betrag</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead className="text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {previewInvoices.map((inv, idx) => (
-                      <TableRow
-                        key={idx}
-                        className={duplicates.has(inv.number) ? 'bg-yellow-50 hover:bg-yellow-100' : ''}
-                      >
-                        <TableCell className="w-[50px]">
-                          <Checkbox
-                            checked={selectedIndices.has(idx)}
-                            onCheckedChange={() => toggleSelect(idx)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center">
-                            {inv.number}
-                            {duplicates.has(inv.number) && (
-                              <div className="ml-2 text-yellow-600" title="Diese Rechnungsnummer existiert bereits">
-                                <AlertTriangle className="h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{inv.customerName}</span>
-                            <span className="text-xs text-gray-500">{inv.customerEmail}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {inv.date && new Date(inv.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                            </span>
-                            {inv.date && (
-                              <span className="text-xs text-gray-500">
-                                {new Date(inv.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{inv.amount}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={inv.statusColor}>
-                            {inv.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {inv.document_kind}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="ghost" size="icon" onClick={() => handlePreview(idx)} title="Vorschau">
-                              <Eye className="h-4 w-4 text-gray-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleConfirmSingle(idx)} title="Speichern">
-                              <Check className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(idx)} title="Bearbeiten">
-                              <Edit2 className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(idx)} title="Löschen">
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </div >
-        ) : (
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Upload className="h-6 w-6 mr-2 text-blue-600" />
-                Datei hochladen
-              </CardTitle>
-              <CardDescription>
-                Laden Sie Ihre Shopify-Bestellungen als CSV, Excel oder Numbers Datei hoch.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* File Upload */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Datei auswählen
-                  </label>
-
-                  {/* Hidden file input */}
+              <CardContent className="p-8 space-y-8">
+                {/* Upload Zone */}
+                <div className="space-y-4">
+                  <Label className="text-base font-medium">Datei auswählen</Label>
                   <input
                     id="file-input"
                     type="file"
                     accept=".csv,.numbers,.xlsx"
                     onChange={handleFileChange}
                     className="hidden"
-                    aria-label="Datei auswählen"
                   />
-
-                  {/* Custom file upload button */}
                   <div
                     onClick={() => document.getElementById('file-input')?.click()}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragActive
-                      ? 'border-blue-400 bg-blue-50'
-                      : 'border-gray-300 hover:border-gray-400'
-                      }`}
+                    className={cn(
+                      "group relative cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200 ease-in-out",
+                      dragActive ? "border-blue-500 bg-blue-50/50 scale-[1.01]" : "border-gray-200 hover:border-blue-400 hover:bg-gray-50/50"
+                    )}
                   >
-                    <Upload className={`h-8 w-8 mx-auto mb-2 ${dragActive ? 'text-blue-500' : 'text-gray-400'
-                      }`} />
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium text-blue-600 hover:text-blue-500">
-                        Datei auswählen
-                      </span>
-                      {' '}oder hier ablegen
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      CSV, Numbers oder Excel Dateien werden unterstützt
-                    </p>
+                    <div className="mb-4 flex justify-center">
+                      <div className={cn(
+                        "rounded-full p-4 transition-colors",
+                        dragActive ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500"
+                      )}>
+                        <Upload className="h-8 w-8" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        <span className="text-blue-600">Datei auswählen</span> oder hier ablegen
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        CSV, Numbers oder Excel Dateien werden unterstützt
+                      </p>
+                    </div>
                   </div>
+
+                  {file && (
+                    <div className="flex items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white rounded-lg border border-blue-100">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                          <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setFile(null)} className="text-gray-400 hover:text-red-500">
+                        <XCircle className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {file && (
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <div className="flex items-center">
-                      <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                      <span className="text-sm text-blue-800">
-                        Ausgewählte Datei: {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                      </span>
+                {/* Import Target Cards */}
+                <div className="space-y-4">
+                  <Label className="text-base font-medium">Importieren als:</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div
+                      onClick={() => setImportTarget(importTarget === 'accounting' ? 'both' : 'invoices')}
+                      className={cn(
+                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
+                        importTarget === 'invoices' || importTarget === 'both' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
+                      )}
+                    >
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className={cn("p-2.5 rounded-xl", importTarget === 'invoices' || importTarget === 'both' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className={cn("font-semibold", importTarget === 'invoices' || importTarget === 'both' ? "text-blue-900" : "text-gray-900")}>Rechnungen</h3>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Importieren Sie Rechnungen mit allen Positionen und Kundendaten.</p>
+                        </div>
+                        {(importTarget === 'invoices' || importTarget === 'both') && (
+                          <div className="absolute top-4 right-4 text-blue-600">
+                            <CheckCircle className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setImportTarget(importTarget === 'invoices' ? 'both' : 'accounting')}
+                      className={cn(
+                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
+                        importTarget === 'accounting' || importTarget === 'both' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
+                      )}
+                    >
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className={cn("p-2.5 rounded-xl", importTarget === 'accounting' || importTarget === 'both' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
+                          <Calculator className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className={cn("font-semibold", importTarget === 'accounting' || importTarget === 'both' ? "text-blue-900" : "text-gray-900")}>Buchhaltung</h3>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Erfassen Sie Einnahmen oder Ausgaben direkt in der Buchhaltung.</p>
+                        </div>
+                        {(importTarget === 'accounting' || importTarget === 'both') && (
+                          <div className="absolute top-4 right-4 text-blue-600">
+                            <CheckCircle className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {/* Import Target Selection */}
-                <div className="space-y-3 pt-2">
-                  <Label>Importieren als:</Label>
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="target-invoices"
-                        checked={importTarget === 'invoices' || importTarget === 'both'}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setImportTarget(importTarget === 'accounting' ? 'both' : 'invoices')
-                          } else {
-                            if (importTarget === 'both') setImportTarget('accounting')
-                            // Prevent unchecking if it's the only one, or handle validation later
-                          }
-                        }}
-                      />
-                      <Label htmlFor="target-invoices" className="cursor-pointer">Rechnungen (Invoices)</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="target-accounting"
-                        checked={importTarget === 'accounting' || importTarget === 'both'}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setImportTarget(importTarget === 'invoices' ? 'both' : 'accounting')
-                          } else {
-                            if (importTarget === 'both') setImportTarget('invoices')
-                          }
-                        }}
-                      />
-                      <Label htmlFor="target-accounting" className="cursor-pointer">Buchhaltung</Label>
-                    </div>
-                  </div>
-
-                  {/* Accounting Type Selection - Only if Accounting is selected */}
+                  {/* Accounting Type Selection */}
                   {(importTarget === 'accounting' || importTarget === 'both') && (
-                    <div className="ml-6 mt-2 p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <Label className="mb-2 block text-sm font-medium">Buchungstyp:</Label>
+                    <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in slide-in-from-top-2 duration-200">
+                      <Label className="mb-2 block text-sm font-medium">Buchungstyp wählen:</Label>
                       <Select value={accountingType} onValueChange={(v: any) => setAccountingType(v)}>
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-white h-10">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -742,219 +606,252 @@ export default function UploadPage() {
                   )}
                 </div>
 
-                {/* Upload Button or Progress Bar */}
-                {uploading ? (
-                  <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-100 rounded-2xl p-8 shadow-lg relative overflow-hidden">
-                    {/* Decorative background elements */}
-                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
-                    <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-purple-100 rounded-full blur-3xl opacity-50"></div>
-
-                    <div className="flex flex-col items-center justify-center text-center relative z-10">
-                      <div className="mb-6 relative">
-                        <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center shadow-md relative">
-                          <div className="absolute inset-0 rounded-full border-4 border-blue-50 border-t-blue-500 animate-spin"></div>
-                          {uploadProgress === 100 ? (
-                            <CheckCircle className="h-10 w-10 text-green-500 animate-in zoom-in duration-300" />
-                          ) : (
-                            <Upload className="h-8 w-8 text-blue-600" />
-                          )}
-                        </div>
-                      </div>
-
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {uploadProgress === 100 ? 'Upload erfolgreich!' : 'Datei wird hochgeladen...'}
-                      </h3>
-                      <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-                        {uploadProgress === 100 ? 'Daten werden verarbeitet' : 'Ihre Daten werden sicher übertragen und analysiert.'}
-                      </p>
-
-                      <div className="w-full max-w-md mb-4">
-                        <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
-                          <span>Fortschritt</span>
-                          <span className="text-blue-600">{Math.round(uploadProgress)}%</span>
-                        </div>
-                        <div className="w-full bg-white rounded-full h-3 overflow-hidden shadow-inner border border-gray-100">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm relative overflow-hidden"
-                            style={{ width: `${uploadProgress}%` }}
-                          >
-                            <div className="absolute inset-0 bg-white/30 w-full h-full animate-[shimmer_2s_infinite]"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {estimatedTime > 0 && (
-                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-1.5 rounded-full text-blue-700 text-sm font-medium border border-blue-100 shadow-sm">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                          </span>
-                          Noch ca. {Math.floor(estimatedTime / 60)}:{String(Math.floor(estimatedTime % 60)).padStart(2, '0')} verbleibend
-                        </div>
-                      )}
-
-                      <div className="flex items-center mt-6 text-xs text-gray-400 bg-white/50 px-3 py-1 rounded-full">
-                        <Shield className="h-3 w-3 mr-1.5 text-green-600" />
-                        End-to-End verschlüsselt
-                      </div>
-                    </div>
+                {/* Template Selection */}
+                {templates.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Vorlage wählen</Label>
+                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <SelectTrigger className="w-full bg-white h-10">
+                        <SelectValue placeholder="Vorlage wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((t: any) => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <Button
-                    onClick={handleUpload}
-                    disabled={!file}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Vorschau anzeigen
-                  </Button>
                 )}
-              </div>
 
-              {/* Status Messages */}
-              {uploadStatus.type !== 'idle' && (
-                <div className={`p-4 rounded-md ${uploadStatus.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      {uploadStatus.type === 'success' ? (
-                        <CheckCircle className="h-5 w-5 text-green-400" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-400" />
-                      )}
+                {/* Action Button */}
+                <Button
+                  size="lg"
+                  className="w-full h-12 text-base font-medium shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all"
+                  disabled={!file || uploading}
+                  onClick={handleUpload}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ```
+                      Verarbeite Datei...
+                    </>
+                  ) : (
+                    <>
+                      Vorschau anzeigen
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </>
+                  )}
+                </Button>
+
+                {uploading && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
                     </div>
-                    <div className="ml-3 flex-1">
-                      <p className={`text-sm font-medium ${uploadStatus.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-                        {uploadStatus.message}
-                      </p>
-                      {uploadStatus.errors && uploadStatus.errors.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-sm text-red-700">Fehler:</p>
-                          <ul className="mt-1 text-sm text-red-600 list-disc list-inside">
-                            {uploadStatus.errors.map((error: string, index: number) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Wird verarbeitet...</span>
+                      <span>{uploadProgress}%</span>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Template Download */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-medium text-blue-900">CSV-Vorlage mit Beispielen herunterladen</h3>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Laden Sie eine umfassende CSV-Datei mit Beispielen für alle Rechnungstypen herunter.
-                    </p>
+                {/* Error Message */}
+                {uploadStatus.type === 'error' && (
+                  <div className="p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 text-sm border border-red-100">
+                    <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                    {uploadStatus.message}
                   </div>
-                  <a href="/api/csv-template" download="rechnungen-vorlage-mit-beispielen.csv">
-                    <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100">
-                      <Download className="h-4 w-4 mr-2" />
-                      Vorlage herunterladen
-                    </Button>
-                  </a>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Template Download */}
+            <div className="rounded-xl bg-gradient-to-br from-gray-50 to-white p-6 border border-gray-200 flex items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                  <FileSpreadsheet className="h-6 w-6 text-gray-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">CSV-Vorlage herunterladen</h3>
+                  <p className="text-sm text-gray-500">Nutzen Sie unsere Vorlage für beste Ergebnisse.</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )
-        }
+              <a href="/api/csv-template" download="rechnungen-vorlage-mit-beispielen.csv">
+                <Button variant="outline" className="bg-white hover:bg-gray-50">
+                  <Download className="mr-2 h-4 w-4" />
+                  Vorlage laden
+                </Button>
+              </a>
+            </div>
+          </div>
+        )}
 
-        {/* Edit Dialog */}
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Rechnung bearbeiten</DialogTitle>
-            </DialogHeader>
-            {editingInvoice && (
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="number" className="text-right">
-                    Bestellnummer
-                  </Label>
-                  <Input
-                    id="number"
-                    value={editingInvoice.shopifyOrderNumber}
-                    onChange={(e) => setEditingInvoice({ ...editingInvoice, shopifyOrderNumber: e.target.value })}
-                    className="col-span-3"
-                  />
+        {currentStep === 2 && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="border-none shadow-lg shadow-gray-200/50">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 pb-6">
+                <div className="space-y-1">
+                  <CardTitle className="text-xl">Vorschau ({previewInvoices.length} Einträge)</CardTitle>
+                  <CardDescription>
+                    Überprüfen Sie die Daten vor dem endgültigen Import.
+                  </CardDescription>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Kunde
-                  </Label>
-                  <Input
-                    id="name"
-                    value={editingInvoice.customerName}
-                    onChange={(e) => setEditingInvoice({ ...editingInvoice, customerName: e.target.value })}
-                    className="col-span-3"
-                  />
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" onClick={() => { setPreviewInvoices([]); setFile(null); }}>
+                    Abbrechen
+                  </Button>
+                  <Button onClick={selectedIndices.size > 0 ? handleConfirmSelected : handleConfirmAll} className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200">
+                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                    {selectedIndices.size > 0 ? `${selectedIndices.size} importieren` : 'Alle importieren'}
+                  </Button>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    value={editingInvoice.customerEmail}
-                    onChange={(e) => setEditingInvoice({ ...editingInvoice, customerEmail: e.target.value })}
-                    className="col-span-3"
-                  />
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                        <TableHead className="w-[50px]">
+                          <Checkbox checked={previewInvoices.length > 0 && selectedIndices.size === previewInvoices.length} onCheckedChange={toggleSelectAll} />
+                        </TableHead>
+                        <TableHead>Bestellnummer</TableHead>
+                        <TableHead>Kunde</TableHead>
+                        <TableHead>Datum</TableHead>
+                        <TableHead>Betrag</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Aktionen</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {previewInvoices.map((inv, idx) => (
+                        <TableRow key={idx} className="hover:bg-gray-50/50 transition-colors">
+                          <TableCell><Checkbox checked={selectedIndices.has(idx)} onCheckedChange={() => toggleSelect(idx)} /></TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {inv.number}
+                              {duplicates.has(String(inv.number)) && (
+                                <span title="Duplikat">
+                                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-gray-900">{inv.customerName}</span>
+                              <span className="text-xs text-gray-500">{inv.customerEmail}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{inv.date && new Date(inv.date).toLocaleDateString('de-DE')}</TableCell>
+                          <TableCell className="font-mono font-medium">{inv.amount}</TableCell>
+                          <TableCell><Badge variant="outline" className={inv.statusColor}>{inv.status}</Badge></TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600" onClick={() => handlePreview(idx)}><Eye className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600" onClick={() => handleEdit(idx)}><Edit2 className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600" onClick={() => handleDelete(idx)}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="date" className="text-right">
-                    Datum
-                  </Label>
-                  <Input
-                    id="date"
-                    value={editingInvoice.date}
-                    onChange={(e) => setEditingInvoice({ ...editingInvoice, date: e.target.value })}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="status" className="text-right">
-                    Status
-                  </Label>
-                  <Select
-                    value={editingInvoice.status}
-                    onValueChange={(value) => setEditingInvoice({ ...editingInvoice, status: value })}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Status wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Bezahlt">Bezahlt</SelectItem>
-                      <SelectItem value="Offen">Offen</SelectItem>
-                      <SelectItem value="Überfällig">Überfällig</SelectItem>
-                      <SelectItem value="Storniert">Storniert</SelectItem>
-                      <SelectItem value="Gutschrift">Gutschrift</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </main>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rechnung bearbeiten</DialogTitle>
+          </DialogHeader>
+          {editingInvoice && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="number" className="text-right">
+                  Bestellnummer
+                </Label>
+                <Input
+                  id="number"
+                  value={editingInvoice.shopifyOrderNumber || editingInvoice.number}
+                  onChange={(e) => setEditingInvoice({ ...editingInvoice, shopifyOrderNumber: e.target.value })}
+                  className="col-span-3"
+                />
               </div>
-            )}
-            <DialogFooter>
-              <Button type="submit" onClick={handleSaveEdit}>Speichern</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Kunde
+                </Label>
+                <Input
+                  id="name"
+                  value={editingInvoice.customerName}
+                  onChange={(e) => setEditingInvoice({ ...editingInvoice, customerName: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={editingInvoice.customerEmail}
+                  onChange={(e) => setEditingInvoice({ ...editingInvoice, customerEmail: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date" className="text-right">
+                  Datum
+                </Label>
+                <Input
+                  id="date"
+                  value={editingInvoice.date}
+                  onChange={(e) => setEditingInvoice({ ...editingInvoice, date: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status" className="text-right">
+                  Status
+                </Label>
+                <Select
+                  value={editingInvoice.status}
+                  onValueChange={(value) => setEditingInvoice({ ...editingInvoice, status: value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Status wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bezahlt">Bezahlt</SelectItem>
+                    <SelectItem value="Offen">Offen</SelectItem>
+                    <SelectItem value="Überfällig">Überfällig</SelectItem>
+                    <SelectItem value="Storniert">Storniert</SelectItem>
+                    <SelectItem value="Gutschrift">Gutschrift</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="submit" onClick={handleSaveEdit}>Speichern</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Invoice Preview Dialog */}
-        {
-          previewData && (
-            <InvoicePreviewDialog
-              open={previewOpen}
-              onOpenChange={setPreviewOpen}
-              data={previewData}
-            />
-          )
-        }
-      </main >
-    </div >
+      <InvoicePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        data={previewData}
+      />
+    </div>
   )
 }
