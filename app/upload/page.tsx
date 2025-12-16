@@ -75,12 +75,20 @@ export default function UploadPage() {
     fetch('/api/templates')
       .then(res => res.json())
       .then(data => {
-        setTemplates(data)
-        const defaultTemplate = data.find((t: any) => t.isDefault)
-        if (defaultTemplate) setSelectedTemplateId(defaultTemplate.id)
-        else if (data.length > 0) setSelectedTemplateId(data[0].id)
+        if (Array.isArray(data)) {
+          setTemplates(data)
+          const defaultTemplate = data.find((t: any) => t.isDefault)
+          if (defaultTemplate) setSelectedTemplateId(defaultTemplate.id)
+          else if (data.length > 0) setSelectedTemplateId(data[0].id)
+        } else {
+          console.error('Templates API returned non-array:', data)
+          setTemplates([])
+        }
       })
-      .catch(err => console.error('Failed to fetch templates:', err))
+      .catch(err => {
+        console.error('Failed to fetch templates:', err)
+        setTemplates([])
+      })
   }, [])
 
   // Check for duplicates when previewInvoices changes
