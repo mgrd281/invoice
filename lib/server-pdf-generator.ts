@@ -1,4 +1,4 @@
-
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { generateArizonaPDF } from '@/lib/arizona-pdf-generator'
 import { mapPrismaInvoiceToData } from '@/lib/shopify-order-handler'
