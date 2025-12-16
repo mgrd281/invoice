@@ -1,151 +1,187 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth-middleware'
-import { loadInvoicesFromDisk, saveInvoicesToDisk } from '@/lib/server-storage'
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const searchParams = request.nextUrl.searchParams
+    const { searchParams } = new URL(req.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
-    const from = searchParams.get('from')
-    const to = searchParams.get('to')
+    const status = searchParams.get('status') || 'all'
+    const dateRange = searchParams.get('dateRange') || 'all'
 
-    // Load from disk
-    let allInvoices = loadInvoicesFromDisk()
+    const skip = (page - 1) * limit
 
-    // Filter
-    let filtered = allInvoices.filter((inv: any) => {
-      // Search
-      if (search) {
-        const term = search.toLowerCase()
-        const matchesNumber = (inv.number || inv.invoiceNumber || '').toLowerCase().includes(term)
-        const matchesCustomer = (inv.customer?.name || '').toLowerCase().includes(term) || (inv.customer?.email || '').toLowerCase().includes(term)
-        const matchesOrder = (inv.orderNumber || '').toLowerCase().includes(term)
-        if (!matchesNumber && !matchesCustomer && !matchesOrder) return false
-      }
+    const where: Prisma.InvoiceWhereInput = {}
 
-      // Date
-      const invDate = new Date(inv.date || inv.issueDate)
-      if (from && invDate < new Date(from)) return false
-      if (to) {
-        const toDate = new Date(to)
-        toDate.setHours(23, 59, 59, 999)
-        if (invDate > toDate) return false
-      }
+    // Search filter
+    if (search) {
+      where.OR = [
+        { invoiceNumber: { contains: search, mode: 'insensitive' } },
+        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { customer: { email: { contains: search, mode: 'insensitive' } } }
+      ]
+    }
 
-      return true
+    // Status filter
+    if (status !== 'all') {
+      where.status = status
+    }
+
+    // Date range filter
+    const now = new Date()
+    if (dateRange === 'today') {
+      const start = new Date(now.setHours(0, 0, 0, 0))
+      const end = new Date(now.setHours(23, 59, 59, 999))
+      where.issueDate = { gte: start, lte: end }
+    } else if (dateRange === 'week') {
+      const start = new Date(now.setDate(now.getDate() - 7))
+      where.issueDate = { gte: start }
+    } else if (dateRange === 'month') {
+      const start = new Date(now.setMonth(now.getMonth() - 1))
+      where.issueDate = { gte: start }
+    } else if (dateRange === 'year') {
+      const start = new Date(now.setFullYear(now.getFullYear() - 1))
+      where.issueDate = { gte: start }
+    }
+
+    // Execute query
+    const [invoices, total] = await Promise.all([
+      prisma.invoice.findMany({
+        where,
+        include: {
+          customer: true,
+          items: true
+        },
+        orderBy: { issueDate: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.invoice.count({ where })
+    ])
+
+    // Calculate stats
+    const totalAmount = await prisma.invoice.aggregate({
+      where,
+      _sum: { totalGross: true }
     })
 
-    // Sort (Newest first)
-    filtered.sort((a: any, b: any) => {
-      const dateA = new Date(a.date || a.issueDate).getTime()
-      const dateB = new Date(b.date || b.issueDate).getTime()
-      return dateB - dateA
-    })
-
-    // Pagination
-    const totalCount = filtered.length
-    const paginated = filtered.slice((page - 1) * limit, page * limit)
-
-    // Map to Frontend
-    const mapped = paginated.map((inv: any) => ({
+    // Map to frontend format
+    const mappedInvoices = invoices.map(inv => ({
       id: inv.id,
-      number: inv.number || inv.invoiceNumber,
-      date: inv.date || inv.issueDate,
-      dueDate: inv.dueDate,
-      subtotal: Number(inv.subtotal || inv.totalNet || 0),
-      taxRate: Number(inv.taxRate || 19),
-      taxAmount: Number(inv.taxAmount || inv.totalTax || 0),
-      total: Number(inv.subtotalGross || inv.totalGross || inv.total || 0),
-      status: inv.status || 'Offen',
-      paymentMethod: inv.paymentMethod || '-',
-      customer: inv.customer,
-      items: [], // List view doesn't need items
-      emailStatus: inv.emailStatus || { sent: false },
-      orderNumber: inv.orderNumber,
-      document_kind: inv.documentKind || inv.document_kind
+      invoiceNumber: inv.invoiceNumber,
+      date: inv.issueDate.toISOString(),
+      dueDate: inv.dueDate?.toISOString(),
+      status: inv.status,
+      customer: {
+        name: inv.customer.name,
+        email: inv.customer.email,
+        address: inv.customer.address,
+      },
+      items: inv.items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        total: Number(item.total),
+        taxRate: Number(item.taxRate)
+      })),
+      subtotal: Number(inv.totalNet),
+      taxTotal: Number(inv.totalTax),
+      total: Number(inv.totalGross),
+      currency: inv.currency || 'EUR',
+      notes: inv.notes
     }))
 
-    // Stats
-    let totalVat19 = 0
-    let totalVat7 = 0
-    let totalPaidAmount = 0
-
-    filtered.forEach((inv: any) => {
-      if (inv.status === 'Bezahlt' || inv.status === 'PAID') {
-        const amount = Number(inv.subtotalGross || inv.totalGross || inv.total || 0)
-        totalPaidAmount += amount
-        // Simplified VAT calc for stats
-        const tax = Number(inv.taxAmount || inv.totalTax || 0)
-        totalVat19 += tax // Assume 19 for now or check taxRate
-      }
-    })
-
     return NextResponse.json({
-      invoices: mapped,
+      invoices: mappedInvoices,
       pagination: {
-        total: totalCount,
-        pages: Math.ceil(totalCount / limit),
+        total,
+        pages: Math.ceil(total / limit),
         page,
         limit
       },
       stats: {
-        totalVat19,
-        totalVat7,
-        totalPaidAmount
+        totalAmount: Number(totalAmount._sum.totalGross || 0),
+        count: total
       }
     })
 
   } catch (error) {
     console.error('Error fetching invoices:', error)
-    return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 })
+    return new NextResponse('Internal Error', { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const authResult = requireAuth(request)
-    if ('error' in authResult) return authResult.error
-
-    const body = await request.json()
-
-    // Basic calculation if needed, but assuming frontend sends correct data
-    const newInvoice = {
-      id: crypto.randomUUID(),
-      ...body,
-      // Map to JSON schema fields
-      number: body.invoiceNumber,
-      date: body.date,
-      issueDate: body.date, // Store both for compatibility
-      invoiceNumber: body.invoiceNumber,
-
-      totalNet: Number(body.totalNet || 0),
-      totalGross: Number(body.totalGross || 0),
-      totalTax: Number(body.totalTax || 0),
-
-      subtotal: Number(body.totalNet || 0), // JSON schema compatibility
-      subtotalGross: Number(body.totalGross || 0),
-      taxAmount: Number(body.totalTax || 0),
-
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const invoices = loadInvoicesFromDisk()
-    invoices.push(newInvoice)
-    saveInvoicesToDisk(invoices)
+    const body = await req.json()
 
-    return NextResponse.json(newInvoice, { status: 201 })
+    // Create invoice in DB
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber: body.invoiceNumber,
+        issueDate: new Date(body.date),
+        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        status: body.status || 'DRAFT',
+        totalNet: body.subtotal,
+        totalTax: body.taxTotal,
+        totalGross: body.total,
+        currency: body.currency || 'EUR',
+        notes: body.notes,
+        customer: {
+          connectOrCreate: {
+            where: { email: body.customer.email },
+            create: {
+              name: body.customer.name,
+              email: body.customer.email,
+              address: body.customer.address,
+              phone: body.customer.phone,
+              // Add required fields with defaults if missing
+              zipCode: body.customer.zipCode || '',
+              city: body.customer.city || '',
+              organization: {
+                connect: { id: 'default-org-id' } // This might be tricky if org ID is dynamic
+              }
+            }
+          }
+        },
+        items: {
+          create: body.items.map((item: any) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            grossAmount: item.total, // Mapped total to grossAmount
+            netAmount: item.total, // Assuming net = gross for now or calc properly
+            taxAmount: 0, // Default
+            taxRateId: 'default-tax-rate' // Placeholder
+          }))
+        }
+      },
+      include: {
+        customer: true,
+        items: true
+      }
+    })
+
+    return NextResponse.json(invoice)
+
   } catch (error) {
     console.error('Error creating invoice:', error)
-    return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 })
+    return new NextResponse('Internal Error', { status: 500 })
   }
 }
