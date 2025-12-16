@@ -27,27 +27,26 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session) {
+        if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
         const body = await req.json()
 
-        // 1. Find ANY existing organization first to avoid unique constraint errors
-        let org = await prisma.organization.findFirst()
+        // 1. Get current user with organization
+        const currentUser = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            include: { organization: true }
+        })
 
-        // 2. If no organization exists, create a default one
-        if (!org) {
-            org = await prisma.organization.create({
-                data: {
-                    name: 'Default Organization',
-                    slug: 'default-org-' + Date.now(), // Ensure uniqueness
-                    address: 'Musterstraße 1',
-                    zipCode: '12345',
-                    city: 'Musterstadt'
-                }
-            })
+        if (!currentUser?.organization) {
+            return NextResponse.json(
+                { error: 'User has no organization linked.' },
+                { status: 400 }
+            )
         }
+
+        const orgId = currentUser.organization.id
 
         const product = await prisma.digitalProduct.upsert({
             where: {
@@ -55,12 +54,16 @@ export async function POST(req: Request) {
             },
             update: {
                 title: body.title,
+                // CRITICAL: Move product to current user's organization if it belongs to another one
+                organization: {
+                    connect: { id: orgId }
+                }
             },
             create: {
                 title: body.title,
                 shopifyProductId: body.shopifyProductId,
                 organization: {
-                    connect: { id: org.id }
+                    connect: { id: orgId }
                 }
             }
         })
