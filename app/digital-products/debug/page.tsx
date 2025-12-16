@@ -33,13 +33,33 @@ export default function DigitalProductsDebugPage() {
     const userOrgId = data.currentUser?.organizationId
     const hasProducts = data.products && data.products.length > 0
 
+    const fixProducts = async () => {
+        if (!confirm('Möchten Sie alle Produkte in Ihre Organisation verschieben?')) return
+        setLoading(true)
+        try {
+            const res = await fetch('/api/debug/fix-products', { method: 'POST' })
+            const json = await res.json()
+            alert(json.message)
+            fetchData()
+        } catch (e) {
+            alert('Fehler beim Reparieren')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Digital Products Debugger</h1>
-                <Button onClick={fetchData} variant="outline">
-                    <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
-                </Button>
+                <div className="space-x-2">
+                    <Button onClick={fixProducts} variant="destructive">
+                        <CheckCircle className="mr-2 h-4 w-4" /> Alle Produkte reparieren
+                    </Button>
+                    <Button onClick={fetchData} variant="outline">
+                        <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
+                    </Button>
+                </div>
             </div>
 
             {/* 1. User Context */}
