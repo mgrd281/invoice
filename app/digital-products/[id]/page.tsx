@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,8 @@ import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Checkbox } from '@/components/ui/checkbox'
-export default function DigitalProductDetailPage({ params }: { params: { id: string } }) {
+export default function DigitalProductDetailPage() {
+    const params = useParams()
     const router = useRouter()
     const [product, setProduct] = useState<any>(null)
     const [keys, setKeys] = useState<any[]>([])

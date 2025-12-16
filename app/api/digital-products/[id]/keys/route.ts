@@ -44,3 +44,43 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to add keys' }, { status: 500 })
     }
 }
+
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: any }
+) {
+    try {
+        const { id } = await params // digitalProductId (not used for deletion if we have keyIds, but good for verification)
+
+        // Check for query param 'keyId'
+        const { searchParams } = new URL(request.url)
+        const keyId = searchParams.get('keyId')
+
+        if (keyId) {
+            // Single delete
+            await prisma.licenseKey.delete({
+                where: { id: keyId }
+            })
+            return NextResponse.json({ success: true })
+        }
+
+        // Bulk delete from body
+        const body = await request.json().catch(() => ({}))
+        const { keyIds } = body
+
+        if (keyIds && Array.isArray(keyIds) && keyIds.length > 0) {
+            await prisma.licenseKey.deleteMany({
+                where: {
+                    id: { in: keyIds }
+                }
+            })
+            return NextResponse.json({ success: true })
+        }
+
+        return NextResponse.json({ error: 'No keys specified' }, { status: 400 })
+
+    } catch (error) {
+        console.error('Error deleting keys:', error)
+        return NextResponse.json({ error: 'Failed to delete keys' }, { status: 500 })
+    }
+}
