@@ -5,10 +5,14 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Plus, ArrowLeft, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square, User } from 'lucide-react'
+import { Users, Plus, ArrowLeft, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square, User, Filter, ArrowUpDown, MoreHorizontal, Tag } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([])
@@ -18,6 +22,11 @@ export default function CustomersPage() {
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
+
+  // New States for Sorting and Filtering
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' })
+  const [filterStatus, setFilterStatus] = useState('ALL')
+
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean
     customer: any | null
@@ -37,192 +46,6 @@ export default function CustomersPage() {
   const { showToast, ToastContainer } = useToast()
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
-  // Function to handle customer editing
-  const handleEditCustomer = (customerId: string) => {
-    window.location.href = `/customers/${customerId}/edit`
-  }
-
-  // Function to view customer invoices
-  const handleViewInvoices = (customerId: string) => {
-    window.location.href = `/customers/${customerId}/invoices`
-  }
-
-  // Function to initiate customer deletion
-  const handleDeleteCustomer = (customer: any) => {
-    console.log('Initiating delete for customer:', customer.name)
-    setDeleteConfirmation({
-      isOpen: true,
-      customer: customer,
-      isDeleting: false
-    })
-  }
-
-  // Function to confirm customer deletion
-  const confirmDeleteCustomer = async () => {
-    const { customer } = deleteConfirmation
-    if (!customer || !user) return
-
-    setDeleteConfirmation(prev => ({ ...prev, isDeleting: true }))
-
-    try {
-      console.log('Deleting customer:', customer.id, 'for user:', user.email)
-
-      const response = await authenticatedFetch(`/api/customers?id=${customer.id}`, {
-        method: 'DELETE'
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        showToast(`Kunde "${customer.name}" wurde erfolgreich gelöscht`, 'success')
-
-        // Update customers list by removing the deleted customer
-        setCustomers(prev => prev.filter(c => c.id !== customer.id))
-
-        // Also update search results if showing
-        if (showSearchResults) {
-          setSearchResults(prev => prev.filter(c => c.id !== customer.id))
-        }
-
-        // Close confirmation dialog
-        setDeleteConfirmation({
-          isOpen: false,
-          customer: null,
-          isDeleting: false
-        })
-      } else {
-        throw new Error(data.error || 'Fehler beim Löschen des Kunden')
-      }
-    } catch (error) {
-      console.error('Error deleting customer:', error)
-      showToast(
-        `Fehler beim Löschen von "${customer.name}": ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
-        'error'
-      )
-    } finally {
-      setDeleteConfirmation(prev => ({ ...prev, isDeleting: false }))
-    }
-  }
-
-  // Function to cancel customer deletion
-  const cancelDeleteCustomer = () => {
-    setDeleteConfirmation({
-      isOpen: false,
-      customer: null,
-      isDeleting: false
-    })
-  }
-
-  // Function to toggle customer selection
-  const toggleCustomerSelection = (customerId: string) => {
-    setSelectedCustomers(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(customerId)) {
-        newSet.delete(customerId)
-      } else {
-        newSet.add(customerId)
-      }
-      return newSet
-    })
-  }
-
-  // Function to toggle select all
-  const toggleSelectAll = () => {
-    const displayedCustomers = showSearchResults ? searchResults : customers
-    if (selectAll) {
-      setSelectedCustomers(new Set())
-      setSelectAll(false)
-    } else {
-      setSelectedCustomers(new Set(displayedCustomers.map(c => c.id)))
-      setSelectAll(true)
-    }
-  }
-
-  // Function to initiate bulk deletion
-  const handleBulkDelete = () => {
-    if (selectedCustomers.size === 0) {
-      showToast('Bitte wählen Sie mindestens einen Kunden zum Löschen aus', 'error')
-      return
-    }
-    setBulkDeleteConfirmation({
-      isOpen: true,
-      isDeleting: false
-    })
-  }
-
-  // Function to confirm bulk deletion
-  const confirmBulkDelete = async () => {
-    if (selectedCustomers.size === 0 || !user) return
-
-    setBulkDeleteConfirmation(prev => ({ ...prev, isDeleting: true }))
-
-    try {
-      const customerIds = Array.from(selectedCustomers)
-      let successCount = 0
-      let errorCount = 0
-      const errors: string[] = []
-
-      for (const customerId of customerIds) {
-        try {
-          const response = await authenticatedFetch(`/api/customers?id=${customerId}`, {
-            method: 'DELETE'
-          })
-          const data = await response.json()
-
-          if (data.success) {
-            successCount++
-          } else {
-            errorCount++
-            errors.push(`Kunde ID ${customerId}: ${data.error || 'Unbekannter Fehler'}`)
-          }
-        } catch (error) {
-          errorCount++
-          errors.push(`Kunde ID ${customerId}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`)
-        }
-      }
-
-      // Update customers list by removing deleted customers
-      if (successCount > 0) {
-        setCustomers(prev => prev.filter(c => !selectedCustomers.has(c.id)))
-
-        // Also update search results if showing
-        if (showSearchResults) {
-          setSearchResults(prev => prev.filter(c => !selectedCustomers.has(c.id)))
-        }
-      }
-
-      // Clear selection
-      setSelectedCustomers(new Set())
-      setSelectAll(false)
-
-      // Show results
-      if (successCount > 0 && errorCount === 0) {
-        showToast(`${successCount} Kunde(n) erfolgreich gelöscht`, 'success')
-      } else if (successCount > 0 && errorCount > 0) {
-        showToast(`${successCount} Kunde(n) gelöscht, ${errorCount} Fehler aufgetreten`, 'error')
-      } else {
-        showToast(`Fehler beim Löschen der Kunden: ${errors.join(', ')}`, 'error')
-      }
-
-      // Close confirmation dialog
-      setBulkDeleteConfirmation({
-        isOpen: false,
-        isDeleting: false
-      })
-    } catch (error) {
-      console.error('Error in bulk delete:', error)
-      showToast(`Fehler beim Massenlöschen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`, 'error')
-      setBulkDeleteConfirmation(prev => ({ ...prev, isDeleting: false }))
-    }
-  }
-
-  // Function to cancel bulk deletion
-  const cancelBulkDelete = () => {
-    setBulkDeleteConfirmation({
-      isOpen: false,
-      isDeleting: false
-    })
-  }
 
   // Load customers on component mount and when user changes
   useEffect(() => {
@@ -231,45 +54,35 @@ export default function CustomersPage() {
 
   // Update selectAll state when selection changes
   useEffect(() => {
-    const displayedCustomers = showSearchResults ? searchResults : customers
-    if (displayedCustomers.length > 0) {
-      const allSelected = displayedCustomers.every(c => selectedCustomers.has(c.id))
+    const displayed = getProcessedCustomers()
+    if (displayed.length > 0) {
+      const allSelected = displayed.every(c => selectedCustomers.has(c.id))
       setSelectAll(allSelected)
     } else {
       setSelectAll(false)
     }
-  }, [selectedCustomers, customers, searchResults, showSearchResults])
+  }, [selectedCustomers, customers, searchResults, showSearchResults, sortConfig, filterStatus])
 
   // Load all customers
   const loadCustomers = async () => {
-    if (!isAuthenticated || !user) {
-      console.log('User not authenticated, cannot load customers')
-      setCustomers([])
-      return
-    }
+    if (!isAuthenticated || !user) return
 
     try {
-      console.log('Loading customers from API for user:', user.email)
-
-      // Use authenticated fetch to load customers for this user only
       const response = await authenticatedFetch('/api/customers')
       const data = await response.json()
 
       if (data.success) {
-        console.log(`Loaded ${data.customers.length} customers for user ${user.email}`)
         setCustomers(data.customers)
       } else {
-        console.log('No customers found for user:', user.email)
         setCustomers([])
       }
     } catch (error) {
       console.error('Error loading customers:', error)
-      // No fallback data - show empty state
       setCustomers([])
     }
   }
 
-  // Search customers by multiple emails, names, or phone numbers
+  // Search customers
   const searchCustomers = async (query: string) => {
     if (!query.trim()) {
       setShowSearchResults(false)
@@ -277,38 +90,21 @@ export default function CustomersPage() {
     }
 
     setIsSearching(true)
-
-    // Split query by common separators for multiple search terms
-    const searchTerms = query
-      .split(/[,;|\n\r\t]+/)
-      .map(term => term.trim())
-      .filter(term => term.length > 0)
-
-    console.log(`Searching customers with ${searchTerms.length} terms:`, searchTerms)
+    const searchTerms = query.split(/[,;|\n\r\t]+/).map(term => term.trim()).filter(term => term.length > 0)
 
     try {
-      // Search for each term and combine results
       const allResults = new Map()
-
       for (const term of searchTerms) {
         const response = await fetch(`/api/customers/search?q=${encodeURIComponent(term)}`)
         const data = await response.json()
-
         if (data.success && data.customers) {
           data.customers.forEach((customer: any) => {
-            // Use email as unique key to avoid duplicates
             const key = customer.email?.toLowerCase() || customer.id
-            if (!allResults.has(key)) {
-              allResults.set(key, customer)
-            }
+            if (!allResults.has(key)) allResults.set(key, customer)
           })
         }
       }
-
-      const combinedResults = Array.from(allResults.values())
-      console.log(`Found ${combinedResults.length} unique customers from ${searchTerms.length} search terms`)
-
-      setSearchResults(combinedResults)
+      setSearchResults(Array.from(allResults.values()))
       setShowSearchResults(true)
     } catch (error) {
       console.error('Error searching customers:', error)
@@ -319,65 +115,170 @@ export default function CustomersPage() {
     }
   }
 
-  // Handle search input change with debouncing
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery) {
-        searchCustomers(searchQuery)
-      } else {
-        setShowSearchResults(false)
-      }
+      if (searchQuery) searchCustomers(searchQuery)
+      else setShowSearchResults(false)
     }, 300)
-
     return () => clearTimeout(timeoutId)
   }, [searchQuery])
 
-  // Clear search
   const clearSearch = () => {
     setSearchQuery('')
     setShowSearchResults(false)
     setSearchResults([])
   }
 
-  // Get displayed customers (search results or all customers)
-  const displayedCustomers = showSearchResults ? searchResults : customers
+  // Sorting and Filtering Logic
+  const getProcessedCustomers = () => {
+    let processed = showSearchResults ? searchResults : customers
+
+    // Filter by Status
+    if (filterStatus !== 'ALL') {
+      processed = processed.filter(c => c.status === filterStatus)
+    }
+
+    // Sort
+    return [...processed].sort((a, b) => {
+      let aValue = a[sortConfig.key]
+      let bValue = b[sortConfig.key]
+
+      // Handle special cases
+      if (sortConfig.key === 'ltv' || sortConfig.key === 'orderCount') {
+        aValue = Number(aValue || 0)
+        bValue = Number(bValue || 0)
+      } else if (sortConfig.key === 'lastPurchase') {
+        aValue = aValue ? new Date(aValue).getTime() : 0
+        bValue = bValue ? new Date(bValue).getTime() : 0
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase()
+        bValue = bValue?.toLowerCase() || ''
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+  }
+
+  const displayedCustomers = getProcessedCustomers()
+
+  // Delete Handlers
+  const handleDeleteCustomer = (customer: any) => {
+    setDeleteConfirmation({ isOpen: true, customer, isDeleting: false })
+  }
+
+  const confirmDeleteCustomer = async () => {
+    const { customer } = deleteConfirmation
+    if (!customer || !user) return
+    setDeleteConfirmation(prev => ({ ...prev, isDeleting: true }))
+    try {
+      const response = await authenticatedFetch(`/api/customers?id=${customer.id}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (data.success) {
+        showToast(`Kunde "${customer.name}" gelöscht`, 'success')
+        setCustomers(prev => prev.filter(c => c.id !== customer.id))
+        if (showSearchResults) setSearchResults(prev => prev.filter(c => c.id !== customer.id))
+        setDeleteConfirmation({ isOpen: false, customer: null, isDeleting: false })
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (error) {
+      showToast('Fehler beim Löschen', 'error')
+    } finally {
+      setDeleteConfirmation(prev => ({ ...prev, isDeleting: false }))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedCustomers.size === 0) return
+    setBulkDeleteConfirmation({ isOpen: true, isDeleting: false })
+  }
+
+  const confirmBulkDelete = async () => {
+    if (selectedCustomers.size === 0 || !user) return
+    setBulkDeleteConfirmation(prev => ({ ...prev, isDeleting: true }))
+    try {
+      const customerIds = Array.from(selectedCustomers)
+      let successCount = 0
+      for (const id of customerIds) {
+        const response = await authenticatedFetch(`/api/customers?id=${id}`, { method: 'DELETE' })
+        const data = await response.json()
+        if (data.success) successCount++
+      }
+      if (successCount > 0) {
+        setCustomers(prev => prev.filter(c => !selectedCustomers.has(c.id)))
+        if (showSearchResults) setSearchResults(prev => prev.filter(c => !selectedCustomers.has(c.id)))
+        showToast(`${successCount} Kunden gelöscht`, 'success')
+        setSelectedCustomers(new Set())
+        setSelectAll(false)
+      }
+      setBulkDeleteConfirmation({ isOpen: false, isDeleting: false })
+    } catch (error) {
+      showToast('Fehler bei Massenlöschung', 'error')
+      setBulkDeleteConfirmation(prev => ({ ...prev, isDeleting: false }))
+    }
+  }
+
+  const toggleCustomerSelection = (id: string) => {
+    setSelectedCustomers(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) newSet.delete(id)
+      else newSet.add(id)
+      return newSet
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedCustomers(new Set())
+      setSelectAll(false)
+    } else {
+      setSelectedCustomers(new Set(displayedCustomers.map(c => c.id)))
+      setSelectAll(true)
+    }
+  }
+
+  // Helper for Status Badge
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">Aktiv</Badge>
+      case 'INACTIVE': return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-200">Inaktiv</Badge>
+      case 'VIP': return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">VIP</Badge>
+      case 'NEW': return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200">Neu</Badge>
+      default: return <Badge variant="outline">Unbekannt</Badge>
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white border-b sticky top-0 z-30 backdrop-blur-xl bg-white/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/dashboard" className="mr-4">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
               </Link>
-              <Users className="h-8 w-8 text-green-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                Kunden
-                {user?.isAdmin && (
-                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full border border-red-200">
-                    ADMIN - Alle Kunden
-                  </span>
-                )}
-              </h1>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  Kunden
+                  <Badge variant="secondary" className="rounded-full px-2.5">{customers.length}</Badge>
+                </h1>
+                <p className="text-sm text-gray-500">Verwalten Sie Ihre Kundenbeziehungen</p>
+              </div>
             </div>
             <div className="flex space-x-2">
               {selectedCustomers.size > 0 && (
-                <Button
-                  variant="destructive"
-                  onClick={handleBulkDelete}
-                  className="flex items-center space-x-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span>Massenlöschung ({selectedCustomers.size})</span>
+                <Button variant="destructive" onClick={handleBulkDelete} size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Löschen ({selectedCustomers.size})
                 </Button>
               )}
               <Link href="/customers/new">
-                <Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Neuer Kunde
                 </Button>
@@ -387,365 +288,260 @@ export default function CustomersPage() {
         </div>
       </header>
 
-      {/* Search Section */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Mehrere Kunden suchen: max@email.com, Anna Schmidt, +49 123, peter@gmail.com"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  title="Suche löschen"
-                  aria-label="Suche löschen"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-            {isSearching && (
-              <div className="text-sm text-gray-500">Suche läuft...</div>
-            )}
-
-            {showSearchResults && (
-              <div className="text-sm text-gray-600">
-                {searchResults.length} Kunde(n) gefunden
-                {searchQuery.includes(',') || searchQuery.includes(';') ? (
-                  <span className="ml-1">
-                    (Mehrfachsuche: {searchQuery.split(/[,;|\n\r\t]+/).filter(t => t.trim()).length} Begriffe)
-                  </span>
-                ) : (
-                  <span className="ml-1">für "{searchQuery}"</span>
-                )}
-                {searchResults.length > 0 && (
-                  <span className="ml-2 text-green-600">✓</span>
-                )}
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="shadow-sm border-none bg-white">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Gesamt Kunden</p>
+                  <h3 className="text-2xl font-bold mt-2">{customers.length}</h3>
+                </div>
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Users className="h-5 w-5 text-blue-600" />
+                </div>
               </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-none bg-white">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Aktive Kunden</p>
+                  <h3 className="text-2xl font-bold mt-2 text-green-600">
+                    {customers.filter(c => c.status === 'ACTIVE' || !c.status).length}
+                  </h3>
+                </div>
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <User className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-none bg-white">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">VIP Kunden</p>
+                  <h3 className="text-2xl font-bold mt-2 text-purple-600">
+                    {customers.filter(c => c.status === 'VIP').length}
+                  </h3>
+                </div>
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Users className="h-5 w-5 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-none bg-white">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Ø Umsatz (LTV)</p>
+                  <h3 className="text-2xl font-bold mt-2 text-indigo-600">
+                    {customers.length > 0
+                      ? `€${(customers.reduce((sum, c) => sum + (c.ltv || 0), 0) / customers.length).toFixed(2)}`
+                      : '€0.00'}
+                  </h3>
+                </div>
+                <div className="p-2 bg-indigo-50 rounded-lg">
+                  <Users className="h-5 w-5 text-indigo-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Suchen nach Name, E-Mail, Tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            />
+            {searchQuery && (
+              <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Gesamt Kunden
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{displayedCustomers.length}</div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-[150px]">
+                <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Alle Status</SelectItem>
+                <SelectItem value="ACTIVE">Aktiv</SelectItem>
+                <SelectItem value="NEW">Neu</SelectItem>
+                <SelectItem value="VIP">VIP</SelectItem>
+                <SelectItem value="INACTIVE">Inaktiv</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {showSearchResults ? 'Gefundene Kunden' : 'Aktive Kunden'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{displayedCustomers.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Durchschnittlicher Umsatz
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {displayedCustomers.length > 0
-                  ? `€${(displayedCustomers.reduce((sum, customer) => {
-                    const amount = parseFloat(customer.totalAmount?.replace('€', '') || '0')
-                    return sum + amount
-                  }, 0) / displayedCustomers.length).toFixed(2)}`
-                  : '€0.00'
-                }
-              </div>
-            </CardContent>
-          </Card>
+            <Select value={`${sortConfig.key}-${sortConfig.direction}`} onValueChange={(val) => {
+              const [key, direction] = val.split('-')
+              setSortConfig({ key, direction })
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <ArrowUpDown className="h-4 w-4 mr-2 text-gray-500" />
+                <SelectValue placeholder="Sortieren" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt-desc">Neueste zuerst</SelectItem>
+                <SelectItem value="createdAt-asc">Älteste zuerst</SelectItem>
+                <SelectItem value="ltv-desc">Höchster Umsatz</SelectItem>
+                <SelectItem value="orderCount-desc">Meiste Bestellungen</SelectItem>
+                <SelectItem value="lastPurchase-desc">Letzter Kauf</SelectItem>
+                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Customers Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {showSearchResults ? `Suchergebnisse (${searchResults.length})` : 'Alle Kunden'}
-            </CardTitle>
-            <CardDescription>
-              {showSearchResults
-                ? `Ergebnisse für "${searchQuery}"`
-                : 'Übersicht über alle registrierten Kunden'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {displayedCustomers.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {showSearchResults ? 'Keine Kunden gefunden' : 'Noch keine Kunden registriert'}
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  {showSearchResults
-                    ? `Keine Kunden entsprechen der Suche "${searchQuery}". Versuchen Sie andere Suchbegriffe.`
-                    : 'Fügen Sie Ihren ersten Kunden hinzu oder laden Sie CSV-Daten hoch.'
-                  }
-                </p>
-                {showSearchResults ? (
-                  <Button onClick={clearSearch} variant="outline">
-                    Suche zurücksetzen
-                  </Button>
-                ) : (
-                  <div className="flex justify-center space-x-4">
-                    <Link href="/customers/new">
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Neuer Kunde
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
+        {/* Table */}
+        <Card className="shadow-sm border-none overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-gray-50/50">
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="p-0 h-6 w-6">
+                      {selectAll ? <CheckSquare className="h-4 w-4 text-blue-600" /> : <Square className="h-4 w-4 text-gray-400" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>Kunde</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tags</TableHead>
+                  <TableHead className="text-right">Bestellungen</TableHead>
+                  <TableHead className="text-right">LTV (Umsatz)</TableHead>
+                  <TableHead className="text-right">Letzter Kauf</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {displayedCustomers.length === 0 ? (
                   <TableRow>
-                    <TableHead className="w-12">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleSelectAll}
-                        className="p-0 h-6 w-6"
-                      >
-                        {selectAll ? (
-                          <CheckSquare className="h-4 w-4" />
-                        ) : (
-                          <Square className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Kontakt</TableHead>
-                    <TableHead>Adresse</TableHead>
-                    <TableHead>Rechnungen</TableHead>
-                    <TableHead>Gesamtumsatz</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableCell colSpan={8} className="h-32 text-center text-gray-500">
+                      Keine Kunden gefunden
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayedCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
+                ) : (
+                  displayedCustomers.map((customer) => (
+                    <TableRow key={customer.id} className="hover:bg-gray-50/50 transition-colors">
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleCustomerSelection(customer.id)}
-                          className="p-0 h-6 w-6"
-                        >
-                          {selectedCustomers.has(customer.id) ? (
-                            <CheckSquare className="h-4 w-4 text-blue-600" />
-                          ) : (
-                            <Square className="h-4 w-4" />
-                          )}
+                        <Button variant="ghost" size="sm" onClick={() => toggleCustomerSelection(customer.id)} className="p-0 h-6 w-6">
+                          {selectedCustomers.has(customer.id) ? <CheckSquare className="h-4 w-4 text-blue-600" /> : <Square className="h-4 w-4 text-gray-400" />}
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <Link href={`/customers/${customer.id}`} className="font-medium text-blue-600 hover:underline">
-                          {customer.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Mail className="h-3 w-3 mr-1" />
-                            {customer.email}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="h-3 w-3 mr-1" />
-                            {customer.phone || 'Nicht verfügbar'}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-600 max-w-xs">
-                          {customer.address || 'Nicht verfügbar'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-center">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {customer.invoiceCount || 0}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {customer.totalAmount || '€0.00'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Link href={`/customers/${customer.id}`}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                            >
-                              <User className="h-4 w-4 mr-1" />
-                              Profil
-                            </Button>
+                        <div className="flex flex-col">
+                          <Link href={`/customers/${customer.id}`} className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                            {customer.name}
                           </Link>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteCustomer(customer)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
-                            title={`Kunde "${customer.name}" löschen`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <span className="text-xs text-gray-500">{customer.email}</span>
                         </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(customer.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {customer.tags && customer.tags.length > 0 ? (
+                            customer.tags.slice(0, 2).map((tag: string, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                                {tag}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                          {customer.tags && customer.tags.length > 2 && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">+{customer.tags.length - 2}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">{customer.orderCount || 0}</TableCell>
+                      <TableCell className="text-right font-medium text-gray-900">
+                        €{(customer.ltv || 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right text-gray-500 text-sm">
+                        {customer.lastPurchase ? new Date(customer.lastPurchase).toLocaleDateString('de-DE') : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+                            <Link href={`/customers/${customer.id}`}>
+                              <DropdownMenuItem>
+                                <User className="h-4 w-4 mr-2" /> Profil ansehen
+                              </DropdownMenuItem>
+                            </Link>
+                            <Link href={`/customers/${customer.id}/edit`}>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" /> Bearbeiten
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteCustomer(customer)}>
+                              <Trash2 className="h-4 w-4 mr-2" /> Löschen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       </main>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialogs */}
       {deleteConfirmation.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center mb-4">
-              <div className="flex-shrink-0">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Kunde löschen
-                </h3>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-sm text-gray-600">
-                Sind Sie sicher, dass Sie den Kunden{' '}
-                <span className="font-semibold text-gray-900">
-                  "{deleteConfirmation.customer?.name}"
-                </span>{' '}
-                löschen möchten?
-              </p>
-              <p className="text-sm text-red-600 mt-2">
-                ⚠️ Diese Aktion kann nicht rückgängig gemacht werden.
-              </p>
-              {deleteConfirmation.customer?.invoiceCount > 0 && (
-                <p className="text-sm text-amber-600 mt-2">
-                  📋 Hinweis: Dieser Kunde hat {deleteConfirmation.customer.invoiceCount} Rechnung(en).
-                </p>
-              )}
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                onClick={cancelDeleteCustomer}
-                disabled={deleteConfirmation.isDeleting}
-              >
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold mb-2">Kunde löschen?</h3>
+            <p className="text-gray-600 mb-6">
+              Möchten Sie <b>{deleteConfirmation.customer?.name}</b> wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setDeleteConfirmation({ isOpen: false, customer: null, isDeleting: false })}>
                 Abbrechen
               </Button>
-              <Button
-                onClick={confirmDeleteCustomer}
-                disabled={deleteConfirmation.isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {deleteConfirmation.isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Löschen...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Löschen
-                  </>
-                )}
+              <Button variant="destructive" onClick={confirmDeleteCustomer} disabled={deleteConfirmation.isDeleting}>
+                {deleteConfirmation.isDeleting ? 'Löscht...' : 'Löschen'}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bulk Delete Confirmation Dialog */}
       {bulkDeleteConfirmation.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center mb-4">
-              <div className="flex-shrink-0">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Massenlöschung bestätigen
-                </h3>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-sm text-gray-600">
-                Sind Sie sicher, dass Sie{' '}
-                <span className="font-semibold text-gray-900">
-                  {selectedCustomers.size} Kunde(n)
-                </span>{' '}
-                löschen möchten?
-              </p>
-              <p className="text-sm text-red-600 mt-2">
-                ⚠️ Diese Aktion kann nicht rückgängig gemacht werden.
-              </p>
-              <p className="text-sm text-amber-600 mt-2">
-                📋 Hinweis: Alle zugehörigen Daten werden ebenfalls gelöscht.
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                onClick={cancelBulkDelete}
-                disabled={bulkDeleteConfirmation.isDeleting}
-              >
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold mb-2">Massenlöschung</h3>
+            <p className="text-gray-600 mb-6">
+              Möchten Sie <b>{selectedCustomers.size} Kunden</b> wirklich löschen?
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setBulkDeleteConfirmation({ isOpen: false, isDeleting: false })}>
                 Abbrechen
               </Button>
-              <Button
-                onClick={confirmBulkDelete}
-                disabled={bulkDeleteConfirmation.isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {bulkDeleteConfirmation.isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Löschen...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {selectedCustomers.size} Kunde(n) löschen
-                  </>
-                )}
+              <Button variant="destructive" onClick={confirmBulkDelete} disabled={bulkDeleteConfirmation.isDeleting}>
+                {bulkDeleteConfirmation.isDeleting ? 'Löscht...' : 'Alle löschen'}
               </Button>
             </div>
           </div>

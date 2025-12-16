@@ -25,7 +25,10 @@ import {
     AlertCircle,
     XCircle,
     User,
-    MoreHorizontal
+    MoreHorizontal,
+    Building2,
+    Tag,
+    Truck
 } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { format } from 'date-fns'
@@ -85,7 +88,7 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
         return format(new Date(dateString), 'dd.MM.yyyy HH:mm', { locale: de })
     }
 
-    const getStatusBadge = (status: string) => {
+    const getInvoiceStatusBadge = (status: string) => {
         switch (status?.toUpperCase()) {
             case 'PAID':
             case 'BEZAHLT':
@@ -106,6 +109,16 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
         }
     }
 
+    const getCustomerStatusBadge = (status: string) => {
+        switch (status) {
+            case 'ACTIVE': return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">Aktiv</Badge>
+            case 'INACTIVE': return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-200">Inaktiv</Badge>
+            case 'VIP': return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">VIP</Badge>
+            case 'NEW': return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200">Neu</Badge>
+            default: return null
+        }
+    }
+
     // Calculate stats
     const totalInvoices = customer.invoices?.length || 0
     const totalPayments = customer.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
@@ -116,7 +129,7 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
             {/* Header */}
-            <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+            <header className="bg-white shadow-sm border-b sticky top-0 z-10 backdrop-blur-xl bg-white/80">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
                         <div className="flex items-center">
@@ -129,7 +142,7 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                                     {customer.name}
-                                    {customer.companyName && <span className="text-gray-500 font-normal text-lg">({customer.companyName})</span>}
+                                    {getCustomerStatusBadge(customer.status)}
                                 </h1>
                                 <div className="flex items-center text-sm text-gray-500 mt-1 gap-4">
                                     <span className="flex items-center gap-1">
@@ -138,6 +151,11 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                                     <span className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" /> Kunde seit {format(new Date(customer.createdAt), 'dd.MM.yyyy')}
                                     </span>
+                                    {customer.type === 'BUSINESS' && (
+                                        <span className="flex items-center gap-1 text-blue-600">
+                                            <Building2 className="w-3 h-3" /> Geschäftskunde
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -164,6 +182,16 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                                 <CardTitle className="text-lg">Kundendaten</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {customer.tags && customer.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pb-4 border-b">
+                                        {customer.tags.map((tag: string, i: number) => (
+                                            <Badge key={i} variant="secondary" className="text-xs">
+                                                <Tag className="w-3 h-3 mr-1" /> {tag}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <div className="flex items-start gap-3">
                                     <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
                                     <div>
@@ -173,9 +201,17 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                                 </div>
 
                                 <div className="flex items-start gap-3">
+                                    <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-900">Telefon</p>
+                                        <p className="text-sm text-gray-600">{customer.phone || '-'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-3">
                                     <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                                     <div>
-                                        <p className="text-sm font-medium text-gray-900">Adresse</p>
+                                        <p className="text-sm font-medium text-gray-900">Rechnungsadresse</p>
                                         <p className="text-sm text-gray-600">
                                             {customer.address}<br />
                                             {customer.zipCode} {customer.city}<br />
@@ -184,22 +220,26 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                                     </div>
                                 </div>
 
-                                {customer.vatId && (
-                                    <div className="flex items-start gap-3">
-                                        <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
+                                {customer.deliveryAddress && (
+                                    <div className="flex items-start gap-3 pt-2 border-t mt-2">
+                                        <Truck className="w-5 h-5 text-gray-400 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">USt-ID / VAT</p>
-                                            <p className="text-sm text-gray-600">{customer.vatId}</p>
+                                            <p className="text-sm font-medium text-gray-900">Lieferadresse</p>
+                                            <p className="text-sm text-gray-600">
+                                                {customer.deliveryAddress}<br />
+                                                {customer.deliveryZip} {customer.deliveryCity}<br />
+                                                {customer.deliveryCountry}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
 
-                                {customer.phone && (
-                                    <div className="flex items-start gap-3">
-                                        <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                                {customer.taxId && (
+                                    <div className="flex items-start gap-3 pt-2 border-t mt-2">
+                                        <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">Telefon</p>
-                                            <p className="text-sm text-gray-600">{customer.phone}</p>
+                                            <p className="text-sm font-medium text-gray-900">Steuer-ID / USt-ID</p>
+                                            <p className="text-sm text-gray-600">{customer.taxId}</p>
                                         </div>
                                     </div>
                                 )}
@@ -216,8 +256,12 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                                     <span className="font-medium">{totalInvoices}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Gesamtzahlungen</span>
-                                    <span className="font-medium text-green-600">{formatCurrency(totalPayments)}</span>
+                                    <span className="text-sm text-gray-600">Gesamtzahlungen (LTV)</span>
+                                    <span className="font-medium text-green-600">{formatCurrency(customer.ltv || totalPayments)}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">Durchschn. Bestellung</span>
+                                    <span className="font-medium text-blue-600">{formatCurrency(customer.aov || 0)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-gray-600">Offene Tickets</span>
@@ -314,7 +358,7 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                                                     <div className="flex items-center gap-6">
                                                         <div className="text-right">
                                                             <p className="font-medium text-gray-900">{formatCurrency(Number(invoice.totalGross), invoice.currency)}</p>
-                                                            {getStatusBadge(invoice.status)}
+                                                            {getInvoiceStatusBadge(invoice.status)}
                                                         </div>
                                                         <Button variant="ghost" size="sm">
                                                             <Download className="w-4 h-4" />

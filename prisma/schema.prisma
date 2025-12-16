@@ -185,7 +185,30 @@ model Customer {
   firstPurchaseDiscountSentAt DateTime?
   firstPurchaseDiscountCode   String?
 
+  // Extended Customer Fields
+  status            String    @default("ACTIVE") // ACTIVE, INACTIVE, VIP, NEW
+  type              String    @default("PRIVATE") // PRIVATE, BUSINESS
+  tags              String[]
+  
+  // Delivery Address
+  deliveryAddress   String?
+  deliveryZip       String?
+  deliveryCity      String?
+  deliveryCountry   String?
+
+  documents         CustomerDocument[]
+
   @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
+}
+
+model CustomerDocument {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name        String
+  url         String
+  type        String?
+  createdAt   DateTime @default(now())
 }
 
 model Order {
