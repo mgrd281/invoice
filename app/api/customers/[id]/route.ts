@@ -1,18 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerAuth } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options' // Correct path for authOptions
 
 export async function GET(
-    request: Request,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = await getServerAuth()
-        if (!auth.isAuthenticated) {
+        const session = await getServerSession(authOptions)
+        if (!session) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const id = params.id
+        const { id } = await params
 
         const customer = await prisma.customer.findUnique({
             where: { id },
@@ -56,6 +57,54 @@ export async function GET(
         return NextResponse.json(customer)
     } catch (error) {
         console.error('Error fetching customer:', error)
+        return new NextResponse('Internal Server Error', { status: 500 })
+    }
+}
+
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session) {
+            return new NextResponse('Unauthorized', { status: 401 })
+        }
+
+        const { id } = await params
+        const body = await request.json()
+
+        const customer = await prisma.customer.update({
+            where: { id },
+            data: body
+        })
+
+        return NextResponse.json(customer)
+    } catch (error) {
+        console.error('Error updating customer:', error)
+        return new NextResponse('Internal Server Error', { status: 500 })
+    }
+}
+
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session) {
+            return new NextResponse('Unauthorized', { status: 401 })
+        }
+
+        const { id } = await params
+
+        await prisma.customer.delete({
+            where: { id }
+        })
+
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('Error deleting customer:', error)
         return new NextResponse('Internal Server Error', { status: 500 })
     }
 }

@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth-middleware'
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
         const authResult = requireAuth(request)
         if ('error' in authResult) {
             return authResult.error
         }
         const { user } = authResult
-        const { id } = params
+        const { id } = await params
 
         const body = await request.json()
         const { description, category, amount, date } = body
@@ -78,32 +81,39 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         }
 
         return NextResponse.json(updatedReceipt)
+
     } catch (error) {
         console.error('Error updating receipt:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
         const authResult = requireAuth(request)
         if ('error' in authResult) {
             return authResult.error
         }
-        const { user } = authResult
-        const { id } = params
 
+        const { user } = authResult
         const organization = await prisma.organization.findFirst({
             where: { users: { some: { id: user.id } } }
-        }) || await prisma.organization.findFirst()
+        })
 
         if (!organization) {
             return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
         }
+        const { id } = await params
 
-        // Verify receipt exists
+        // Verify ownership
         const existingReceipt = await prisma.receipt.findFirst({
-            where: { id, organizationId: organization.id }
+            where: {
+                id,
+                organizationId: organization.id
+            }
         })
 
         if (!existingReceipt) {
@@ -115,6 +125,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         })
 
         return NextResponse.json({ success: true })
+
     } catch (error) {
         console.error('Error deleting receipt:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
