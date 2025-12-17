@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
             return authResult.error
         }
 
-        const org = await ensureOrganization()
+        const { user } = authResult
+
+        // Get organization ID from user or fallback to default
+        const userOrg = await prisma.organization.findFirst({
+            where: { users: { some: { id: user.id } } }
+        })
+
+        const org = userOrg || await ensureOrganization()
         const body = await request.json()
 
         // Handle Bulk Status Update
