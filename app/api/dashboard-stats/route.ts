@@ -17,27 +17,58 @@ export async function GET() {
       include: { customer: true }
     })
 
+    console.log('🔍 Debug Stats - First 3 invoices:', allInvoices.slice(0, 3).map(inv => ({
+      id: inv.id,
+      status: inv.status,
+      totalGross: inv.totalGross,
+      typeOfTotalGross: typeof inv.totalGross
+    })))
+
     // Calculate statistics
     const totalInvoices = allInvoices.length
     const customerCount = await prisma.customer.count()
 
+    // Helper to safely convert Decimal/Number/String to number
+    const toNumber = (val: any) => {
+      if (!val) return 0
+      if (typeof val === 'number') return val
+      if (val && typeof val === 'object' && 'toNumber' in val) return val.toNumber()
+      return Number(val.toString())
+    }
+
     // Calculate revenue (sum of all invoice totals)
-    const totalRevenue = allInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
+    const totalRevenue = allInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0)
 
     // Filter by status - support both English (Prisma enum) and German (Legacy/Import) values
-    const paidInvoices = allInvoices.filter(inv => inv.status === 'PAID' || (inv.status as any) === 'Bezahlt')
-    const openInvoices = allInvoices.filter(inv => inv.status === 'SENT' || (inv.status as any) === 'Offen' || (inv.status as any) === 'OPEN')
-    const overdueInvoices = allInvoices.filter(inv => inv.status === 'OVERDUE' || (inv.status as any) === 'Überfällig')
-    const cancelledInvoices = allInvoices.filter(inv => inv.status === 'CANCELLED' || (inv.status as any) === 'Storniert')
+    // Normalize status for comparison
+    const normalizeStatus = (s: string) => s?.toUpperCase().trim() || ''
+
+    const paidInvoices = allInvoices.filter(inv => {
+      const s = normalizeStatus(inv.status as any)
+      return s === 'PAID' || s === 'BEZAHLT'
+    })
+    const openInvoices = allInvoices.filter(inv => {
+      const s = normalizeStatus(inv.status as any)
+      return s === 'SENT' || s === 'OFFEN' || s === 'OPEN' || s === 'PENDING'
+    })
+    const overdueInvoices = allInvoices.filter(inv => {
+      const s = normalizeStatus(inv.status as any)
+      return s === 'OVERDUE' || s === 'ÜBERFÄLLIG' || s === 'UEBERFAELLIG'
+    })
+    const cancelledInvoices = allInvoices.filter(inv => {
+      const s = normalizeStatus(inv.status as any)
+      return s === 'CANCELLED' || s === 'STORNIERT'
+    })
+
     // Note: REFUND is not in the enum, but we'll keep it for backwards compatibility
     const refundInvoices = allInvoices.filter(inv => inv.documentKind === 'CREDIT_NOTE' || inv.documentKind === 'REFUND_FULL' || inv.documentKind === 'REFUND_PARTIAL')
 
     // Calculate amounts for each status
-    const paidInvoicesAmount = paidInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
-    const openInvoicesAmount = openInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
-    const overdueInvoicesAmount = overdueInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
-    const refundInvoicesAmount = refundInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
-    const cancelledInvoicesAmount = cancelledInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
+    const paidInvoicesAmount = paidInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0)
+    const openInvoicesAmount = openInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0)
+    const overdueInvoicesAmount = overdueInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0)
+    const refundInvoicesAmount = refundInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0)
+    const cancelledInvoicesAmount = cancelledInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0)
 
     // Get recent invoices
     const recentInvoices = allInvoices
