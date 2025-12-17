@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Analyze this invoice/receipt. Extract the following fields:\n- totalAmount (number, gross in EUR)\n- date (YYYY-MM-DD)\n- description (short summary of product/service)\n- category (INCOME or EXPENSE). Default to INCOME if it looks like an invoice issued by the user. Use EXPENSE only if it is clearly a purchase receipt.\n- invoiceNumber (string, optional)\n- supplier (string, name of issuer/shop)\n\nReturn ONLY JSON." },
+                            { type: "text", text: "Analyze this document (invoice/receipt). Extract data into JSON format.\n\nFields required:\n- totalAmount: number (gross amount in EUR, convert '9,90' to 9.90)\n- date: string (YYYY-MM-DD)\n- description: string (short summary of product/service in German)\n- category: 'INCOME' | 'EXPENSE' (Logic: If the invoice is ISSUED BY the user/company, it is INCOME. If it is a receipt FROM a shop/vendor, it is EXPENSE.)\n- invoiceNumber: string (optional)\n- supplier: string (name of the vendor/shop/issuer)\n\nReturn ONLY raw JSON, no markdown." },
                             {
                                 type: "image_url",
                                 image_url: {
@@ -108,11 +108,11 @@ export async function POST(request: NextRequest) {
                 messages: [
                     {
                         role: "system",
-                        content: "You are an accounting assistant. Extract data from the following invoice text. Return JSON with fields:\n- totalAmount (number, gross in EUR)\n- date (YYYY-MM-DD)\n- description (short summary of product/service)\n- category (INCOME or EXPENSE). Default to INCOME.\n- invoiceNumber (string, optional)\n- supplier (string, name of issuer/shop)"
+                        content: "You are an expert accounting assistant. Analyze the text from a document and extract structured data."
                     },
                     {
                         role: "user",
-                        content: text.substring(0, 15000) // Limit text length
+                        content: `Extract the following fields from the text below into JSON:\n- totalAmount: number (gross amount in EUR)\n- date: string (YYYY-MM-DD)\n- description: string (short summary in German)\n- category: 'INCOME' | 'EXPENSE' (Logic: If it looks like an outgoing invoice from the user, INCOME. If it looks like a purchase receipt, EXPENSE.)\n- invoiceNumber: string (optional)\n- supplier: string (name of the vendor/issuer)\n\nText:\n${text.substring(0, 15000)}`
                     }
                 ],
                 response_format: { type: "json_object" }

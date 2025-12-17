@@ -177,6 +177,32 @@ export function ReceiptUploader({
                                                 </Select>
                                             </div>
                                         </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <Label className="text-xs">Händler / Vendor</Label>
+                                                <Input
+                                                    className="h-7 text-xs"
+                                                    value={pf.meta.supplier || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value
+                                                        setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, meta: { ...p.meta, supplier: val } } : p))
+                                                    }}
+                                                    placeholder="z.B. Amazon, Rewe"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-xs">Datum</Label>
+                                                <Input
+                                                    type="date"
+                                                    className="h-7 text-xs"
+                                                    value={pf.meta.date}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value
+                                                        setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, meta: { ...p.meta, date: val } } : p))
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
                                         <div>
                                             <Label className="text-xs">Beschreibung</Label>
                                             <Input

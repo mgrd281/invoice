@@ -193,12 +193,12 @@ function BuchhaltungContent() {
               status: 'success',
               meta: {
                 ...p.meta,
-                amount: data.data.totalAmount?.toString() || '',
+                amount: data.data.totalAmount ? Number(data.data.totalAmount).toFixed(2) : '',
                 description: data.data.description || p.meta.description,
-                category: data.data.category || 'INCOME', // Default to INCOME as requested
+                category: data.data.category || 'EXPENSE', // Default to EXPENSE for receipts usually
                 date: data.data.date || p.meta.date,
-                supplier: data.data.supplier,
-                invoiceNumber: data.data.invoiceNumber
+                supplier: data.data.supplier || '',
+                invoiceNumber: data.data.invoiceNumber || ''
               }
             } : p))
             return
