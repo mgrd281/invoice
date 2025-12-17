@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       expenses,
-      total: expenses.length
+      total: expenses.length,
+      debug: { organizationId: organization.id }
     })
 
   } catch (error) {

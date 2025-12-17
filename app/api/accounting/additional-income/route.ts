@@ -39,7 +39,11 @@ export async function GET(request: NextRequest) {
             orderBy: { date: 'desc' }
         })
 
-        return NextResponse.json(incomes)
+        return NextResponse.json({
+            success: true,
+            data: incomes,
+            debug: { organizationId: organization.id }
+        })
     } catch (error) {
         console.error('Error fetching additional incomes:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
