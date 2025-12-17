@@ -24,11 +24,11 @@ export async function GET() {
     // Calculate revenue (sum of all invoice totals)
     const totalRevenue = allInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0)
 
-    // Filter by status - using Prisma enum values (English)
-    const paidInvoices = allInvoices.filter(inv => inv.status === 'PAID')
-    const openInvoices = allInvoices.filter(inv => inv.status === 'SENT')
-    const overdueInvoices = allInvoices.filter(inv => inv.status === 'OVERDUE')
-    const cancelledInvoices = allInvoices.filter(inv => inv.status === 'CANCELLED')
+    // Filter by status - support both English (Prisma enum) and German (Legacy/Import) values
+    const paidInvoices = allInvoices.filter(inv => inv.status === 'PAID' || (inv.status as any) === 'Bezahlt')
+    const openInvoices = allInvoices.filter(inv => inv.status === 'SENT' || (inv.status as any) === 'Offen' || (inv.status as any) === 'OPEN')
+    const overdueInvoices = allInvoices.filter(inv => inv.status === 'OVERDUE' || (inv.status as any) === 'Überfällig')
+    const cancelledInvoices = allInvoices.filter(inv => inv.status === 'CANCELLED' || (inv.status as any) === 'Storniert')
     // Note: REFUND is not in the enum, but we'll keep it for backwards compatibility
     const refundInvoices = allInvoices.filter(inv => inv.documentKind === 'CREDIT_NOTE' || inv.documentKind === 'REFUND_FULL' || inv.documentKind === 'REFUND_PARTIAL')
 
