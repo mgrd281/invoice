@@ -222,10 +222,22 @@ export default function InvoicesPage() {
         setVat19Sum(typeof data.stats.totalVat19 === 'number' ? data.stats.totalVat19 : 0)
         setVat7Sum(typeof data.stats.totalVat7 === 'number' ? data.stats.totalVat7 : 0)
         setTotalPaidAmount(typeof data.stats.totalPaidAmount === 'number' ? data.stats.totalPaidAmount : 0)
+
+        // Set counts
+        setPaidInvoicesCount(typeof data.stats.paidInvoicesCount === 'number' ? data.stats.paidInvoicesCount : 0)
+        setOpenInvoicesCount(typeof data.stats.openInvoicesCount === 'number' ? data.stats.openInvoicesCount : 0)
+        setOverdueInvoicesCount(typeof data.stats.overdueInvoicesCount === 'number' ? data.stats.overdueInvoicesCount : 0)
+        setCancelledInvoicesCount(typeof data.stats.cancelledInvoicesCount === 'number' ? data.stats.cancelledInvoicesCount : 0)
+        setRefundInvoicesCount(typeof data.stats.refundInvoicesCount === 'number' ? data.stats.refundInvoicesCount : 0)
       } else {
         setVat19Sum(0)
         setVat7Sum(0)
         setTotalPaidAmount(0)
+        setPaidInvoicesCount(0)
+        setOpenInvoicesCount(0)
+        setOverdueInvoicesCount(0)
+        setCancelledInvoicesCount(0)
+        setRefundInvoicesCount(0)
       }
 
       setTotalPages(pagination.pages)
@@ -816,14 +828,12 @@ export default function InvoicesPage() {
   // Use total count from API if available (for pagination/filtering), otherwise fallback to loaded length
   const totalInvoices = totalInvoicesCount > 0 ? totalInvoicesCount : statsBaseInvoices.length
 
-  // Note: These specific status counts are currently based on LOADED invoices only.
-  // To get accurate counts for ALL pages, we would need separate API calls or a stats endpoint.
-  // For now, we keep them as is, but Total is accurate.
-  const paidInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Bezahlt').length
-  const openInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Offen').length
-  const overdueInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Überfällig').length
-  const cancelledInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Storniert').length
-  const refundInvoices = statsBaseInvoices.filter((invoice: any) => invoice.status === 'Gutschrift').length
+  // Note: These counts are now fetched from the API for accuracy across all pages
+  const paidInvoices = paidInvoicesCount
+  const openInvoices = openInvoicesCount
+  const overdueInvoices = overdueInvoicesCount
+  const cancelledInvoices = cancelledInvoicesCount
+  const refundInvoices = refundInvoicesCount
   const duplicateCount = duplicateNumbers.length
 
   const getStatusColor = (status: string) => {
