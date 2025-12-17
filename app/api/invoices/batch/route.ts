@@ -183,6 +183,16 @@ export async function POST(request: NextRequest) {
                         })
                     } else {
                         // Create Additional Income (Income or Other)
+                        // Create Additional Income (Income or Other)
+
+                        // Filter out non-paid items (Refunded, Cancelled, Open, etc.)
+                        // Only import if status is explicitly 'paid'/'bezahlt' or if no status is provided (legacy/fallback)
+                        const normalizedStatus = invoice.status?.toLowerCase() || ''
+                        if (normalizedStatus && !['bezahlt', 'paid', 'completed', 'gutschrift'].some(s => normalizedStatus.includes(s))) {
+                            console.log(`Skipping non-paid income: ${invoice.number} (${invoice.status})`)
+                            continue
+                        }
+
                         const baseDescription = invoice.items?.[0]?.description || (accountingType === 'income' ? 'Importierte Einnahme' : 'Sonstiges')
                         // Prepend order number if available to preserve it
                         const description = invoice.number ? `[Order #${invoice.number}] ${baseDescription}` : baseDescription
