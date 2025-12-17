@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
 import OpenAI from 'openai'
-import * as XLSX from 'xlsx'
+import { ImageAnnotatorClient } from '@google-cloud/vision'
+import path from 'path'
 
+// ... (keep existing DOMMatrix polyfill if needed, or remove if we are sure)
 // Polyfill DOMMatrix for pdf-parse in Node environment
 if (typeof DOMMatrix === 'undefined') {
     // @ts-ignore
@@ -17,15 +19,17 @@ if (typeof DOMMatrix === 'undefined') {
     }
 }
 
-// Polyfill removed - using robust error handling instead
-
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
-    // Initialize OpenAI inside handler to avoid build-time errors if env is missing
     const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     })
+
+    // Initialize Google Cloud Vision
+    const visionClient = new ImageAnnotatorClient({
+        keyFilename: path.join(process.cwd(), 'google-cloud-credentials.json')
+    });
 
     // @ts-ignore
     const pdf = require('pdf-parse');
@@ -44,12 +48,11 @@ export async function POST(request: NextRequest) {
         }
 
         let text = ''
-        let isImage = false
         const buffer = Buffer.from(await file.arrayBuffer())
 
         if (file.type === 'application/pdf') {
             try {
-                // Set a timeout for PDF parsing to avoid hanging
+                // Set a timeout for PDF parsing
                 const parsePromise = pdf(buffer);
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PDF parse timeout')), 5000));
 
@@ -61,25 +64,60 @@ export async function POST(request: NextRequest) {
                 }
             } catch (e: any) {
                 console.error('PDF parse error:', e)
-                // Always return a graceful error for PDF parsing failures
+                // Graceful fallback for scanned PDFs
                 return NextResponse.json({
                     success: true,
                     data: {
                         ai_status: 'ERROR',
                         error_reason: 'SCANNED_PDF_COMPLEX',
-                        debug_text: `PDF Parse Error (handled): ${e.message || e}. Please enter data manually.`
+                        debug_text: `PDF seems to be a scan or encrypted. Please enter data manually. (Error: ${e.message})`
                     }
                 })
             }
         } else if (file.type.startsWith('image/')) {
-            isImage = true
+            // Use Google Cloud Vision for OCR
+            try {
+                const [result] = await visionClient.textDetection(buffer);
+                const detections = result.textAnnotations;
+                if (detections && detections.length > 0) {
+                    text = detections[0].description || '';
+                    console.log('Google Vision OCR success, text length:', text.length);
+                } else {
+                    console.log('Google Vision found no text.');
+                }
+            } catch (visionError) {
+                console.error('Google Vision API Error:', visionError);
+                // Fallback to GPT-4o Vision if Google Vision fails
+                // (We'll handle this by leaving text empty and letting the next block handle it if we want, 
+                // but for now let's just log it. If text is empty, we might want to try GPT-4o Vision directly)
+            }
         }
-        // ... (CSV/Excel handling remains)
 
         let result
 
-        if (isImage) {
-            // Use GPT-4 Vision
+        // If we have text (from PDF or Google Vision), use GPT-4o for parsing
+        if (text && text.trim().length > 0) {
+            console.log('Extracted text (first 500 chars):', text.substring(0, 500))
+
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are an expert German accounting assistant. Analyze the text and extract structured data."
+                    },
+                    {
+                        role: "user",
+                        content: `Extract fields into JSON:\n- totalAmount: number (gross EUR, handle '1.000,00' as 1000.00). Look for 'Gesamt', 'Summe', 'Zahlbetrag', 'Rechnungsbetrag'. IGNORE 'Zwischensumme'.\n- date: string (YYYY-MM-DD). If multiple dates, prefer 'Rechnungsdatum'.\n- description: string (German summary)\n- category: 'INCOME' | 'EXPENSE'\n- invoiceNumber: string (optional)\n- supplier: string\n- confidence: 'high' | 'medium' | 'low'\n- ai_status: 'OK' | 'WARNING' | 'ERROR'\n\nText:\n${text.substring(0, 15000)}`
+                    }
+                ],
+                response_format: { type: "json_object" }
+            })
+            result = JSON.parse(response.choices[0].message.content || '{}')
+            result.debug_text = text.substring(0, 200);
+        } else if (file.type.startsWith('image/')) {
+            // Fallback: If Google Vision failed or returned no text, try GPT-4o Vision directly
+            console.log('Falling back to GPT-4o Vision');
             const base64Image = buffer.toString('base64')
             const response = await openai.chat.completions.create({
                 model: "gpt-4o",
@@ -101,36 +139,24 @@ export async function POST(request: NextRequest) {
             })
             const content = response.choices[0].message.content
             result = parseJsonFromLlm(content)
+            result.debug_text = 'GPT-4o Vision processed';
         } else {
-            // Use GPT-4 for text
-            console.log('Extracted text (first 500 chars):', text.substring(0, 500))
-
-            const response = await openai.chat.completions.create({
-                model: "gpt-4o",
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are an expert German accounting assistant. Analyze the text and extract structured data."
-                    },
-                    {
-                        role: "user",
-                        content: `Extract fields into JSON:\n- totalAmount: number (gross EUR, handle '1.000,00' as 1000.00). Look for 'Gesamt', 'Summe', 'Zahlbetrag', 'Rechnungsbetrag'. IGNORE 'Zwischensumme'.\n- date: string (YYYY-MM-DD). If multiple dates, prefer 'Rechnungsdatum'.\n- description: string (German summary)\n- category: 'INCOME' | 'EXPENSE'\n- invoiceNumber: string (optional)\n- supplier: string\n- confidence: 'high' | 'medium' | 'low'\n- ai_status: 'OK' | 'WARNING' | 'ERROR'\n\nText:\n${text.substring(0, 15000)}`
-                    }
-                ],
-                response_format: { type: "json_object" }
+            // PDF with no text and no image fallback
+            return NextResponse.json({
+                success: true,
+                data: {
+                    ai_status: 'ERROR',
+                    error_reason: 'SCANNED_PDF_COMPLEX',
+                    debug_text: 'PDF has no text and could not be processed.'
+                }
             })
-            result = JSON.parse(response.choices[0].message.content || '{}')
         }
 
-        // Add debug info
-        result.debug_text = isImage ? 'Image processed' : text.substring(0, 200)
         console.log('OCR Result:', JSON.stringify(result, null, 2))
-
         return NextResponse.json({ success: true, data: result })
 
     } catch (error: any) {
         console.error('OCR Error:', error)
-        // Global safety net: Return 200 OK with error details to prevent 500 crash
         return NextResponse.json({
             success: true,
             data: {
