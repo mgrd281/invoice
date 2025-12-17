@@ -409,7 +409,7 @@ export async function POST(request: NextRequest) {
             'Billing Zip', 'RechnungsPLZ',
             'Shipping Zip', 'LieferPLZ',
             'Zip', 'PLZ', 'Postal Code', 'Postleitzahl'
-          ]) || '12345',
+          ])?.replace(/^'/, '') || '12345',
           customerCountry: getColumnValue(record, [
             'Billing Country', 'Rechnungsland',
             'Shipping Country', 'Lieferland',

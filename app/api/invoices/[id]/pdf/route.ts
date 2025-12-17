@@ -45,7 +45,7 @@ export async function GET(
                 name: invoice.customer.name,
                 email: invoice.customer.email || '',
                 address: invoice.customer.address,
-                zipCode: invoice.customer.zipCode,
+                zipCode: invoice.customer.zipCode.replace(/^'/, ''),
                 city: invoice.customer.city,
                 country: invoice.customer.country || 'Deutschland'
             },

@@ -773,7 +773,7 @@ export default function InvoiceViewPage() {
                       )}
                       <p className="text-sm text-gray-600">
                         {invoice.customer.address}<br />
-                        {invoice.customer.zipCode} {invoice.customer.city}<br />
+                        {invoice.customer.zipCode.replace(/^'/, '')} {invoice.customer.city}<br />
                         {invoice.customer.country}
                       </p>
                       <div className="flex items-center text-sm text-gray-600 mt-2">
