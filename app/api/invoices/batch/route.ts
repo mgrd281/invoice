@@ -183,11 +183,15 @@ export async function POST(request: NextRequest) {
                         })
                     } else {
                         // Create Additional Income (Income or Other)
+                        const baseDescription = invoice.items?.[0]?.description || (accountingType === 'income' ? 'Importierte Einnahme' : 'Sonstiges')
+                        // Prepend order number if available to preserve it
+                        const description = invoice.number ? `[Order #${invoice.number}] ${baseDescription}` : baseDescription
+
                         await prisma.additionalIncome.create({
                             data: {
                                 organizationId: org.id,
                                 date: new Date(invoice.date),
-                                description: invoice.items?.[0]?.description || (accountingType === 'income' ? 'Importierte Einnahme' : 'Sonstiges'),
+                                description: description,
                                 amount: invoice.total,
                                 type: accountingType === 'income' ? 'INCOME' : 'OTHER'
                             }

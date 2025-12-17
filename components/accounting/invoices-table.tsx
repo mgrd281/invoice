@@ -75,16 +75,23 @@ export function InvoicesTable({ invoices, additionalIncomes = [] }: InvoicesTabl
             status: inv.status,
             original: inv
         })),
-        ...additionalIncomes.map(inc => ({
-            id: inc.id,
-            date: inc.date,
-            number: '-',
-            description: inc.description,
-            amount: inc.amount,
-            type: 'ADDITIONAL',
-            status: 'PAID', // Additional income is usually considered paid
-            original: inc
-        }))
+        ...additionalIncomes.map(inc => {
+            // Extract order number if present in description (format: [Order #123] Description)
+            const orderMatch = inc.description.match(/^\[Order #(.+?)\] (.*)/)
+            const number = orderMatch ? orderMatch[1] : '-'
+            const description = orderMatch ? orderMatch[2] : inc.description
+
+            return {
+                id: inc.id,
+                date: inc.date,
+                number: number,
+                description: description,
+                amount: inc.amount,
+                type: 'ADDITIONAL',
+                status: 'PAID', // Additional income is usually considered paid
+                original: inc
+            }
+        })
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return (
