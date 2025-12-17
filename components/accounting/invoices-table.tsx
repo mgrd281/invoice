@@ -63,85 +63,115 @@ export function InvoicesTable({ invoices, additionalIncomes = [] }: InvoicesTabl
         }
     }
 
+    // Combine and sort all income sources
+    const allIncome = [
+        ...invoices.map(inv => ({
+            id: inv.id,
+            date: inv.date,
+            number: inv.invoiceNumber,
+            description: inv.customerName, // Use customer name as description for invoices
+            amount: inv.totalAmount,
+            type: 'INVOICE',
+            status: inv.status,
+            original: inv
+        })),
+        ...additionalIncomes.map(inc => ({
+            id: inc.id,
+            date: inc.date,
+            number: '-',
+            description: inc.description,
+            amount: inc.amount,
+            type: 'ADDITIONAL',
+            status: 'PAID', // Additional income is usually considered paid
+            original: inc
+        }))
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
     return (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Rechnungen</CardTitle>
+                    <CardTitle>Einnahmen</CardTitle>
                     <CardDescription>
-                        Alle Rechnungen im gewählten Zeitraum
+                        Alle Einnahmen (Rechnungen und Importe) im gewählten Zeitraum
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Rechnungsnr.</TableHead>
-                                <TableHead>Kunde</TableHead>
                                 <TableHead>Datum</TableHead>
-                                <TableHead>Fällig</TableHead>
+                                <TableHead>Nr. / Typ</TableHead>
+                                <TableHead>Beschreibung / Kunde</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Netto</TableHead>
-                                <TableHead className="text-right">MwSt</TableHead>
-                                <TableHead className="text-right">Brutto</TableHead>
+                                <TableHead className="text-right">Betrag</TableHead>
                                 <TableHead className="text-right">Aktionen</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {invoices.map((invoice) => (
-                                <TableRow key={invoice.id}>
-                                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                                    <TableCell>{invoice.customerName}</TableCell>
-                                    <TableCell>{new Date(invoice.date).toLocaleDateString('de-DE')}</TableCell>
-                                    <TableCell>{new Date(invoice.dueDate).toLocaleDateString('de-DE')}</TableCell>
+                            {allIncome.map((item) => (
+                                <TableRow key={`${item.type}-${item.id}`}>
+                                    <TableCell>{new Date(item.date).toLocaleDateString('de-DE')}</TableCell>
                                     <TableCell>
-                                        <Badge className={getStatusColor(invoice.status)}>
-                                            {getInvoiceStatusLabel(invoice.status)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">€{invoice.subtotal.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">€{invoice.taxAmount.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right font-medium">€{invoice.totalAmount.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => router.push(`/invoices/${invoice.id}`)}
-                                                title="Ansehen"
-                                            >
-                                                <Eye className="h-4 w-4 text-gray-500" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => router.push(`/invoices/${invoice.id}`)}
-                                                title="Bearbeiten"
-                                            >
-                                                <Pencil className="h-4 w-4 text-blue-500" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)}
-                                                disabled={deletingId === invoice.id}
-                                                title="Löschen"
-                                            >
-                                                {deletingId === invoice.id ? (
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-red-600"></div>
-                                                ) : (
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                )}
-                                            </Button>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{item.number !== '-' ? item.number : ''}</span>
+                                            <span className="text-xs text-gray-500">
+                                                {item.type === 'INVOICE' ? 'Rechnung' : 'Import/Manuell'}
+                                            </span>
                                         </div>
+                                    </TableCell>
+                                    <TableCell>{item.description}</TableCell>
+                                    <TableCell>
+                                        {item.type === 'INVOICE' ? (
+                                            <Badge className={getStatusColor(item.status as InvoiceStatus)}>
+                                                {getInvoiceStatusLabel(item.status as InvoiceStatus)}
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                Einnahme
+                                            </Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">€{Number(item.amount).toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">
+                                        {item.type === 'INVOICE' && (
+                                            <div className="flex justify-end space-x-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => router.push(`/invoices/${item.id}`)}
+                                                    title="Ansehen"
+                                                >
+                                                    <Eye className="h-4 w-4 text-gray-500" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDelete(item.id, item.number)}
+                                                    disabled={deletingId === item.id}
+                                                    title="Löschen"
+                                                >
+                                                    {deletingId === item.id ? (
+                                                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-red-600"></div>
+                                                    ) : (
+                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        )}
+                                        {item.type === 'ADDITIONAL' && (
+                                            <div className="flex justify-end space-x-2">
+                                                {/* Add delete for additional income if needed later */}
+                                            </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {invoices.length === 0 && (
+                            {allIncome.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                                         <div className="flex flex-col items-center justify-center space-y-2">
-                                            <p>Keine Rechnungen im gewählten Zeitraum gefunden</p>
+                                            <p>Keine Einnahmen im gewählten Zeitraum gefunden</p>
                                             <p className="text-sm text-gray-400">Prüfen Sie den Datumsfilter oder wählen Sie "Alles (Gesamt)"</p>
                                         </div>
                                     </TableCell>
@@ -151,41 +181,6 @@ export function InvoicesTable({ invoices, additionalIncomes = [] }: InvoicesTabl
                     </Table>
                 </CardContent>
             </Card>
-
-            {additionalIncomes.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Zusätzliche Einnahmen (Importiert)</CardTitle>
-                        <CardDescription>
-                            Manuell hinzugefügte oder importierte Einnahmen ohne Rechnungserstellung
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Datum</TableHead>
-                                    <TableHead>Beschreibung</TableHead>
-                                    <TableHead>Typ</TableHead>
-                                    <TableHead className="text-right">Betrag</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {additionalIncomes.map((income) => (
-                                    <TableRow key={income.id}>
-                                        <TableCell>{new Date(income.date).toLocaleDateString('de-DE')}</TableCell>
-                                        <TableCell>{income.description}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">{income.type === 'INCOME' ? 'Einnahme' : 'Sonstiges'}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">€{Number(income.amount).toFixed(2)}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     )
 }
