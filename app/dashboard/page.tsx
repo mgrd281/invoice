@@ -294,12 +294,29 @@ export default function DashboardPage() {
                 </span>
               )}
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 flex items-center gap-2">
               {user?.isAdmin
                 ? 'Admin-Dashboard: Sie können alle Daten im System verwalten.'
                 : 'Hier ist eine Übersicht über Ihre Rechnungen und Geschäftstätigkeiten.'
               }
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadDashboardData}
+                className="ml-4 h-8"
+                disabled={loading}
+              >
+                <RotateCcw className={`w-3 h-3 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Aktualisieren
+              </Button>
             </p>
+
+            {/* Error Message */}
+            {stats.totalInvoices === 0 && !loading && (
+              <div className="mt-2 text-xs text-gray-500">
+                Hinweis: Falls keine Daten erscheinen, klicken Sie auf "Aktualisieren".
+              </div>
+            )}
 
             {/* Data Source Info */}
             {stats.totalInvoices > 0 ? (
