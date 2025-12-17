@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Analyze this document (invoice/receipt). Extract data into JSON format.\n\nFields required:\n- totalAmount: number (gross amount in EUR, convert '9,90' to 9.90)\n- date: string (YYYY-MM-DD)\n- description: string (short summary of product/service in German)\n- category: 'INCOME' | 'EXPENSE' (Logic: If the invoice is ISSUED BY the user/company, it is INCOME. If it is a receipt FROM a shop/vendor, it is EXPENSE.)\n- invoiceNumber: string (optional)\n- supplier: string (name of the vendor/shop/issuer)\n\nReturn ONLY raw JSON, no markdown." },
+                            { type: "text", text: "Analyze this document (invoice/receipt) for German accounting. Extract data into JSON.\n\nRules:\n1. **totalAmount**: Look for 'Gesamtbetrag', 'Summe', 'Total', 'Zu zahlen', 'Endbetrag'. Prefer the largest final amount. Ignore 'Zwischensumme' or 'Netto'. Convert '1.234,56' to 1234.56. If multiple amounts exist, pick the final payable one.\n2. **date**: YYYY-MM-DD. Look for 'Datum', 'Rechnungsdatum', 'Leistungsdatum'.\n3. **description**: Short German summary (e.g. 'Büromaterial', 'Software Lizenz').\n4. **category**: 'INCOME' (if issued BY user) or 'EXPENSE' (if issued TO user/receipt).\n5. **supplier**: Name of the vendor/shop (e.g. 'Amazon', 'Shell', 'Telekom').\n6. **confidence**: 'high', 'medium', or 'low' based on how clear the total amount is.\n7. **ai_status**: 'OK' if amount/date found, 'WARNING' if unsure, 'ERROR' if nothing found.\n\nReturn ONLY raw JSON." },
                             {
                                 type: "image_url",
                                 image_url: {
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
                         ],
                     },
                 ],
-                max_tokens: 500,
+                max_tokens: 800,
             })
             const content = response.choices[0].message.content
             result = parseJsonFromLlm(content)
@@ -108,17 +108,20 @@ export async function POST(request: NextRequest) {
                 messages: [
                     {
                         role: "system",
-                        content: "You are an expert accounting assistant. Analyze the text from a document and extract structured data."
+                        content: "You are an expert German accounting assistant. Analyze the text and extract structured data."
                     },
                     {
                         role: "user",
-                        content: `Extract the following fields from the text below into JSON:\n- totalAmount: number (gross amount in EUR)\n- date: string (YYYY-MM-DD)\n- description: string (short summary in German)\n- category: 'INCOME' | 'EXPENSE' (Logic: If it looks like an outgoing invoice from the user, INCOME. If it looks like a purchase receipt, EXPENSE.)\n- invoiceNumber: string (optional)\n- supplier: string (name of the vendor/issuer)\n\nText:\n${text.substring(0, 15000)}`
+                        content: `Extract fields into JSON:\n- totalAmount: number (gross EUR, handle '1.000,00' as 1000.00). Look for 'Gesamt', 'Summe', 'Zahlbetrag'.\n- date: string (YYYY-MM-DD)\n- description: string (German summary)\n- category: 'INCOME' | 'EXPENSE'\n- invoiceNumber: string (optional)\n- supplier: string\n- confidence: 'high' | 'medium' | 'low'\n- ai_status: 'OK' | 'WARNING' | 'ERROR'\n\nText:\n${text.substring(0, 15000)}`
                     }
                 ],
                 response_format: { type: "json_object" }
             })
             result = JSON.parse(response.choices[0].message.content || '{}')
         }
+
+        // Add debug info
+        result.debug_text = isImage ? 'Image processed' : text.substring(0, 200)
 
         return NextResponse.json({ success: true, data: result })
 

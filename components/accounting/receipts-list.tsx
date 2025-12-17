@@ -12,6 +12,7 @@ interface Receipt {
     category: string
     url: string
     amount?: number
+    ai_status?: 'OK' | 'WARNING' | 'ERROR'
 }
 
 interface AdditionalIncome {
@@ -54,7 +55,8 @@ export function ReceiptsList({
             category: ai.type,
             url: '',
             amount: ai.amount,
-            type: 'income' // Distinguish type
+            type: 'income', // Distinguish type
+            ai_status: 'OK' as const
         }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
@@ -151,8 +153,8 @@ export function ReceiptsList({
                                 <TableCell>{new Date(item.date).toLocaleDateString('de-DE')}</TableCell>
                                 <TableCell>
                                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.category === 'INCOME' || item.category === 'income' ? 'bg-green-100 text-green-700' :
-                                            item.category === 'EXPENSE' ? 'bg-red-100 text-red-700' :
-                                                'bg-gray-100 text-gray-700'
+                                        item.category === 'EXPENSE' ? 'bg-red-100 text-red-700' :
+                                            'bg-gray-100 text-gray-700'
                                         }`}>
                                         {item.category === 'INCOME' || item.category === 'income' ? 'Einnahme' :
                                             item.category === 'EXPENSE' ? 'Ausgabe' : 'Sonstiges'}
@@ -162,12 +164,16 @@ export function ReceiptsList({
                                     {item.amount ? `€${parseFloat(item.amount.toString()).toFixed(2)}` : '-'}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    {item.amount ? (
+                                    {item.amount && item.ai_status !== 'WARNING' && item.ai_status !== 'ERROR' ? (
                                         <div className="flex items-center justify-center text-green-600" title="Vollständig">
                                             <CheckCircle className="h-4 w-4" />
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center text-orange-500" title="Bitte prüfen">
+                                        <div
+                                            className="flex items-center justify-center text-orange-500 cursor-pointer hover:text-orange-700 hover:scale-110 transition-transform"
+                                            title="Bitte prüfen - Klicken zum Bearbeiten"
+                                            onClick={() => onEdit(item as any)}
+                                        >
                                             <AlertTriangle className="h-4 w-4" />
                                         </div>
                                     )}
