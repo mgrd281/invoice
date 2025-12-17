@@ -23,6 +23,16 @@ global.atob = (str) => Buffer.from(str.replace(/[\n\t\r\f\s]/g, ''), 'base64').t
 // @ts-ignore
 global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
 
+// Polyfill window/self for pdf.js if it checks for them
+if (typeof window === 'undefined') {
+    // @ts-ignore
+    global.window = global;
+}
+if (typeof self === 'undefined') {
+    // @ts-ignore
+    global.self = global;
+}
+
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
@@ -71,7 +81,7 @@ export async function POST(request: NextRequest) {
                     data: {
                         ai_status: 'ERROR',
                         error_reason: 'PDF_PARSE_FAILED',
-                        debug_text: `PDF could not be parsed. It might be a scanned image or encrypted. Please enter details manually or upload as JPG/PNG.\nError: ${e.message || e}`
+                        debug_text: `PDF Parse Error: ${e.message || e}\n\nStack Trace:\n${e.stack}`
                     }
                 })
             }
