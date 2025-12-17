@@ -45,13 +45,13 @@ export async function GET(request: NextRequest) {
         // 1. Fetch relevant documents:
         // We fetch ALL non-cancelled documents and filter in memory to handle mixed status types (Enum vs String)
         // and to ensure we catch "Bezahlt" as well as "PAID".
+        // 1. Fetch relevant documents:
+        // We fetch ALL non-cancelled documents (using valid Enum value).
+        // We will filter out legacy "STORNIERT" strings in JS if they exist (e.g. from bad imports).
         const allDocuments = await prisma.invoice.findMany({
             where: {
                 organizationId,
-                // We only exclude explicitly cancelled ones. We'll filter for PAID/Bezahlt in JS.
-                // Note: We cast to any to allow filtering by German status if needed in DB, 
-                // but safer to just fetch non-cancelled and filter in app logic.
-                status: { notIn: ['CANCELLED', 'STORNIERT'] as any }
+                status: { not: 'CANCELLED' }
             },
             include: {
                 customer: true
@@ -70,8 +70,12 @@ export async function GET(request: NextRequest) {
 
         // 2. Calculate Total Revenue (Net after refunds)
         const totalRevenue = allDocuments.reduce((sum, inv) => {
-            const gross = toNumber(inv.totalGross);
             const s = normalizeStatus(inv.status as any);
+
+            // Double check for cancelled status (including legacy string)
+            if (s === 'CANCELLED' || s === 'STORNIERT') return sum;
+
+            const gross = toNumber(inv.totalGross);
 
             const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                 inv.documentKind === 'REFUND_FULL' ||
@@ -95,6 +99,8 @@ export async function GET(request: NextRequest) {
         // 3. Paid Invoices Count (Only count actual sales invoices)
         const paidInvoicesCount = allDocuments.filter(inv => {
             const s = normalizeStatus(inv.status as any);
+            if (s === 'CANCELLED' || s === 'STORNIERT') return false;
+
             const isPaid = s === 'PAID' || s === 'BEZAHLT';
             const isInvoice = inv.documentKind === 'INVOICE' || !inv.documentKind;
             return isPaid && isInvoice;
@@ -108,6 +114,9 @@ export async function GET(request: NextRequest) {
 
         allDocuments.forEach(inv => {
             if (inv.customer) {
+                const s = normalizeStatus(inv.status as any);
+                if (s === 'CANCELLED' || s === 'STORNIERT') return;
+
                 const customerId = inv.customer.id;
                 const current = customerMap.get(customerId) || {
                     name: inv.customer.name,
@@ -116,7 +125,6 @@ export async function GET(request: NextRequest) {
                 };
 
                 const gross = toNumber(inv.totalGross);
-                const s = normalizeStatus(inv.status as any);
 
                 const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                     inv.documentKind === 'REFUND_FULL' ||
@@ -154,11 +162,13 @@ export async function GET(request: NextRequest) {
         }
 
         allDocuments.forEach(inv => {
+            const s = normalizeStatus(inv.status as any);
+            if (s === 'CANCELLED' || s === 'STORNIERT') return;
+
             const d = new Date(inv.issueDate);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             if (monthlyIncomeMap.has(key)) {
                 const gross = toNumber(inv.totalGross);
-                const s = normalizeStatus(inv.status as any);
 
                 const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                     inv.documentKind === 'REFUND_FULL' ||
