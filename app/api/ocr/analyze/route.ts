@@ -139,6 +139,21 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         console.error('OCR Error:', error)
+
+        // Final safety net: Check for specific PDF parsing errors that might bubble up
+        const isComplexError = error.message?.includes('match the expected pattern') || error.message?.includes('atob');
+
+        if (isComplexError) {
+            return NextResponse.json({
+                success: true,
+                data: {
+                    ai_status: 'ERROR',
+                    error_reason: 'SCANNED_PDF_COMPLEX',
+                    debug_text: 'PDF is likely a scan or encrypted. Text extraction failed. Please enter data manually.'
+                }
+            })
+        }
+
         return NextResponse.json({ error: `OCR Error: ${error.message || error}` }, { status: 500 })
     }
 }
