@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RefreshCw, Play, Database, AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function DiagnosePage() {
