@@ -65,13 +65,18 @@ export async function POST(request: NextRequest) {
                 }
             } catch (e: any) {
                 console.error('PDF parse error:', e)
-                // Return success=true but with error status so UI can handle it gracefully
+
+                // Check for specific "atob" or pattern errors which indicate complex/scanned PDFs
+                const isComplexError = e.message?.includes('match the expected pattern') || e.message?.includes('atob');
+
                 return NextResponse.json({
                     success: true,
                     data: {
                         ai_status: 'ERROR',
-                        error_reason: 'PDF_PARSE_FAILED',
-                        debug_text: `PDF could not be parsed. It might be a scanned image or encrypted. Please enter details manually or upload as JPG/PNG.\nError: ${e.message || e}`
+                        error_reason: isComplexError ? 'SCANNED_PDF_COMPLEX' : 'PDF_PARSE_FAILED',
+                        debug_text: isComplexError
+                            ? 'PDF is likely a scan or encrypted. Text extraction failed. Please enter data manually.'
+                            : `PDF Parse Error: ${e.message || e}`
                     }
                 })
             }
