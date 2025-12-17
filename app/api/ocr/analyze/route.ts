@@ -26,9 +26,6 @@ export async function POST(request: NextRequest) {
         apiKey: process.env.OPENAI_API_KEY,
     })
 
-    // @ts-ignore
-    const pdf = require('pdf-parse');
-
     try {
         // Initialize Google Cloud Vision inside try-catch to prevent crashes
         let visionClient;
@@ -45,7 +42,6 @@ export async function POST(request: NextRequest) {
             visionClient = new ImageAnnotatorClient(visionConfig);
         } catch (initError) {
             console.error('Failed to initialize Google Cloud Vision:', initError);
-            // Continue without Vision API (will fallback to other methods)
         }
 
         const authResult = requireAuth(request)
@@ -60,11 +56,27 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 })
         }
 
+        // Safety check for file size (e.g. 10MB limit) to prevent OOM
+        if (file.size > 10 * 1024 * 1024) {
+            return NextResponse.json({
+                success: true,
+                data: {
+                    ai_status: 'ERROR',
+                    error_reason: 'FILE_TOO_LARGE',
+                    debug_text: 'File is too large (>10MB). Please upload a smaller file.'
+                }
+            })
+        }
+
         let text = ''
         const buffer = Buffer.from(await file.arrayBuffer())
 
         if (file.type === 'application/pdf') {
             try {
+                // Move require inside try to catch module load errors
+                // @ts-ignore
+                const pdf = require('pdf-parse');
+
                 // Set a timeout for PDF parsing
                 const parsePromise = pdf(buffer);
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PDF parse timeout')), 5000));
@@ -104,9 +116,6 @@ export async function POST(request: NextRequest) {
                 }
             } catch (visionError) {
                 console.error('Google Vision API Error:', visionError);
-                // Fallback to GPT-4o Vision if Google Vision fails
-                // (We'll handle this by leaving text empty and letting the next block handle it if we want, 
-                // but for now let's just log it. If text is empty, we might want to try GPT-4o Vision directly)
             }
         }
 
