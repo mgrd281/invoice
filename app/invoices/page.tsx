@@ -66,6 +66,21 @@ function getPaymentMethodDisplay(method: string | undefined) {
   )
 }
 
+function getGermanStatus(status: string) {
+  if (!status) return ''
+  const s = status.toUpperCase()
+  switch (s) {
+    case 'PAID': return 'Bezahlt'
+    case 'SENT': return 'Versendet'
+    case 'DRAFT': return 'Entwurf'
+    case 'OVERDUE': return 'Überfällig'
+    case 'CANCELLED': return 'Storniert'
+    case 'OPEN': return 'Offen'
+    case 'PENDING': return 'Ausstehend'
+    default: return status
+  }
+}
+
 export default function InvoicesPage() {
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
@@ -1558,7 +1573,7 @@ export default function InvoicesPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                            {invoice.status}
+                            {getGermanStatus(invoice.status)}
                           </span>
                           {/* E-Mail-Status-Anzeige */}
                           {emailStatuses[invoice.id]?.sent && (

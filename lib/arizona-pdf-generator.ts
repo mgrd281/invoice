@@ -412,7 +412,14 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     addressLines.forEach((line) => {
       // Filter out "Order #" lines as requested
-      if (line.trim().startsWith('Order #')) return
+      if (line.trim().startsWith('Order #') || line.trim().startsWith('Bestellnummer')) return
+
+      // Filter out Payment method lines if they appear in address
+      const lowerLine = line.trim().toLowerCase()
+      if (lowerLine.startsWith('payment method') ||
+        lowerLine.startsWith('zahlungsmethode') ||
+        lowerLine.startsWith('zahlung') ||
+        lowerLine.includes('payment via')) return
 
       doc.text(line, 20, yPos)
       yPos += 4
