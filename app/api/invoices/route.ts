@@ -76,6 +76,7 @@ export async function GET(req: Request) {
       where,
       select: {
         status: true,
+        documentKind: true,
         totalGross: true,
         totalTax: true,
         items: {
@@ -101,15 +102,33 @@ export async function GET(req: Request) {
     let totalPaidAmount = 0
     let totalVat19 = 0
     let totalVat7 = 0
+    let paidInvoicesCount = 0
+    let openInvoicesCount = 0
+    let overdueInvoicesCount = 0
+    let cancelledInvoicesCount = 0
+    let refundInvoicesCount = 0
 
     for (const inv of allMatchingInvoices) {
       const s = normalizeStatus(inv.status as any)
       const amount = toNumber(inv.totalGross)
       const tax = toNumber(inv.totalTax)
 
-      // Calculate Paid Amount
+      // Calculate Counts & Amounts
       if (s === 'PAID' || s === 'BEZAHLT') {
         totalPaidAmount += amount
+        paidInvoicesCount++
+      } else if (s === 'SENT' || s === 'OFFEN' || s === 'OPEN' || s === 'PENDING') {
+        openInvoicesCount++
+      } else if (s === 'OVERDUE' || s === 'ÜBERFÄLLIG' || s === 'UEBERFAELLIG') {
+        overdueInvoicesCount++
+      } else if (s === 'CANCELLED' || s === 'STORNIERT') {
+        cancelledInvoicesCount++
+      }
+
+      // Check for refunds (based on document kind usually, or status)
+      // Note: In our schema, REFUND is not a status but a document kind, but we map it for stats
+      if (inv.documentKind === 'CREDIT_NOTE' || inv.documentKind === 'REFUND_FULL' || inv.documentKind === 'REFUND_PARTIAL' || s === 'GUTSCHRIFT') {
+        refundInvoicesCount++
       }
 
       // Calculate VAT sums (approximate based on total tax or items)
@@ -163,6 +182,11 @@ export async function GET(req: Request) {
         totalAmount: allMatchingInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0),
         count: total,
         totalPaidAmount,
+        paidInvoicesCount,
+        openInvoicesCount,
+        overdueInvoicesCount,
+        cancelledInvoicesCount,
+        refundInvoicesCount,
         totalVat19,
         totalVat7
       }

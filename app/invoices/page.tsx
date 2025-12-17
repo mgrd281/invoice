@@ -98,6 +98,13 @@ export default function InvoicesPage() {
   const [vat7Sum, setVat7Sum] = useState(0)
   const [totalPaidAmount, setTotalPaidAmount] = useState(0)
 
+  // Stats Counts State
+  const [paidInvoicesCount, setPaidInvoicesCount] = useState(0)
+  const [openInvoicesCount, setOpenInvoicesCount] = useState(0)
+  const [overdueInvoicesCount, setOverdueInvoicesCount] = useState(0)
+  const [cancelledInvoicesCount, setCancelledInvoicesCount] = useState(0)
+  const [refundInvoicesCount, setRefundInvoicesCount] = useState(0)
+
   const [isAutoSyncing, setIsAutoSyncing] = useState(true)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
 
