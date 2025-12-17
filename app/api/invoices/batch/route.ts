@@ -198,7 +198,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             count: createdCount,
-            errors: errors.length > 0 ? errors : undefined
+            errors: errors.length > 0 ? errors : undefined,
+            debug: { organizationId: org.id }
         })
 
     } catch (error) {
