@@ -93,13 +93,37 @@ function getColumnValue(record: Record<string, string>, possibleHeaders: string[
 
   for (const header of possibleHeaders) {
     // 1. Exact match
-    if (record[header]) return record[header];
+    if (record[header] !== undefined && record[header] !== '') return record[header];
 
     // 2. Case-insensitive match
     const key = recordKeys.find(k => k.toLowerCase().trim() === header.toLowerCase().trim());
-    if (key && record[key]) return record[key];
+    if (key && record[key] !== undefined && record[key] !== '') return record[key];
   }
   return '';
+}
+
+// Helper to parse German number formats
+function parseGermanNumber(str: string): number {
+  if (!str) return 0;
+
+  // Remove currency symbol and whitespace
+  let clean = str.replace(/[€\sEUR]/g, '').trim();
+
+  // Check for German format (1.234,56 or 1234,56)
+  // If it contains a comma...
+  if (clean.includes(',')) {
+    // If it also contains a dot, and the dot is AFTER the last comma, it's likely English (1,000.00)
+    if (clean.includes('.') && clean.lastIndexOf('.') > clean.lastIndexOf(',')) {
+      // English format: remove commas
+      clean = clean.replace(/,/g, '');
+    } else {
+      // German format: remove dots (thousands), replace comma with dot
+      clean = clean.replace(/\./g, '').replace(',', '.');
+    }
+  }
+
+  const val = parseFloat(clean);
+  return isNaN(val) ? 0 : val;
 }
 
 // Helper to parse dates including German format
@@ -303,20 +327,45 @@ export async function POST(request: NextRequest) {
 
         // Debug logging for first few records
         if (i <= 3) {
-          console.log(`Record ${i} mapping:`)
-          console.log('Available headers:', Object.keys(record))
+          console.log(`Record ${i} raw data:`, values)
+          console.log(`Record ${i} mapped keys:`, Object.keys(record))
         }
 
         // Map common Shopify CSV fields with more flexibility - prioritize Bestellnummer
+        const rawCustomerName = getColumnValue(record, [
+          'Billing Name', 'Rechnungsname',
+          'Shipping Name', 'Liefername',
+          'Customer Name', 'Kundenname',
+          'Name', 'Customer',
+          'Kunde', 'Vorname', 'Nachname', 'First Name', 'Last Name'
+        ]);
+
+        const rawUnitPrice = getColumnValue(record, [
+          'Lineitem price', 'Einzelpreis',
+          'Price', 'Preis',
+          'Unit Price', 'Stückpreis'
+        ]);
+
+        const rawTotalPrice = getColumnValue(record, [
+          'Total', 'Gesamt',
+          'Amount', 'Betrag',
+          'Line Total', 'Zeilensumme',
+          'Total Price', 'Gesamtpreis',
+          'Umsatz'
+        ]);
+
+        // Warn if critical fields are missing
+        if (!rawCustomerName) {
+          // We don't add error here yet, but we will log it
+          console.warn(`Row ${i}: Customer Name not found. Available columns: ${Object.keys(record).join(', ')}`);
+        }
+        if (!rawTotalPrice && !rawUnitPrice) {
+          console.warn(`Row ${i}: No price found.`);
+        }
+
         const order: ShopifyOrder = {
           orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order', 'Auftragsnummer', 'Bestellung']) || `ORD-${Date.now()}-${i}`,
-          customerName: getColumnValue(record, [
-            'Billing Name', 'Rechnungsname',
-            'Shipping Name', 'Liefername',
-            'Customer Name', 'Kundenname',
-            'Name', 'Customer',
-            'Kunde', 'Vorname', 'Nachname', 'First Name', 'Last Name'
-          ]) || 'Unbekannter Kunde',
+          customerName: rawCustomerName || 'Unbekannter Kunde',
           customerCompany: getColumnValue(record, [
             'Company', 'Firma', 'Unternehmen',
             'Billing Company', 'Rechnungsfirma',
@@ -367,18 +416,8 @@ export async function POST(request: NextRequest) {
             'Lineitem quantity', 'Menge',
             'Quantity', 'Qty', 'Anzahl'
           ]) || '1'),
-          unitPrice: parseFloat((getColumnValue(record, [
-            'Lineitem price', 'Einzelpreis',
-            'Price', 'Preis',
-            'Unit Price', 'Stückpreis'
-          ]) || '0').replace(',', '.')), // Handle German number format
-          totalPrice: parseFloat((getColumnValue(record, [
-            'Total', 'Gesamt',
-            'Amount', 'Betrag',
-            'Line Total', 'Zeilensumme',
-            'Total Price', 'Gesamtpreis',
-            'Umsatz'
-          ]) || '0').replace(',', '.')), // Handle German number format
+          unitPrice: parseGermanNumber(rawUnitPrice),
+          totalPrice: parseGermanNumber(rawTotalPrice),
           taxRate: 19, // Default German VAT
           taxAmount: 0,
           // Identifiers from CSV (flexible header names)
@@ -393,9 +432,19 @@ export async function POST(request: NextRequest) {
           ]) || ''
         }
 
+        // Debug mapped values for first few records
+        if (i <= 3) {
+          console.log(`Record ${i} mapped:`, {
+            name: order.customerName,
+            email: order.customerEmail,
+            amount: order.totalPrice,
+            status: getColumnValue(record, ['Status_Deutsch', 'Status', 'Bestellstatus'])
+          })
+        }
+
         // Add additional fields for invoice type detection
         order.rechnungstyp = getColumnValue(record, ['Rechnungstyp']) || 'Rechnung'
-        order.statusDeutsch = getColumnValue(record, ['Status_Deutsch', 'Status']) || ''
+        order.statusDeutsch = getColumnValue(record, ['Status_Deutsch', 'Status', 'Bestellstatus']) || ''
         order.grund = getColumnValue(record, ['Grund']) || ''
         order.originalRechnung = getColumnValue(record, ['Original_Rechnung', 'Originalrechnung']) || ''
         order.financialStatus = getColumnValue(record, ['Financial Status', 'Finanzstatus']) || ''
