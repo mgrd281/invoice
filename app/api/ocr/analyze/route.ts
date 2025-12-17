@@ -17,6 +17,14 @@ if (typeof DOMMatrix === 'undefined') {
     }
 }
 
+// Polyfill atob/btoa for pdf-parse if missing
+if (typeof atob === 'undefined') {
+    global.atob = (str) => Buffer.from(str, 'base64').toString('binary');
+}
+if (typeof btoa === 'undefined') {
+    global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
+}
+
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
@@ -64,7 +72,15 @@ export async function POST(request: NextRequest) {
                 }
             } catch (e: any) {
                 console.error('PDF parse error:', e)
-                return NextResponse.json({ error: `PDF Parse Error: ${e.message || e}` }, { status: 500 })
+                // Return success=true but with error status so UI can handle it gracefully
+                return NextResponse.json({
+                    success: true,
+                    data: {
+                        ai_status: 'ERROR',
+                        error_reason: 'PDF_PARSE_FAILED',
+                        debug_text: `PDF Parse Error: ${e.message || e}`
+                    }
+                })
             }
         } else if (file.type.startsWith('image/')) {
             isImage = true
