@@ -17,30 +17,7 @@ if (typeof DOMMatrix === 'undefined') {
     }
 }
 
-// Force Polyfill atob/btoa for pdf-parse to be lenient
-// Use Object.defineProperty to ensure we can overwrite read-only globals if necessary
-try {
-    const robustAtob = (str: string) => Buffer.from(str.replace(/[\n\t\r\f\s]/g, ''), 'base64').toString('binary');
-    const robustBtoa = (str: string) => Buffer.from(str, 'binary').toString('base64');
-
-    // @ts-ignore
-    if (global.atob) {
-        Object.defineProperty(global, 'atob', { value: robustAtob, writable: true, configurable: true });
-    } else {
-        // @ts-ignore
-        global.atob = robustAtob;
-    }
-
-    // @ts-ignore
-    if (global.btoa) {
-        Object.defineProperty(global, 'btoa', { value: robustBtoa, writable: true, configurable: true });
-    } else {
-        // @ts-ignore
-        global.btoa = robustBtoa;
-    }
-} catch (e) {
-    console.error('Failed to polyfill atob/btoa:', e);
-}
+// Polyfill removed - using robust error handling instead
 
 export const dynamic = 'force-dynamic'
 
@@ -84,19 +61,13 @@ export async function POST(request: NextRequest) {
                 }
             } catch (e: any) {
                 console.error('PDF parse error:', e)
-
-                // Check for specific "atob" or pattern errors which indicate complex/scanned PDFs
-                const errorMsg = (e.message || e.toString() || '').toLowerCase();
-                const isComplexError = errorMsg.includes('match the expected pattern') || errorMsg.includes('atob') || errorMsg.includes('base64');
-
+                // Always return a graceful error for PDF parsing failures
                 return NextResponse.json({
                     success: true,
                     data: {
                         ai_status: 'ERROR',
-                        error_reason: isComplexError ? 'SCANNED_PDF_COMPLEX' : 'PDF_PARSE_FAILED',
-                        debug_text: isComplexError
-                            ? 'PDF is likely a scan or encrypted. Text extraction failed. Please enter data manually.'
-                            : `PDF Parse Error: ${e.message || e}`
+                        error_reason: 'SCANNED_PDF_COMPLEX',
+                        debug_text: `PDF Parse Error (handled): ${e.message || e}. Please enter data manually.`
                     }
                 })
             }
@@ -159,23 +130,15 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         console.error('OCR Error:', error)
-
-        // Final safety net: Check for specific PDF parsing errors that might bubble up
-        const errorMsg = (error.message || error.toString() || '').toLowerCase();
-        const isComplexError = errorMsg.includes('expected pattern') || errorMsg.includes('atob') || errorMsg.includes('base64');
-
-        if (isComplexError) {
-            return NextResponse.json({
-                success: true,
-                data: {
-                    ai_status: 'ERROR',
-                    error_reason: 'SCANNED_PDF_COMPLEX',
-                    debug_text: 'PDF is likely a scan or encrypted. Text extraction failed. Please enter data manually.'
-                }
-            })
-        }
-
-        return NextResponse.json({ error: `OCR Error: ${error.message || error}` }, { status: 500 })
+        // Global safety net: Return 200 OK with error details to prevent 500 crash
+        return NextResponse.json({
+            success: true,
+            data: {
+                ai_status: 'ERROR',
+                error_reason: 'OCR_FAILED',
+                debug_text: `OCR System Error: ${error.message || error}`
+            }
+        })
     }
 }
 
