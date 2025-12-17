@@ -90,13 +90,17 @@ export async function POST(request: NextRequest) {
         } else if (file.type.startsWith('image/')) {
             // Use Google Cloud Vision for OCR
             try {
-                const [result] = await visionClient.textDetection(buffer);
-                const detections = result.textAnnotations;
-                if (detections && detections.length > 0) {
-                    text = detections[0].description || '';
-                    console.log('Google Vision OCR success, text length:', text.length);
+                if (visionClient) {
+                    const [result] = await visionClient.textDetection(buffer);
+                    const detections = result.textAnnotations;
+                    if (detections && detections.length > 0) {
+                        text = detections[0].description || '';
+                        console.log('Google Vision OCR success, text length:', text.length);
+                    } else {
+                        console.log('Google Vision found no text.');
+                    }
                 } else {
-                    console.log('Google Vision found no text.');
+                    console.log('Google Vision client not initialized.');
                 }
             } catch (visionError) {
                 console.error('Google Vision API Error:', visionError);
