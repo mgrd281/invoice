@@ -231,38 +231,44 @@ export function calculateAccountingSummary(invoices: AccountingInvoice[], expens
 
   // Calculate invoice totals
   invoices.forEach(invoice => {
+    const totalAmount = Number(invoice.totalAmount)
+    const taxAmount = Number(invoice.taxAmount)
+
     switch (invoice.status) {
       case 'bezahlt':
         summary.paidInvoices.count++
-        summary.paidInvoices.amount += invoice.totalAmount
-        summary.totalRevenue += invoice.totalAmount
-        summary.vatCollected += invoice.taxAmount
+        summary.paidInvoices.amount += totalAmount
+        summary.totalRevenue += totalAmount
+        summary.vatCollected += taxAmount
         break
       case 'offen':
         summary.openInvoices.count++
-        summary.openInvoices.amount += invoice.totalAmount
+        summary.openInvoices.amount += totalAmount
         break
       case 'erstattet':
         summary.refundedInvoices.count++
-        summary.refundedInvoices.amount += invoice.totalAmount
-        summary.totalRevenue -= invoice.totalAmount
-        summary.vatCollected -= invoice.taxAmount
+        summary.refundedInvoices.amount += totalAmount
+        summary.totalRevenue -= totalAmount
+        summary.vatCollected -= taxAmount
         break
       case 'storniert':
         summary.cancelledInvoices.count++
-        summary.cancelledInvoices.amount += invoice.totalAmount
+        summary.cancelledInvoices.amount += totalAmount
         break
       case 'überfällig':
         summary.overdueInvoices.count++
-        summary.overdueInvoices.amount += invoice.totalAmount
+        summary.overdueInvoices.amount += totalAmount
         break
     }
   })
 
   // Calculate expense totals
   expenses.forEach(expense => {
-    summary.totalExpenses += expense.totalAmount
-    summary.vatPaid += expense.taxAmount
+    const totalAmount = Number(expense.totalAmount)
+    const taxAmount = Number(expense.taxAmount)
+
+    summary.totalExpenses += totalAmount
+    summary.vatPaid += taxAmount
   })
 
   // Calculate net income and total tax
