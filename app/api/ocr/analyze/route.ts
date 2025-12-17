@@ -17,13 +17,11 @@ if (typeof DOMMatrix === 'undefined') {
     }
 }
 
-// Polyfill atob/btoa for pdf-parse if missing
-if (typeof atob === 'undefined') {
-    global.atob = (str) => Buffer.from(str, 'base64').toString('binary');
-}
-if (typeof btoa === 'undefined') {
-    global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
-}
+// Force Polyfill atob/btoa for pdf-parse to be lenient
+// @ts-ignore
+global.atob = (str) => Buffer.from(str.replace(/[\n\t\r\f\s]/g, ''), 'base64').toString('binary');
+// @ts-ignore
+global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
 
 export const dynamic = 'force-dynamic'
 
@@ -55,20 +53,15 @@ export async function POST(request: NextRequest) {
 
         if (file.type === 'application/pdf') {
             try {
-                const data = await pdf(buffer)
+                // Set a timeout for PDF parsing to avoid hanging
+                const parsePromise = pdf(buffer);
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PDF parse timeout')), 5000));
+
+                const data: any = await Promise.race([parsePromise, timeoutPromise]);
                 text = data.text
-                if (text.trim().length < 20) {
-                    console.log('PDF has little to no text, likely a scan.')
-                    // We can't easily OCR a PDF in this environment without external tools.
-                    // We will return a specific status so the UI can prompt the user.
-                    return NextResponse.json({
-                        success: true,
-                        data: {
-                            ai_status: 'ERROR',
-                            error_reason: 'SCANNED_PDF_NO_TEXT',
-                            debug_text: 'PDF seems to be a scan (no text layer found).'
-                        }
-                    })
+
+                if (!text || text.trim().length < 10) {
+                    throw new Error('PDF has no text (scanned?)');
                 }
             } catch (e: any) {
                 console.error('PDF parse error:', e)
@@ -78,7 +71,7 @@ export async function POST(request: NextRequest) {
                     data: {
                         ai_status: 'ERROR',
                         error_reason: 'PDF_PARSE_FAILED',
-                        debug_text: `PDF Parse Error: ${e.message || e}`
+                        debug_text: `PDF could not be parsed. It might be a scanned image or encrypted. Please enter details manually or upload as JPG/PNG.\nError: ${e.message || e}`
                     }
                 })
             }
