@@ -1524,7 +1524,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center">
-                          {invoice.order?.orderNumber || invoice.number}
+                          {invoice.orderNumber || invoice.order?.orderNumber || invoice.number}
                           {duplicateNumbers.includes(invoice.number) && (
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
                               Duplikat

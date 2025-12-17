@@ -168,7 +168,10 @@ export async function GET(req: Request) {
       taxTotal: Number(inv.totalTax),
       total: Number(inv.totalGross),
       currency: inv.currency || 'EUR',
-      notes: '' // Notes field does not exist on Invoice model
+      notes: '', // Notes field does not exist on Invoice model
+      orderNumber: inv.orderNumber,
+      paymentMethod: inv.paymentMethod,
+      settings: inv.settings,
     }))
 
     return NextResponse.json({

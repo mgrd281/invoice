@@ -160,6 +160,22 @@ function parseDate(dateStr: string): string {
   return new Date().toISOString();
 }
 
+// Helper to map payment methods
+function mapPaymentMethod(method: string): string {
+  if (!method) return '-';
+
+  const lower = method.toLowerCase().trim();
+
+  if (lower.includes('paypal')) return 'PayPal';
+  if (lower.includes('shopify payments')) return 'Shopify Payments';
+  if (lower.includes('klarna')) return 'Klarna';
+  if (lower.includes('credit') || lower.includes('kredit') || lower.includes('visa') || lower.includes('master')) return 'Kreditkarte';
+  if (lower.includes('sofort')) return 'Sofortüberweisung';
+  if (lower === 'manual' || lower === 'custom' || lower.includes('vorkasse') || lower.includes('rechnung')) return 'Vorkasse / Rechnung';
+
+  return method;
+}
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -601,6 +617,7 @@ export async function POST(request: NextRequest) {
           amount: `${total.toFixed(2)} €`,
           createdAt: new Date().toISOString(),
           shopifyOrderNumber: firstOrder.orderNumber,
+          orderNumber: firstOrder.orderNumber, // Ensure this is passed for the new DB field
           // New document type fields
           document_kind: documentKind,
           document_number: documentNumber,
@@ -610,9 +627,9 @@ export async function POST(request: NextRequest) {
           // Legacy compatibility
           type: documentKind === DocumentKind.CANCELLATION ? 'STORNO' : documentKind === DocumentKind.CREDIT_NOTE ? 'GUTSCHRIFT' : 'REGULAR',
           originalInvoiceNumber: originalRechnung,
-          paymentMethod: firstOrder.paymentMethod || '-',
+          paymentMethod: mapPaymentMethod(firstOrder.paymentMethod || ''),
           settings: {
-            paymentMethod: firstOrder.paymentMethod || '-'
+            paymentMethod: mapPaymentMethod(firstOrder.paymentMethod || '')
           }
         }
 

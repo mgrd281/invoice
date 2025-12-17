@@ -131,6 +131,8 @@ export async function POST(request: NextRequest) {
                                 totalTax: invoice.taxAmount,
                                 totalGross: invoice.total,
                                 documentKind: invoice.document_kind,
+                                orderNumber: invoice.orderNumber || invoice.shopifyOrderNumber,
+                                paymentMethod: invoice.paymentMethod,
                                 settings: {
                                     paymentMethod: invoice.paymentMethod || '-'
                                 },
