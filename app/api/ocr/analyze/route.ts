@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
                         }
                     })
                 }
-            } catch (e) {
+            } catch (e: any) {
                 console.error('PDF parse error:', e)
-                return NextResponse.json({ error: 'Failed to parse PDF' }, { status: 500 })
+                return NextResponse.json({ error: `PDF Parse Error: ${e.message || e}` }, { status: 500 })
             }
         } else if (file.type.startsWith('image/')) {
             isImage = true
@@ -123,9 +123,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true, data: result })
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('OCR Error:', error)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({ error: `OCR Error: ${error.message || error}` }, { status: 500 })
     }
 }
 
