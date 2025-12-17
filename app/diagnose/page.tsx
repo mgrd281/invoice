@@ -36,26 +36,32 @@ export default function DiagnosePage() {
             const expRes = await authenticatedFetch(`/api/accounting/expenses?${params}`)
             const expData = await expRes.json()
             addLog(`Expenses response status: ${expRes.status}`)
+            if (expData.debug) addLog(`Expenses Org ID: ${expData.debug.organizationId}`)
 
             addLog('Requesting Additional Income...')
             const incRes = await authenticatedFetch(`/api/accounting/additional-income?${params}`)
             const incData = await incRes.json()
             addLog(`Income response status: ${incRes.status}`)
+            if (incData.debug) addLog(`Income Org ID: ${incData.debug.organizationId}`)
 
             addLog('Requesting Invoices...')
             const invRes = await authenticatedFetch(`/api/invoices?page=1&limit=10`)
             const invData = await invRes.json()
             addLog(`Invoices response status: ${invRes.status}`)
 
-            setRecentData({
-                expenses: expData.expenses || [],
+            const newData = {
+                expenses: Array.isArray(expData) ? expData : (expData.expenses || []),
                 income: Array.isArray(incData) ? incData : (incData.data || []),
                 invoices: invData.invoices || []
-            })
-            addLog('Data fetch complete.')
+            }
+
+            setRecentData(newData)
+            addLog(`Data fetch complete. Found ${newData.expenses.length} expenses, ${newData.income.length} income, ${newData.invoices.length} invoices.`)
+            return newData
         } catch (e: any) {
             addLog(`Error fetching data: ${e.message}`)
             console.error(e)
+            return null
         } finally {
             setLoading(false)
         }
@@ -102,17 +108,19 @@ export default function DiagnosePage() {
 
             if (res.ok) {
                 addLog('Simulation reported success. Refreshing data to verify persistence...')
-                await fetchRecentData()
+                const freshData = await fetchRecentData()
 
-                // Verify if we can find our test item
-                const found = type === 'expense'
-                    ? recentData?.expenses?.find(e => e.expenseNumber === testNumber)
-                    : recentData?.income?.find(i => i.description?.includes(testNumber) || i.amount === 119)
+                if (freshData) {
+                    // Verify if we can find our test item
+                    const found = type === 'expense'
+                        ? freshData.expenses?.find((e: any) => e.expenseNumber === testNumber)
+                        : freshData.income?.find((i: any) => i.description?.includes(testNumber) || i.amount === 119)
 
-                if (found) {
-                    addLog(`SUCCESS: Found created ${type} record in database!`)
-                } else {
-                    addLog(`WARNING: API reported success but record was not found in the list immediately.`)
+                    if (found) {
+                        addLog(`SUCCESS: Found created ${type} record in database!`)
+                    } else {
+                        addLog(`WARNING: API reported success but record was not found in the list immediately.`)
+                    }
                 }
             } else {
                 addLog('Simulation failed.')
