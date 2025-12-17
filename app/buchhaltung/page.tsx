@@ -122,23 +122,27 @@ function BuchhaltungContent() {
       if (invoicesResponse.ok && expensesResponse.ok) {
         const invoicesData = await invoicesResponse.json()
         const expensesData = await expensesResponse.json()
-        const incomeData = incomeResponse.ok ? await incomeResponse.json() : []
+        const incomeData = incomeResponse.ok ? await incomeResponse.json() : { data: [] }
         const receiptsData = receiptsResponse.ok ? await receiptsResponse.json() : []
 
+        // Handle new response structure (with debug info) or old structure (array)
+        const expensesList = Array.isArray(expensesData) ? expensesData : (expensesData.expenses || [])
+        const incomeList = Array.isArray(incomeData) ? incomeData : (incomeData.data || [])
+
         setInvoices(invoicesData.invoices || [])
-        setExpenses(expensesData.expenses || [])
-        setAdditionalIncomes(incomeData || [])
+        setExpenses(expensesList)
+        setAdditionalIncomes(incomeList)
         setReceipts(receiptsData || [])
 
         // Calculate summary
         const calculatedSummary = calculateAccountingSummary(
           invoicesData.invoices || [],
-          expensesData.expenses || []
+          expensesList
         )
 
         // Adjust summary with additional income
-        if (incomeData && incomeData.length > 0) {
-          const additionalTotal = incomeData.reduce((sum: number, inc: AdditionalIncome) => sum + Number(inc.amount), 0)
+        if (incomeList && incomeList.length > 0) {
+          const additionalTotal = incomeList.reduce((sum: number, inc: AdditionalIncome) => sum + Number(inc.amount), 0)
           calculatedSummary.totalRevenue += additionalTotal
           calculatedSummary.netIncome += additionalTotal
         }
