@@ -15,6 +15,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 // import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
 import { cn } from '@/lib/utils'
 import dynamicImport from 'next/dynamic'
+import { useAuth } from '@/hooks/use-auth-compat'
+import { useAuthenticatedFetch } from '@/lib/api-client'
+import { useRouter } from 'next/navigation'
 
 const InvoicePreviewDialog = dynamicImport(() => import('@/components/invoice-preview-dialog').then(mod => mod.InvoicePreviewDialog), {
   ssr: false
@@ -23,6 +26,9 @@ const InvoicePreviewDialog = dynamicImport(() => import('@/components/invoice-pr
 export const dynamic = 'force-dynamic'
 
 export default function UploadPage() {
+  const router = useRouter()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const authenticatedFetch = useAuthenticatedFetch()
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<{
@@ -196,7 +202,7 @@ export default function UploadPage() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/upload', {
+      const response = await authenticatedFetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
@@ -445,6 +451,30 @@ export default function UploadPage() {
   ]
 
   const currentStep = previewInvoices.length > 0 ? 2 : 1
+
+  // Check authentication
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/auth/login')
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Lädt...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50">
