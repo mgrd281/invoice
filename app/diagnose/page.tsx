@@ -132,8 +132,23 @@ export default function DiagnosePage() {
         }
     }
 
+    const [stats, setStats] = useState<any>(null)
+
+    const fetchStats = async () => {
+        try {
+            const res = await authenticatedFetch('/api/diagnose/stats')
+            const data = await res.json()
+            if (data.success) {
+                setStats(data)
+            }
+        } catch (e) {
+            console.error("Failed to fetch stats", e)
+        }
+    }
+
     useEffect(() => {
         fetchRecentData()
+        fetchStats()
     }, [])
 
     return (
@@ -144,11 +159,59 @@ export default function DiagnosePage() {
                         <h1 className="text-2xl font-bold text-gray-900">System Diagnose</h1>
                         <p className="text-gray-500">Überprüfen Sie die Import-Funktionalität</p>
                     </div>
-                    <Button onClick={fetchRecentData} disabled={loading}>
+                    <Button onClick={() => { fetchRecentData(); fetchStats(); }} disabled={loading}>
                         <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         Daten aktualisieren
                     </Button>
                 </div>
+
+                {/* Stats Overview */}
+                {stats && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-gray-500">Gesamt Einnahmen (DB)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.counts.additionalIncome}</div>
+                                <p className="text-xs text-gray-500">Importierte & Manuelle Einträge</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-gray-500">Rechnungen</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.counts.invoices}</div>
+                                <p className="text-xs text-gray-500">Erstellte Rechnungen</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-gray-500">Ausgaben</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.counts.expenses}</div>
+                                <p className="text-xs text-gray-500">Erfasste Ausgaben</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-gray-500">Verteilung (Jahre)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-xs space-y-1">
+                                    {Object.entries(stats.distribution.incomeByYear).map(([year, count]: any) => (
+                                        <div key={year} className="flex justify-between">
+                                            <span>{year}:</span>
+                                            <span className="font-bold">{count}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Simulation Tools */}
