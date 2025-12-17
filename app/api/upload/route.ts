@@ -49,7 +49,11 @@ function parseCSVLine(line: string, delimiter?: string): string[] {
   if (!delimiter) {
     const commaCount = (line.match(/,/g) || []).length
     const semicolonCount = (line.match(/;/g) || []).length
-    delimiter = semicolonCount > commaCount ? ';' : ','
+    const tabCount = (line.match(/\t/g) || []).length
+
+    if (tabCount > commaCount && tabCount > semicolonCount) delimiter = '\t'
+    else if (semicolonCount > commaCount) delimiter = ';'
+    else delimiter = ','
   }
 
   const result: string[] = []
@@ -310,7 +314,8 @@ export async function POST(request: NextRequest) {
             'Billing Name', 'Rechnungsname',
             'Shipping Name', 'Liefername',
             'Customer Name', 'Kundenname',
-            'Name', 'Customer'
+            'Name', 'Customer',
+            'Kunde', 'Vorname', 'Nachname', 'First Name', 'Last Name'
           ]) || 'Unbekannter Kunde',
           customerCompany: getColumnValue(record, [
             'Company', 'Firma', 'Unternehmen',
@@ -327,7 +332,8 @@ export async function POST(request: NextRequest) {
             'Billing Address1', 'Rechnungsadresse',
             'Shipping Address1', 'Lieferadresse',
             'Address1', 'Adresse', 'Straße', 'Street',
-            'Billing Address', 'Shipping Address'
+            'Billing Address', 'Shipping Address',
+            'Address 1', 'Anschrift'
           ]) || 'Musterstraße 1',
           customerCity: getColumnValue(record, [
             'Billing City', 'Rechnungsstadt',
@@ -348,28 +354,31 @@ export async function POST(request: NextRequest) {
             'Created at', 'Erstellt am',
             'Fulfilled at', 'Erfüllt am',
             'Date', 'Datum', 'Bestelldatum',
-            'Order Date', 'Paid at', 'Bezahlt am'
+            'Order Date', 'Paid at', 'Bezahlt am',
+            'Zeitstempel', 'Timestamp'
           ])),
           productName: getColumnValue(record, [
             'Lineitem name', 'Produktname',
             'Product', 'Produkt',
             'Item', 'Artikel',
-            'Product Name'
+            'Product Name', 'Description', 'Beschreibung'
           ]) || 'Produkt',
           quantity: parseInt(getColumnValue(record, [
             'Lineitem quantity', 'Menge',
             'Quantity', 'Qty', 'Anzahl'
           ]) || '1'),
-          unitPrice: parseFloat(getColumnValue(record, [
+          unitPrice: parseFloat((getColumnValue(record, [
             'Lineitem price', 'Einzelpreis',
             'Price', 'Preis',
             'Unit Price', 'Stückpreis'
-          ]) || '0'),
-          totalPrice: parseFloat(getColumnValue(record, [
+          ]) || '0').replace(',', '.')), // Handle German number format
+          totalPrice: parseFloat((getColumnValue(record, [
             'Total', 'Gesamt',
             'Amount', 'Betrag',
-            'Line Total', 'Zeilensumme'
-          ]) || '0'),
+            'Line Total', 'Zeilensumme',
+            'Total Price', 'Gesamtpreis',
+            'Umsatz'
+          ]) || '0').replace(',', '.')), // Handle German number format
           taxRate: 19, // Default German VAT
           taxAmount: 0,
           // Identifiers from CSV (flexible header names)
