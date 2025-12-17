@@ -13,46 +13,38 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get organization ID from user or fallback to default
-        let organizationId: string | undefined;
-
         const user = await prisma.user.findUnique({
             where: { email: session.user.email! },
-            select: { organizationId: true }
+            select: { organizationId: true, role: true }
         });
 
-        if (user?.organizationId) {
-            organizationId = user.organizationId;
-        } else {
-            // Fallback: try to find default org or ensure it exists
-            let org = await prisma.organization.findFirst({
-                where: { id: 'default-org' }
-            });
+        // If user is ADMIN, we fetch ALL invoices regardless of organization
+        // If user is not ADMIN, we enforce organization check
+        let whereClause: any = {
+            status: { not: 'CANCELLED' }
+        };
 
-            if (!org) {
-                org = await ensureOrganization();
+        if (user?.role !== 'ADMIN') {
+            if (user?.organizationId) {
+                whereClause.organizationId = user.organizationId;
+            } else {
+                // Fallback: try to find default org or ensure it exists
+                let org = await prisma.organization.findFirst({
+                    where: { id: 'default-org' }
+                });
+
+                if (!org) {
+                    org = await ensureOrganization();
+                }
+                whereClause.organizationId = org.id;
             }
-            organizationId = org.id;
         }
 
-        if (!organizationId) {
-            return NextResponse.json({ error: 'Organization not found and could not be created' }, { status: 404 });
-        }
-
-        // 1. Fetch relevant documents:
-        // - Invoices: Must be PAID (or SENT if we want to include open, but user said "Nur Bezahlt") -> Let's stick to PAID for positive revenue.
-        // - Credit Notes / Refunds: Any status except CANCELLED should count as a deduction.
-        // 1. Fetch relevant documents:
-        // We fetch ALL non-cancelled documents and filter in memory to handle mixed status types (Enum vs String)
-        // and to ensure we catch "Bezahlt" as well as "PAID".
         // 1. Fetch relevant documents:
         // We fetch ALL non-cancelled documents (using valid Enum value).
         // We will filter out legacy "STORNIERT" strings in JS if they exist (e.g. from bad imports).
         const allDocuments = await prisma.invoice.findMany({
-            where: {
-                organizationId,
-                status: { not: 'CANCELLED' }
-            },
+            where: whereClause,
             include: {
                 customer: true
             }
