@@ -166,7 +166,7 @@ function BuchhaltungContent() {
       meta: {
         description: f.name,
         category: 'EXPENSE',
-        date: new Date().toISOString().split('T')[0],
+        date: '', // Don't default to today, let OCR find it or user enter it
         amount: ''
       },
       status: 'analyzing'
@@ -191,22 +191,24 @@ function BuchhaltungContent() {
           if (data.success && data.data) {
             setPendingFiles(prev => prev.map(p => p.id === pf.id ? {
               ...p,
-              status: 'success',
+              status: 'success', // Always success so user can edit fields
               meta: {
                 ...p.meta,
                 amount: data.data.totalAmount ? Number(data.data.totalAmount).toFixed(2) : '',
                 description: data.data.description || p.meta.description,
-                category: data.data.category || 'EXPENSE', // Default to EXPENSE for receipts usually
-                date: data.data.date || p.meta.date,
+                category: data.data.category || 'EXPENSE',
+                date: data.data.date || '', // Keep empty if not found
                 supplier: data.data.supplier || '',
-                invoiceNumber: data.data.invoiceNumber || ''
+                invoiceNumber: data.data.invoiceNumber || '',
+                // Store AI status/reason if needed for UI hints?
+                // For now, empty fields are the hint.
               }
             } : p))
             return
           }
         }
         // If failed or no data
-        setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, status: 'pending' } : p))
+        setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, status: 'error' } : p))
       } catch (e) {
         console.error('OCR failed for', pf.file.name, e)
         setPendingFiles(prev => prev.map(p => p.id === pf.id ? { ...p, status: 'error' } : p))
