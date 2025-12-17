@@ -427,22 +427,42 @@ export default function BuchhaltungPage() {
                   onDeleteSelected={async () => {
                     if (selectedReceipts.length === 0) return
                     if (!confirm(`Möchten Sie wirklich ${selectedReceipts.length} Belege löschen?`)) return
-                    try {
-                      const response = await authenticatedFetch('/api/accounting/receipts', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: selectedReceipts })
-                      })
 
-                      if (response.ok) {
+                    try {
+                      // Separate IDs into receipts and additional incomes
+                      const receiptIds = selectedReceipts.filter(id => receipts.some(r => r.id === id))
+                      const incomeIds = selectedReceipts.filter(id => additionalIncomes.some(ai => ai.id === id))
+
+                      const promises = []
+
+                      if (receiptIds.length > 0) {
+                        promises.push(authenticatedFetch('/api/accounting/receipts', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ ids: receiptIds })
+                        }))
+                      }
+
+                      if (incomeIds.length > 0) {
+                        promises.push(authenticatedFetch('/api/accounting/additional-income', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ ids: incomeIds })
+                        }))
+                      }
+
+                      const results = await Promise.all(promises)
+                      const allOk = results.every(res => res.ok)
+
+                      if (allOk) {
                         setSelectedReceipts([])
                         loadAccountingData()
                       } else {
-                        alert('Fehler beim Löschen der Belege')
+                        alert('Fehler beim Löschen einiger Einträge')
                       }
                     } catch (error) {
-                      console.error('Error deleting receipts:', error)
-                      alert('Fehler beim Löschen einiger Belege')
+                      console.error('Error deleting items:', error)
+                      alert('Fehler beim Löschen')
                     }
                   }}
                   onDelete={async (id) => {
