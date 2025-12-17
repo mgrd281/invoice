@@ -11,7 +11,7 @@ export function createAuthenticatedRequest(user: any) {
 
   return {
     headers: {
-      'Content-Type': 'application/json',
+      // 'Content-Type': 'application/json', // REMOVED: Let fetch handle this based on body
       'x-user-info': userInfoBase64
     }
   }
@@ -30,13 +30,22 @@ export function useAuthenticatedFetch() {
 
     const authHeaders = createAuthenticatedRequest(user)
 
+    // Determine Content-Type
+    const headers: Record<string, string> = {
+      ...authHeaders.headers,
+      ...(options.headers as Record<string, string>)
+    }
+
+    // Auto-set Content-Type to application/json if not set and body is not FormData
+    if (!headers['Content-Type'] &&
+      !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json'
+    }
+
     const mergedOptions: RequestInit = {
       ...options,
       credentials: 'include', // Ensure cookies are sent
-      headers: {
-        ...authHeaders.headers,
-        ...options.headers
-      }
+      headers
     }
 
     return fetch(url, mergedOptions)
