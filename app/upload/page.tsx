@@ -221,9 +221,20 @@ export default function UploadPage() {
         setUploadStatus({ type: 'error', message: error.error || 'Upload failed' })
         setUploading(false)
       }
-    } catch (error) {
+    } catch (error: any) {
       clearInterval(progressInterval)
-      setUploadStatus({ type: 'error', message: 'Netzwerkfehler beim Hochladen der Datei' })
+      console.error('Upload error:', error)
+
+      let errorMessage = 'Netzwerkfehler beim Hochladen der Datei'
+
+      // Check for specific error types
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.'
+      } else if (error.message) {
+        errorMessage = `Fehler: ${error.message}`
+      }
+
+      setUploadStatus({ type: 'error', message: errorMessage })
       setUploading(false)
     }
   }
