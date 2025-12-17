@@ -42,35 +42,50 @@ export async function GET(request: NextRequest) {
         // 1. Fetch relevant documents:
         // - Invoices: Must be PAID (or SENT if we want to include open, but user said "Nur Bezahlt") -> Let's stick to PAID for positive revenue.
         // - Credit Notes / Refunds: Any status except CANCELLED should count as a deduction.
+        // 1. Fetch relevant documents:
+        // We fetch ALL non-cancelled documents and filter in memory to handle mixed status types (Enum vs String)
+        // and to ensure we catch "Bezahlt" as well as "PAID".
         const allDocuments = await prisma.invoice.findMany({
             where: {
                 organizationId,
-                status: { not: 'CANCELLED' }, // Exclude cancelled globally
-                OR: [
-                    { status: 'PAID' }, // Paid invoices
-                    { documentKind: { in: ['CREDIT_NOTE', 'REFUND_FULL', 'REFUND_PARTIAL'] } } // Any valid credit note
-                ]
+                // We only exclude explicitly cancelled ones. We'll filter for PAID/Bezahlt in JS.
+                // Note: We cast to any to allow filtering by German status if needed in DB, 
+                // but safer to just fetch non-cancelled and filter in app logic.
+                status: { notIn: ['CANCELLED', 'STORNIERT'] as any }
             },
             include: {
                 customer: true
             }
         });
 
+        // Helper for safe number conversion
+        const toNumber = (val: any) => {
+            if (!val) return 0
+            if (typeof val === 'number') return val
+            if (val && typeof val === 'object' && 'toNumber' in val) return val.toNumber()
+            return Number(val.toString())
+        }
+
+        const normalizeStatus = (s: string) => s?.toUpperCase().trim() || ''
+
         // 2. Calculate Total Revenue (Net after refunds)
         const totalRevenue = allDocuments.reduce((sum, inv) => {
-            const gross = Number(inv.totalGross);
+            const gross = toNumber(inv.totalGross);
+            const s = normalizeStatus(inv.status as any);
+
             const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                 inv.documentKind === 'REFUND_FULL' ||
-                inv.documentKind === 'REFUND_PARTIAL';
+                inv.documentKind === 'REFUND_PARTIAL' ||
+                s === 'GUTSCHRIFT';
 
             if (isRefund) {
                 return sum - gross;
             }
 
             // For normal invoices, only count if PAID
-            if (inv.status === 'PAID') {
+            if (s === 'PAID' || s === 'BEZAHLT') {
                 // Subtract partial refund amount if present on the invoice
-                const refundAmount = inv.refundAmount ? Number(inv.refundAmount) : 0;
+                const refundAmount = inv.refundAmount ? toNumber(inv.refundAmount) : 0;
                 return sum + gross - refundAmount;
             }
 
@@ -78,9 +93,12 @@ export async function GET(request: NextRequest) {
         }, 0);
 
         // 3. Paid Invoices Count (Only count actual sales invoices)
-        const paidInvoicesCount = allDocuments.filter(inv =>
-            inv.status === 'PAID' && (inv.documentKind === 'INVOICE' || !inv.documentKind)
-        ).length;
+        const paidInvoicesCount = allDocuments.filter(inv => {
+            const s = normalizeStatus(inv.status as any);
+            const isPaid = s === 'PAID' || s === 'BEZAHLT';
+            const isInvoice = inv.documentKind === 'INVOICE' || !inv.documentKind;
+            return isPaid && isInvoice;
+        }).length;
 
         // 4. Average Invoice Value
         const averageInvoiceValue = paidInvoicesCount > 0 ? totalRevenue / paidInvoicesCount : 0;
@@ -97,18 +115,21 @@ export async function GET(request: NextRequest) {
                     totalSpent: 0
                 };
 
-                const gross = Number(inv.totalGross);
+                const gross = toNumber(inv.totalGross);
+                const s = normalizeStatus(inv.status as any);
+
                 const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                     inv.documentKind === 'REFUND_FULL' ||
-                    inv.documentKind === 'REFUND_PARTIAL';
+                    inv.documentKind === 'REFUND_PARTIAL' ||
+                    s === 'GUTSCHRIFT';
 
                 if (isRefund) {
                     current.totalSpent -= gross;
-                } else if (inv.status === 'PAID') {
+                } else if (s === 'PAID' || s === 'BEZAHLT') {
                     // Only add positive revenue for PAID invoices
                     current.totalSpent += gross;
                     if (inv.refundAmount) {
-                        current.totalSpent -= Number(inv.refundAmount);
+                        current.totalSpent -= toNumber(inv.refundAmount);
                     }
                 }
 
@@ -136,18 +157,21 @@ export async function GET(request: NextRequest) {
             const d = new Date(inv.issueDate);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             if (monthlyIncomeMap.has(key)) {
-                const gross = Number(inv.totalGross);
+                const gross = toNumber(inv.totalGross);
+                const s = normalizeStatus(inv.status as any);
+
                 const isRefund = inv.documentKind === 'CREDIT_NOTE' ||
                     inv.documentKind === 'REFUND_FULL' ||
-                    inv.documentKind === 'REFUND_PARTIAL';
+                    inv.documentKind === 'REFUND_PARTIAL' ||
+                    s === 'GUTSCHRIFT';
 
                 let amountToAdd = 0;
                 if (isRefund) {
                     amountToAdd = -gross;
-                } else if (inv.status === 'PAID') {
+                } else if (s === 'PAID' || s === 'BEZAHLT') {
                     amountToAdd = gross;
                     if (inv.refundAmount) {
-                        amountToAdd -= Number(inv.refundAmount);
+                        amountToAdd -= toNumber(inv.refundAmount);
                     }
                 }
 
