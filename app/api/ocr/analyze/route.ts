@@ -27,9 +27,21 @@ export async function POST(request: NextRequest) {
     })
 
     // Initialize Google Cloud Vision
-    const visionClient = new ImageAnnotatorClient({
-        keyFilename: path.join(process.cwd(), 'google-cloud-credentials.json')
-    });
+    let visionConfig = {};
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        try {
+            const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+            visionConfig = { credentials };
+        } catch (e) {
+            console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON', e);
+        }
+    } else {
+        visionConfig = {
+            keyFilename: path.join(process.cwd(), 'google-cloud-credentials.json')
+        };
+    }
+
+    const visionClient = new ImageAnnotatorClient(visionConfig);
 
     // @ts-ignore
     const pdf = require('pdf-parse');
