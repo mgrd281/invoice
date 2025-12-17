@@ -118,3 +118,42 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const authResult = requireAuth(request)
+        if ('error' in authResult) {
+            return authResult.error
+        }
+        const { user } = authResult
+
+        const body = await request.json()
+        const { ids } = body
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
+        }
+
+        const organization = await prisma.organization.findFirst({
+            where: { users: { some: { id: user.id } } }
+        }) || await prisma.organization.findFirst()
+
+        if (!organization) {
+            return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+        }
+
+        // Delete multiple receipts
+        const result = await prisma.receipt.deleteMany({
+            where: {
+                id: { in: ids },
+                organizationId: organization.id
+            }
+        })
+
+        return NextResponse.json({ success: true, count: result.count })
+
+    } catch (error) {
+        console.error('Error deleting receipts:', error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
+}

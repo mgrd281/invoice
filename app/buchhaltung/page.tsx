@@ -428,11 +428,18 @@ export default function BuchhaltungPage() {
                     if (selectedReceipts.length === 0) return
                     if (!confirm(`Möchten Sie wirklich ${selectedReceipts.length} Belege löschen?`)) return
                     try {
-                      await Promise.all(selectedReceipts.map(id =>
-                        authenticatedFetch(`/api/accounting/receipts/${id}`, { method: 'DELETE' })
-                      ))
-                      setSelectedReceipts([])
-                      loadAccountingData()
+                      const response = await authenticatedFetch('/api/accounting/receipts', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: selectedReceipts })
+                      })
+
+                      if (response.ok) {
+                        setSelectedReceipts([])
+                        loadAccountingData()
+                      } else {
+                        alert('Fehler beim Löschen der Belege')
+                      }
                     } catch (error) {
                       console.error('Error deleting receipts:', error)
                       alert('Fehler beim Löschen einiger Belege')
