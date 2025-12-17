@@ -61,7 +61,8 @@ export async function GET(req: Request) {
         where,
         include: {
           customer: true,
-          items: true
+          items: true,
+          order: true
         },
         orderBy: { issueDate: 'desc' },
         skip,
