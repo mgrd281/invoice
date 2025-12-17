@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -74,7 +75,10 @@ interface Invoice {
   paymentMethod?: string
 }
 
-export default function InvoiceViewPage({ params }: { params: { id: string } }) {
+export default function InvoiceViewPage() {
+  const params = useParams()
+  const id = params?.id as string
+
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
@@ -95,14 +99,16 @@ export default function InvoiceViewPage({ params }: { params: { id: string } }) 
   }
 
   useEffect(() => {
-    fetchInvoice()
-  }, [params.id])
+    if (id) {
+      fetchInvoice()
+    }
+  }, [id])
 
   const fetchInvoice = async () => {
     try {
-      console.log('Fetching invoice with ID:', params.id)
+      console.log('Fetching invoice with ID:', id)
 
-      const response = await fetch(`/api/invoices/${params.id}`)
+      const response = await fetch(`/api/invoices/${id}`)
 
       if (!response.ok) {
         throw new Error('Invoice not found')
