@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
             where: { users: { some: { id: user.id } } }
         })
 
-        const org = userOrg || await ensureOrganization()
+        const org = userOrg || await prisma.organization.findFirst() || await ensureOrganization()
         const body = await request.json()
 
         // Handle Bulk Status Update
