@@ -17,22 +17,6 @@ if (typeof DOMMatrix === 'undefined') {
     }
 }
 
-// Force Polyfill atob/btoa for pdf-parse to be lenient
-// @ts-ignore
-global.atob = (str) => Buffer.from(str.replace(/[\n\t\r\f\s]/g, ''), 'base64').toString('binary');
-// @ts-ignore
-global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
-
-// Polyfill window/self for pdf.js if it checks for them
-if (typeof window === 'undefined') {
-    // @ts-ignore
-    global.window = global;
-}
-if (typeof self === 'undefined') {
-    // @ts-ignore
-    global.self = global;
-}
-
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
@@ -40,6 +24,25 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     })
+
+    // Polyfill environment for pdf-parse ONLY inside the handler
+    // This prevents polluting the global server scope which can break React SSR
+    if (typeof atob === 'undefined') {
+        // @ts-ignore
+        global.atob = (str) => Buffer.from(str.replace(/[\n\t\r\f\s]/g, ''), 'base64').toString('binary');
+    }
+    if (typeof btoa === 'undefined') {
+        // @ts-ignore
+        global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
+    }
+    if (typeof window === 'undefined') {
+        // @ts-ignore
+        global.window = global;
+    }
+    if (typeof self === 'undefined') {
+        // @ts-ignore
+        global.self = global;
+    }
 
     // @ts-ignore
     const pdf = require('pdf-parse');
