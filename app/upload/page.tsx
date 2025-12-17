@@ -326,7 +326,11 @@ export default function UploadPage() {
         setFile(null)
         // Redirect to invoices page after successful save
         setTimeout(() => {
-          window.location.href = '/invoices'
+          if (importTarget === 'accounting') {
+            window.location.href = '/buchhaltung?period=all'
+          } else {
+            window.location.href = '/invoices'
+          }
         }, 1500)
       }
     } else {

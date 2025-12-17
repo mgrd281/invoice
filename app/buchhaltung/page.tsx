@@ -41,8 +41,13 @@ interface Receipt {
   amount?: number
 }
 
+import { useSearchParams } from 'next/navigation'
+
+// ... existing imports ...
+
 export default function BuchhaltungPage() {
   const authenticatedFetch = useAuthenticatedFetch()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -62,14 +67,29 @@ export default function BuchhaltungPage() {
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([])
 
   // Filter states
-  const [filter, setFilter] = useState<AccountingFilter>({
-    period: 'month',
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-    status: [],
-    customerIds: [],
-    minAmount: undefined,
-    maxAmount: undefined
+  const [filter, setFilter] = useState<AccountingFilter>(() => {
+    const periodParam = searchParams.get('period')
+    if (periodParam === 'all') {
+      return {
+        period: 'all',
+        startDate: '',
+        endDate: '',
+        status: [],
+        customerIds: [],
+        minAmount: undefined,
+        maxAmount: undefined
+      }
+    }
+
+    return {
+      period: 'month',
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+      status: [],
+      customerIds: [],
+      minAmount: undefined,
+      maxAmount: undefined
+    }
   })
 
   useEffect(() => {
