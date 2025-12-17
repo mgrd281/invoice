@@ -72,13 +72,13 @@ export default function UploadPage() {
 
   useEffect(() => {
     // Fetch company settings for preview
-    fetch('/api/settings')
+    authenticatedFetch('/api/settings')
       .then(res => res.json())
       .then(data => setCompanySettings(data))
       .catch(err => console.error('Failed to fetch settings:', err))
 
     // Fetch templates
-    fetch('/api/templates')
+    authenticatedFetch('/api/templates')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -106,7 +106,7 @@ export default function UploadPage() {
         const numbers = previewInvoices.map(inv => inv.number)
         if (numbers.length === 0) return
 
-        const res = await fetch('/api/invoices/check-duplicates', {
+        const res = await authenticatedFetch('/api/invoices/check-duplicates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ numbers })
@@ -125,7 +125,7 @@ export default function UploadPage() {
 
   // Load settings
   useEffect(() => {
-    fetch('/api/settings')
+    authenticatedFetch('/api/settings')
       .then(res => res.json())
       .then(data => {
         if (data && data.accountingType) {
@@ -283,7 +283,7 @@ export default function UploadPage() {
       })
 
       try {
-        const response = await fetch('/api/invoices/batch', {
+        const response = await authenticatedFetch('/api/invoices/batch', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
