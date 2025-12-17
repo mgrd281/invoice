@@ -359,17 +359,7 @@ export default function BuchhaltungPage() {
               </h1>
             </div>
             <div className="flex space-x-2">
-              <Link href="/buchhaltung/steuerberater">
-                <Button variant="outline" size="sm" className="flex items-center space-x-2 border-blue-200 text-blue-700 hover:bg-blue-50">
-                  <Briefcase className="w-4 h-4" />
-                  <span>Steuerberater</span>
-                </Button>
-              </Link>
-              <Link href="/buchhaltung/debug">
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
-                  <span className="text-xs">Diagnose</span>
-                </Button>
-              </Link>
+
               <Button
                 variant="outline"
                 size="sm"
