@@ -1321,7 +1321,7 @@ export default function InvoicesPage() {
         {showAnalytics && <AnalyticsDashboard />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card
             className={`cursor-pointer transition-all duration-200 hover:shadow-md ${statusFilter === null ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/50' : 'hover:bg-gray-50'}`}
             onClick={() => setStatusFilter(null)}
@@ -1332,7 +1332,7 @@ export default function InvoicesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900 truncate" title={String(totalInvoices)}>{totalInvoices}</div>
+              <div className="text-2xl font-bold text-gray-900" title={String(totalInvoices)}>{totalInvoices}</div>
               <p className="text-xs text-gray-500">Alle Rechnungen</p>
             </CardContent>
           </Card>
@@ -1347,7 +1347,7 @@ export default function InvoicesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600 truncate" title={String(openInvoices)}>{openInvoices}</div>
+              <div className="text-2xl font-bold text-yellow-600" title={String(openInvoices)}>{openInvoices}</div>
               <p className="text-xs text-gray-500">Unbezahlt</p>
             </CardContent>
           </Card>
@@ -1362,7 +1362,7 @@ export default function InvoicesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600 truncate" title={String(overdueInvoices)}>{overdueInvoices}</div>
+              <div className="text-2xl font-bold text-red-600" title={String(overdueInvoices)}>{overdueInvoices}</div>
               <p className="text-xs text-gray-500">Verspätet</p>
             </CardContent>
           </Card>
@@ -1377,7 +1377,7 @@ export default function InvoicesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600 truncate" title={String(paidInvoices)}>{paidInvoices}</div>
+              <div className="text-2xl font-bold text-green-600" title={String(paidInvoices)}>{paidInvoices}</div>
               <p className="text-xs text-gray-500">Abgeschlossen</p>
             </CardContent>
           </Card>
@@ -1392,7 +1392,7 @@ export default function InvoicesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-500 truncate" title={String(cancelledInvoices)}>{cancelledInvoices}</div>
+              <div className="text-2xl font-bold text-gray-500" title={String(cancelledInvoices)}>{cancelledInvoices}</div>
               <p className="text-xs text-gray-500">Stornos</p>
             </CardContent>
           </Card>
@@ -1407,7 +1407,7 @@ export default function InvoicesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600 truncate" title={String(refundInvoices)}>{refundInvoices}</div>
+              <div className="text-2xl font-bold text-blue-600" title={String(refundInvoices)}>{refundInvoices}</div>
               <p className="text-xs text-gray-500">Rückerstattungen</p>
             </CardContent>
           </Card>
@@ -1423,7 +1423,7 @@ export default function InvoicesPage() {
             </CardHeader>
             <CardContent>
               <div
-                className="text-xl font-bold text-violet-700 truncate"
+                className="text-xl font-bold text-violet-700"
                 title={new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat19Sum)}
               >
                 {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(vat19Sum)}
@@ -1443,7 +1443,7 @@ export default function InvoicesPage() {
             </CardHeader>
             <CardContent>
               <div
-                className="text-xl font-bold text-emerald-700 truncate"
+                className="text-xl font-bold text-emerald-700"
                 title={new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalPaidAmount)}
               >
                 {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalPaidAmount)}
