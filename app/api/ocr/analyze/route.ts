@@ -26,27 +26,28 @@ export async function POST(request: NextRequest) {
         apiKey: process.env.OPENAI_API_KEY,
     })
 
-    // Initialize Google Cloud Vision
-    let visionConfig = {};
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-        try {
-            const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-            visionConfig = { credentials };
-        } catch (e) {
-            console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON', e);
-        }
-    } else {
-        visionConfig = {
-            keyFilename: path.join(process.cwd(), 'google-cloud-credentials.json')
-        };
-    }
-
-    const visionClient = new ImageAnnotatorClient(visionConfig);
-
     // @ts-ignore
     const pdf = require('pdf-parse');
 
     try {
+        // Initialize Google Cloud Vision inside try-catch to prevent crashes
+        let visionClient;
+        try {
+            let visionConfig = {};
+            if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+                const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+                visionConfig = { credentials };
+            } else {
+                visionConfig = {
+                    keyFilename: path.join(process.cwd(), 'google-cloud-credentials.json')
+                };
+            }
+            visionClient = new ImageAnnotatorClient(visionConfig);
+        } catch (initError) {
+            console.error('Failed to initialize Google Cloud Vision:', initError);
+            // Continue without Vision API (will fallback to other methods)
+        }
+
         const authResult = requireAuth(request)
         if ('error' in authResult) {
             return authResult.error
