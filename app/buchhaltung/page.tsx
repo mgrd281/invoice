@@ -1,8 +1,46 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Calculator, RefreshCw, ArrowLeft, Briefcase, Download, BarChart3, FileText, Archive } from 'lucide-react'
+import { useAuthenticatedFetch } from '@/lib/api-client'
+import {
+  AccountingFilter,
+  AccountingSummary,
+  AccountingInvoice,
+  Expense,
+  AccountingPeriod,
+  ExportFormat,
+  calculateAccountingSummary
+} from '@/lib/accounting-types'
+import { AccountingStats } from '@/components/accounting/accounting-stats'
+import { AccountingFilterBar } from '@/components/accounting/accounting-filter'
+import { ReceiptUploader, PendingFile } from '@/components/accounting/receipt-uploader'
+import { ReceiptsList } from '@/components/accounting/receipts-list'
+import { ExpensesTable } from '@/components/accounting/expenses-table'
+import { InvoicesTable } from '@/components/accounting/invoices-table'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
-// ... existing imports ...
+interface AdditionalIncome {
+  id: string
+  date: string
+  description: string
+  amount: number
+  type: string
+}
+
+interface Receipt {
+  id: string
+  date: string
+  filename: string
+  description: string
+  category: string
+  url: string
+  amount?: number
+}
 
 function BuchhaltungContent() {
   const authenticatedFetch = useAuthenticatedFetch()
