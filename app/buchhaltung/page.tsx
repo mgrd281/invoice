@@ -1,51 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Calculator, RefreshCw, ArrowLeft, Briefcase, Download, BarChart3, FileText, Archive } from 'lucide-react'
-import { useAuthenticatedFetch } from '@/lib/api-client'
-import {
-  AccountingFilter,
-  AccountingSummary,
-  AccountingInvoice,
-  Expense,
-  AccountingPeriod,
-  ExportFormat,
-  calculateAccountingSummary
-} from '@/lib/accounting-types'
-import { AccountingStats } from '@/components/accounting/accounting-stats'
-import { AccountingFilterBar } from '@/components/accounting/accounting-filter'
-import { ReceiptUploader, PendingFile } from '@/components/accounting/receipt-uploader'
-import { ReceiptsList } from '@/components/accounting/receipts-list'
-import { ExpensesTable } from '@/components/accounting/expenses-table'
-import { InvoicesTable } from '@/components/accounting/invoices-table'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-
-interface AdditionalIncome {
-  id: string
-  date: string
-  description: string
-  amount: number
-  type: string
-}
-
-interface Receipt {
-  id: string
-  date: string
-  filename: string
-  description: string
-  category: string
-  url: string
-  amount?: number
-}
-
-import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 // ... existing imports ...
 
-export default function BuchhaltungPage() {
+function BuchhaltungContent() {
   const authenticatedFetch = useAuthenticatedFetch()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -557,5 +516,13 @@ export default function BuchhaltungPage() {
         </Tabs>
       </div>
     </div>
+  )
+}
+
+export default function BuchhaltungPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+      <BuchhaltungContent />
+    </Suspense>
   )
 }
