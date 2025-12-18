@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
                 await prisma.additionalIncome.create({
                     data: {
                         organizationId: organization.id,
-                        date: new Date(date),
+                        date: date ? new Date(date) : new Date(),
                         description: description || filename,
                         amount: amountValue,
                         type: 'INCOME'

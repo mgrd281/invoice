@@ -114,7 +114,6 @@ export async function POST(request: NextRequest) {
             }
             */
         } else if (file.type.startsWith('image/')) {
-        } else if (file.type.startsWith('image/')) {
             // Use Google Cloud Vision for OCR
             try {
                 if (visionClient) {
