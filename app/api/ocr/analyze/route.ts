@@ -74,6 +74,17 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer())
 
         if (file.type === 'application/pdf') {
+            // pdf-parse disabled due to stability issues (Status 500)
+            // Returning graceful fallback immediately
+            return NextResponse.json({
+                success: true,
+                data: {
+                    ai_status: 'WARNING',
+                    error_reason: 'PDF_PARSING_DISABLED',
+                    debug_text: 'PDF parsing is temporarily disabled for stability. Please check data manually.'
+                }
+            })
+            /*
             try {
                 // Move require inside try to catch module load errors
                 // @ts-ignore
@@ -101,6 +112,8 @@ export async function POST(request: NextRequest) {
                     }
                 })
             }
+            */
+        } else if (file.type.startsWith('image/')) {
         } else if (file.type.startsWith('image/')) {
             // Use Google Cloud Vision for OCR
             try {
