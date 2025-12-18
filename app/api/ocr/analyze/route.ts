@@ -20,6 +20,7 @@ if (typeof DOMMatrix === 'undefined') {
 }
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs' // Explicitly set Node.js runtime
 
 export async function POST(request: NextRequest) {
     const openai = new OpenAI({
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
                 const pdf = require('pdf-parse');
 
                 // Set a timeout for PDF parsing
-                const parsePromise = pdf(buffer);
+                const parsePromise = pdf(buffer, { max: 5 });
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PDF parse timeout')), 5000));
 
                 const data: any = await Promise.race([parsePromise, timeoutPromise]);
