@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
                 organizationId: organization.id,
                 filename,
                 url,
-                date: new Date(date),
+                date: date ? new Date(date) : new Date(),
                 description,
                 category,
                 amount: amount ? parseFloat(amount) : null,
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
                     data: {
                         organizationId: organization.id,
                         expenseNumber: invoiceNumber || `EXP-${Date.now()}`,
-                        date: new Date(date),
+                        date: date ? new Date(date) : new Date(),
                         category: 'other',
                         description: description || filename,
                         supplier: supplier || 'Beleg-Upload',
