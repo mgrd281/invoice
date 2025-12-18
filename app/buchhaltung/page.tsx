@@ -241,10 +241,13 @@ function BuchhaltungContent() {
                 url: `/uploads/${pf.file.name}`, // Mock URL
                 size: pf.file.size,
                 mimeType: pf.file.type,
-                ...pf.meta,
+                description: pf.meta.description,
+                category: pf.meta.category,
                 amount: pf.meta.amount ? parseFloat(pf.meta.amount) : undefined,
                 supplier: pf.meta.supplier,
-                invoiceNumber: pf.meta.invoiceNumber
+                invoiceNumber: pf.meta.invoiceNumber,
+                date: pf.meta.date ? new Date(pf.meta.date).toISOString() : undefined,
+                ai_status: 'OK' // Default to OK for now, or pass from meta if we stored it
               })
             })
 
