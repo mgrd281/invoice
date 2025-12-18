@@ -23,11 +23,12 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs' // Explicitly set Node.js runtime
 
 export async function POST(request: NextRequest) {
-    const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    })
-
     try {
+        // Initialize OpenAI inside try-catch to prevent crashes if env var is missing
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        })
+
         // Initialize Google Cloud Vision inside try-catch to prevent crashes
         let visionClient;
         try {
