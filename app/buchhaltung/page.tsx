@@ -233,6 +233,15 @@ function BuchhaltungContent() {
 
         await Promise.all(batch.map(async (pf) => {
           try {
+            // Validate date strictly
+            let validDate: string | undefined = undefined;
+            if (pf.meta.date) {
+              const d = new Date(pf.meta.date);
+              if (!isNaN(d.getTime())) {
+                validDate = d.toISOString();
+              }
+            }
+
             const response = await authenticatedFetch('/api/accounting/receipts', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -246,8 +255,8 @@ function BuchhaltungContent() {
                 amount: pf.meta.amount ? parseFloat(pf.meta.amount) : undefined,
                 supplier: pf.meta.supplier,
                 invoiceNumber: pf.meta.invoiceNumber,
-                date: pf.meta.date ? new Date(pf.meta.date).toISOString() : undefined,
-                ai_status: 'OK' // Default to OK for now, or pass from meta if we stored it
+                date: validDate,
+                ai_status: 'OK'
               })
             })
 
