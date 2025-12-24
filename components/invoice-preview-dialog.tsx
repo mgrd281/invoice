@@ -69,6 +69,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
     const vatTotal = items.reduce((sum: number, item: any) => sum + (item.total * (item.vat / 100)), 0)
     const grossTotal = netTotal + vatTotal
 
+<<<<<<< HEAD
     // Calculate VAT by rate groups
     const vatByRate = items.reduce((acc: any, item: any) => {
         const rate = item.vat || 0
@@ -81,6 +82,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
     }, {})
     const vatGroups = Object.values(vatByRate).sort((a: any, b: any) => b.rate - a.rate)
 
+=======
+>>>>>>> 2256e8351e0fafb485c1309510b2b8a0046324d8
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
