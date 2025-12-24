@@ -244,12 +244,28 @@ export class KauflandAPI {
         }
       }
 
-      const result = await this.createOrUpdateUnit(kauflandProduct)
-
-      return {
-        success: true,
-        message: `Produkt erfolgreich zu Kaufland synchronisiert: ${kauflandProduct.title}`,
-        data: result
+      try {
+        const result = await this.createOrUpdateUnit(kauflandProduct)
+        return {
+          success: true,
+          message: `Produkt erfolgreich zu Kaufland synchronisiert: ${kauflandProduct.title}`,
+          data: result
+        }
+      } catch (apiError) {
+        const errorMessage = apiError instanceof Error ? apiError.message : 'Unbekannter Fehler'
+        
+        // Provide more helpful error messages
+        if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+          return {
+            success: false,
+            message: `API Endpoint nicht gefunden. Bitte überprüfen Sie die API Base URL (aktuell: ${this.baseUrl}). Die Kaufland API-Endpunkte können sich je nach Version unterscheiden. Bitte konsultieren Sie die offizielle Kaufland Seller API-Dokumentation.`
+          }
+        }
+        
+        return {
+          success: false,
+          message: `Fehler beim Synchronisieren: ${errorMessage}`
+        }
       }
     } catch (error) {
       return {
