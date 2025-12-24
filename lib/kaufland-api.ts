@@ -160,26 +160,48 @@ export class KauflandAPI {
       }),
     }
 
-    // Try to update first (PUT), if not exists, create (POST)
-    let response = await this.request(`/units/${product.ean}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    // Try multiple endpoint variations
+    const endpoints = [
+      { method: 'POST', path: '/units' },
+      { method: 'POST', path: '/api/units' },
+      { method: 'POST', path: '/v1/units' },
+      { method: 'POST', path: '/seller-api/units' },
+      { method: 'PUT', path: `/units/${product.ean}` },
+      { method: 'PUT', path: `/api/units/${product.ean}` },
+      { method: 'PUT', path: `/v1/units/${product.ean}` },
+    ]
 
-    // If update fails with 404, try to create
-    if (response.status === 404) {
-      response = await this.request('/units', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+    let lastError: string = ''
+    let lastResponse: Response | null = null
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await this.request(endpoint.path, {
+          method: endpoint.method,
+          body: JSON.stringify(payload),
+        })
+
+        if (response.ok) {
+          return await response.json()
+        }
+
+        // If PUT returns 404, try POST to create
+        if (response.status === 404 && endpoint.method === 'PUT') {
+          continue // Try next endpoint
+        }
+
+        const errorText = await response.text().catch(() => '')
+        lastError = `Status ${response.status}: ${errorText.substring(0, 200)}`
+        lastResponse = response
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : 'Unbekannter Fehler'
+        continue
+      }
     }
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Failed to create/update unit: ${response.status} ${response.statusText} - ${errorText}`)
-    }
-
-    return await response.json()
+    // If all endpoints failed, return helpful error
+    const errorMessage = lastError || 'API endpoint nicht gefunden'
+    throw new Error(`Failed to create/update unit: ${errorMessage}. Bitte überprüfen Sie die API Base URL und die Kaufland API-Dokumentation für die korrekten Endpunkte.`)
   }
 
   /**
