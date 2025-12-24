@@ -163,26 +163,54 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
     const credentials = Buffer.from(`${settings.clientKey}:${settings.secretKey}`).toString('base64')
     
     const apiUrl = settings.apiBaseUrl || 'https://sellerapi.kaufland.com'
-    const response = await fetch(`${apiUrl}/units`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    })
+    
+    // Try multiple endpoints to test connection
+    const endpoints = [
+      '/units',
+      '/api/units',
+      '/v1/units',
+      '/seller-api/units',
+      '/'
+    ]
+    
+    let lastError: string = ''
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(`${apiUrl}${endpoint}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        })
 
-    if (response.ok) {
-      return {
-        success: true,
-        message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
+        // If we get any response (even 401/403), it means the API is reachable
+        if (response.status === 200 || response.status === 401 || response.status === 403) {
+          return {
+            success: true,
+            message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
+          }
+        }
+        
+        if (response.status === 404) {
+          lastError = `Endpoint nicht gefunden: ${endpoint}`
+          continue // Try next endpoint
+        }
+        
+        const errorText = await response.text().catch(() => '')
+        lastError = `Status ${response.status}: ${errorText.substring(0, 100)}`
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : 'Unbekannter Fehler'
+        continue
       }
-    } else {
-      const errorText = await response.text()
-      return {
-        success: false,
-        message: `Verbindungsfehler: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}`
-      }
+    }
+    
+    // If all endpoints failed, return helpful message
+    return {
+      success: false,
+      message: `Verbindungsfehler: ${lastError || 'API nicht erreichbar. Bitte überprüfen Sie die API Base URL und Anmeldedaten.'}`
     }
   } catch (error) {
     return {

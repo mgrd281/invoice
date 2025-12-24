@@ -66,19 +66,47 @@ export class KauflandAPI {
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await this.request('/units', { method: 'GET' })
+      // Try multiple endpoints to test connection
+      // Kaufland API might use different endpoints, so we'll try a few common ones
+      const endpoints = [
+        '/units',
+        '/api/units',
+        '/v1/units',
+        '/seller-api/units',
+        '/'
+      ]
       
-      if (response.ok) {
-        return {
-          success: true,
-          message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
+      let lastError: string = ''
+      
+      for (const endpoint of endpoints) {
+        try {
+          const response = await this.request(endpoint, { method: 'GET' })
+          
+          // If we get any response (even 401/403), it means the API is reachable
+          if (response.status === 200 || response.status === 401 || response.status === 403) {
+            return {
+              success: true,
+              message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
+            }
+          }
+          
+          if (response.status === 404) {
+            lastError = `Endpoint nicht gefunden: ${endpoint}`
+            continue // Try next endpoint
+          }
+          
+          const errorText = await response.text().catch(() => '')
+          lastError = `Status ${response.status}: ${errorText.substring(0, 100)}`
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : 'Unbekannter Fehler'
+          continue
         }
-      } else {
-        const errorText = await response.text()
-        return {
-          success: false,
-          message: `Verbindungsfehler: ${response.status} ${response.statusText}`
-        }
+      }
+      
+      // If all endpoints failed, return the last error
+      return {
+        success: false,
+        message: `Verbindungsfehler: ${lastError || 'API nicht erreichbar. Bitte überprüfen Sie die API Base URL.'}`
       }
     } catch (error) {
       return {
