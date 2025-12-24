@@ -33,8 +33,8 @@ declare global {
   }
 }
 
-// Initialize global storage
-if (!global.companySettings) {
+// Initialize global storage (server-side only)
+if (typeof window === 'undefined' && !global.companySettings) {
   global.companySettings = { ...DEFAULT_COMPANY_SETTINGS }
 }
 
