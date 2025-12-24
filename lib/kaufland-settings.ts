@@ -41,11 +41,15 @@ export function getKauflandSettings(): KauflandSettings {
   if (typeof window === 'undefined') {
     // Server-side: load from file or database
     const fileSettings = loadKauflandSettingsFromFile()
+    const hasEnvVars = !!(envSettings.clientKey && envSettings.secretKey)
+    
     return {
       ...fileSettings,
       // Override with env vars if present
       clientKey: envSettings.clientKey || fileSettings.clientKey,
       secretKey: envSettings.secretKey || fileSettings.secretKey,
+      // Auto-enable if environment variables are present
+      enabled: hasEnvVars ? true : fileSettings.enabled,
     }
   }
 

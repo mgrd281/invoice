@@ -33,10 +33,12 @@ export async function POST(request: NextRequest) {
 
     // Check Kaufland settings
     const kauflandSettings = getKauflandSettings()
-    if (!kauflandSettings.enabled || !kauflandSettings.clientKey || !kauflandSettings.secretKey) {
+    const hasValidCredentials = !!(kauflandSettings.clientKey && kauflandSettings.secretKey)
+    
+    if (!hasValidCredentials) {
       return NextResponse.json({
         success: false,
-        error: 'Kaufland Integration ist nicht aktiviert oder nicht konfiguriert'
+        error: 'Kaufland Integration ist nicht konfiguriert. Bitte fügen Sie KAUFLAND_CLIENT_KEY und KAUFLAND_SECRET_KEY zu den Environment Variables hinzu.'
       }, { status: 400 })
     }
 
@@ -156,10 +158,12 @@ export async function PUT(request: NextRequest) {
 
     // Check Kaufland settings
     const kauflandSettings = getKauflandSettings()
-    if (!kauflandSettings.enabled || !kauflandSettings.clientKey || !kauflandSettings.secretKey) {
+    const hasValidCredentials = !!(kauflandSettings.clientKey && kauflandSettings.secretKey)
+    
+    if (!hasValidCredentials) {
       return NextResponse.json({
         success: false,
-        error: 'Kaufland Integration ist nicht aktiviert oder nicht konfiguriert'
+        error: 'Kaufland Integration ist nicht konfiguriert. Bitte fügen Sie KAUFLAND_CLIENT_KEY und KAUFLAND_SECRET_KEY zu den Environment Variables hinzu.'
       }, { status: 400 })
     }
 

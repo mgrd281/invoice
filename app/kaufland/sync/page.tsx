@@ -45,15 +45,30 @@ export default function KauflandSyncPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.settings) {
-          const enabled = data.settings.enabled && 
-                         data.settings.clientKey && 
-                         data.settings.secretKey
+          // Check if credentials exist (even if masked in response)
+          // The API returns masked keys, so we check if the masked version exists
+          const hasClientKey = data.settings.clientKey && data.settings.clientKey.length > 0
+          const hasSecretKey = data.settings.secretKey && data.settings.secretKey === '***'
+          
+          // Also try to test the connection to verify credentials work
+          const testResponse = await fetch('/api/kaufland/test-connection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: data.settings })
+          })
+          
+          const testData = await testResponse.json()
+          const enabled = (hasClientKey || hasSecretKey) && testData.success !== false
+          
           setKauflandEnabled(enabled)
           
           if (enabled) {
             loadShopifyProducts()
           } else {
             setLoading(false)
+            if (!hasClientKey && !hasSecretKey) {
+              showToast('Kaufland Integration nicht konfiguriert. Bitte fügen Sie die API-Schlüssel hinzu.', 'error')
+            }
           }
         } else {
           setKauflandEnabled(false)
