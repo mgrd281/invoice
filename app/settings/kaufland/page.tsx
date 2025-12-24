@@ -385,6 +385,28 @@ export default function KauflandSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* API Documentation Note */}
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <h3 className="font-semibold text-yellow-900">⚠️ Wichtiger Hinweis</h3>
+              <p className="text-sm text-yellow-800">
+                Falls der Verbindungstest fehlschlägt, überprüfen Sie bitte:
+              </p>
+              <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+                <li>Die API Base URL ist korrekt (Standard: https://sellerapi.kaufland.com)</li>
+                <li>Client Key und Secret Key sind korrekt eingegeben</li>
+                <li>Ihr Kaufland API-Konto ist aktiviert</li>
+                <li>Die API-Endpunkte entsprechen der aktuellen Kaufland API-Dokumentation</li>
+              </ul>
+              <p className="text-sm text-yellow-800 mt-2">
+                <strong>Hinweis:</strong> Die API-Endpunkte können sich je nach Kaufland API-Version unterscheiden. 
+                Bitte konsultieren Sie die offizielle Kaufland Seller API-Dokumentation für die korrekten Endpunkte.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <ToastContainer />
       </div>
     </div>
