@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ArrowLeft, Loader2, CheckCircle2, XCircle, ShoppingBag, Store, RefreshCw, Zap } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle2, XCircle, ShoppingBag, Store, RefreshCw, Zap, Settings as SettingsIcon } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
 interface ShopifyProduct {
@@ -30,11 +30,47 @@ export default function KauflandSyncPage() {
   const [syncing, setSyncing] = useState(false)
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set())
   const [syncResults, setSyncResults] = useState<any[]>([])
+  const [kauflandEnabled, setKauflandEnabled] = useState(false)
+  const [checkingIntegration, setCheckingIntegration] = useState(true)
   const { showToast, ToastContainer } = useToast()
 
   useEffect(() => {
-    loadShopifyProducts()
+    checkKauflandIntegration()
   }, [])
+
+  const checkKauflandIntegration = async () => {
+    try {
+      setCheckingIntegration(true)
+      const response = await fetch('/api/kaufland/settings')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.settings) {
+          const enabled = data.settings.enabled && 
+                         data.settings.clientKey && 
+                         data.settings.secretKey
+          setKauflandEnabled(enabled)
+          
+          if (enabled) {
+            loadShopifyProducts()
+          } else {
+            setLoading(false)
+          }
+        } else {
+          setKauflandEnabled(false)
+          setLoading(false)
+        }
+      } else {
+        setKauflandEnabled(false)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Error checking Kaufland integration:', error)
+      setKauflandEnabled(false)
+      setLoading(false)
+    } finally {
+      setCheckingIntegration(false)
+    }
+  }
 
   const loadShopifyProducts = async () => {
     try {
@@ -170,6 +206,65 @@ export default function KauflandSyncPage() {
 
   const hasEAN = (product: ShopifyProduct) => {
     return product.variants?.some(v => v.barcode) || false
+  }
+
+  if (checkingIntegration) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!kauflandEnabled) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <div className="flex items-center">
+                <Link href="/settings/kaufland">
+                  <Button variant="ghost" size="sm" className="mr-4">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Zurück
+                  </Button>
+                </Link>
+                <Store className="h-8 w-8 text-orange-600 mr-3" />
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Shopify → Kaufland Synchronisierung
+                </h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <XCircle className="h-6 w-6 text-red-500 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-900 mb-2">
+                    Kaufland Integration nicht aktiviert
+                  </h3>
+                  <p className="text-sm text-red-800 mb-4">
+                    Um Produkte von Shopify zu Kaufland zu synchronisieren, müssen Sie zuerst die Kaufland Integration aktivieren und konfigurieren.
+                  </p>
+                  <Link href="/settings/kaufland">
+                    <Button className="bg-red-600 hover:bg-red-700">
+                      <SettingsIcon className="h-4 w-4 mr-2" />
+                      Zu Kaufland-Einstellungen gehen
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
