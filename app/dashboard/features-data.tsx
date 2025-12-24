@@ -1,0 +1,156 @@
+import {
+    FileText,
+    Users,
+    Upload,
+    TrendingUp,
+    Settings,
+    ShoppingBag,
+    Plus,
+    LogOut,
+    Euro,
+    Calendar,
+    CheckCircle,
+    Calculator,
+    MessageSquare,
+    Key,
+    DollarSign,
+    AlertCircle,
+    Shield,
+    Package,
+    Gift,
+    Globe,
+    Star,
+    Zap
+} from 'lucide-react'
+
+export const DEFAULT_FEATURES = [
+
+    {
+        id: 'csv-import',
+        href: '/upload',
+        title: 'CSV-Import',
+        description: 'Shopify-Bestellungen importieren',
+        icon: Upload,
+        iconBg: 'bg-gradient-to-r from-purple-500 to-purple-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
+    },
+    {
+        id: 'product-import',
+        href: '/products/import',
+        title: 'Produkt Import',
+        description: 'Produkte von URL importieren (Shopify & mehr)',
+        icon: Globe,
+        iconBg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50',
+        badge: 'NEU',
+        badgeClass: 'bg-blue-100 text-blue-700',
+        hasPing: true,
+        pingColor: 'bg-blue-400',
+        pingDotColor: 'bg-blue-500'
+    },
+    {
+        id: 'shopify',
+        href: '/shopify',
+        title: 'Shopify Integration',
+        description: 'Shop direkt verbinden',
+        icon: ShoppingBag,
+        iconBg: 'bg-gradient-to-r from-green-500 to-green-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
+    },
+    {
+        id: 'buchhaltung',
+        href: '/buchhaltung',
+        title: 'Buchhaltung',
+        description: 'Vollständige Buchführung für Steuerberater',
+        icon: Calculator,
+        iconBg: 'bg-gradient-to-r from-blue-500 to-blue-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
+    },
+
+
+    {
+        id: 'digital-products',
+        href: '/digital-products',
+        title: 'Digitale Produkte',
+        description: 'Lizenzschlüssel und Downloads verwalten',
+        icon: Package,
+        iconBg: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
+        iconShadow: 'shadow-md'
+    },
+    {
+        id: 'reviews',
+        href: '/reviews',
+        title: 'Produkt Reviews',
+        description: 'Bewertungen sammeln & verwalten (Loox Style)',
+        icon: Star,
+        iconBg: 'bg-gradient-to-r from-yellow-400 to-orange-500',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-yellow-300 bg-gradient-to-br from-white to-yellow-50',
+        badge: 'NEU',
+        badgeClass: 'bg-yellow-100 text-yellow-700',
+        hasPing: true,
+        pingColor: 'bg-yellow-400',
+        pingDotColor: 'bg-yellow-500'
+    },
+    {
+        id: 'support',
+        href: '/support',
+        title: 'Support Center',
+        description: 'Kundenanfragen und Tickets verwalten',
+        icon: MessageSquare,
+        iconBg: 'bg-gradient-to-r from-blue-500 to-indigo-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50',
+        badge: 'NEU',
+        badgeClass: 'bg-blue-100 text-blue-700',
+        hasPing: true,
+        pingColor: 'bg-red-400',
+        pingDotColor: 'bg-red-500'
+    },
+
+    {
+        id: 'dunning',
+        href: '/dunning',
+        title: 'Mahnwesen',
+        description: 'Automatische Zahlungserinnerungen & Mahnungen',
+        icon: AlertCircle,
+        iconBg: 'bg-gradient-to-r from-red-500 to-rose-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-white to-red-50',
+        badge: 'AUTO',
+        badgeClass: 'bg-red-100 text-red-700'
+    },
+    {
+        id: 'marketing',
+        href: '/settings/marketing',
+        title: 'Marketing',
+        description: 'Automatische Rabatte und Kundenbindung',
+        icon: Gift,
+        iconBg: 'bg-gradient-to-r from-pink-500 to-rose-500',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-pink-300 bg-gradient-to-br from-white to-pink-50',
+        badge: 'AUTO',
+        badgeClass: 'bg-pink-100 text-pink-700'
+    },
+    {
+        id: 'abandoned-carts',
+        href: '/dashboard/abandoned-carts',
+        title: 'Warenkorb Wiederherstellung',
+        description: 'Verlorene Warenkörbe retten & Umsatz steigern',
+        icon: ShoppingBag,
+        iconBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-emerald-300 bg-gradient-to-br from-white to-emerald-50',
+        badge: 'NEU',
+        badgeClass: 'bg-emerald-100 text-emerald-700',
+        hasPing: true,
+        pingColor: 'bg-emerald-400',
+        pingDotColor: 'bg-emerald-500'
+    },
+    {
+        id: 'settings',
+        href: '/settings',
+        title: 'Einstellungen',
+        description: 'Konto und Firma konfigurieren',
+        icon: Settings,
+        iconBg: 'bg-gradient-to-r from-gray-500 to-gray-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
+    }
+]
+

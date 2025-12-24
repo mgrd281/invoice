@@ -1,0 +1,25 @@
+# Kopieren Sie diesen gesamten Inhalt und fügen Sie ihn in die .env.local Datei ein
+
+# Echten E-Mail-Versand aktivieren
+EMAIL_DEV_MODE="false"
+
+# Gmail SMTP Einstellungen
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="mgrdegh90@gmail.com"
+SMTP_PASS="REPLACE_WITH_YOUR_APP_PASSWORD"
+
+# Absender-Adresse
+EMAIL_FROM="mgrdegh90@gmail.com"
+EMAIL_FROM_NAME="RechnungsProfi"
+
+# NextAuth (Erforderlich)
+NEXTAUTH_SECRET="rechnungsprofi-email-verification-secret-key-2024-very-long-string"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Optional
+EMAIL_CC=""
+EMAIL_REPLY_TO="mgrdegh90@gmail.com"
+
+# Hinweis: Ersetzen Sie REPLACE_WITH_YOUR_APP_PASSWORD durch Ihr echtes Gmail App-Passwort

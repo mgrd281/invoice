@@ -1,0 +1,248 @@
+
+import { prisma } from '@/lib/prisma'
+import { sendEmail } from '@/lib/email-service'
+
+export async function getDigitalProductByShopifyId(shopifyProductId: string) {
+    return prisma.digitalProduct.findUnique({
+        where: { shopifyProductId },
+        include: {
+            variantSettings: true,
+            _count: {
+                select: { keys: { where: { isUsed: false } } }
+            }
+        }
+    })
+}
+
+export async function createDigitalProduct(data: {
+    organizationId: string
+    shopifyProductId: string
+    title: string
+    emailTemplate?: string
+}) {
+    return prisma.digitalProduct.create({
+        data
+    })
+}
+
+export async function addLicenseKeys(digitalProductId: string, keys: string[]) {
+    return prisma.licenseKey.createMany({
+        data: keys.map(key => ({
+            digitalProductId,
+            key,
+            isUsed: false
+        }))
+    })
+}
+
+export async function getAvailableKey(digitalProductId: string, shopifyVariantId?: string) {
+    // 1. If variantId is provided, try to find a key SPECIFIC to that variant
+    if (shopifyVariantId) {
+        const variantKey = await prisma.licenseKey.findFirst({
+            where: {
+                digitalProductId,
+                isUsed: false,
+                shopifyVariantId: shopifyVariantId
+            },
+            orderBy: { createdAt: 'asc' }
+        })
+
+        if (variantKey) return variantKey
+    }
+
+    // 2. Fallback (or default): Find a key with NO variant assigned (null)
+    // This allows "general" keys to be used for any variant (or if no variant is specified)
+    return prisma.licenseKey.findFirst({
+        where: {
+            digitalProductId,
+            isUsed: false,
+            shopifyVariantId: null
+        },
+        orderBy: { createdAt: 'asc' }
+    })
+}
+
+export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string) {
+    return prisma.licenseKey.update({
+        where: { id: keyId },
+        data: {
+            isUsed: true,
+            usedAt: new Date(),
+            orderId: orderNumber, // Storing the visible order number (e.g. #1001) here for display
+            shopifyOrderId: shopifyOrderId
+        }
+    })
+}
+
+export async function processDigitalProductOrder(
+    shopifyProductId: string,
+    shopifyOrderId: string,
+    orderNumber: string,
+    customerEmail: string,
+    customerName: string,
+    productTitle: string,
+    shopifyVariantId?: string,
+    customerSalutation?: string
+) {
+    const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
+
+    if (!digitalProduct) {
+        console.log(`Digital product not found for Shopify Product ID: ${shopifyProductId}`)
+        return { success: false, error: 'Product not configured as digital product' }
+    }
+
+    // Check if key already assigned for this order
+    const existingKey = await prisma.licenseKey.findFirst({
+        where: {
+            digitalProductId: digitalProduct.id,
+            shopifyOrderId: shopifyOrderId
+        }
+    })
+
+    if (existingKey) {
+        console.log(`Key already assigned for order ${shopifyOrderId} and product ${digitalProduct.id}`)
+        return { success: true, key: existingKey.key, message: 'Key already assigned' }
+    }
+
+    const key = await getAvailableKey(digitalProduct.id, shopifyVariantId)
+
+    if (!key) {
+        console.error(`No keys available for product: ${digitalProduct.title} (${digitalProduct.id}) [Variant: ${shopifyVariantId || 'Any'}]`)
+
+        // Notify Admin
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@example.com'
+        await sendEmail({
+            to: adminEmail,
+            subject: `⚠️ KEINE KEYS MEHR: ${digitalProduct.title}`,
+            html: `<p>Achtung,</p><p>Für das Produkt <strong>${digitalProduct.title}</strong> (Shopify ID: ${shopifyProductId}, Variante: ${shopifyVariantId || 'Alle'}) sind keine Lizenzschlüssel mehr verfügbar!</p><p>Eine Bestellung konnte nicht bedient werden.</p>`
+        })
+
+        return { success: false, error: 'No keys available' }
+    }
+
+    // Mark key as used
+    await markKeyAsUsed(key.id, orderNumber, shopifyOrderId)
+
+    // Determine Variant Settings (if any)
+    let template = digitalProduct.emailTemplate || getDefaultTemplate()
+    let buttons = digitalProduct.downloadButtons as any[] | null;
+    let btnAlignment = digitalProduct.buttonAlignment || 'left';
+
+    // Check if we have specific settings for this variant
+    if (shopifyVariantId && digitalProduct.variantSettings) {
+        const variantSetting = digitalProduct.variantSettings.find(s => s.shopifyVariantId === shopifyVariantId)
+        if (variantSetting) {
+            if (variantSetting.emailTemplate) {
+                template = variantSetting.emailTemplate
+            }
+            if (variantSetting.downloadButtons && Array.isArray(variantSetting.downloadButtons) && variantSetting.downloadButtons.length > 0) {
+                buttons = variantSetting.downloadButtons as any[]
+            }
+        }
+    }
+
+    // Generate Download Button HTML
+    let downloadButtonHtml = '';
+    const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
+
+    if (Array.isArray(buttons) && buttons.length > 0) {
+        // Generate HTML for multiple buttons
+        // This generates a SINGLE block containing ALL buttons
+        const buttonsHtml = buttons.map((btn: any) => `
+                <div style="margin-bottom: 12px;">
+                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">
+                        ${btn.text || 'Download'}
+                    </a>
+                </div>
+            `).join('');
+
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
+    } else if (digitalProduct.downloadUrl) {
+        // Fallback to legacy single button (ONLY if no variant override buttons were found, and main product has legacy url)
+        // Note: If variant overrides buttons, 'buttons' array will be populated and we won't reach here.
+        // If variant has NO buttons but main product has legacy URL, we might want to use legacy URL?
+        // Current logic: if variant has buttons, use them. If not, check main product buttons. If not, check legacy.
+        // My code above sets 'buttons' to main product buttons initially.
+        // So if variant has NO buttons defined, it falls back to main product buttons.
+        // If main product has NO buttons defined, 'buttons' is null/empty.
+        // Then we check legacy downloadUrl.
+
+        const btnText = digitalProduct.buttonText || 'Download';
+        const btnColor = digitalProduct.buttonColor || '#000000';
+        const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
+
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">${btnText}</a></div>`;
+    }
+
+    // Convert newlines to HTML breaks in the template BEFORE injecting variables
+    // This ensures we don't break the HTML structure of injected variables (like the button)
+    const htmlTemplate = convertToHtml(template);
+
+    const emailBody = replaceVariables(htmlTemplate, {
+        customer_name: customerName,
+        customer_salutation: customerSalutation || `Hallo ${customerName}`,
+        product_title: productTitle,
+        license_key: key.key,
+        download_button: downloadButtonHtml
+    })
+
+    const subject = `Ihr Produktschlüssel für ${productTitle}`
+
+    await sendEmail({
+        to: customerEmail,
+        subject,
+        html: emailBody
+    })
+
+    // Automatically fulfill order in Shopify
+    try {
+        console.log(`📦 Auto-fulfilling Shopify order: ${shopifyOrderId}`)
+        const { ShopifyAPI } = await import('@/lib/shopify-api')
+        const api = new ShopifyAPI()
+
+        // Ensure ID is a number
+        const numericOrderId = parseInt(shopifyOrderId.replace(/\D/g, ''))
+        if (!isNaN(numericOrderId)) {
+            await api.createFulfillment(numericOrderId)
+        } else {
+            console.error(`Invalid Shopify Order ID for fulfillment: ${shopifyOrderId}`)
+        }
+    } catch (fulfillError) {
+        console.error('Failed to auto-fulfill Shopify order:', fulfillError)
+        // We don't fail the whole process if fulfillment fails, as the key was already sent
+    }
+
+    return { success: true, key: key.key }
+}
+
+function getDefaultTemplate() {
+    return `
+Hallo {{ customer_name }},
+
+vielen Dank für Ihre Bestellung!
+
+Hier ist Ihr Produktschlüssel für {{ product_title }}:
+{{ license_key }}
+
+Anleitung:
+1. ...
+2. ...
+
+Viel Spaß!
+  `
+}
+
+function replaceVariables(template: string, variables: Record<string, string>) {
+    let result = template
+    for (const [key, value] of Object.entries(variables)) {
+        result = result.replace(new RegExp(`{{ ${key} }}`, 'g'), value)
+        result = result.replace(new RegExp(`{{${key}}}`, 'g'), value)
+    }
+    return result
+}
+
+function convertToHtml(text: string) {
+    // Always replace newlines with <br/> to ensure proper formatting in email clients
+    // especially when content comes from contentEditable which might use newlines for breaks
+    return text.replace(/\n/g, '<br/>');
+}

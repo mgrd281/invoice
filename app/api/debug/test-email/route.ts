@@ -1,0 +1,112 @@
+import { NextResponse } from 'next/server'
+import nodemailer from 'nodemailer'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET() {
+    try {
+        // Check for Resend API Key first
+        if (process.env.RESEND_API_KEY) {
+            const { Resend } = require('resend')
+            const resend = new Resend(process.env.RESEND_API_KEY)
+            const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+            const targetEmail = process.env.SMTP_USER || process.env.EMAIL_USER || 'test@example.com'
+
+            const { data, error } = await resend.emails.send({
+                from: fromEmail,
+                to: targetEmail,
+                subject: "Test Email from Railway Debugger (Resend)",
+                html: "<b>If you receive this, your Resend configuration is CORRECT!</b>"
+            })
+
+            if (error) {
+                return NextResponse.json({
+                    error: 'Resend Sending Failed',
+                    message: error.message,
+                    details: error
+                }, { status: 500 })
+            }
+
+            return NextResponse.json({
+                success: true,
+                message: 'Email sent successfully via Resend',
+                messageId: data?.id,
+                provider: 'Resend'
+            })
+        }
+
+        const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER
+        const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS
+        const smtpHost = process.env.SMTP_HOST
+        const smtpPort = process.env.SMTP_PORT
+        const smtpSecure = process.env.SMTP_SECURE
+
+        if (!smtpUser || !smtpPass) {
+            return NextResponse.json({
+                error: 'Missing configuration',
+                details: { smtpUser: !!smtpUser, smtpPass: !!smtpPass }
+            }, { status: 500 })
+        }
+
+        const transporter = (smtpHost === 'smtp.gmail.com')
+            ? nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: smtpUser,
+                    pass: smtpPass,
+                }
+            })
+            : nodemailer.createTransport({
+                host: smtpHost || 'smtp.gmail.com',
+                port: parseInt(smtpPort || '587'),
+                secure: smtpSecure === 'true', // true for 465, false for other ports
+                auth: {
+                    user: smtpUser,
+                    pass: smtpPass,
+                },
+                tls: {
+                    rejectUnauthorized: false
+                }
+            })
+
+        // Verify connection
+        try {
+            await transporter.verify()
+        } catch (verifyError: any) {
+            return NextResponse.json({
+                error: 'SMTP Connection Failed',
+                message: verifyError.message,
+                config: {
+                    host: smtpHost,
+                    port: smtpPort,
+                    secure: smtpSecure,
+                    user: smtpUser
+                }
+            }, { status: 500 })
+        }
+
+        // Send test email
+        const info = await transporter.sendMail({
+            from: `"Test Debug" <${smtpUser}>`,
+            to: smtpUser, // Send to self
+            subject: "Test Email from Railway Debugger",
+            text: "If you receive this, your email configuration is CORRECT!",
+            html: "<b>If you receive this, your email configuration is CORRECT!</b>"
+        })
+
+        return NextResponse.json({
+            success: true,
+            message: 'Email sent successfully',
+            messageId: info.messageId,
+            response: info.response,
+            provider: 'SMTP'
+        })
+
+    } catch (error: any) {
+        return NextResponse.json({
+            error: 'Email Sending Failed',
+            message: error.message,
+            stack: error.stack
+        }, { status: 500 })
+    }
+}
