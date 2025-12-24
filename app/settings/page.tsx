@@ -28,8 +28,8 @@ interface CompanySettings {
 
 interface AppSettings {
   // Security
-  twoFactorAuth: boolean
-  sessionTimeout: number
+  twoFactorAuth?: boolean
+  sessionTimeout?: number
 }
 
 export default function SettingsPage() {
@@ -51,6 +51,15 @@ export default function SettingsPage() {
     twoFactorAuth: false,
     sessionTimeout: 60
   })
+
+  // Error boundary for client-side errors
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Client-side error:', error)
+    }
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
+  }, [])
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -594,7 +603,7 @@ export default function SettingsPage() {
                 type="number"
                 min="5"
                 max="480"
-                value={settings.sessionTimeout}
+                value={settings.sessionTimeout || 60}
                 onChange={(e) => setSettings(prev => ({ ...prev, sessionTimeout: parseInt(e.target.value) || 60 }))}
                 className="w-24"
               />
