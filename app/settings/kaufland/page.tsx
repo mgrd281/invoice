@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Loader2, Save, CheckCircle2, XCircle, Store, TestTube } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, CheckCircle2, XCircle, Store, TestTube, ShoppingBag } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
 interface KauflandSettings {
@@ -381,6 +381,26 @@ export default function KauflandSettingsPage() {
                 <li>Speichern Sie die Einstellungen</li>
                 <li>Verwenden Sie die API-Endpunkte, um Produkte zu synchronisieren</li>
               </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Shopify Sync Card */}
+        <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-green-200">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-2">Shopify → Kaufland Synchronisierung</h3>
+                <p className="text-sm text-gray-700 mb-4">
+                  Synchronisieren Sie Produkte direkt von Ihrem Shopify-Shop zu Kaufland Marketplace
+                </p>
+                <Link href="/kaufland/sync">
+                  <Button className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600">
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    Produkte synchronisieren
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
