@@ -32,6 +32,8 @@ export default function KauflandSyncPage() {
   const [syncResults, setSyncResults] = useState<any[]>([])
   const [kauflandEnabled, setKauflandEnabled] = useState(false)
   const [checkingIntegration, setCheckingIntegration] = useState(true)
+  const [hasMore, setHasMore] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
   const { showToast, ToastContainer } = useToast()
 
   useEffect(() => {
@@ -87,15 +89,26 @@ export default function KauflandSyncPage() {
     }
   }
 
-  const loadShopifyProducts = async () => {
+  const loadShopifyProducts = async (page: number = 1, append: boolean = false) => {
     try {
-      setLoading(true)
-      // Load only 50 products at a time to reduce data size
-      const response = await fetch('/api/shopify/products?limit=50')
+      if (!append) {
+        setLoading(true)
+      }
+      // Load only 25 products per page to reduce data size
+      const limit = 25
+      const response = await fetch(`/api/shopify/products?limit=${limit}`)
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setShopifyProducts(data.data || [])
+          const products = data.data || []
+          if (append) {
+            setShopifyProducts(prev => [...prev, ...products])
+          } else {
+            setShopifyProducts(products)
+          }
+          // Check if there might be more products
+          setHasMore(products.length === limit)
+          setCurrentPage(page)
         }
       }
     } catch (error) {
@@ -104,6 +117,10 @@ export default function KauflandSyncPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadMoreProducts = () => {
+    loadShopifyProducts(currentPage + 1, true)
   }
 
   const toggleSelectProduct = (productId: number) => {
@@ -406,8 +423,9 @@ export default function KauflandSyncPage() {
                 <p>Keine Produkte in Shopify gefunden</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {shopifyProducts.map((product) => {
+              <>
+                <div className="space-y-2">
+                  {shopifyProducts.map((product) => {
                   const hasBarcode = hasEAN(product)
                   const isSelected = selectedProducts.has(product.id)
                   const variant = product.variants?.[0]
@@ -453,7 +471,28 @@ export default function KauflandSyncPage() {
                     </div>
                   )
                 })}
-              </div>
+                </div>
+                {hasMore && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      onClick={loadMoreProducts}
+                      variant="outline"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Lade...
+                        </>
+                      ) : (
+                        <>
+                          Mehr Produkte laden ({shopifyProducts.length} geladen)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
