@@ -90,7 +90,8 @@ export default function KauflandSyncPage() {
   const loadShopifyProducts = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/shopify/products')
+      // Load only 50 products at a time to reduce data size
+      const response = await fetch('/api/shopify/products?limit=50')
       if (response.ok) {
         const data = await response.json()
         if (data.success) {

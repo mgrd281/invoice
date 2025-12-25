@@ -484,10 +484,12 @@ export class ShopifyAPI {
     tags?: string
     ids?: string
     fetchOptions?: RequestInit
+    fields?: string // Optional: specify which fields to fetch
   } = {}): Promise<ShopifyProduct[]> {
     try {
       const searchParams = new URLSearchParams()
-      searchParams.set('limit', (params.limit || 50).toString())
+      // Limit to reasonable default to reduce data size
+      searchParams.set('limit', Math.min(params.limit || 50, 250).toString())
 
       if (params.product_type) {
         searchParams.set('product_type', params.product_type)
@@ -501,10 +503,37 @@ export class ShopifyAPI {
         searchParams.set('ids', params.ids)
       }
 
+      // Use fields parameter to fetch only necessary data
+      // This significantly reduces response size
+      if (params.fields) {
+        searchParams.set('fields', params.fields)
+      } else {
+        // Default minimal fields for product listing
+        searchParams.set('fields', 'id,title,handle,vendor,product_type,status,created_at,updated_at,images,variants')
+      }
+
       const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
       const data = await response.json()
 
-      return data.products || []
+      // Minimize data: only return essential fields
+      const products = (data.products || []).map((product: any) => ({
+        id: product.id,
+        title: product.title,
+        handle: product.handle,
+        variants: product.variants?.map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          price: v.price,
+          sku: v.sku,
+          barcode: v.barcode,
+          inventory_quantity: v.inventory_quantity
+        })) || [],
+        images: product.images?.map((img: any) => ({
+          src: img.src
+        })) || []
+      }))
+
+      return products
     } catch (error) {
       console.error('Error fetching Shopify products:', error)
       throw error
