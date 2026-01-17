@@ -159,6 +159,15 @@ export const DEFAULT_FEATURES = [
         pingDotColor: 'bg-emerald-500'
     },
     {
+        id: 'api-keys',
+        href: '/settings/api-keys',
+        title: 'API Zugang',
+        description: 'API-Schlüssel für externe Anwendungen verwalten',
+        icon: Key,
+        iconBg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50'
+    },
+    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',
