@@ -46,7 +46,7 @@ export default function ApiKeysPage() {
     const [newKeySecret, setNewKeySecret] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
 
-    const { toast } = useToast()
+    const { showToast, ToastContainer } = useToast()
 
     useEffect(() => {
         loadKeys()
@@ -61,11 +61,7 @@ export default function ApiKeysPage() {
             }
         } catch (error) {
             console.error('Error loading API keys:', error)
-            toast({
-                title: 'Fehler',
-                description: 'API-Schlüssel konnten nicht geladen werden.',
-                variant: 'destructive',
-            })
+            showToast('API-Schlüssel konnten nicht geladen werden.', 'error')
         } finally {
             setLoading(false)
         }
@@ -87,20 +83,13 @@ export default function ApiKeysPage() {
                 setNewKeySecret(data.key) // The full key is only returned here
                 setKeys([...keys, data]) // Optimistic update (though data usually lacks the key prefix logic if not handled)
                 loadKeys() // Reload to get consistent data structure
-                toast({
-                    title: 'Erfolg',
-                    description: 'API-Schlüssel wurde erstellt.',
-                })
+                showToast('API-Schlüssel wurde erstellt.', 'success')
             } else {
                 throw new Error('Failed to create key')
             }
         } catch (error) {
             console.error('Error creating API key:', error)
-            toast({
-                title: 'Fehler',
-                description: 'API-Schlüssel konnte nicht erstellt werden.',
-                variant: 'destructive',
-            })
+            showToast('API-Schlüssel konnte nicht erstellt werden.', 'error')
             setShowNewKeyDialog(false) // Close on error
         } finally {
             setCreating(false)
@@ -118,20 +107,13 @@ export default function ApiKeysPage() {
 
             if (response.ok) {
                 setKeys(keys.filter(k => k.id !== id))
-                toast({
-                    title: 'Gelöscht',
-                    description: 'API-Schlüssel wurde entfernt.',
-                })
+                showToast('API-Schlüssel wurde entfernt.', 'success')
             } else {
                 throw new Error('Failed to delete key')
             }
         } catch (error) {
             console.error('Error deleting API key:', error)
-            toast({
-                title: 'Fehler',
-                description: 'API-Schlüssel konnte nicht gelöscht werden.',
-                variant: 'destructive',
-            })
+            showToast('API-Schlüssel konnte nicht gelöscht werden.', 'error')
         } finally {
             setDeleting(null)
         }
@@ -322,6 +304,7 @@ export default function ApiKeysPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+                <ToastContainer />
             </main>
         </div>
     )
