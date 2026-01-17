@@ -5,13 +5,15 @@ import { authOptions } from '@/lib/auth-options'
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions)
         if (!session || !session.user || !session.user.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
+
+        const { id } = await params;
 
         const user = await prisma.user.findUnique({
             where: { email: session.user.email }
@@ -24,7 +26,7 @@ export async function DELETE(
         // Ensure key belongs to user's organization
         const count = await prisma.apiKey.count({
             where: {
-                id: params.id,
+                id: id,
                 organizationId: user.organizationId
             }
         })
@@ -34,7 +36,7 @@ export async function DELETE(
         }
 
         await prisma.apiKey.delete({
-            where: { id: params.id }
+            where: { id: id }
         })
 
         return new NextResponse(null, { status: 204 })
