@@ -51,19 +51,19 @@ export default function KauflandSyncPage() {
           // The API returns masked keys, so we check if the masked version exists
           const hasClientKey = data.settings.clientKey && data.settings.clientKey.length > 0
           const hasSecretKey = data.settings.secretKey && data.settings.secretKey === '***'
-          
+
           // Also try to test the connection to verify credentials work
           const testResponse = await fetch('/api/kaufland/test-connection', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ settings: data.settings })
           })
-          
+
           const testData = await testResponse.json()
           const enabled = (hasClientKey || hasSecretKey) && testData.success !== false
-          
+
           setKauflandEnabled(enabled)
-          
+
           if (enabled) {
             loadShopifyProducts()
           } else {
@@ -152,7 +152,7 @@ export default function KauflandSyncPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         showToast(`Produkt "${data.data.shopifyProduct.title}" erfolgreich synchronisiert`, 'success')
         return { success: true, productId, ...data }
@@ -178,15 +178,15 @@ export default function KauflandSyncPage() {
     try {
       setSyncing(true)
       setSyncResults([])
-      
+
       const results = []
       const productIds = Array.from(selectedProducts)
-      
+
       for (const productId of productIds) {
         const result = await syncSingleProduct(productId)
         results.push(result)
         setSyncResults([...results])
-        
+
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 500))
       }
@@ -330,7 +330,7 @@ export default function KauflandSyncPage() {
             </div>
             <div className="flex gap-2">
               <Button
-                onClick={loadShopifyProducts}
+                onClick={() => loadShopifyProducts()}
                 disabled={loading}
                 variant="outline"
               >
@@ -426,51 +426,50 @@ export default function KauflandSyncPage() {
               <>
                 <div className="space-y-2">
                   {shopifyProducts.map((product) => {
-                  const hasBarcode = hasEAN(product)
-                  const isSelected = selectedProducts.has(product.id)
-                  const variant = product.variants?.[0]
-                  
-                  return (
-                    <div
-                      key={product.id}
-                      className={`flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors ${
-                        isSelected ? 'bg-blue-50 border-blue-300' : ''
-                      } ${!hasBarcode ? 'opacity-60' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelectProduct(product.id)}
-                        disabled={!hasBarcode || syncing}
-                        className="h-4 w-4"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{product.title}</h4>
-                          {!hasBarcode && (
-                            <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">
-                              Keine EAN
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span>Preis: {variant?.price || 'N/A'} €</span>
-                          {variant?.sku && <span className="ml-4">SKU: {variant.sku}</span>}
-                          {variant?.barcode && <span className="ml-4">EAN: {variant.barcode}</span>}
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => syncSingleProduct(product.id)}
-                        disabled={!hasBarcode || syncing}
-                        size="sm"
-                        variant="outline"
+                    const hasBarcode = hasEAN(product)
+                    const isSelected = selectedProducts.has(product.id)
+                    const variant = product.variants?.[0]
+
+                    return (
+                      <div
+                        key={product.id}
+                        className={`flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50 border-blue-300' : ''
+                          } ${!hasBarcode ? 'opacity-60' : ''}`}
                       >
-                        <Zap className="h-4 w-4 mr-2" />
-                        Synchronisieren
-                      </Button>
-                    </div>
-                  )
-                })}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectProduct(product.id)}
+                          disabled={!hasBarcode || syncing}
+                          className="h-4 w-4"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{product.title}</h4>
+                            {!hasBarcode && (
+                              <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">
+                                Keine EAN
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            <span>Preis: {variant?.price || 'N/A'} €</span>
+                            {variant?.sku && <span className="ml-4">SKU: {variant.sku}</span>}
+                            {variant?.barcode && <span className="ml-4">EAN: {variant.barcode}</span>}
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => syncSingleProduct(product.id)}
+                          disabled={!hasBarcode || syncing}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <Zap className="h-4 w-4 mr-2" />
+                          Synchronisieren
+                        </Button>
+                      </div>
+                    )
+                  })}
                 </div>
                 {hasMore && (
                   <div className="mt-4 text-center">
@@ -508,9 +507,8 @@ export default function KauflandSyncPage() {
                 {syncResults.map((result, index) => (
                   <div
                     key={index}
-                    className={`flex items-center gap-3 p-3 border rounded-lg ${
-                      result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    }`}
+                    className={`flex items-center gap-3 p-3 border rounded-lg ${result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}
                   >
                     {result.success ? (
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
