@@ -58,6 +58,8 @@ export default function ApiKeysPage() {
             if (response.ok) {
                 const data = await response.json()
                 setKeys(data)
+            } else {
+                throw new Error('Failed to load keys')
             }
         } catch (error) {
             console.error('Error loading API keys:', error)
