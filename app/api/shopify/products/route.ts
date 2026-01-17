@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { ShopifyAPI } from '@/lib/shopify-api'
 
 export const dynamic = 'force-dynamic'
@@ -7,16 +7,16 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 250) // Default 50, max 250
-        
+
         const api = new ShopifyAPI()
         // Only fetch essential fields to reduce data size
-        const products = await api.getProducts({ 
+        const products = await api.getProducts({
             limit,
             fields: 'id,title,handle,variants,images' // Minimal fields needed for sync
         })
-        
-        return NextResponse.json({ 
-            success: true, 
+
+        return NextResponse.json({
+            success: true,
             data: products,
             count: products.length
         })
