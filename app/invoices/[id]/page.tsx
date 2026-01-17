@@ -20,6 +20,7 @@ import {
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { renderRecipientBlock } from '@/lib/recipient-renderer'
 import { InvoiceTimeline } from '@/components/invoice-timeline'
+import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
 
 interface InvoiceItem {
   id: string
@@ -73,6 +74,11 @@ interface Invoice {
   }
   history?: any[]
   paymentMethod?: string
+  headerSubject?: string | null
+  headerText?: string | null
+  footerText?: string | null
+  serviceDate?: string | null
+  settings?: any
 }
 
 export default function InvoiceViewPage() {
@@ -88,6 +94,7 @@ export default function InvoiceViewPage() {
   const [editableInvoice, setEditableInvoice] = useState<Invoice | null>(null)
   const [saving, setSaving] = useState(false)
   const [toastMessage, setToastMessage] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
 
   const showToast = (message: string, type: 'success' | 'error') => {
     console.log(`${type.toUpperCase()}: ${message}`)
@@ -534,6 +541,10 @@ export default function InvoiceViewPage() {
               </div>
             </div>
             <div className="flex space-x-3">
+              <Button variant="outline" onClick={() => setShowPreview(true)}>
+                <Eye className="h-4 w-4 mr-2" />
+                Vorschau
+              </Button>
               <Button variant="outline" onClick={handleDownloadPdf} disabled={downloadingPdf}>
                 {downloadingPdf ? (
                   <>
@@ -1148,6 +1159,42 @@ export default function InvoiceViewPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Invoice Preview Dialog */}
+      {invoice && (
+        <InvoicePreviewDialog
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          data={{
+            customer: {
+              ...invoice.customer,
+              type: invoice.customer.companyName ? 'company' : 'person'
+            },
+            invoiceData: {
+              invoiceNumber: invoice.number,
+              date: invoice.date,
+              deliveryDate: invoice.serviceDate || invoice.date,
+              headerSubject: invoice.headerSubject || `Rechnung Nr. ${invoice.number}`,
+              headerText: invoice.headerText || '',
+              footerText: invoice.footerText || ''
+            },
+            items: invoice.items.map(item => ({
+              ...item,
+              unit: 'Stk', // Default unit
+              vat: invoice.taxRate || 19
+            })),
+            settings: {
+              companySettings: {
+                ...invoice.organization,
+                logoPath: (invoice.organization as any).logoUrl || (invoice.organization as any).logo || null,
+                postalCode: invoice.organization.zipCode || (invoice.organization as any).zip || ''
+              },
+              internalContact: invoice.settings?.internalContact || '',
+              currency: invoice.settings?.currency || 'EUR'
+            }
+          }}
+        />
       )}
     </div>
   )

@@ -59,6 +59,19 @@ model User {
   featureOrder    Json?
 }
 
+model ApiKey {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  key            String       @unique
+  lastUsedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
 model Organization {
   id                String             @id @default(uuid())
   name              String
@@ -103,6 +116,7 @@ model Organization {
   reviewIncentiveSettings ReviewIncentiveSettings?
   abandonedCarts    AbandonedCart[]
   realEstateProfiles RealEstateSearchProfile[]
+  apiKeys           ApiKey[]
 }
 
 model WidgetSettings {

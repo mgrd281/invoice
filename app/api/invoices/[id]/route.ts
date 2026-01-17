@@ -100,6 +100,11 @@ export async function GET(
       original_invoice_date: (invoice as any).originalDate?.toISOString().split('T')[0],
       grund: (invoice as any).reason,
       refund_amount: (invoice as any).refundAmount ? Number((invoice as any).refundAmount) : undefined,
+      // Invoice text fields
+      headerSubject: invoice.headerSubject || null,
+      headerText: invoice.headerText || null,
+      footerText: invoice.footerText || null,
+      serviceDate: invoice.serviceDate ? invoice.serviceDate.toISOString().split('T')[0] : null,
       // QR Code settings - not in schema yet, return null or default
       qrCodeSettings: null,
       // Order details
@@ -107,7 +112,8 @@ export async function GET(
         id: invoice.order.id,
         shopifyOrderId: invoice.order.shopifyOrderId
       } : undefined,
-      history: (invoice as any).history || []
+      history: (invoice as any).history || [],
+      settings: invoice.settings || {}
     }
 
     return NextResponse.json(formattedInvoice)
