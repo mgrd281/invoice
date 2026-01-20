@@ -142,9 +142,18 @@ export async function POST(req: Request) {
           }
 
           // Process Digital Products
-          // if (payload.financial_status === 'paid') { // REMOVED: Send keys for all valid orders
           log('🔐 Checking for digital products...')
           const { processDigitalProductOrder } = await import('@/lib/digital-products')
+          // Import payment detector
+          const { shouldSendKeysImmediately } = await import('@/lib/payment-method-detector')
+
+          // Determine if we should send emails immediately based on payment method
+          // For 'orders/create' topic, isUpdate is false
+          // For 'orders/updated' topic, isUpdate is true
+          const isUpdate = (topic === 'orders/updated')
+          const shouldSendEmail = shouldSendKeysImmediately(payload, isUpdate)
+
+          log(`🔐 Key Delivery Decision: Should send email? ${shouldSendEmail} (Topic: ${topic}, Status: ${payload.financial_status})`)
 
           for (const item of payload.line_items) {
             if (item.product_id) {
@@ -152,46 +161,22 @@ export async function POST(req: Request) {
                 await processDigitalProductOrder(
                   String(item.product_id),
                   String(payload.id),
-                  payload.name || String(payload.order_number) || String(payload.id), // Pass visible order number
+                  payload.name || String(payload.order_number) || String(payload.id),
                   payload.email || payload.customer?.email,
                   payload.shipping_address?.first_name || payload.customer?.first_name || 'Kunde',
                   item.title,
                   item.variant_id ? String(item.variant_id) : undefined,
                   (() => {
-                    // Determine Salutation
                     const lastName = payload.customer?.last_name || payload.shipping_address?.last_name || '';
-                    // Shopify doesn't always provide gender directly in the order payload, 
-                    // but if it's there (e.g. from a custom field or meta), we can use it.
-                    // Often it's not standard. We'll check for common indicators if available, 
-                    // otherwise fallback to neutral.
-                    // NOTE: Standard Shopify Order object doesn't have a 'gender' field on root or customer.
-                    // If you have a custom implementation or app adding it, adjust here.
-                    // For now, we'll try to guess or use a neutral default if unknown.
-
-                    // IF you had gender:
-                    // const gender = payload.customer?.gender; // Hypothetical
-
-                    // Since we don't have reliable gender in standard Shopify webhooks, 
-                    // we might need to rely on a neutral fallback OR if the user requested it,
-                    // we could try to infer from title if provided (e.g. "Mr", "Mrs" in note_attributes?)
-
-                    // Let's implement the logic requested:
-                    // "Sehr geehrte Frau {{ customer_last_name }}"
-                    // "Sehr geehrter Herr {{ customer_last_name }}"
-                    // "Sehr geehrte/r Kunde/Kundin {{ customer_last_name }}"
-
-                    // As we can't reliably know gender from standard payload, we'll use the neutral one 
-                    // UNLESS we find a strong hint.
-
                     return `Sehr geehrte/r Kunde/Kundin ${lastName}`.trim();
-                  })()
+                  })(),
+                  shouldSendEmail // Pass the decision flag
                 )
               } catch (err) {
                 log(`❌ Error processing digital product ${item.product_id}:`, err)
               }
             }
           }
-          // }
 
           // ---------------------------------------------------------
           // NEW: First Purchase Discount Automation

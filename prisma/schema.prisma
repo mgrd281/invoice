@@ -482,6 +482,11 @@ model LicenseKey {
   usedAt           DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  
+  // Delivery Tracking
+  emailSent        Boolean        @default(false)
+  emailSentAt      DateTime?
+  deliveryStatus   String         @default("PENDING") // PENDING, SENT, FAILED
 }
 
 model SupportTicket {
