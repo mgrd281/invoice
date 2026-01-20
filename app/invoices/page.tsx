@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send } from 'lucide-react'
+import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send, Volume2, VolumeX } from 'lucide-react'
 import { downloadInvoicePDF } from '@/lib/pdf-generator'
 import { useToast } from '@/components/ui/toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -82,6 +82,24 @@ function getGermanStatus(status: string) {
 }
 
 export default function InvoicesPage() {
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true)
+
+  const playNotificationSound = useCallback(() => {
+    if (!isSoundEnabled) return
+    try {
+      const audio = new Audio('/sounds/cha-ching.mp3')
+      audio.volume = 0.5
+      const playPromise = audio.play()
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error('Audio playback failed (interaction required?):', error)
+        })
+      }
+    } catch (err) {
+      console.error('Audio initialization failed:', err)
+    }
+  }, [isSoundEnabled])
+
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
 
@@ -398,12 +416,7 @@ export default function InvoicesPage() {
             showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
 
             // Play Notification Sound
-            try {
-              const audio = new Audio('/sounds/cha-ching.mp3')
-              audio.play().catch(e => console.error('Audio play failed (interaction required?):', e))
-            } catch (err) {
-              console.error('Failed to initialize audio:', err)
-            }
+            playNotificationSound()
 
             fetchInvoices(true) // Refresh the list in background
           }
@@ -957,6 +970,30 @@ export default function InvoicesPage() {
                     {selectedInvoices.size > 0 ? `${selectedInvoices.size} als ZIP` : 'Alle als ZIP'}
                   </>
                 )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const newState = !isSoundEnabled
+                  setIsSoundEnabled(newState)
+                  if (newState) {
+                    // Test sound immediately to unlock audio context
+                    try {
+                      const audio = new Audio('/sounds/cha-ching.mp3')
+                      audio.volume = 0.5
+                      audio.play().catch(e => console.error('Test sound failed:', e))
+                      showToast('Benachrichtigungston aktiviert', 'success')
+                    } catch (e) { console.error(e) }
+                  } else {
+                    showToast('Benachrichtigungston deaktiviert', 'info')
+                  }
+                }}
+                className={`mr-2 ${isSoundEnabled ? "text-green-600 border-green-200 bg-green-50" : "text-gray-400"}`}
+                title={isSoundEnabled ? "Ton ausschalten" : "Ton einschalten"}
+              >
+                {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </Button>
 
               <Button
