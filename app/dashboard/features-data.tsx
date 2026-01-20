@@ -36,6 +36,16 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
+        id: 'digital-products',
+        href: '/digital-products',
+        title: 'Digitale Produkte',
+        description: 'Lizenzschlüssel und Downloads verwalten',
+        icon: Package,
+        iconBg: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
+        iconShadow: 'shadow-md'
+    },
+    {
         id: 'product-import',
         href: '/products/import',
         title: 'Produkt Import',
@@ -83,16 +93,7 @@ export const DEFAULT_FEATURES = [
     },
 
 
-    {
-        id: 'digital-products',
-        href: '/digital-products',
-        title: 'Digitale Produkte',
-        description: 'Lizenzschlüssel und Downloads verwalten',
-        icon: Package,
-        iconBg: 'bg-gradient-to-r from-blue-600 to-indigo-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
-        iconShadow: 'shadow-md'
-    },
+
     {
         id: 'reviews',
         href: '/reviews',
