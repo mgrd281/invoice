@@ -84,10 +84,35 @@ function getGermanStatus(status: string) {
 export default function InvoicesPage() {
   // Persistent audio reference to bypass autoplay policies
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
   const [isSoundEnabled, setIsSoundEnabled] = useState(false) // Start disabled - requires user interaction
   const [isAudioBlessed, setIsAudioBlessed] = useState(false) // Track if audio context is activated
+  const [soundError, setSoundError] = useState<string>('')
 
   // Don't initialize audio on page load - wait for user interaction
+
+  // Helper: Try to unlock audio context
+  const unlockAudioContext = useCallback(async () => {
+    try {
+      // Try Web Audio API approach
+      if (!audioContextRef.current) {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext
+        if (AudioContext) {
+          audioContextRef.current = new AudioContext()
+        }
+      }
+
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
+        console.log('✅ Audio Context resumed')
+      }
+
+      return true
+    } catch (e) {
+      console.error('Audio Context unlock failed:', e)
+      return false
+    }
+  }, [])
 
   const playNotificationSound = useCallback(() => {
     // Only play if sound is enabled AND audio context has been blessed by user interaction
@@ -992,31 +1017,70 @@ export default function InvoicesPage() {
                   const newState = !isSoundEnabled
 
                   if (newState) {
-                    // User wants to ENABLE sound - this is the user interaction we need!
+                    // User wants to ENABLE sound - multiple attempts!
+                    setSoundError('')
+
                     try {
-                      // Initialize or reuse audio
+                      // Step 1: Try to unlock AudioContext first
+                      await unlockAudioContext()
+
+                      // Step 2: Initialize or reuse audio element
                       if (!audioRef.current) {
+                        console.log('🔊 Creating new Audio element...')
                         audioRef.current = new Audio('/sounds/cha-ching.mp3')
                         audioRef.current.volume = 0.5
+
+                        // Preload
+                        audioRef.current.load()
+                        console.log('📥 Audio file loaded')
                       }
 
-                      // Play test sound to "bless" the audio context
+                      // Step 3: Play test sound IMMEDIATELY (this is the user gesture!)
+                      console.log('▶️ Attempting to play...')
                       audioRef.current.currentTime = 0
-                      await audioRef.current.play()
+
+                      const playPromise = audioRef.current.play()
+                      await playPromise // Wait for it to actually play
 
                       // Success! Audio context is now blessed
+                      console.log('✅ Sound played successfully!')
                       setIsSoundEnabled(true)
                       setIsAudioBlessed(true)
+                      setSoundError('')
                       showToast('✓ Benachrichtigungston aktiviert!', 'success')
+
                     } catch (e: any) {
-                      console.error('Fehler beim Aktivieren des Tons:', e.message)
+                      console.error('❌ Sound activation failed:', e)
+
+                      // Detailed error diagnostic
+                      let errorMsg = 'Ton konnte nicht aktiviert werden. '
+
+                      if (e.name === 'NotAllowedError') {
+                        errorMsg += 'Browser blockiert Autoplay. Lösung: '
+                        if (navigator.userAgent.includes('Chrome')) {
+                          errorMsg += 'Klicke auf Schloss-Icon oben links → Sound → Zulassen'
+                        } else if (navigator.userAgent.includes('Safari')) {
+                          errorMsg += 'Safari > Einstellungen > Websites > Auto-Play > Erlauben'
+                        } else if (navigator.userAgent.includes('Firefox')) {
+                          errorMsg += 'Klicke auf Schloss-Icon → Berechtigungen → Autoplay erlauben'
+                        } else {
+                          errorMsg += 'Bitte Browser-Einstellungen prüfen'
+                        }
+                      } else if (e.name === 'NotSupportedError') {
+                        errorMsg += 'Audio-Format wird nicht unterstützt. Bitte Browser aktualisieren.'
+                      } else {
+                        errorMsg += `Fehler: ${e.message || 'Unbekannt'}`
+                      }
+
                       setIsSoundEnabled(false)
                       setIsAudioBlessed(false)
-                      showToast('❌ Ton konnte nicht aktiviert werden. Bitte Browser-Einstellungen prüfen.', 'error')
+                      setSoundError(errorMsg)
+                      showToast('❌ ' + errorMsg, 'error')
                     }
                   } else {
                     // User wants to DISABLE sound
                     setIsSoundEnabled(false)
+                    setSoundError('')
                     if (audioRef.current) {
                       audioRef.current.pause()
                     }
@@ -1030,11 +1094,13 @@ export default function InvoicesPage() {
                       : "text-gray-400 border-gray-300"
                   }`}
                 title={
-                  isAudioBlessed && isSoundEnabled
-                    ? "Ton aktiviert ✓"
-                    : isSoundEnabled
-                      ? "Ton aktivieren (klicken zum Testen)"
-                      : "Ton einschalten"
+                  soundError
+                    ? soundError
+                    : isAudioBlessed && isSoundEnabled
+                      ? "Ton aktiviert ✓"
+                      : isSoundEnabled
+                        ? "Ton aktivieren (klicken zum Testen)"
+                        : "Ton einschalten"
                 }
               >
                 {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
