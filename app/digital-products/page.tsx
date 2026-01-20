@@ -17,7 +17,8 @@ import {
     CheckCircle2,
     BarChart,
     ShoppingBag,
-    ArrowLeft
+    ArrowLeft,
+    Zap
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -99,13 +100,11 @@ export default function DigitalProductsPage() {
             const data = await res.json()
 
             if (res.ok) {
-                toast.success('Produkt aktiviert!')
-                // Update local state
+                toast.success('Produkt aktiviert! Sie finden es jetzt oben bei den aktiven Produkten.')
+                // Update local state - this will cause it to move to the "Active" section automatically
                 const newMap = new Map(digitalProducts)
                 newMap.set(String(product.id), data.data)
                 setDigitalProducts(newMap)
-                // Optional: navigate to details immediately? 
-                // router.push(`/digital-products/${data.data.id}`)
             } else {
                 toast.error('Fehler beim Aktivieren')
             }
@@ -117,14 +116,32 @@ export default function DigitalProductsPage() {
         }
     }
 
+    const isMicrosoft = (p: ShopifyProduct) => {
+        const text = (p.vendor + ' ' + p.title + ' ' + p.product_type).toLowerCase()
+        return text.includes('microsoft') || text.includes('windows') || text.includes('office')
+    }
+
     // Filter Logic
     const filteredProducts = shopifyProducts.filter(p =>
         p.title.toLowerCase().includes(search.toLowerCase()) ||
         p.vendor?.toLowerCase().includes(search.toLowerCase())
     )
 
-    // Group items by Vendor
-    const productsByVendor = filteredProducts.reduce((acc, product) => {
+    // Separate Active vs Inactive
+    const activeProducts = filteredProducts.filter(p => digitalProducts.has(String(p.id)))
+    const inactiveProducts = filteredProducts.filter(p => !digitalProducts.has(String(p.id)))
+
+    // Sort Active Products: Microsoft first
+    activeProducts.sort((a, b) => {
+        const am = isMicrosoft(a)
+        const bm = isMicrosoft(b)
+        if (am && !bm) return -1
+        if (!am && bm) return 1
+        return 0
+    })
+
+    // Group Inactive Items by Vendor
+    const inactiveByVendor = inactiveProducts.reduce((acc, product) => {
         const vendor = product.vendor || 'Andere'
         if (!acc[vendor]) {
             acc[vendor] = []
@@ -133,7 +150,14 @@ export default function DigitalProductsPage() {
         return acc
     }, {} as Record<string, ShopifyProduct[]>)
 
-    const sortedVendors = Object.keys(productsByVendor).sort()
+    // Sort Vendors: Microsoft vendors first
+    const sortedInactiveVendors = Object.keys(inactiveByVendor).sort((a, b) => {
+        const am = a.toLowerCase().includes('microsoft')
+        const bm = b.toLowerCase().includes('microsoft')
+        if (am && !bm) return -1
+        if (!am && bm) return 1
+        return a.localeCompare(b)
+    })
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -171,43 +195,117 @@ export default function DigitalProductsPage() {
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20">
                         <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
                         <p className="text-gray-500">Lade Produkte aus Ihrem Shop...</p>
                     </div>
                 ) : (
-                    <div className="space-y-8">
-                        {sortedVendors.length === 0 ? (
-                            <div className="text-center py-20 bg-white rounded-xl shadow-sm">
-                                <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-500">Keine Produkte gefunden.</p>
+                    <>
+                        {/* SECTION 1: ACTIVATED PRODUCTS */}
+                        {activeProducts.length > 0 && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                                    <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                                    <h2 className="text-lg font-bold text-gray-900">Aktive Produkte</h2>
+                                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {activeProducts.length}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    {activeProducts.map(product => {
+                                        const digitalData = digitalProducts.get(String(product.id))!
+                                        const keyCount = digitalData._count.keys
+                                        const imgSrc = product.image?.src || product.images?.[0]?.src
+                                        const isMicrosoftProd = isMicrosoft(product)
+
+                                        return (
+                                            <div
+                                                key={product.id}
+                                                className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all relative ${isMicrosoftProd ? 'border-blue-100 ring-1 ring-blue-50' : 'border-gray-200'}`}
+                                            >
+                                                <div className="p-5">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="h-16 w-16 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                            {imgSrc ? (
+                                                                <img src={imgSrc} alt="" className="w-full h-full object-contain p-1" />
+                                                            ) : (
+                                                                <ShoppingBag className="w-6 h-6 text-gray-300" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight" title={product.title}>
+                                                                {product.title}
+                                                            </h3>
+                                                            <p className="text-xs text-gray-500 font-mono mt-1">ID: {product.id}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4 flex items-center justify-between">
+                                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${keyCount > 0
+                                                                ? 'bg-green-50 text-green-700 border-green-200'
+                                                                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                                            }`}>
+                                                            {keyCount} Keys verfügbar
+                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="default"
+                                                            onClick={() => router.push(`/digital-products/${digitalData.id}`)}
+                                                            className="h-8 bg-blue-600 hover:bg-blue-700"
+                                                        >
+                                                            Verwalten
+                                                            <ArrowRight className="w-3 h-3 ml-1.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
                             </div>
-                        ) : (
-                            sortedVendors.map(vendor => (
+                        )}
+
+                        {/* SECTION 2: INACTIVE PRODUCTS */}
+                        <div className="space-y-6">
+                            {activeProducts.length > 0 && inactiveProducts.length > 0 && (
+                                <div className="flex items-center gap-2 pt-8 pb-2 border-b border-gray-200">
+                                    <Package className="w-5 h-5 text-gray-500" />
+                                    <h2 className="text-lg font-bold text-gray-600">Noch nicht aktiviert</h2>
+                                    <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {inactiveProducts.length}
+                                    </span>
+                                </div>
+                            )}
+
+                            {activeProducts.length === 0 && inactiveProducts.length === 0 && (
+                                <div className="text-center py-20 bg-white rounded-xl shadow-sm">
+                                    <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500">Keine Produkte gefunden.</p>
+                                </div>
+                            )}
+
+                            {sortedInactiveVendors.map(vendor => (
                                 <div key={vendor} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                                    <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                                    <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center sticky top-0">
                                         <h2 className="font-bold text-gray-800 uppercase tracking-wide text-sm flex items-center gap-2">
-                                            <Package className="w-4 h-4 text-gray-400" />
                                             {vendor}
                                         </h2>
-                                        <span className="text-xs font-mono text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">
-                                            {productsByVendor[vendor].length} Produkte
+                                        <span className="text-xs font-mono text-gray-400">
+                                            {inactiveByVendor[vendor].length} Produkte
                                         </span>
                                     </div>
 
                                     <div className="divide-y divide-gray-50">
-                                        {productsByVendor[vendor].map(product => {
-                                            const digitalData = digitalProducts.get(String(product.id))
-                                            const isActive = !!digitalData
-                                            const keyCount = digitalData?._count.keys || 0
+                                        {inactiveByVendor[vendor].map(product => {
                                             const imgSrc = product.image?.src || product.images?.[0]?.src
 
                                             return (
                                                 <div
                                                     key={product.id}
-                                                    className={`group flex items-center p-4 hover:bg-blue-50/30 transition-colors ${isActive ? 'bg-white' : 'bg-gray-50/30'}`}
+                                                    className="group flex items-center p-4 hover:bg-blue-50/20 transition-colors"
                                                 >
                                                     {/* Image */}
                                                     <div className="h-12 w-12 bg-white rounded-lg mr-4 overflow-hidden flex-shrink-0 border border-gray-100 flex items-center justify-center shadow-sm">
@@ -220,61 +318,39 @@ export default function DigitalProductsPage() {
 
                                                     {/* Content */}
                                                     <div className="flex-1 min-w-0 mr-4">
-                                                        <h3 className="font-medium text-gray-900 truncate" title={product.title}>
+                                                        <h3 className="font-medium text-gray-900 truncate opacity-90 group-hover:opacity-100" title={product.title}>
                                                             {product.title}
                                                         </h3>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <p className="text-xs text-gray-400 font-mono">ID: {product.id}</p>
-                                                            {isActive && (
-                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${keyCount > 0
-                                                                    ? 'bg-green-50 text-green-700 border-green-200'
-                                                                    : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                                                    }`}>
-                                                                    {keyCount} Keys
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                        <p className="text-xs text-gray-400 font-mono mt-0.5">ID: {product.id}</p>
                                                     </div>
 
                                                     {/* Actions */}
                                                     <div className="flex items-center shrink-0">
-                                                        {isActive ? (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => router.push(`/digital-products/${digitalData.id}`)}
-                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-transparent hover:border-blue-100"
-                                                            >
-                                                                Verwalten
-                                                                <ArrowRight className="w-4 h-4 ml-2" />
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => handleActivate(product)}
-                                                                disabled={activatingId === product.id}
-                                                                className="text-gray-600 hover:text-blue-600 hover:border-blue-200 bg-white"
-                                                            >
-                                                                {activatingId === product.id ? (
-                                                                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                                                                ) : (
-                                                                    <>
-                                                                        <PlusCircle className="w-4 h-4 mr-2" />
-                                                                        Aktivieren
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                        )}
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => handleActivate(product)}
+                                                            disabled={activatingId === product.id}
+                                                            className="text-gray-600 hover:text-blue-600 hover:border-blue-200 bg-white shadow-sm"
+                                                        >
+                                                            {activatingId === product.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                                            ) : (
+                                                                <>
+                                                                    <PlusCircle className="w-4 h-4 mr-2" />
+                                                                    Aktivieren
+                                                                </>
+                                                            )}
+                                                        </Button>
                                                     </div>
                                                 </div>
                                             )
                                         })}
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </main>
         </div>
