@@ -110,7 +110,15 @@ export async function POST(req: Request) {
             }
         })
 
-        return NextResponse.json(product)
+        // Return consistent format with GET
+        return NextResponse.json({
+            success: true,
+            data: {
+                ...product,
+                _count: { keys: 0 }, // New/Just activated products have 0 keys
+                image: null // Frontend uses Shopify image anyway
+            }
+        })
 
     } catch (error: any) {
         console.error('Error creating digital product:', error)
