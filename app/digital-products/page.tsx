@@ -18,9 +18,20 @@ import {
     ShoppingBag,
     ArrowLeft,
     Zap,
-    Trash2
+    Trash2,
+    AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface ShopifyProduct {
     id: number
@@ -48,6 +59,11 @@ export default function DigitalProductsPage() {
     const [digitalProducts, setDigitalProducts] = useState<Map<string, DigitalProductData>>(new Map())
     const [search, setSearch] = useState('')
     const [activatingId, setActivatingId] = useState<number | null>(null)
+
+    // Delete State
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'all', id?: string, shopifyId?: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         const loadData = async () => {
@@ -116,28 +132,51 @@ export default function DigitalProductsPage() {
         }
     }
 
-    const handleDeleteProduct = async (e: React.MouseEvent, productId: string, shopifyId: string) => {
+    const initiateDelete = (e: React.MouseEvent, type: 'single' | 'all', id?: string, shopifyId?: string) => {
         e.preventDefault()
         e.stopPropagation()
+        setDeleteTarget({ type, id, shopifyId })
+        setDeleteDialogOpen(true)
+    }
 
-        if (!confirm('Möchten Sie dieses Produkt wirklich aus den digitalen Produkten entfernen?')) return
+    const executeDelete = async () => {
+        if (!deleteTarget) return
 
+        setIsDeleting(true)
         try {
-            const res = await fetch(`/api/digital-products/${productId}`, {
-                method: 'DELETE'
-            })
+            if (deleteTarget.type === 'single' && deleteTarget.id) {
+                const res = await fetch(`/api/digital-products/${deleteTarget.id}`, {
+                    method: 'DELETE'
+                })
 
-            if (res.ok) {
-                toast.success('Produkt entfernt')
-                const newMap = new Map(digitalProducts)
-                newMap.delete(shopifyId)
-                setDigitalProducts(newMap)
-            } else {
-                toast.error('Fehler beim Löschen')
+                if (res.ok) {
+                    toast.success('Produkt deaktiviert')
+                    const newMap = new Map(digitalProducts)
+                    if (deleteTarget.shopifyId) newMap.delete(deleteTarget.shopifyId)
+                    setDigitalProducts(newMap)
+                } else {
+                    toast.error('Fehler beim Deaktivieren')
+                }
+            } else if (deleteTarget.type === 'all') {
+                // Bulk delete - Frontend parallel fetch implementation
+                const idsToDelete = Array.from(digitalProducts.values()).map(p => p.id)
+                // We do this in parallel, simpler than adding backend endpoint right now and safe for <100 products
+                const promises = idsToDelete.map(id =>
+                    fetch(`/api/digital-products/${id}`, { method: 'DELETE' })
+                )
+
+                await Promise.all(promises)
+
+                toast.success('Alle Produkte wurden deaktiviert')
+                setDigitalProducts(new Map()) // Clear all locally
             }
         } catch (error) {
-            console.error('Failed to delete product', error)
+            console.error('Failed to delete', error)
             toast.error('Fehler beim Löschen')
+        } finally {
+            setIsDeleting(false)
+            setDeleteDialogOpen(false)
+            setDeleteTarget(null)
         }
     }
 
@@ -231,12 +270,23 @@ export default function DigitalProductsPage() {
                         {/* SECTION 1: ACTIVATED PRODUCTS */}
                         {activeProducts.length > 0 && (
                             <div className="space-y-4">
-                                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                                    <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                                    <h2 className="text-lg font-bold text-gray-900">Aktive Produkte</h2>
-                                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                                        {activeProducts.length}
-                                    </span>
+                                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                                    <div className="flex items-center gap-2">
+                                        <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                                        <h2 className="text-lg font-bold text-gray-900">Aktive Produkte</h2>
+                                        <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                                            {activeProducts.length}
+                                        </span>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => initiateDelete(e, 'all')}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs uppercase font-bold tracking-wider"
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Alle entfernen
+                                    </Button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -255,7 +305,7 @@ export default function DigitalProductsPage() {
                                                     <Button
                                                         size="icon"
                                                         variant="ghost"
-                                                        onClick={(e) => handleDeleteProduct(e, digitalData.id, String(product.id))}
+                                                        onClick={(e) => initiateDelete(e, 'single', digitalData.id, String(product.id))}
                                                         className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
                                                         title="Produkt entfernen"
                                                     >
@@ -389,6 +439,44 @@ export default function DigitalProductsPage() {
                         </div>
                     </>
                 )}
+
+                {/* DELETE CONFIRMATION DIALOG */}
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                {deleteTarget?.type === 'all'
+                                    ? 'Alle aktiven Produkte entfernen?'
+                                    : 'Produkt deaktivieren?'}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {deleteTarget?.type === 'all'
+                                    ? `Möchten Sie wirklich alle ${activeProducts.length} aktiven Produkte deaktivieren? Die Produkte werden wieder in die Liste "Noch nicht aktiviert" verschoben.`
+                                    : 'Möchten Sie dieses Produkt wirklich aus den aktiven digitalen Produkten entfernen? Es wird wieder in die Liste "Noch nicht aktiviert" verschoben.'}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isDeleting}>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    executeDelete()
+                                }}
+                                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Entfernen...
+                                    </>
+                                ) : (
+                                    'Entfernen'
+                                )}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </main>
         </div>
     )
