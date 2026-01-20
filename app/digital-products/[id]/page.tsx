@@ -14,6 +14,7 @@ import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/components/ui/toast'
 export default function DigitalProductDetailPage() {
     const params = useParams()
     const router = useRouter()
@@ -44,6 +45,8 @@ export default function DigitalProductDetailPage() {
     const [selectedVariant, setSelectedVariant] = useState<string>('any')
     const [variants, setVariants] = useState<any[]>([])
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+    const [resendingKeys, setResendingKeys] = useState<Set<string>>(new Set()) // Track resending state
+    const { showToast, ToastContainer } = useToast()
 
     // Variant Settings State
     const [variantSettings, setVariantSettings] = useState<any[]>([])
@@ -577,7 +580,7 @@ Viel Spaß!`
                                         )}
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                                                     <tr>
                                                         <th className="px-4 py-3 w-[50px]">
                                                             <Checkbox
@@ -590,17 +593,18 @@ Viel Spaß!`
                                                                 onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                                                             />
                                                         </th>
-                                                        <th className="px-4 py-3">Key</th>
-                                                        {variants.length > 0 && <th className="px-4 py-3">Variante</th>}
-                                                        <th className="px-4 py-3">Status</th>
+                                                        <th className="px-4 py-3 w-[50px]"></th>
+                                                        <th className="px-6 py-4 font-semibold">Key</th>
+                                                        {variants.length > 0 && <th className="px-6 py-4 font-semibold w-[140px]">Variante</th>}
+                                                        <th className="px-6 py-4 font-semibold w-[120px]">Status</th>
                                                         {activeKeyTab === 'history' && (
                                                             <>
-                                                                <th className="px-4 py-3">Verwendet am</th>
-                                                                <th className="px-4 py-3">Bestellung</th>
-                                                                <th className="px-4 py-3">Kunde</th>
+                                                                <th className="px-6 py-4 font-semibold w-[160px]">Verwendet am</th>
+                                                                <th className="px-6 py-4 font-semibold w-[120px]">Bestellung</th>
+                                                                <th className="px-6 py-4 font-semibold w-[200px]">Kunde</th>
                                                             </>
                                                         )}
-                                                        <th className="px-4 py-3"></th>
+                                                        <th className="px-6 py-4 w-[100px]"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -627,7 +631,7 @@ Viel Spaß!`
                                                                         onCheckedChange={(checked) => handleSelectKey(key.id, checked as boolean)}
                                                                     />
                                                                 </td>
-                                                                <td className="px-4 py-3 font-mono">{key.key}</td>
+                                                                <td className="px-6 py-4 font-mono text-sm">{key.key}</td>
                                                                 {variants.length > 0 && (
                                                                     <td className="px-4 py-3 text-gray-500">
                                                                         {key.shopifyVariantId ? (
@@ -667,40 +671,57 @@ Viel Spaß!`
                                                                         {key.customer?.email || '-'}
                                                                     </td>
                                                                 )}
-                                                                <td className="px-4 py-3 text-right flex justify-end gap-2">
-                                                                    {activeKeyTab === 'history' && (
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="flex justify-end gap-3">
+                                                                        {activeKeyTab === 'history' && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                                                title="E-Mail erneut senden"
+                                                                                disabled={resendingKeys.has(key.id)}
+                                                                                onClick={async () => {
+                                                                                    // One-click resend - no confirmation
+                                                                                    setResendingKeys(prev => new Set([...prev, key.id]))
+                                                                                    try {
+                                                                                        const res = await fetch(`/api/digital-products/${params.id}/keys`, {
+                                                                                            method: 'POST',
+                                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                                            body: JSON.stringify({ action: 'resend', keyId: key.id })
+                                                                                        })
+                                                                                        if (res.ok) {
+                                                                                            showToast('✓ E-Mail erfolgreich versendet', 'success')
+                                                                                            loadData() // Refresh data
+                                                                                        } else {
+                                                                                            showToast('❌ Fehler beim Senden', 'error')
+                                                                                        }
+                                                                                    } catch (e) {
+                                                                                        console.error(e)
+                                                                                        showToast('❌ Fehler', 'error')
+                                                                                    } finally {
+                                                                                        // Re-enable after 2 seconds
+                                                                                        setTimeout(() => {
+                                                                                            setResendingKeys(prev => {
+                                                                                                const next = new Set(prev)
+                                                                                                next.delete(key.id)
+                                                                                                return next
+                                                                                            })
+                                                                                        }, 2000)
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <RefreshCw className={`w-4 h-4 ${resendingKeys.has(key.id) ? 'animate-spin' : ''}`} />
+                                                                            </Button>
+                                                                        )}
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
-                                                                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                                                            title="E-Mail erneut senden"
-                                                                            onClick={async () => {
-                                                                                if (!confirm('E-Mail erneut senden?')) return;
-                                                                                try {
-                                                                                    const res = await fetch(`/api/digital-products/${params.id}/keys`, {
-                                                                                        method: 'POST',
-                                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                                        body: JSON.stringify({ action: 'resend', keyId: key.id })
-                                                                                    })
-                                                                                    if (res.ok) {
-                                                                                        alert('E-Mail wurde gesendet');
-                                                                                        loadData(); // Refresh data to show linked customer
-                                                                                    }
-                                                                                    else alert('Fehler beim Senden')
-                                                                                } catch (e) { console.error(e); alert('Fehler') }
-                                                                            }}
+                                                                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                                                            onClick={() => handleDeleteKey(key.id)}
                                                                         >
-                                                                            <RefreshCw className="w-4 h-4" />
+                                                                            <Trash2 className="w-4 h-4" />
                                                                         </Button>
-                                                                    )}
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                                                                        onClick={() => handleDeleteKey(key.id)}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4" />
-                                                                    </Button>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         ));
@@ -1083,6 +1104,7 @@ Viel Spaß!`
                     </div>
                 </div>
             </main >
+            <ToastContainer />
         </div >
     )
 }
