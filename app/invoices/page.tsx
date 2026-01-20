@@ -84,16 +84,19 @@ function getGermanStatus(status: string) {
 export default function InvoicesPage() {
   // Persistent audio reference to bypass autoplay policies
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true)
+  const [isSoundEnabled, setIsSoundEnabled] = useState(false) // Start disabled - requires user interaction
+  const [isAudioBlessed, setIsAudioBlessed] = useState(false) // Track if audio context is activated
 
-  // Initialize audio object once
-  useEffect(() => {
-    audioRef.current = new Audio('/sounds/cha-ching.mp3')
-    audioRef.current.volume = 0.5
-  }, [])
+  // Don't initialize audio on page load - wait for user interaction
 
   const playNotificationSound = useCallback(() => {
-    if (!isSoundEnabled || !audioRef.current) return
+    // Only play if sound is enabled AND audio context has been blessed by user interaction
+    if (!isSoundEnabled || !audioRef.current || !isAudioBlessed) {
+      if (!isAudioBlessed && isSoundEnabled) {
+        console.warn('⚠️ Sound enabled but audio context not blessed. User needs to click sound button first.')
+      }
+      return
+    }
 
     // Reset time to allow rapid replay
     audioRef.current.currentTime = 0
@@ -101,10 +104,13 @@ export default function InvoicesPage() {
 
     if (playPromise !== undefined) {
       playPromise.catch(error => {
-        console.error('Autoplay blocked. User interaction needed:', error)
+        console.error('Sound playback failed:', error)
+        // If playback fails, reset blessed state
+        setIsAudioBlessed(false)
+        setIsSoundEnabled(false)
       })
     }
-  }, [isSoundEnabled])
+  }, [isSoundEnabled, isAudioBlessed])
 
 
   const { user, isAuthenticated } = useAuth()
@@ -984,28 +990,52 @@ export default function InvoicesPage() {
                 size="icon"
                 onClick={async () => {
                   const newState = !isSoundEnabled
-                  setIsSoundEnabled(newState)
+
                   if (newState) {
+                    // User wants to ENABLE sound - this is the user interaction we need!
                     try {
+                      // Initialize or reuse audio
                       if (!audioRef.current) {
                         audioRef.current = new Audio('/sounds/cha-ching.mp3')
                         audioRef.current.volume = 0.5
                       }
+
+                      // Play test sound to "bless" the audio context
                       audioRef.current.currentTime = 0
                       await audioRef.current.play()
-                      showToast('✓ Ton aktiviert!', 'success')
+
+                      // Success! Audio context is now blessed
+                      setIsSoundEnabled(true)
+                      setIsAudioBlessed(true)
+                      showToast('✓ Benachrichtigungston aktiviert!', 'success')
                     } catch (e: any) {
-                      console.error('Browser blockiert Ton:', e.message)
+                      console.error('Fehler beim Aktivieren des Tons:', e.message)
                       setIsSoundEnabled(false)
-                      showToast('⚠️ Browser hat Ton blockiert', 'error')
+                      setIsAudioBlessed(false)
+                      showToast('❌ Ton konnte nicht aktiviert werden. Bitte Browser-Einstellungen prüfen.', 'error')
                     }
                   } else {
-                    if (audioRef.current) audioRef.current.pause()
-                    showToast('Ton deaktiviert', 'info')
+                    // User wants to DISABLE sound
+                    setIsSoundEnabled(false)
+                    if (audioRef.current) {
+                      audioRef.current.pause()
+                    }
+                    showToast('Benachrichtigungston deaktiviert', 'info')
                   }
                 }}
-                className={`mr-2 ${isSoundEnabled ? "text-green-600 border-green-200 bg-green-50" : "text-gray-400"}`}
-                title={isSoundEnabled ? "Ton ausschalten" : "Ton einschalten"}
+                className={`mr-2 ${isAudioBlessed && isSoundEnabled
+                    ? "text-green-600 border-green-600 bg-green-50 shadow-sm"
+                    : isSoundEnabled
+                      ? "text-yellow-600 border-yellow-300 bg-yellow-50"
+                      : "text-gray-400 border-gray-300"
+                  }`}
+                title={
+                  isAudioBlessed && isSoundEnabled
+                    ? "Ton aktiviert ✓"
+                    : isSoundEnabled
+                      ? "Ton aktivieren (klicken zum Testen)"
+                      : "Ton einschalten"
+                }
               >
                 {isSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </Button>
