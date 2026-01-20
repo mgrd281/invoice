@@ -578,101 +578,129 @@ Viel Spaß!`
                                                 </Button>
                                             </div>
                                         )}
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
-                                                    <tr>
-                                                        <th className="px-4 py-3 w-[50px]">
-                                                            <Checkbox
-                                                                checked={(() => {
-                                                                    const displayedKeys = activeKeyTab === 'history'
-                                                                        ? keys.filter(k => k.isUsed)
-                                                                        : keys.filter(k => !k.isUsed)
-                                                                    return displayedKeys.length > 0 && displayedKeys.every(k => selectedKeys.has(k.id))
-                                                                })()}
-                                                                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                                                            />
-                                                        </th>
-                                                        <th className="px-4 py-3 w-[50px]"></th>
-                                                        <th className="px-6 py-4 font-semibold">Key</th>
-                                                        {variants.length > 0 && <th className="px-6 py-4 font-semibold w-[140px]">Variante</th>}
-                                                        <th className="px-6 py-4 font-semibold w-[120px]">Status</th>
-                                                        {activeKeyTab === 'history' && (
-                                                            <>
-                                                                <th className="px-6 py-4 font-semibold w-[160px]">Verwendet am</th>
-                                                                <th className="px-6 py-4 font-semibold w-[120px]">Bestellung</th>
-                                                                <th className="px-6 py-4 font-semibold w-[200px]">Kunde</th>
-                                                            </>
-                                                        )}
-                                                        <th className="px-6 py-4 w-[100px]"></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {(() => {
-                                                        const displayedKeys = activeKeyTab === 'history'
-                                                            ? filteredKeys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
-                                                            : filteredKeys.filter(k => !k.isUsed);
 
-                                                        if (displayedKeys.length === 0) {
-                                                            return (
-                                                                <tr>
-                                                                    <td colSpan={activeKeyTab === 'history' ? (variants.length > 0 ? 7 : 6) : (variants.length > 0 ? 4 : 3)} className="px-4 py-8 text-center text-gray-500">
-                                                                        {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        }
+                                        {/* Card-Based Layout - No Horizontal Scroll */}
+                                        <div className="space-y-2">
+                                            {(() => {
+                                                const displayedKeys = activeKeyTab === 'history'
+                                                    ? filteredKeys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
+                                                    : filteredKeys.filter(k => !k.isUsed);
 
-                                                        return displayedKeys.map((key) => (
-                                                            <tr key={key.id} className="border-b hover:bg-gray-50">
-                                                                <td className="px-4 py-3">
-                                                                    <Checkbox
-                                                                        checked={selectedKeys.has(key.id)}
-                                                                        onCheckedChange={(checked) => handleSelectKey(key.id, checked as boolean)}
-                                                                    />
-                                                                </td>
-                                                                <td className="px-6 py-4 font-mono text-sm">{key.key}</td>
-                                                                {variants.length > 0 && (
-                                                                    <td className="px-4 py-3 text-gray-500">
-                                                                        {key.shopifyVariantId ? (
-                                                                            variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
-                                                                        ) : (
-                                                                            <span className="text-gray-400 italic">Alle</span>
-                                                                        )}
-                                                                    </td>
-                                                                )}
-                                                                <td className="px-4 py-3">
-                                                                    {key.isUsed ? (
-                                                                        <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">Verbraucht</span>
-                                                                    ) : (
-                                                                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Verfügbar</span>
-                                                                    )}
-                                                                </td>
-                                                                {activeKeyTab === 'history' && (
-                                                                    <>
-                                                                        <td className="px-4 py-3">
-                                                                            {key.usedAt ? new Date(key.usedAt).toLocaleDateString() + ' ' + new Date(key.usedAt).toLocaleTimeString() : '-'}
-                                                                        </td>
-                                                                        <td className="px-4 py-3">
-                                                                            {key.orderId ? (
-                                                                                key.orderId
+                                                if (displayedKeys.length === 0) {
+                                                    return (
+                                                        <div className="text-center py-12 text-gray-500">
+                                                            {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return displayedKeys.map((key) => (
+                                                    <div
+                                                        key={key.id}
+                                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            {/* Checkbox */}
+                                                            <div className="flex-shrink-0">
+                                                                <Checkbox
+                                                                    checked={selectedKeys.has(key.id)}
+                                                                    onCheckedChange={(checked) => handleSelectKey(key.id, checked as boolean)}
+                                                                />
+                                                            </div>
+
+                                                            {/* Main Content Area - Flex Layout */}
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-start justify-between gap-4">
+                                                                    {/* Left Section: Key + Metadata */}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        {/* Key (Prominent) */}
+                                                                        <div className="flex items-center gap-3 mb-2">
+                                                                            <span className="font-mono text-sm font-semibold text-gray-900 truncate">
+                                                                                {key.key}
+                                                                            </span>
+                                                                            {/* Status Badge */}
+                                                                            {key.isUsed ? (
+                                                                                <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap">
+                                                                                    Verbraucht
+                                                                                </span>
                                                                             ) : (
-                                                                                key.shopifyOrderId ? (
-                                                                                    key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
-                                                                                        ? key.shopifyOrderId
-                                                                                        : `#${key.shopifyOrderId}`
-                                                                                ) : '-'
+                                                                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap">
+                                                                                    Verfügbar
+                                                                                </span>
                                                                             )}
-                                                                        </td>
-                                                                    </>
-                                                                )}
-                                                                {activeKeyTab === 'history' && (
-                                                                    <td className="px-4 py-3 max-w-[200px] truncate" title={key.customer?.email}>
-                                                                        {key.customer?.email || '-'}
-                                                                    </td>
-                                                                )}
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <div className="flex justify-end gap-3">
+                                                                        </div>
+
+                                                                        {/* Metadata Grid - Compact 2-column layout for history */}
+                                                                        {activeKeyTab === 'history' && (
+                                                                            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
+                                                                                {/* Variant */}
+                                                                                {variants.length > 0 && (
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-gray-400 text-xs">Variante:</span>
+                                                                                        <span className="text-gray-700">
+                                                                                            {key.shopifyVariantId ? (
+                                                                                                variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
+                                                                                            ) : (
+                                                                                                <span className="text-gray-400 italic">Alle</span>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* Used Date */}
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-gray-400 text-xs">Verwendet:</span>
+                                                                                    <span className="text-gray-700">
+                                                                                        {key.usedAt ? new Date(key.usedAt).toLocaleDateString('de-DE') : '-'}
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                {/* Order Number */}
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-gray-400 text-xs">Bestellung:</span>
+                                                                                    <span className="text-gray-700 font-medium">
+                                                                                        {key.orderId ? (
+                                                                                            key.orderId
+                                                                                        ) : (
+                                                                                            key.shopifyOrderId ? (
+                                                                                                key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
+                                                                                                    ? key.shopifyOrderId
+                                                                                                    : `#${key.shopifyOrderId}`
+                                                                                            ) : '-'
+                                                                                        )}
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                {/* Customer Email */}
+                                                                                <div className="flex items-center gap-2 col-span-2">
+                                                                                    <span className="text-gray-400 text-xs">Kunde:</span>
+                                                                                    <span
+                                                                                        className="text-gray-700 truncate"
+                                                                                        title={key.customer?.email}
+                                                                                    >
+                                                                                        {key.customer?.email || '-'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* For Available Keys - Show Variant if exists */}
+                                                                        {activeKeyTab === 'inventory' && variants.length > 0 && (
+                                                                            <div className="text-sm text-gray-600">
+                                                                                <span className="text-gray-400 text-xs">Variante: </span>
+                                                                                <span className="text-gray-700">
+                                                                                    {key.shopifyVariantId ? (
+                                                                                        variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
+                                                                                    ) : (
+                                                                                        <span className="text-gray-400 italic">Alle</span>
+                                                                                    )}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Right Section: Actions */}
+                                                                    <div className="flex-shrink-0 flex items-center gap-2">
                                                                         {activeKeyTab === 'history' && (
                                                                             <Button
                                                                                 variant="ghost"
@@ -718,17 +746,19 @@ Viel Spaß!`
                                                                             size="sm"
                                                                             className="text-red-600 hover:text-red-800 hover:bg-red-50"
                                                                             onClick={() => handleDeleteKey(key.id)}
+                                                                            title="Löschen"
                                                                         >
                                                                             <Trash2 className="w-4 h-4" />
                                                                         </Button>
                                                                     </div>
-                                                                </td>
-                                                            </tr>
-                                                        ));
-                                                    })()}
-                                                </tbody>
-                                            </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
                                         </div>
+
                                     </CardContent>
                                 </Card>
                             </TabsContent>
