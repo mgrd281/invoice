@@ -62,7 +62,7 @@ export async function getAvailableKey(digitalProductId: string, shopifyVariantId
     })
 }
 
-export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string, emailSent: boolean = true) {
+export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string, emailSent: boolean = true, customerId?: string) {
     return prisma.licenseKey.update({
         where: { id: keyId },
         data: {
@@ -70,6 +70,7 @@ export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyO
             usedAt: new Date(),
             orderId: orderNumber,
             shopifyOrderId: shopifyOrderId,
+            customerId: customerId, // Link to customer
             // We use 'any' cast here to avoid TS errors until client is regenerated
             emailSent: emailSent,
             emailSentAt: emailSent ? new Date() : null,
@@ -87,7 +88,8 @@ export async function processDigitalProductOrder(
     productTitle: string,
     shopifyVariantId?: string,
     customerSalutation?: string,
-    shouldSendEmail: boolean = true // NEW PARAMETER
+    shouldSendEmail: boolean = true,
+    customerId?: string // NEW PARAMETER
 ) {
     const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
 
@@ -138,7 +140,7 @@ export async function processDigitalProductOrder(
 
         // Mark key as used immediately to reserve it
         // We pass 'false' for emailSent initially if delayed
-        await markKeyAsUsed(key.id, orderNumber, shopifyOrderId, shouldSendEmail)
+        await markKeyAsUsed(key.id, orderNumber, shopifyOrderId, shouldSendEmail, customerId)
     }
 
     // If we should NOT send email (e.g. Invoice payment pending), return now
@@ -280,4 +282,86 @@ function convertToHtml(text: string) {
     // Always replace newlines with <br/> to ensure proper formatting in email clients
     // especially when content comes from contentEditable which might use newlines for breaks
     return text.replace(/\n/g, '<br/>');
+}
+
+export async function resendDigitalProductEmail(keyId: string) {
+    const key = await prisma.licenseKey.findUnique({
+        where: { id: keyId },
+        include: {
+            digitalProduct: {
+                include: { variantSettings: true }
+            },
+            customer: true
+        }
+    })
+
+    if (!key) throw new Error('Key not found')
+    if (!key.digitalProduct) throw new Error('Digital Product not found')
+    if (!key.customer || !key.customer.email) throw new Error('Customer email not found on key')
+
+    const product = key.digitalProduct
+
+    // Determine Template (Reuse logic from processDigitalProductOrder or abstract it)
+    // For simplicity, we duplicate the selection logic here briefly or better yet, refactor.
+    // Let's refactor the template generation if possible, but for now inline is safer for 1-step edit.
+
+    let template = product.emailTemplate || getDefaultTemplate()
+    let buttons = product.downloadButtons as any[] | null
+    let btnAlignment = product.buttonAlignment || 'left'
+
+    if (key.shopifyVariantId && product.variantSettings) {
+        const variantSetting = product.variantSettings.find(s => s.shopifyVariantId === key.shopifyVariantId)
+        if (variantSetting) {
+            if (variantSetting.emailTemplate) template = variantSetting.emailTemplate
+            if (variantSetting.downloadButtons && Array.isArray(variantSetting.downloadButtons) && variantSetting.downloadButtons.length > 0) {
+                buttons = variantSetting.downloadButtons as any[]
+            }
+        }
+    }
+
+    // Generate Buttons HTML
+    let downloadButtonHtml = '';
+    const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
+
+    if (Array.isArray(buttons) && buttons.length > 0) {
+        const buttonsHtml = buttons.map((btn: any) => `
+                <div style="margin-bottom: 12px;">
+                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">
+                        ${btn.text || 'Download'}
+                    </a>
+                </div>
+            `).join('');
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
+    } else if (product.downloadUrl) {
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${product.downloadUrl}" style="background-color: ${product.buttonColor || '#000000'}; color: ${product.buttonTextColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">${product.buttonText || 'Download'}</a></div>`;
+    }
+
+    const htmlTemplate = convertToHtml(template);
+    const emailBody = replaceVariables(htmlTemplate, {
+        customer_name: key.customer.name || 'Kunde',
+        customer_salutation: `Hallo ${key.customer.name || 'Kunde'}`,
+        product_title: product.title,
+        license_key: key.key,
+        download_button: downloadButtonHtml
+    })
+
+    const subject = `Ihr Produktschlüssel für ${product.title}`
+
+    await sendEmail({
+        to: key.customer.email,
+        subject,
+        html: emailBody
+    })
+
+    // Update sent status
+    await prisma.licenseKey.update({
+        where: { id: keyId },
+        data: {
+            emailSent: true,
+            emailSentAt: new Date(),
+            deliveryStatus: 'SENT'
+        } as any
+    })
+
+    return { success: true }
 }

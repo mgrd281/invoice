@@ -597,6 +597,7 @@ Viel Spaß!`
                                                             <>
                                                                 <th className="px-4 py-3">Verwendet am</th>
                                                                 <th className="px-4 py-3">Bestellung</th>
+                                                                <th className="px-4 py-3">Kunde</th>
                                                             </>
                                                         )}
                                                         <th className="px-4 py-3"></th>
@@ -611,7 +612,7 @@ Viel Spaß!`
                                                         if (displayedKeys.length === 0) {
                                                             return (
                                                                 <tr>
-                                                                    <td colSpan={activeKeyTab === 'history' ? (variants.length > 0 ? 6 : 5) : (variants.length > 0 ? 4 : 3)} className="px-4 py-8 text-center text-gray-500">
+                                                                    <td colSpan={activeKeyTab === 'history' ? (variants.length > 0 ? 7 : 6) : (variants.length > 0 ? 4 : 3)} className="px-4 py-8 text-center text-gray-500">
                                                                         {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
                                                                     </td>
                                                                 </tr>
@@ -661,7 +662,34 @@ Viel Spaß!`
                                                                         </td>
                                                                     </>
                                                                 )}
-                                                                <td className="px-4 py-3 text-right">
+                                                                {activeKeyTab === 'history' && (
+                                                                    <td className="px-4 py-3 max-w-[200px] truncate" title={key.customer?.email}>
+                                                                        {key.customer?.email || '-'}
+                                                                    </td>
+                                                                )}
+                                                                <td className="px-4 py-3 text-right flex justify-end gap-2">
+                                                                    {activeKeyTab === 'history' && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                                            title="E-Mail erneut senden"
+                                                                            onClick={async () => {
+                                                                                if (!confirm('E-Mail erneut senden?')) return;
+                                                                                try {
+                                                                                    const res = await fetch(`/api/digital-products/${params.id}/keys`, {
+                                                                                        method: 'POST',
+                                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                                        body: JSON.stringify({ action: 'resend', keyId: key.id })
+                                                                                    })
+                                                                                    if (res.ok) alert('E-Mail wurde gesendet')
+                                                                                    else alert('Fehler beim Senden')
+                                                                                } catch (e) { console.error(e); alert('Fehler') }
+                                                                            }}
+                                                                        >
+                                                                            <RefreshCw className="w-4 h-4" />
+                                                                        </Button>
+                                                                    )}
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
