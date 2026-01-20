@@ -107,15 +107,23 @@ export async function processDigitalProductOrder(
     })
 
     if (existingKey) {
-        console.log(`Key already assigned for order ${shopifyOrderId} and product ${digitalProduct.id}`)
+        console.log(`🔑 [ORDER ${shopifyOrderId}] Key already exists for product ${digitalProduct.title}`)
+        console.log(`   - Key ID: ${existingKey.id}`)
+        console.log(`   - Email Sent: ${(existingKey as any).emailSent}`)
+        console.log(`   - Delivery Status: ${(existingKey as any).deliveryStatus}`)
+        console.log(`   - Should Send Email Now: ${shouldSendEmail}`)
 
         // CHECK: If existing key hasn't been sent yet, and now we should send it (e.g. manual payment confirmed)
         const keyData = existingKey as any
         if (shouldSendEmail && keyData.emailSent === false) {
-            console.log(`📧 Existing key found but not sent. Sending now for order ${orderNumber}...`)
+            console.log(`📧 [RESENDING] Existing key found but not sent. Sending now for order ${orderNumber}...`)
             // Proceed to send email (treated as if we just got the key)
+        } else if (keyData.emailSent === true) {
+            console.log(`✅ [SKIPPED] Email already sent for this key. Returning success.`)
+            return { success: true, key: existingKey.key, message: 'Key already assigned and sent' }
         } else {
-            return { success: true, key: existingKey.key, message: 'Key already assigned' }
+            console.log(`⏸️ [WAITING] Key assigned but email not yet authorized (shouldSendEmail=false)`)
+            return { success: true, key: existingKey.key, message: 'Key already assigned, waiting for payment' }
         }
     }
 
@@ -145,9 +153,12 @@ export async function processDigitalProductOrder(
 
     // If we should NOT send email (e.g. Invoice payment pending), return now
     if (!shouldSendEmail) {
-        console.log(`⏳ Payment pending. Key ${key.id} assigned to order ${orderNumber} but email delayed.`)
+        console.log(`⏳ [DELAYED] Payment pending. Key ${key.id} assigned to order ${orderNumber} but email delayed.`)
+        console.log(`   - Delivery Status set to: PENDING`)
         return { success: true, key: key.key, message: 'Key assigned, email delayed' }
     }
+
+    console.log(`📤 [SENDING] Preparing to send email for key ${key.id} to ${customerEmail}`)
 
     // ---------------------------------------------------------
     // SEND EMAIL LOGIC

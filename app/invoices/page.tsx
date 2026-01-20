@@ -982,18 +982,26 @@ export default function InvoicesPage() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => {
+                onClick={async () => {
                   const newState = !isSoundEnabled
                   setIsSoundEnabled(newState)
                   if (newState) {
-                    // Unlock the persistent audio object immediately
-                    if (audioRef.current) {
+                    try {
+                      if (!audioRef.current) {
+                        audioRef.current = new Audio('/sounds/cha-ching.mp3')
+                        audioRef.current.volume = 0.5
+                      }
                       audioRef.current.currentTime = 0
-                      audioRef.current.play().catch(e => console.error('Test sound failed:', e))
+                      await audioRef.current.play()
+                      showToast('✓ Ton aktiviert!', 'success')
+                    } catch (e: any) {
+                      console.error('Browser blockiert Ton:', e.message)
+                      setIsSoundEnabled(false)
+                      showToast('⚠️ Browser hat Ton blockiert', 'error')
                     }
-                    showToast('Benachrichtigungston aktiviert', 'success')
                   } else {
-                    showToast('Benachrichtigungston deaktiviert', 'info')
+                    if (audioRef.current) audioRef.current.pause()
+                    showToast('Ton deaktiviert', 'info')
                   }
                 }}
                 className={`mr-2 ${isSoundEnabled ? "text-green-600 border-green-200 bg-green-50" : "text-gray-400"}`}

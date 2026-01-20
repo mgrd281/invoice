@@ -151,6 +151,14 @@ export async function POST(req: Request) {
           // For 'orders/create' topic, isUpdate is false
           // For 'orders/updated' topic, isUpdate is true
           const isUpdate = (topic === 'orders/updated')
+
+          // Enhanced logging for diagnosis
+          log(`🔍 Payment Detection Context:`)
+          log(`   - Topic: ${topic}`)
+          log(`   - Is Update: ${isUpdate}`)
+          log(`   - Financial Status: ${payload.financial_status}`)
+          log(`   - Payment Gateway: ${payload.payment_gateway_names || payload.gateway || 'unknown'}`)
+
           const shouldSendEmail = shouldSendKeysImmediately(payload, isUpdate)
 
           log(`🔐 Key Delivery Decision: Should send email? ${shouldSendEmail} (Topic: ${topic}, Status: ${payload.financial_status})`)
