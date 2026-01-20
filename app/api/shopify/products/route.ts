@@ -6,9 +6,12 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const limit = Math.min(parseInt(searchParams.get('limit') || '250'), 250) // Default 250 to show more products
+        // Default to ALL (unlimited) if no limit specified, or use the param
+        const limitParam = searchParams.get('limit')
+        const limit = limitParam ? parseInt(limitParam) : 999999
 
         const api = new ShopifyAPI()
+
         // Fetch essential fields used by frontend (including vendor/type for filtering and image for display)
         const products = await api.getProducts({
             limit,

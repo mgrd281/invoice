@@ -487,39 +487,91 @@ export class ShopifyAPI {
     fields?: string // Optional: specify which fields to fetch
   } = {}): Promise<ShopifyProduct[]> {
     try {
-      const searchParams = new URLSearchParams()
-      // Limit to reasonable default to reduce data size
-      searchParams.set('limit', Math.min(params.limit || 50, 250).toString())
+      const requestedLimit = params.limit || 50
+      const maxPerPage = 250
 
-      if (params.product_type) {
-        searchParams.set('product_type', params.product_type)
-      }
+      let allProducts: ShopifyProduct[] = []
+      let pageCount = 0
+      let hasMorePages = true
+      let pageInfo: any = null
 
-      if (params.tags) {
-        searchParams.set('tags', params.tags)
-      }
+      // If requested limit is small, use single page logic for efficiency
+      if (requestedLimit <= maxPerPage) {
+        const searchParams = new URLSearchParams()
+        searchParams.set('limit', requestedLimit.toString())
+        if (params.product_type) searchParams.set('product_type', params.product_type)
+        if (params.tags) searchParams.set('tags', params.tags)
+        if (params.ids) searchParams.set('ids', params.ids)
+        if (params.fields) {
+          searchParams.set('fields', params.fields)
+        } else {
+          searchParams.set('fields', 'id,title,handle,vendor,product_type,status,created_at,updated_at,images,variants')
+        }
 
-      if (params.ids) {
-        searchParams.set('ids', params.ids)
-      }
-
-      // Use fields parameter to fetch only necessary data
-      // This significantly reduces response size
-      if (params.fields) {
-        searchParams.set('fields', params.fields)
+        const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
+        const data = await response.json()
+        allProducts = data.products || []
       } else {
-        // Default minimal fields for product listing
-        searchParams.set('fields', 'id,title,handle,vendor,product_type,status,created_at,updated_at,images,variants')
+        // Unlimited / Multi-page fetch
+        console.log(`🚀 Starting UNLIMITED fetch of products (Limit: ${requestedLimit})`)
+
+        while (hasMorePages && allProducts.length < requestedLimit) {
+          const searchParams = new URLSearchParams()
+          searchParams.set('limit', maxPerPage.toString())
+
+          // Standard filters
+          if (params.product_type) searchParams.set('product_type', params.product_type)
+          if (params.tags) searchParams.set('tags', params.tags)
+          if (params.ids) searchParams.set('ids', params.ids)
+          if (params.fields) {
+            searchParams.set('fields', params.fields)
+          } else {
+            searchParams.set('fields', 'id,title,handle,vendor,product_type,status,created_at,updated_at,images,variants')
+          }
+
+          // Cursor pagination
+          if (pageInfo && pageInfo.next) {
+            // When using page_info, other filters typically must be omitted or identical
+            // Shopify API usually ignores filters if page_info is present, or requires ONLY page_info
+            searchParams.delete('product_type')
+            searchParams.delete('tags')
+            searchParams.delete('ids')
+
+            searchParams.set('page_info', pageInfo.next)
+          }
+
+          console.log(`🔄 Fetching products page ${pageCount + 1}...`)
+          const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
+          const data = await response.json()
+          const products = data.products || []
+
+          // Parse Link header
+          const linkHeader = response.headers.get('Link')
+          pageInfo = this.parseLinkHeader(linkHeader)
+
+          allProducts.push(...products)
+          pageCount++
+
+          if (products.length === 0 || !pageInfo?.next) {
+            hasMorePages = false
+          }
+
+          // Rate limiting check
+          if (pageCount % 10 === 0) await new Promise(r => setTimeout(r, 1000))
+        }
       }
 
-      const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
-      const data = await response.json()
-
-      // Minimize data: only return essential fields
-      const products = (data.products || []).map((product: any) => ({
+      // Minimize data structure if needed, or return as is. The existing code mapped it.
+      // Let's keep the mapping consistency.
+      const mappedProducts = allProducts.map((product: any) => ({
         id: product.id,
         title: product.title,
         handle: product.handle,
+        vendor: product.vendor,
+        product_type: product.product_type,
+        created_at: product.created_at,
+        updated_at: product.updated_at,
+        images: product.images?.map((img: any) => ({ src: img.src })) || [],
         variants: product.variants?.map((v: any) => ({
           id: v.id,
           title: v.title,
@@ -527,13 +579,11 @@ export class ShopifyAPI {
           sku: v.sku,
           barcode: v.barcode,
           inventory_quantity: v.inventory_quantity
-        })) || [],
-        images: product.images?.map((img: any) => ({
-          src: img.src
         })) || []
       }))
 
-      return products
+      // Slice to exact limit if we over-fetched slightly due to page size
+      return mappedProducts.length > requestedLimit ? mappedProducts.slice(0, requestedLimit) : mappedProducts
     } catch (error) {
       console.error('Error fetching Shopify products:', error)
       throw error
