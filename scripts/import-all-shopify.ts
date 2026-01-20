@@ -1,7 +1,6 @@
-
-import { ShopifyAPI, convertShopifyOrderToInvoice } from './lib/shopify-api'
-import { getShopifySettings } from './lib/shopify-settings'
-import { saveInvoicesToDisk, loadInvoicesFromDisk } from './lib/server-storage'
+import { ShopifyAPI, convertShopifyOrderToInvoice } from '../lib/shopify-api'
+import { getShopifySettings } from '../lib/shopify-settings'
+import { saveInvoicesToDisk, loadInvoicesFromDisk } from '../lib/server-storage'
 import * as fs from 'fs'
 import * as path from 'path'
 
