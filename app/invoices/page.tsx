@@ -396,6 +396,15 @@ export default function InvoicesPage() {
           if (data.synced > 0) {
             console.log(`✅ Auto-Sync found ${data.synced} new invoices! Refreshing...`)
             showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
+
+            // Play Notification Sound
+            try {
+              const audio = new Audio('/sounds/cha-ching.mp3')
+              audio.play().catch(e => console.error('Audio play failed (interaction required?):', e))
+            } catch (err) {
+              console.error('Failed to initialize audio:', err)
+            }
+
             fetchInvoices(true) // Refresh the list in background
           }
         } catch (err) {

@@ -130,8 +130,8 @@ export async function POST(req: Request) {
               const emailResult = await sendInvoiceEmail(
                 invoice.id,
                 invoice.customer.email,
-                invoice.number,
-                invoice.customer.name
+                invoice.customer.name,
+                invoice.number
               )
               log(`📬 Email sending result: ${JSON.stringify(emailResult)}`)
             } else {

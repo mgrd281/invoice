@@ -297,7 +297,52 @@ export async function resendDigitalProductEmail(keyId: string) {
 
     if (!key) throw new Error('Key not found')
     if (!key.digitalProduct) throw new Error('Digital Product not found')
-    if (!key.customer || !key.customer.email) throw new Error('Customer email not found on key')
+
+    // Resolve Customer Email: Try direct link first, then fallback to Order lookup
+    let customerEmail = key.customer?.email
+    let customerName = key.customer?.name || 'Kunde'
+
+    if (!customerEmail) {
+        // Fallback: Try to find order by shopifyOrderId or orderId (orderNumber)
+        if (key.shopifyOrderId) {
+            const order = await prisma.order.findFirst({
+                where: { shopifyOrderId: key.shopifyOrderId },
+                include: { customer: true }
+            })
+            if (order && order.customer?.email) {
+                customerEmail = order.customer.email
+                customerName = order.customer.name
+
+                // Optional: Heal the data by linking the customer to the key for future
+                await prisma.licenseKey.update({
+                    where: { id: key.id },
+                    data: { customerId: order.customerId } as any
+                })
+            }
+        }
+
+        // If still no email, try by orderNumber
+        if (!customerEmail && key.orderId) {
+            const order = await prisma.order.findFirst({
+                where: { orderNumber: key.orderId }, // Assuming orderId on key stores the order number
+                include: { customer: true }
+            })
+            if (order && order.customer?.email) {
+                customerEmail = order.customer.email
+                customerName = order.customer.name
+
+                // Optional: Heal the data
+                await prisma.licenseKey.update({
+                    where: { id: key.id },
+                    data: { customerId: order.customerId } as any
+                })
+            }
+        }
+    }
+
+    if (!customerEmail) {
+        throw new Error('Customer email not found on key or associated order')
+    }
 
     const product = key.digitalProduct
 
@@ -338,8 +383,8 @@ export async function resendDigitalProductEmail(keyId: string) {
 
     const htmlTemplate = convertToHtml(template);
     const emailBody = replaceVariables(htmlTemplate, {
-        customer_name: key.customer.name || 'Kunde',
-        customer_salutation: `Hallo ${key.customer.name || 'Kunde'}`,
+        customer_name: customerName || 'Kunde',
+        customer_salutation: `Hallo ${customerName || 'Kunde'}`,
         product_title: product.title,
         license_key: key.key,
         download_button: downloadButtonHtml
@@ -348,7 +393,7 @@ export async function resendDigitalProductEmail(keyId: string) {
     const subject = `Ihr Produktschlüssel für ${product.title}`
 
     await sendEmail({
-        to: key.customer.email,
+        to: customerEmail,
         subject,
         html: emailBody
     })

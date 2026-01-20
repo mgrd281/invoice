@@ -682,7 +682,10 @@ Viel Spaß!`
                                                                                         headers: { 'Content-Type': 'application/json' },
                                                                                         body: JSON.stringify({ action: 'resend', keyId: key.id })
                                                                                     })
-                                                                                    if (res.ok) alert('E-Mail wurde gesendet')
+                                                                                    if (res.ok) {
+                                                                                        alert('E-Mail wurde gesendet');
+                                                                                        loadData(); // Refresh data to show linked customer
+                                                                                    }
                                                                                     else alert('Fehler beim Senden')
                                                                                 } catch (e) { console.error(e); alert('Fehler') }
                                                                             }}

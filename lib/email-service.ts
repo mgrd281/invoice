@@ -198,7 +198,7 @@ export async function sendInvoiceEmail(
   customerEmail: string,
   customerName: string,
   invoiceNumber: string,
-  companyName: string = 'Karina Khrystych',
+  companyName: string = 'Karinex',
   customSubject?: string,
   customMessage?: string,
   invoiceAmount?: string,
@@ -419,7 +419,7 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
       <title>Rechnung ${invoiceNumber}</title>
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background-color: #1D4739; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
         .footer { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 4px; font-size: 12px; color: #6c757d; }
         .button { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 15px 0; }
@@ -500,15 +500,15 @@ function generateCustomEmailHTML(
       <meta charset="utf-8">
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: #1D4739; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f8f9fa; padding: 30px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; }
-        .invoice-details { background: white; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2563eb; }
+        .invoice-details { background: white; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #1D4739; }
         .custom-message { background: #e0f2fe; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #0284c7; }
         .footer { background: #6b7280; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; }
         .footer ul { list-style: none; padding: 0; margin: 10px 0 0 0; }
         .footer li { margin: 5px 0; }
         h1 { margin: 0; font-size: 24px; }
-        .amount { font-size: 18px; font-weight: bold; color: #2563eb; }
+        .amount { font-size: 18px; font-weight: bold; color: #1D4739; }
       </style>
     </head>
     <body>
