@@ -6,13 +6,13 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 250) // Default 50, max 250
+        const limit = Math.min(parseInt(searchParams.get('limit') || '250'), 250) // Default 250 to show more products
 
         const api = new ShopifyAPI()
-        // Only fetch essential fields to reduce data size
+        // Fetch essential fields used by frontend (including vendor/type for filtering and image for display)
         const products = await api.getProducts({
             limit,
-            fields: 'id,title,handle,variants,images' // Minimal fields needed for sync
+            fields: 'id,title,handle,variants,images,image,vendor,product_type'
         })
 
         return NextResponse.json({
