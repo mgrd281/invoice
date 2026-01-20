@@ -82,23 +82,30 @@ function getGermanStatus(status: string) {
 }
 
 export default function InvoicesPage() {
+  // Persistent audio reference to bypass autoplay policies
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isSoundEnabled, setIsSoundEnabled] = useState(true)
 
+  // Initialize audio object once
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/cha-ching.mp3')
+    audioRef.current.volume = 0.5
+  }, [])
+
   const playNotificationSound = useCallback(() => {
-    if (!isSoundEnabled) return
-    try {
-      const audio = new Audio('/sounds/cha-ching.mp3')
-      audio.volume = 0.5
-      const playPromise = audio.play()
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('Audio playback failed (interaction required?):', error)
-        })
-      }
-    } catch (err) {
-      console.error('Audio initialization failed:', err)
+    if (!isSoundEnabled || !audioRef.current) return
+
+    // Reset time to allow rapid replay
+    audioRef.current.currentTime = 0
+    const playPromise = audioRef.current.play()
+
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.error('Autoplay blocked. User interaction needed:', error)
+      })
     }
   }, [isSoundEnabled])
+
 
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
@@ -979,13 +986,12 @@ export default function InvoicesPage() {
                   const newState = !isSoundEnabled
                   setIsSoundEnabled(newState)
                   if (newState) {
-                    // Test sound immediately to unlock audio context
-                    try {
-                      const audio = new Audio('/sounds/cha-ching.mp3')
-                      audio.volume = 0.5
-                      audio.play().catch(e => console.error('Test sound failed:', e))
-                      showToast('Benachrichtigungston aktiviert', 'success')
-                    } catch (e) { console.error(e) }
+                    // Unlock the persistent audio object immediately
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = 0
+                      audioRef.current.play().catch(e => console.error('Test sound failed:', e))
+                    }
+                    showToast('Benachrichtigungston aktiviert', 'success')
                   } else {
                     showToast('Benachrichtigungston deaktiviert', 'info')
                   }
