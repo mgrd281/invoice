@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -18,7 +17,8 @@ import {
     BarChart,
     ShoppingBag,
     ArrowLeft,
-    Zap
+    Zap,
+    Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -113,6 +113,31 @@ export default function DigitalProductsPage() {
             toast.error('Netzwerkfehler')
         } finally {
             setActivatingId(null)
+        }
+    }
+
+    const handleDeleteProduct = async (e: React.MouseEvent, productId: string, shopifyId: string) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (!confirm('Möchten Sie dieses Produkt wirklich aus den digitalen Produkten entfernen?')) return
+
+        try {
+            const res = await fetch(`/api/digital-products/${productId}`, {
+                method: 'DELETE'
+            })
+
+            if (res.ok) {
+                toast.success('Produkt entfernt')
+                const newMap = new Map(digitalProducts)
+                newMap.delete(shopifyId)
+                setDigitalProducts(newMap)
+            } else {
+                toast.error('Fehler beim Löschen')
+            }
+        } catch (error) {
+            console.error('Failed to delete product', error)
+            toast.error('Fehler beim Löschen')
         }
     }
 
@@ -224,8 +249,20 @@ export default function DigitalProductsPage() {
                                         return (
                                             <div
                                                 key={product.id}
-                                                className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all relative ${isMicrosoftProd ? 'border-blue-100 ring-1 ring-blue-50' : 'border-gray-200'}`}
+                                                className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all relative group ${isMicrosoftProd ? 'border-blue-100 ring-1 ring-blue-50' : 'border-gray-200'}`}
                                             >
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={(e) => handleDeleteProduct(e, digitalData.id, String(product.id))}
+                                                        className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                                        title="Produkt entfernen"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+
                                                 <div className="p-5">
                                                     <div className="flex items-start gap-4">
                                                         <div className="h-16 w-16 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
