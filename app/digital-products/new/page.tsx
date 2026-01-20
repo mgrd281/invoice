@@ -13,15 +13,19 @@ interface ShopifyProduct {
     vendor?: string
     product_type?: string
     image?: { src: string }
+    images?: { src: string }[]
 }
 
 export default function NewDigitalProductPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(true)
-    const [creating, setCreating] = useState<number | null>(null)
     const [products, setProducts] = useState<ShopifyProduct[]>([])
     const [existingProductIds, setExistingProductIds] = useState<Set<string>>(new Set())
     const [search, setSearch] = useState('')
+
+    // Selection state
+    const [selectedProducts, setSelectedProducts] = useState<number[]>([])
+    const [isActivating, setIsActivating] = useState(false)
 
     useEffect(() => {
         fetchShopifyProducts()
@@ -55,9 +59,6 @@ export default function NewDigitalProductPage() {
         }
     }
 
-    const [selectedProducts, setSelectedProducts] = useState<number[]>([])
-    const [isActivating, setIsActivating] = useState(false)
-
     const toggleProduct = (id: number) => {
         setSelectedProducts(prev =>
             prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
@@ -74,16 +75,6 @@ export default function NewDigitalProductPage() {
 
     const handleBulkActivate = async () => {
         if (selectedProducts.length === 0) return
-
-        // DEBUG: Check types
-        const firstId = selectedProducts[0]
-        const found = products.find(p => p.id === firstId)
-        if (!found) {
-            const productType = products.length > 0 ? typeof products[0].id : 'empty'
-            const selectedType = typeof firstId
-            alert(`DEBUG ERROR: Product not found in list!\nSelected ID: ${firstId} (${selectedType})\nFirst Product ID: ${products[0]?.id} (${productType})`)
-            return
-        }
 
         setIsActivating(true)
         let successCount = 0
@@ -108,20 +99,15 @@ export default function NewDigitalProductPage() {
                     if (res.ok) {
                         successCount++
                     } else {
-                        const errorData = await res.json().catch(() => ({}))
-                        console.error('Activation failed:', errorData)
-                        alert(`Fehler bei Produkt ${product.title}: ${errorData.error || res.statusText}`)
                         errorCount++
                     }
                 } catch (e: any) {
                     console.error('Request failed:', e)
-                    alert(`Netzwerkfehler bei Produkt ${product.title}: ${e.message}`)
                     errorCount++
                 }
             }
 
             if (successCount > 0) {
-                // Refresh existing products list to exclude them from the view
                 await fetchExistingDigitalProducts()
                 setSelectedProducts([])
                 if (errorCount === 0) {
@@ -129,8 +115,6 @@ export default function NewDigitalProductPage() {
                 } else {
                     alert(`${successCount} Produkte aktiviert. ${errorCount} Fehler aufgetreten.`)
                 }
-            } else if (errorCount > 0) {
-                // Alert already shown in loop
             } else {
                 alert('Fehler beim Aktivieren der Produkte.')
             }
@@ -143,26 +127,21 @@ export default function NewDigitalProductPage() {
         }
     }
 
-    const isMicrosoftProduct = (product: ShopifyProduct) => {
-        const term = 'microsoft'
-        const vendor = product.vendor?.toLowerCase() || ''
-        const type = product.product_type?.toLowerCase() || ''
-        const title = product.title.toLowerCase()
-
-        return vendor === term || type.includes(term) || title.includes(term)
-    }
-
     const filteredProducts = products
         .filter(p => !existingProductIds.has(String(p.id)))
         .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
-        .sort((a, b) => {
-            const isMicrosoftA = isMicrosoftProduct(a)
-            const isMicrosoftB = isMicrosoftProduct(b)
 
-            if (isMicrosoftA && !isMicrosoftB) return -1
-            if (!isMicrosoftA && isMicrosoftB) return 1
-            return 0
-        })
+    // Group items by Vendor
+    const productsByVendor = filteredProducts.reduce((acc, product) => {
+        const vendor = product.vendor || 'Andere'
+        if (!acc[vendor]) {
+            acc[vendor] = []
+        }
+        acc[vendor].push(product)
+        return acc
+    }, {} as Record<string, ShopifyProduct[]>)
+
+    const sortedVendors = Object.keys(productsByVendor).sort()
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -227,53 +206,63 @@ export default function NewDigitalProductPage() {
                             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                         </div>
                     ) : (
-                        <div className="divide-y max-h-[600px] overflow-y-auto">
-                            {filteredProducts.length > 0 ? (
-                                filteredProducts.map(product => (
-                                    <div
-                                        key={product.id}
-                                        className={`flex items-center p-4 hover:bg-gray-50 transition-colors cursor-pointer ${selectedProducts.includes(product.id) ? 'bg-blue-50/50' : ''}`}
-                                        onClick={() => toggleProduct(product.id)}
-                                    >
-                                        <div className="mr-4" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
-                                                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                checked={selectedProducts.includes(product.id)}
-                                                onChange={() => toggleProduct(product.id)}
-                                            />
-                                        </div>
-
-                                        <div className="h-12 w-12 bg-gray-100 rounded-lg mr-4 overflow-hidden flex-shrink-0 border">
-                                            {product.image ? (
-                                                <img src={product.image.src} alt="" className="h-full w-full object-cover" />
-                                            ) : (
-                                                <div className="h-full w-full flex items-center justify-center">
-                                                    <ShoppingBag className="w-5 h-5 text-gray-400" />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-900 truncate" title={product.title}>
-                                                {product.title}
-                                            </h3>
-                                            <p className="text-xs text-gray-500 mt-0.5">ID: {product.id}</p>
-                                        </div>
-
-                                        <div className="ml-4">
-                                            {selectedProducts.includes(product.id) && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    Ausgewählt
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
+                        <div className="max-h-[600px] overflow-y-auto bg-gray-50/50">
+                            {filteredProducts.length === 0 ? (
                                 <div className="text-center py-12 text-gray-500">
                                     {search ? 'Keine Produkte gefunden.' : 'Alle Produkte sind bereits aktiviert.'}
                                 </div>
+                            ) : (
+                                sortedVendors.map(vendor => (
+                                    <div key={vendor} className="mb-0">
+                                        <div className="bg-gray-100/80 px-4 py-2 border-y border-gray-200 font-semibold text-sm text-gray-700 uppercase tracking-wider sticky top-0 backdrop-blur-sm z-10">
+                                            {vendor}
+                                        </div>
+                                        <div className="bg-white divide-y border-b">
+                                            {productsByVendor[vendor].map(product => {
+                                                const imgSrc = product.image?.src || product.images?.[0]?.src
+                                                return (
+                                                    <div
+                                                        key={product.id}
+                                                        className={`flex items-center p-4 hover:bg-gray-50 transition-colors cursor-pointer ${selectedProducts.includes(product.id) ? 'bg-blue-50/50' : ''}`}
+                                                        onClick={() => toggleProduct(product.id)}
+                                                    >
+                                                        <div className="mr-4" onClick={(e) => e.stopPropagation()}>
+                                                            <input
+                                                                type="checkbox"
+                                                                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                checked={selectedProducts.includes(product.id)}
+                                                                onChange={() => toggleProduct(product.id)}
+                                                            />
+                                                        </div>
+
+                                                        <div className="h-12 w-12 bg-white rounded-lg mr-4 overflow-hidden flex-shrink-0 border flex items-center justify-center">
+                                                            {imgSrc ? (
+                                                                <img src={imgSrc} alt="" className="h-full w-full object-contain p-1" />
+                                                            ) : (
+                                                                <ShoppingBag className="w-5 h-5 text-gray-300" />
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-medium text-gray-900 truncate" title={product.title}>
+                                                                {product.title}
+                                                            </h3>
+                                                            <p className="text-xs text-gray-400 mt-0.5 font-mono">ID: {product.id}</p>
+                                                        </div>
+
+                                                        <div className="ml-4">
+                                                            {selectedProducts.includes(product.id) && (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                    Ausgewählt
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                ))
                             )}
                         </div>
                     )}
