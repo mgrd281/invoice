@@ -483,8 +483,16 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             totalNet,
             totalGross,
             totalTax,
-            status: order.financial_status === 'paid' ? 'PAID' :
-                order.financial_status === 'voided' ? 'CANCELLED' : 'SENT',
+            status: await (async () => {
+                const { isUserBlocked } = await import('@/lib/blocklist')
+                const blockCheck = await isUserBlocked(customer.email, organization.id)
+                if (blockCheck.blocked) {
+                    log(`🚫 BLOCKED USER DETECTED: ${customer.email}. Reason: ${blockCheck.reason}. Setting status to BLOCKED.`)
+                    return 'BLOCKED'
+                }
+                return order.financial_status === 'paid' ? 'PAID' :
+                    order.financial_status === 'voided' ? 'CANCELLED' : 'SENT'
+            })(),
             settings: {
                 paymentMethod: paymentMethod
             },

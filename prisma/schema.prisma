@@ -16,6 +16,8 @@ enum OrderStatus {
   PENDING
   COMPLETED
   CANCELLED
+  ON_HOLD
+  BLOCKED
 }
 
 enum InvoiceStatus {
@@ -24,6 +26,8 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+  ON_HOLD
+  BLOCKED
 }
 
 enum UploadStatus {
@@ -117,6 +121,7 @@ model Organization {
   abandonedCarts    AbandonedCart[]
   realEstateProfiles RealEstateSearchProfile[]
   apiKeys           ApiKey[]
+  blockedUsers      BlockedUser[]
 }
 
 model WidgetSettings {
@@ -213,6 +218,20 @@ model Customer {
   documents         CustomerDocument[]
 
   @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
+}
+
+model BlockedUser {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  email          String
+  name           String?
+  reason         String?
+  blockedBy      String?      // ID or Name of admin who blocked
+  blockedAt      DateTime     @default(now())
+  
+  @@unique([organizationId, email])
+  @@index([email])
 }
 
 model CustomerDocument {

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send, Volume2, VolumeX } from 'lucide-react'
+import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send, Volume2, VolumeX, ShieldAlert, UserX } from 'lucide-react'
 import { downloadInvoicePDF } from '@/lib/pdf-generator'
 import { useToast } from '@/components/ui/toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -77,6 +77,8 @@ function getGermanStatus(status: string) {
     case 'CANCELLED': return 'Storniert'
     case 'OPEN': return 'Offen'
     case 'PENDING': return 'Ausstehend'
+    case 'BLOCKED': return 'Gesperrt'
+    case 'ON_HOLD': return 'In Prüfung'
     default: return status
   }
 }
@@ -919,6 +921,10 @@ export default function InvoicesPage() {
       case 'Storniert': return 'bg-gray-100 text-gray-800'
       case 'Gutschrift': return 'bg-blue-100 text-blue-800'
       case 'Entwurf': return 'bg-gray-100 text-gray-600'
+      case 'Gesperrt':
+      case 'BLOCKED': return 'bg-red-800 text-white'
+      case 'In Prüfung':
+      case 'ON_HOLD': return 'bg-orange-100 text-orange-800'
       default: return 'bg-gray-100 text-gray-600'
     }
   }
@@ -958,6 +964,12 @@ export default function InvoicesPage() {
               </h1>
             </div>
             <div className="flex space-x-2">
+              <Link href="/blocked-users">
+                <Button variant="outline" className="text-red-700 hover:text-red-800 hover:bg-red-50 hover:border-red-200">
+                  <ShieldAlert className="h-4 w-4 mr-2" />
+                  Blocklist
+                </Button>
+              </Link>
               <Button
                 variant={showAnalytics ? "secondary" : "outline"}
                 onClick={() => setShowAnalytics(!showAnalytics)}

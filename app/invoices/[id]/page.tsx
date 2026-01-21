@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Eye, Download, Edit, Save, X, Mail, ArrowLeft, FileText, Plus, Trash2, Calculator, Bell, AlertTriangle, AlertOctagon, AlertCircle } from 'lucide-react'
+import { Eye, Download, Edit, Save, X, Mail, ArrowLeft, FileText, Plus, Trash2, Calculator, Bell, AlertTriangle, AlertOctagon, AlertCircle, UserX, ShieldAlert } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -487,20 +487,55 @@ export default function InvoiceViewPage() {
     )
   }
 
+  const handleBlockCustomer = async () => {
+    if (!invoice || !invoice.customer.email) return
+
+    if (!confirm(`Möchten Sie den Nutzer ${invoice.customer.email} wirklich blockieren? Dies verhindert zukünftige Bestellungen.`)) return
+
+    try {
+      const response = await fetch('/api/blocked-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: invoice.customer.email,
+          name: invoice.customer.name,
+          reason: `Blockiert über Rechnung ${invoice.number}`
+        })
+      })
+
+      if (response.ok) {
+        showToast('Nutzer wurde erfolgreich blockiert.', 'success')
+      } else {
+        const msg = await response.text()
+        showToast(`Fehler: ${msg}`, 'error')
+      }
+    } catch (e) {
+      showToast('Netzwerkfehler beim Blockieren', 'error')
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'bezahlt':
+      case 'paid':
         return 'bg-green-100 text-green-800'
       case 'erstattet':
         return 'bg-blue-100 text-blue-800'
       case 'storniert':
+      case 'cancelled':
         return 'bg-gray-100 text-gray-800'
       case 'offen':
+      case 'sent':
+      case 'open':
         return 'bg-gray-100 text-gray-600'
       case 'mahnung':
         return 'bg-red-100 text-red-800'
       case 'überfällig':
+      case 'overdue':
         return 'bg-red-100 text-red-800'
+      case 'blocked':
+      case 'on_hold':
+        return 'bg-red-800 text-white'
       default:
         return 'bg-gray-100 text-gray-600'
     }
@@ -602,6 +637,26 @@ export default function InvoiceViewPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Invoice Details */}
           <div className="lg:col-span-2 space-y-6">
+            {(invoice.status === 'BLOCKED' || invoice.status === 'ON_HOLD') && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <ShieldAlert className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-bold text-red-700">
+                      Bestellung blockiert (Sicherheitswarnung)
+                    </p>
+                    <p className="text-sm text-red-700 mt-1">
+                      Dieser Nutzer befindet sich auf der Blockliste. Diese Bestellung wurde angehalten.
+                    </p>
+                    <Link href="/blocked-users" className="text-xs text-red-600 underline mt-2 block">
+                      Blockliste verwalten
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Invoice Header */}
             <Card>
               <CardHeader>
@@ -660,6 +715,8 @@ export default function InvoiceViewPage() {
                           <option value="Erstattet">Erstattet</option>
                           <option value="Storniert">Storniert</option>
                           <option value="Mahnung">Mahnung</option>
+                          <option value="BLOCKED">Gesperrt (Blocked)</option>
+                          <option value="ON_HOLD">In Prüfung (On Hold)</option>
                         </select>
                       </div>
                     ) : (
@@ -696,8 +753,17 @@ export default function InvoiceViewPage() {
 
               {/* To Customer */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-lg">An</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBlockCustomer}
+                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 -mr-2"
+                    title="Diesen Kunden blockieren"
+                  >
+                    <UserX className="h-4 w-4" />
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {isEditing && editableInvoice ? (
