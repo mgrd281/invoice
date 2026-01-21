@@ -375,14 +375,14 @@ export default function ProductImportPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 p-4 md:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 p-4 md:p-8">
             <ToastContainer />
 
             {/* Ambient Background Effects */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl"></div>
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200/30 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200/30 rounded-full blur-3xl"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-violet-200/20 rounded-full blur-3xl"></div>
             </div>
 
             <div className="max-w-7xl mx-auto space-y-6 relative z-10">
@@ -390,7 +390,7 @@ export default function ProductImportPage() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-3">
-                        <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors group">
+                        <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors group">
                             <ArrowLeft className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform" />
                             Zurück zum Dashboard
                         </Link>
@@ -399,22 +399,22 @@ export default function ProductImportPage() {
                                 <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
                                     <Download className="h-7 w-7 text-white" />
                                 </div>
-                                <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                                     Product Importer
                                 </span>
                             </h1>
-                            <p className="text-gray-400 text-lg mt-2">Importieren Sie Produkte von jeder URL – Powered by AI</p>
+                            <p className="text-gray-600 text-lg mt-2">Importieren Sie Produkte von jeder URL – Powered by AI</p>
                         </div>
                     </div>
 
                     {/* Tab Switcher */}
-                    <div className="flex items-center gap-3 bg-gray-900/50 p-2 rounded-2xl border border-gray-800 backdrop-blur-xl shadow-xl">
+                    <div className="flex items-center gap-3 bg-white/80 p-2 rounded-2xl border border-gray-200 backdrop-blur-xl shadow-lg">
                         <Button
                             variant={activeTab === 'import' ? 'default' : 'ghost'}
                             onClick={() => setActiveTab('import')}
                             className={`rounded-xl transition-all duration-300 ${activeTab === 'import'
-                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40 text-white'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                                 }`}
                         >
                             <Download className="h-4 w-4 mr-2" />
@@ -424,13 +424,13 @@ export default function ProductImportPage() {
                             variant={activeTab === 'store' ? 'default' : 'ghost'}
                             onClick={() => setActiveTab('store')}
                             className={`rounded-xl transition-all duration-300 ${activeTab === 'store'
-                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/40 text-white'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                                 }`}
                         >
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             Store
-                            <Badge className="ml-2 bg-white/10 text-white border-0 px-2">
+                            <Badge className="ml-2 bg-gray-900/10 text-gray-700 border-0 px-2">
                                 {importedProducts.length}
                             </Badge>
                         </Button>
@@ -445,20 +445,20 @@ export default function ProductImportPage() {
 
                             {/* URL Input Card with Drag & Drop */}
                             <Card
-                                className="border-gray-800 bg-gray-900/50 backdrop-blur-xl shadow-2xl overflow-hidden"
+                                className="border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg overflow-hidden"
                                 onDragOver={handleDragOver}
                                 onDragLeave={handleDragLeave}
                                 onDrop={handleDrop}
                             >
                                 <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 transition-opacity ${isDragging ? 'opacity-100' : 'opacity-50'}`}></div>
                                 <CardHeader className="pb-4 pt-6">
-                                    <CardTitle className="flex items-center text-xl font-bold text-white">
+                                    <CardTitle className="flex items-center text-xl font-bold text-gray-900">
                                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center mr-3 shadow-lg shadow-violet-500/30">
                                             <Globe className="h-6 w-6 text-white" />
                                         </div>
                                         Product URLs
                                     </CardTitle>
-                                    <CardDescription className="text-base text-gray-400">
+                                    <CardDescription className="text-base text-gray-600">
                                         URLs hinzufügen oder per Drag & Drop einfügen
                                     </CardDescription>
                                 </CardHeader>
@@ -479,7 +479,7 @@ export default function ProductImportPage() {
                                                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors z-10" />
                                                     <Input
                                                         placeholder="https://shop.example.com/product/item"
-                                                        className="pl-12 pr-12 h-14 text-base bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 transition-all rounded-2xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+                                                        className="pl-12 pr-12 h-14 text-base bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:bg-white transition-all rounded-2xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
                                                         value={urlValue}
                                                         onChange={(e) => handleUrlChange(index, e.target.value)}
                                                         onKeyDown={(e) => {
@@ -492,7 +492,7 @@ export default function ProductImportPage() {
                                                     {urls.length > 1 && (
                                                         <button
                                                             onClick={() => handleRemoveUrl(index)}
-                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-500/10"
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50"
                                                             title="Entfernen"
                                                         >
                                                             <Trash2 className="h-5 w-5" />
@@ -508,7 +508,7 @@ export default function ProductImportPage() {
                                         variant="outline"
                                         size="lg"
                                         onClick={handleAddUrl}
-                                        className="w-full border-dashed border-2 border-gray-700 text-gray-400 hover:border-violet-500 hover:text-violet-400 hover:bg-violet-500/5 h-12 rounded-2xl transition-all duration-200"
+                                        className="w-full border-dashed border-2 border-gray-300 text-gray-600 hover:border-violet-500 hover:text-violet-600 hover:bg-violet-50 h-12 rounded-2xl transition-all duration-200"
                                     >
                                         <Plus className="h-5 w-5 mr-2" />
                                         Weitere URL hinzufügen
@@ -538,13 +538,13 @@ export default function ProductImportPage() {
                                     </div>
 
                                     {/* Info Card */}
-                                    <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-2xl p-4 flex items-start space-x-3">
-                                        <div className="h-8 w-8 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                                            <Info className="h-4 w-4 text-violet-400" />
+                                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-4 flex items-start space-x-3">
+                                        <div className="h-8 w-8 rounded-full bg-violet-200 flex items-center justify-center flex-shrink-0">
+                                            <Info className="h-4 w-4 text-violet-700" />
                                         </div>
                                         <div className="text-sm space-y-1">
-                                            <p className="font-semibold text-violet-300">Unterstützte Plattformen</p>
-                                            <p className="text-violet-200/70">
+                                            <p className="font-semibold text-violet-900">Unterstützte Plattformen</p>
+                                            <p className="text-violet-700">
                                                 Shopify, WooCommerce, Magento und viele mehr. Alle Daten werden automatisch extrahiert.
                                             </p>
                                         </div>
@@ -556,17 +556,17 @@ export default function ProductImportPage() {
                                             <Checkbox
                                                 checked={settings.skipValidation}
                                                 onCheckedChange={(c) => setSettings({ ...settings, skipValidation: c as boolean })}
-                                                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 border-gray-600 rounded-md"
+                                                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 border-gray-400 rounded-md"
                                             />
-                                            <span className="text-sm text-gray-400 group-hover:text-white transition-colors font-medium">Validierung überspringen</span>
+                                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors font-medium">Validierung überspringen</span>
                                         </label>
                                         <label className="flex items-center space-x-2 cursor-pointer group">
                                             <Checkbox
                                                 checked={settings.acceptTerms}
                                                 onCheckedChange={(c) => setSettings({ ...settings, acceptTerms: c as boolean })}
-                                                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 border-gray-600 rounded-md"
+                                                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 border-gray-400 rounded-md"
                                             />
-                                            <span className="text-sm text-gray-400 group-hover:text-white transition-colors font-medium">
+                                            <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors font-medium">
                                                 AGB akzeptieren
                                             </span>
                                         </label>
@@ -575,9 +575,9 @@ export default function ProductImportPage() {
                             </Card>
 
                             {/* Settings Card */}
-                            <Card className="border-gray-800 bg-gray-900/50 backdrop-blur-xl shadow-xl">
+                            <Card className="border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg">
                                 <CardHeader className="pb-4">
-                                    <CardTitle className="flex items-center text-lg font-bold text-white">
+                                    <CardTitle className="flex items-center text-lg font-bold text-gray-900">
                                         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center mr-3 shadow-lg shadow-purple-500/30">
                                             <SettingsIcon className="h-5 w-5 text-white" />
                                         </div>
@@ -588,10 +588,10 @@ export default function ProductImportPage() {
                                     {/* Settings Grid */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Collection */}
-                                        <Card className="bg-gray-800/30 border-gray-700 shadow-sm">
+                                        <Card className="bg-gray-50 border-gray-200 shadow-sm">
                                             <CardContent className="p-4 space-y-2">
-                                                <Label className="text-gray-300 font-semibold flex items-center">
-                                                    <Box className="h-4 w-4 mr-2 text-violet-400" />
+                                                <Label className="text-gray-700 font-semibold flex items-center">
+                                                    <Box className="h-4 w-4 mr-2 text-violet-600" />
                                                     Kollektion
                                                 </Label>
                                                 <div className="relative">
@@ -600,10 +600,10 @@ export default function ProductImportPage() {
                                                         value={settings.collection}
                                                         onValueChange={(value) => setSettings({ ...settings, collection: value })}
                                                     >
-                                                        <SelectTrigger className="pl-9 bg-gray-800 border-gray-700 rounded-xl h-11 text-white">
+                                                        <SelectTrigger className="pl-9 bg-white border-gray-300 rounded-xl h-11 text-gray-900">
                                                             <SelectValue placeholder="Kollektion wählen..." />
                                                         </SelectTrigger>
-                                                        <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                                        <SelectContent className="bg-white border-gray-200 text-gray-900">
                                                             {collections.map((col) => (
                                                                 <SelectItem key={col.id} value={col.id.toString()}>
                                                                     {col.title}
@@ -616,21 +616,21 @@ export default function ProductImportPage() {
                                         </Card>
 
                                         {/* Price Multiplier */}
-                                        <Card className="bg-gray-800/30 border-gray-700 shadow-sm">
+                                        <Card className="bg-gray-50 border-gray-200 shadow-sm">
                                             <CardContent className="p-4 space-y-2">
-                                                <Label className="text-gray-300 font-semibold flex items-center">
-                                                    <DollarSign className="h-4 w-4 mr-2 text-emerald-400" />
+                                                <Label className="text-gray-700 font-semibold flex items-center">
+                                                    <DollarSign className="h-4 w-4 mr-2 text-emerald-600" />
                                                     Preis-Multiplikator
                                                 </Label>
                                                 <div className="relative">
                                                     <Input
                                                         type="number"
                                                         step="0.1"
-                                                        className="bg-gray-800 border-gray-700 rounded-xl h-11 pr-16 text-white"
+                                                        className="bg-white border-gray-300 rounded-xl h-11 pr-16 text-gray-900"
                                                         value={settings.priceMultiplier}
                                                         onChange={(e) => setSettings({ ...settings, priceMultiplier: e.target.value })}
                                                     />
-                                                    <div className="absolute right-3 top-3 text-sm text-gray-400 pointer-events-none font-medium">
+                                                    <div className="absolute right-3 top-3 text-sm text-gray-600 pointer-events-none font-medium">
                                                         × {settings.priceMultiplier}
                                                     </div>
                                                 </div>
@@ -638,7 +638,7 @@ export default function ProductImportPage() {
                                         </Card>
                                     </div>
 
-                                    <Separator className="bg-gray-700" />
+                                    <Separator className="bg-gray-200" />
 
                                     {/* Product Options */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -652,17 +652,17 @@ export default function ProductImportPage() {
                                             return (
                                                 <div
                                                     key={item.id}
-                                                    className="flex items-center space-x-3 p-4 rounded-xl hover:bg-gray-800/30 transition-all border border-gray-700 hover:border-gray-600 cursor-pointer group"
+                                                    className="flex items-center space-x-3 p-4 rounded-xl hover:bg-gray-50 transition-all border border-gray-200 hover:border-gray-300 cursor-pointer group"
                                                     onClick={() => setSettings({ ...settings, [item.id]: !settings[item.id as keyof typeof settings] })}
                                                 >
                                                     <Checkbox
                                                         id={item.id}
                                                         checked={settings[item.id as keyof typeof settings] as boolean}
                                                         onCheckedChange={(c) => setSettings({ ...settings, [item.id]: c as boolean })}
-                                                        className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 border-gray-600 rounded-md"
+                                                        className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 border-gray-400 rounded-md"
                                                     />
-                                                    <Icon className="h-4 w-4 text-gray-400 group-hover:text-white transition-colors" />
-                                                    <Label htmlFor={item.id} className="cursor-pointer font-medium text-gray-400 group-hover:text-white flex-1 transition-colors">
+                                                    <Icon className="h-4 w-4 text-gray-600 group-hover:text-gray-900 transition-colors" />
+                                                    <Label htmlFor={item.id} className="cursor-pointer font-medium text-gray-600 group-hover:text-gray-900 flex-1 transition-colors">
                                                         {item.label}
                                                     </Label>
                                                 </div>
@@ -678,29 +678,29 @@ export default function ProductImportPage() {
                         <div className="lg:col-span-5">
                             <div className="sticky top-6">
                                 {previewData ? (
-                                    <Card className="border-gray-800 bg-gray-900/50 backdrop-blur-xl shadow-2xl overflow-hidden ring-2 ring-violet-500/20 animate-in fade-in slide-in-from-right-4 duration-500">
+                                    <Card className="border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg overflow-hidden ring-2 ring-violet-200 animate-in fade-in slide-in-from-right-4 duration-500">
                                         {/* Product Image */}
-                                        <div className="relative aspect-square bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden group">
+                                        <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden group">
                                             <img
                                                 src={previewData.images?.[0] || '/placeholder.png'}
                                                 alt={previewData.title}
                                                 className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500"
                                             />
                                             <div className="absolute top-4 right-4">
-                                                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-lg">
+                                                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 shadow-lg">
                                                     <CheckCircle2 className="h-3 w-3 mr-1" />
                                                     Validiert
                                                 </Badge>
                                             </div>
                                             {/* Source Domain */}
                                             {previewData.sourceDomain && (
-                                                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-gray-900/80 backdrop-blur-sm px-3 py-2 rounded-xl border border-gray-700">
+                                                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-xl border border-gray-200">
                                                     <img
                                                         src={getFaviconUrl(previewData.sourceDomain)}
                                                         alt=""
                                                         className="h-4 w-4"
                                                     />
-                                                    <span className="text-xs text-gray-300 font-medium">
+                                                    <span className="text-xs text-gray-700 font-medium">
                                                         Imported from: {previewData.sourceDomain}
                                                     </span>
                                                 </div>
@@ -709,30 +709,30 @@ export default function ProductImportPage() {
 
                                         <CardContent className="p-6 space-y-4">
                                             <div>
-                                                <h3 className="text-2xl font-bold text-white mb-2">{previewData.title}</h3>
+                                                <h3 className="text-2xl font-bold text-gray-900 mb-2">{previewData.title}</h3>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-3xl font-bold text-violet-400">{previewData.price} €</span>
+                                                    <span className="text-3xl font-bold text-violet-600">{previewData.price} €</span>
                                                     {previewData.vendor && (
-                                                        <Badge variant="outline" className="text-gray-400 border-gray-700">
+                                                        <Badge variant="outline" className="text-gray-600 border-gray-300">
                                                             {previewData.vendor}
                                                         </Badge>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            <Separator className="bg-gray-700" />
+                                            <Separator className="bg-gray-200" />
 
                                             <div className="space-y-2">
-                                                <Label className="text-sm font-semibold text-gray-300">Beschreibung</Label>
+                                                <Label className="text-sm font-semibold text-gray-700">Beschreibung</Label>
                                                 <div
-                                                    className="text-sm text-gray-400 line-clamp-4 bg-gray-800/50 p-4 rounded-xl"
+                                                    className="text-sm text-gray-600 line-clamp-4 bg-gray-50 p-4 rounded-xl"
                                                     dangerouslySetInnerHTML={{ __html: previewData.description || 'Keine Beschreibung verfügbar' }}
                                                 />
                                             </div>
 
                                             <Button
                                                 size="lg"
-                                                className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 rounded-2xl h-12 transform hover:-translate-y-0.5 transition-all duration-200"
+                                                className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 rounded-2xl h-12 transform hover:-translate-y-0.5 transition-all duration-200 text-white"
                                                 onClick={handleSaveProduct}
                                                 disabled={isSaving}
                                             >
@@ -751,26 +751,26 @@ export default function ProductImportPage() {
                                         </CardContent>
                                     </Card>
                                 ) : (
-                                    <Card className="border-2 border-dashed border-gray-700 bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-xl shadow-lg">
+                                    <Card className="border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 backdrop-blur-xl shadow-lg">
                                         <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
                                             {isLoadingPreview ? (
                                                 <div className="space-y-4">
-                                                    <div className="h-16 w-16 rounded-full bg-violet-500/20 flex items-center justify-center animate-pulse">
-                                                        <RefreshCw className="h-8 w-8 text-violet-400 animate-spin" />
+                                                    <div className="h-16 w-16 rounded-full bg-violet-200 flex items-center justify-center animate-pulse">
+                                                        <RefreshCw className="h-8 w-8 text-violet-600 animate-spin" />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <p className="text-lg font-semibold text-white">Lade Produktdaten...</p>
-                                                        <p className="text-sm text-gray-400">Bitte warten Sie einen Moment</p>
+                                                        <p className="text-lg font-semibold text-gray-900">Lade Produktdaten...</p>
+                                                        <p className="text-sm text-gray-600">Bitte warten Sie einen Moment</p>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4">
-                                                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
-                                                        <Package className="h-10 w-10 text-violet-400" />
+                                                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-200 to-purple-200 flex items-center justify-center">
+                                                        <Package className="h-10 w-10 text-violet-600" />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <p className="text-lg font-semibold text-white">Bereit zum Import</p>
-                                                        <p className="text-sm text-gray-400 max-w-xs">
+                                                        <p className="text-lg font-semibold text-gray-900">Bereit zum Import</p>
+                                                        <p className="text-sm text-gray-600 max-w-xs">
                                                             Fügen Sie eine Produkt-URL hinzu, um die Vorschau hier zu sehen
                                                         </p>
                                                     </div>
@@ -794,17 +794,17 @@ export default function ProductImportPage() {
                                     placeholder="Produkte durchsuchen..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-12 h-12 bg-gray-900/50 border-gray-800 text-white placeholder:text-gray-500 rounded-2xl backdrop-blur-xl"
+                                    className="pl-12 h-12 bg-white/80 border-gray-200 text-gray-900 placeholder:text-gray-500 rounded-2xl backdrop-blur-xl shadow-sm"
                                 />
                             </div>
 
                             {/* Source Filter */}
                             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                                <SelectTrigger className="w-full sm:w-64 h-12 bg-gray-900/50 border-gray-800 text-white rounded-2xl backdrop-blur-xl">
+                                <SelectTrigger className="w-full sm:w-64 h-12 bg-white/80 border-gray-200 text-gray-900 rounded-2xl backdrop-blur-xl shadow-sm">
                                     <Globe className="h-4 w-4 mr-2 text-gray-500" />
                                     <SelectValue placeholder="Alle Quellen" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-gray-900 border-gray-800 text-white">
+                                <SelectContent className="bg-white border-gray-200 text-gray-900">
                                     <SelectItem value="all">Alle Quellen ({importedProducts.length})</SelectItem>
                                     {uniqueSources.map((source) => (
                                         <SelectItem key={source} value={source}>
@@ -819,10 +819,10 @@ export default function ProductImportPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                             {filteredProducts.length === 0 ? (
                                 <div className="col-span-full">
-                                    <Card className="border-gray-800 bg-gray-900/50 backdrop-blur-xl">
+                                    <Card className="border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg">
                                         <CardContent className="text-center py-16">
-                                            <Package className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                                            <p className="text-gray-400 text-lg">
+                                            <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                            <p className="text-gray-600 text-lg">
                                                 {searchQuery || sourceFilter !== 'all'
                                                     ? 'Keine Produkte gefunden'
                                                     : 'Noch keine Produkte importiert'}
@@ -834,10 +834,10 @@ export default function ProductImportPage() {
                                 filteredProducts.map((product) => (
                                     <Card
                                         key={product.id}
-                                        className="group border-gray-800 bg-gray-900/50 backdrop-blur-xl overflow-hidden hover:border-violet-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/10 cursor-pointer hover:-translate-y-1"
+                                        className="group border-gray-200 bg-white/80 backdrop-blur-xl overflow-hidden hover:border-violet-300 transition-all duration-300 hover:shadow-xl hover:shadow-violet-200/50 cursor-pointer hover:-translate-y-1"
                                     >
                                         {/* Product Image */}
-                                        <div className="relative aspect-square bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
+                                        <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                                             {product.image && (
                                                 <img
                                                     src={product.image.src}
@@ -856,11 +856,11 @@ export default function ProductImportPage() {
                                             </div>
 
                                             {/* Hover Actions */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 gap-2">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 gap-2">
                                                 <Button
                                                     size="sm"
                                                     variant="secondary"
-                                                    className="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-xl border-0 text-white"
+                                                    className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-xl border-0 text-white"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         if (shopDomain) {
@@ -874,7 +874,7 @@ export default function ProductImportPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="secondary"
-                                                    className="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-xl border-0 text-white"
+                                                    className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-xl border-0 text-white"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         if (shopDomain) {
@@ -890,27 +890,27 @@ export default function ProductImportPage() {
 
                                         <CardContent className="p-4 space-y-3">
                                             {/* Product Title */}
-                                            <h4 className="font-semibold text-sm line-clamp-2 text-white group-hover:text-violet-300 transition-colors">
+                                            <h4 className="font-semibold text-sm line-clamp-2 text-gray-900 group-hover:text-violet-700 transition-colors">
                                                 {product.title}
                                             </h4>
 
                                             {/* Price */}
-                                            <p className="text-xl font-bold text-violet-400">
+                                            <p className="text-xl font-bold text-violet-600">
                                                 {product.variants?.[0]?.price || product.price} €
                                             </p>
 
-                                            <Separator className="bg-gray-800" />
+                                            <Separator className="bg-gray-200" />
 
                                             {/* Source Info */}
                                             {product.sourceDomain && (
-                                                <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <div className="flex items-center gap-2 text-xs text-gray-600">
                                                     <img
                                                         src={getFaviconUrl(product.sourceDomain)}
                                                         alt=""
                                                         className="h-4 w-4"
                                                     />
                                                     <span className="truncate">
-                                                        Imported from: <span className="text-violet-400 font-medium">{product.sourceDomain}</span>
+                                                        Imported from: <span className="text-violet-600 font-medium">{product.sourceDomain}</span>
                                                     </span>
                                                 </div>
                                             )}
