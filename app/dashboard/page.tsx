@@ -302,7 +302,11 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
+<<<<<<< HEAD
                 onClick={() => loadDashboardData()}
+=======
+                onClick={loadDashboardData}
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                 className="ml-4 h-8"
                 disabled={loading}
               >

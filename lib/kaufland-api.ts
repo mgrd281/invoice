@@ -66,6 +66,7 @@ export class KauflandAPI {
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
+<<<<<<< HEAD
       // Try multiple endpoints to test connection
       // Kaufland API might use different endpoints, so we'll try a few common ones
       const endpoints = [
@@ -107,6 +108,21 @@ export class KauflandAPI {
       return {
         success: false,
         message: `Verbindungsfehler: ${lastError || 'API nicht erreichbar. Bitte überprüfen Sie die API Base URL.'}`
+=======
+      const response = await this.request('/units', { method: 'GET' })
+      
+      if (response.ok) {
+        return {
+          success: true,
+          message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
+        }
+      } else {
+        const errorText = await response.text()
+        return {
+          success: false,
+          message: `Verbindungsfehler: ${response.status} ${response.statusText}`
+        }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       }
     } catch (error) {
       return {
@@ -160,6 +176,7 @@ export class KauflandAPI {
       }),
     }
 
+<<<<<<< HEAD
     // Try multiple endpoint variations
     const endpoints = [
       { method: 'POST', path: '/units' },
@@ -202,6 +219,28 @@ export class KauflandAPI {
     // If all endpoints failed, return helpful error
     const errorMessage = lastError || 'API endpoint nicht gefunden'
     throw new Error(`Failed to create/update unit: ${errorMessage}. Bitte überprüfen Sie die API Base URL und die Kaufland API-Dokumentation für die korrekten Endpunkte.`)
+=======
+    // Try to update first (PUT), if not exists, create (POST)
+    let response = await this.request(`/units/${product.ean}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+
+    // If update fails with 404, try to create
+    if (response.status === 404) {
+      response = await this.request('/units', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create/update unit: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    return await response.json()
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   }
 
   /**
@@ -244,6 +283,7 @@ export class KauflandAPI {
         }
       }
 
+<<<<<<< HEAD
       try {
         const result = await this.createOrUpdateUnit(kauflandProduct)
         return {
@@ -266,6 +306,14 @@ export class KauflandAPI {
           success: false,
           message: `Fehler beim Synchronisieren: ${errorMessage}`
         }
+=======
+      const result = await this.createOrUpdateUnit(kauflandProduct)
+
+      return {
+        success: true,
+        message: `Produkt erfolgreich zu Kaufland synchronisiert: ${kauflandProduct.title}`,
+        data: result
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       }
     } catch (error) {
       return {

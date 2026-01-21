@@ -7,7 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+<<<<<<< HEAD
 import { ArrowLeft, Loader2, Save, CheckCircle2, XCircle, Store, TestTube, ShoppingBag } from 'lucide-react'
+=======
+import { ArrowLeft, Loader2, Save, CheckCircle2, XCircle, Store, TestTube } from 'lucide-react'
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 import { useToast } from '@/components/ui/toast'
 
 interface KauflandSettings {
@@ -385,6 +389,7 @@ export default function KauflandSettingsPage() {
           </CardContent>
         </Card>
 
+<<<<<<< HEAD
         {/* Shopify Sync Card */}
         <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-green-200">
           <CardContent className="pt-6">
@@ -427,6 +432,8 @@ export default function KauflandSettingsPage() {
           </CardContent>
         </Card>
 
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         <ToastContainer />
       </div>
     </div>

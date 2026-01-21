@@ -484,6 +484,7 @@ export class ShopifyAPI {
     tags?: string
     ids?: string
     fetchOptions?: RequestInit
+<<<<<<< HEAD
     fields?: string // Optional: specify which fields to fetch
   } = {}): Promise<ShopifyProduct[]> {
     try {
@@ -584,6 +585,29 @@ export class ShopifyAPI {
 
       // Slice to exact limit if we over-fetched slightly due to page size
       return mappedProducts.length > requestedLimit ? mappedProducts.slice(0, requestedLimit) : mappedProducts
+=======
+  } = {}): Promise<ShopifyProduct[]> {
+    try {
+      const searchParams = new URLSearchParams()
+      searchParams.set('limit', (params.limit || 50).toString())
+
+      if (params.product_type) {
+        searchParams.set('product_type', params.product_type)
+      }
+
+      if (params.tags) {
+        searchParams.set('tags', params.tags)
+      }
+
+      if (params.ids) {
+        searchParams.set('ids', params.ids)
+      }
+
+      const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
+      const data = await response.json()
+
+      return data.products || []
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     } catch (error) {
       console.error('Error fetching Shopify products:', error)
       throw error

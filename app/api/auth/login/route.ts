@@ -25,7 +25,11 @@ function generateToken(userId: string, email: string, role: string): string {
     email,
     role,
     iat: Math.floor(Date.now() / 1000),
+<<<<<<< HEAD
     exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // ⭐ 7 days (matching cookie)
+=======
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // läuft in 24 Stunden ab
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   }
 
   return jwt.sign(payload, secret)
@@ -188,6 +192,7 @@ export async function POST(request: NextRequest) {
 
     // JWT-Token in HTTP-only Cookie für Sicherheit setzen
     response.cookies.set('auth-token', token, {
+<<<<<<< HEAD
       httpOnly: true,              // ⭐ Cannot be accessed by JavaScript (XSS protection)
       secure: process.env.NODE_ENV === 'production', // ⭐ HTTPS only in production
       sameSite: 'strict',          // ⭐ CSRF protection
@@ -198,6 +203,28 @@ export async function POST(request: NextRequest) {
     // ⚠️ REMOVE insecure user-info cookie - use server-side auth only
     // Delete any existing user-info cookie for security
     response.cookies.delete('user-info')
+=======
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 Stunden
+      path: '/'
+    })
+
+    // Benutzerinformationen in separatem Cookie setzen
+    response.cookies.set('user-info', JSON.stringify({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role
+    }), {
+      httpOnly: false, // Von JavaScript aus zugänglich
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
+    })
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
     return response
 

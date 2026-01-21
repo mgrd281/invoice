@@ -62,12 +62,17 @@ export async function getAvailableKey(digitalProductId: string, shopifyVariantId
     })
 }
 
+<<<<<<< HEAD
 export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string, emailSent: boolean = true, customerId?: string) {
+=======
+export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string) {
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     return prisma.licenseKey.update({
         where: { id: keyId },
         data: {
             isUsed: true,
             usedAt: new Date(),
+<<<<<<< HEAD
             orderId: orderNumber,
             shopifyOrderId: shopifyOrderId,
             customerId: customerId, // Link to customer
@@ -76,6 +81,11 @@ export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyO
             emailSentAt: emailSent ? new Date() : null,
             deliveryStatus: emailSent ? 'SENT' : 'PENDING'
         } as any
+=======
+            orderId: orderNumber, // Storing the visible order number (e.g. #1001) here for display
+            shopifyOrderId: shopifyOrderId
+        }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     })
 }
 
@@ -87,9 +97,13 @@ export async function processDigitalProductOrder(
     customerName: string,
     productTitle: string,
     shopifyVariantId?: string,
+<<<<<<< HEAD
     customerSalutation?: string,
     shouldSendEmail: boolean = true,
     customerId?: string // NEW PARAMETER
+=======
+    customerSalutation?: string
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 ) {
     const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
 
@@ -107,6 +121,7 @@ export async function processDigitalProductOrder(
     })
 
     if (existingKey) {
+<<<<<<< HEAD
         console.log(`🔑 [ORDER ${shopifyOrderId}] Key already exists for product ${digitalProduct.title}`)
         console.log(`   - Key ID: ${existingKey.id}`)
         console.log(`   - Email Sent: ${(existingKey as any).emailSent}`)
@@ -163,6 +178,30 @@ export async function processDigitalProductOrder(
     // ---------------------------------------------------------
     // SEND EMAIL LOGIC
     // ---------------------------------------------------------
+=======
+        console.log(`Key already assigned for order ${shopifyOrderId} and product ${digitalProduct.id}`)
+        return { success: true, key: existingKey.key, message: 'Key already assigned' }
+    }
+
+    const key = await getAvailableKey(digitalProduct.id, shopifyVariantId)
+
+    if (!key) {
+        console.error(`No keys available for product: ${digitalProduct.title} (${digitalProduct.id}) [Variant: ${shopifyVariantId || 'Any'}]`)
+
+        // Notify Admin
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@example.com'
+        await sendEmail({
+            to: adminEmail,
+            subject: `⚠️ KEINE KEYS MEHR: ${digitalProduct.title}`,
+            html: `<p>Achtung,</p><p>Für das Produkt <strong>${digitalProduct.title}</strong> (Shopify ID: ${shopifyProductId}, Variante: ${shopifyVariantId || 'Alle'}) sind keine Lizenzschlüssel mehr verfügbar!</p><p>Eine Bestellung konnte nicht bedient werden.</p>`
+        })
+
+        return { success: false, error: 'No keys available' }
+    }
+
+    // Mark key as used
+    await markKeyAsUsed(key.id, orderNumber, shopifyOrderId)
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
     // Determine Variant Settings (if any)
     let template = digitalProduct.emailTemplate || getDefaultTemplate()
@@ -187,6 +226,11 @@ export async function processDigitalProductOrder(
     const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
 
     if (Array.isArray(buttons) && buttons.length > 0) {
+<<<<<<< HEAD
+=======
+        // Generate HTML for multiple buttons
+        // This generates a SINGLE block containing ALL buttons
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         const buttonsHtml = buttons.map((btn: any) => `
                 <div style="margin-bottom: 12px;">
                     <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">
@@ -197,6 +241,18 @@ export async function processDigitalProductOrder(
 
         downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
     } else if (digitalProduct.downloadUrl) {
+<<<<<<< HEAD
+=======
+        // Fallback to legacy single button (ONLY if no variant override buttons were found, and main product has legacy url)
+        // Note: If variant overrides buttons, 'buttons' array will be populated and we won't reach here.
+        // If variant has NO buttons but main product has legacy URL, we might want to use legacy URL?
+        // Current logic: if variant has buttons, use them. If not, check main product buttons. If not, check legacy.
+        // My code above sets 'buttons' to main product buttons initially.
+        // So if variant has NO buttons defined, it falls back to main product buttons.
+        // If main product has NO buttons defined, 'buttons' is null/empty.
+        // Then we check legacy downloadUrl.
+
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         const btnText = digitalProduct.buttonText || 'Download';
         const btnColor = digitalProduct.buttonColor || '#000000';
         const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
@@ -205,6 +261,10 @@ export async function processDigitalProductOrder(
     }
 
     // Convert newlines to HTML breaks in the template BEFORE injecting variables
+<<<<<<< HEAD
+=======
+    // This ensures we don't break the HTML structure of injected variables (like the button)
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     const htmlTemplate = convertToHtml(template);
 
     const emailBody = replaceVariables(htmlTemplate, {
@@ -217,6 +277,7 @@ export async function processDigitalProductOrder(
 
     const subject = `Ihr Produktschlüssel für ${productTitle}`
 
+<<<<<<< HEAD
     try {
         await sendEmail({
             to: customerEmail,
@@ -244,6 +305,15 @@ export async function processDigitalProductOrder(
     }
 
     // Automatically fulfill order in Shopify ONLY if email was sent
+=======
+    await sendEmail({
+        to: customerEmail,
+        subject,
+        html: emailBody
+    })
+
+    // Automatically fulfill order in Shopify
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     try {
         console.log(`📦 Auto-fulfilling Shopify order: ${shopifyOrderId}`)
         const { ShopifyAPI } = await import('@/lib/shopify-api')
@@ -258,6 +328,10 @@ export async function processDigitalProductOrder(
         }
     } catch (fulfillError) {
         console.error('Failed to auto-fulfill Shopify order:', fulfillError)
+<<<<<<< HEAD
+=======
+        // We don't fail the whole process if fulfillment fails, as the key was already sent
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     }
 
     return { success: true, key: key.key }
@@ -294,6 +368,7 @@ function convertToHtml(text: string) {
     // especially when content comes from contentEditable which might use newlines for breaks
     return text.replace(/\n/g, '<br/>');
 }
+<<<<<<< HEAD
 
 export async function resendDigitalProductEmail(keyId: string) {
     const key = await prisma.licenseKey.findUnique({
@@ -421,3 +496,5 @@ export async function resendDigitalProductEmail(keyId: string) {
 
     return { success: true }
 }
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
