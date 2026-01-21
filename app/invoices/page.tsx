@@ -73,11 +73,11 @@ function getGermanStatus(status: string) {
   const s = status.toUpperCase()
   switch (s) {
     case 'PAID': return 'Bezahlt'
-    case 'SENT': return 'Versendet'
+    case 'SENT':
+    case 'OPEN': return 'Offen'
     case 'DRAFT': return 'Entwurf'
     case 'OVERDUE': return 'Überfällig'
     case 'CANCELLED': return 'Storniert'
-    case 'OPEN': return 'Offen'
     case 'PENDING': return 'Ausstehend'
     case 'BLOCKED': return 'Gesperrt'
     case 'ON_HOLD': return 'In Prüfung'
@@ -173,6 +173,7 @@ function InvoicesPageContent() {
   const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '50')) // Default limit set to 50 as requested
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
+  const [globalTotalCount, setGlobalTotalCount] = useState(0)
   const [vat19Sum, setVat19Sum] = useState(0)
   const [vat7Sum, setVat7Sum] = useState(0)
   const [totalPaidAmount, setTotalPaidAmount] = useState(0)
@@ -318,6 +319,18 @@ function InvoicesPageContent() {
       if (dateRange.from) queryParams.append('from', dateRange.from)
       if (dateRange.to) queryParams.append('to', dateRange.to)
 
+      if (statusFilter) {
+        // Map common German labels to status keys the API/Enum understands
+        let apiStatus = statusFilter;
+        if (statusFilter === 'Offen') apiStatus = 'SENT';
+        if (statusFilter === 'Bezahlt') apiStatus = 'PAID';
+        if (statusFilter === 'Storniert') apiStatus = 'CANCELLED';
+        if (statusFilter === 'Überfällig') apiStatus = 'OVERDUE';
+        if (statusFilter === 'Gutschrift') apiStatus = 'REFUND';
+
+        queryParams.append('status', apiStatus)
+      }
+
       // Advanced Filters
       if (filterPaymentMethod && filterPaymentMethod !== 'all') queryParams.append('paymentMethod', filterPaymentMethod)
       if (filterMinAmount) queryParams.append('minAmount', filterMinAmount)
@@ -366,6 +379,9 @@ function InvoicesPageContent() {
 
       setTotalPages(pagination.pages)
       setTotalInvoicesCount(pagination.total)
+      if (data.stats && typeof data.stats.count === 'number') {
+        setGlobalTotalCount(data.stats.count)
+      }
 
       console.log('Fetched invoices for user:', user.email, 'Count:', allInvoices.length, 'Page:', page)
 
@@ -429,7 +445,7 @@ function InvoicesPageContent() {
         setIsSearching(false) // Stop search loading indicator
       }
     }
-  }, [isAuthenticated, user?.email, page, limit, debouncedSearchQuery, dateRange, filterPaymentMethod, filterMinAmount, filterMaxAmount, filterNewCustomers]) // Add filters to dependencies
+  }, [isAuthenticated, user?.email, page, limit, debouncedSearchQuery, statusFilter, dateRange, filterPaymentMethod, filterMinAmount, filterMaxAmount, filterNewCustomers]) // Add filters to dependencies
 
   // Listen for invoice updates (e.g., after CSV upload)
   const handleInvoiceUpdate = useCallback(() => {
@@ -628,7 +644,11 @@ function InvoicesPageContent() {
 
   // Apply status filter if active
   if (statusFilter) {
-    baseInvoices = baseInvoices.filter(invoice => invoice.status === statusFilter)
+    baseInvoices = baseInvoices.filter(invoice => {
+      const germanStatus = getGermanStatus(invoice.status)
+      // Check both raw status and translated status to be safe
+      return germanStatus === statusFilter || invoice.status === statusFilter
+    })
   }
 
   // Client-side Advanced Filters
@@ -972,7 +992,7 @@ function InvoicesPageContent() {
   const statsBaseInvoices = showSearchResults ? visibleSearchResults : visibleInvoices
 
   // Use total count from API if available (for pagination/filtering), otherwise fallback to loaded length
-  const totalInvoices = totalInvoicesCount > 0 ? totalInvoicesCount : statsBaseInvoices.length
+  const totalInvoices = globalTotalCount > 0 ? globalTotalCount : statsBaseInvoices.length
 
   // Note: These counts are now fetched from the API for accuracy across all pages
   const paidInvoices = paidInvoicesCount

@@ -35,24 +35,50 @@ export async function GET(req: Request) {
 
     // Status filter
     if (status !== 'all') {
-      where.status = status as InvoiceStatus
+      const s = status.toUpperCase()
+      if (s === 'REFUND' || s === 'GUTSCHRIFT') {
+        where.documentKind = { in: ['CREDIT_NOTE', 'REFUND_FULL', 'REFUND_PARTIAL'] }
+      } else if (s === 'OFFEN' || s === 'OPEN' || s === 'SENT') {
+        where.status = 'SENT'
+      } else if (s === 'BEZAHLT' || s === 'PAID') {
+        where.status = 'PAID'
+      } else if (s === 'STORNIERT' || s === 'CANCELLED') {
+        where.status = 'CANCELLED'
+      } else if (s === 'ÜBERFÄLLIG' || s === 'UEBERFAELLIG' || s === 'OVERDUE') {
+        where.status = 'OVERDUE'
+      } else {
+        where.status = status as InvoiceStatus
+      }
     }
 
     // Date range filter
-    const now = new Date()
-    if (dateRange === 'today') {
-      const start = new Date(now.setHours(0, 0, 0, 0))
-      const end = new Date(now.setHours(23, 59, 59, 999))
-      where.issueDate = { gte: start, lte: end }
-    } else if (dateRange === 'week') {
-      const start = new Date(now.setDate(now.getDate() - 7))
-      where.issueDate = { gte: start }
-    } else if (dateRange === 'month') {
-      const start = new Date(now.setMonth(now.getMonth() - 1))
-      where.issueDate = { gte: start }
-    } else if (dateRange === 'year') {
-      const start = new Date(now.setFullYear(now.getFullYear() - 1))
-      where.issueDate = { gte: start }
+    const from = searchParams.get('from')
+    const to = searchParams.get('to')
+
+    if (from || to) {
+      where.issueDate = {}
+      if (from) where.issueDate.gte = new Date(from)
+      if (to) {
+        const toDate = new Date(to)
+        toDate.setHours(23, 59, 59, 999)
+        where.issueDate.lte = toDate
+      }
+    } else {
+      const now = new Date()
+      if (dateRange === 'today') {
+        const start = new Date(now.setHours(0, 0, 0, 0))
+        const end = new Date(now.setHours(23, 59, 59, 999))
+        where.issueDate = { gte: start, lte: end }
+      } else if (dateRange === 'week') {
+        const start = new Date(now.setDate(now.getDate() - 7))
+        where.issueDate = { gte: start }
+      } else if (dateRange === 'month') {
+        const start = new Date(now.setMonth(now.getMonth() - 1))
+        where.issueDate = { gte: start }
+      } else if (dateRange === 'year') {
+        const start = new Date(now.setFullYear(now.getFullYear() - 1))
+        where.issueDate = { gte: start }
+      }
     }
 
     // Execute query
@@ -71,22 +97,19 @@ export async function GET(req: Request) {
       prisma.invoice.count({ where })
     ])
 
-    // Calculate detailed stats manually to support mixed status types (Enum vs String)
-    // We fetch all invoices matching the search criteria to calculate accurate stats
+    // Calculate detailed stats manually using a where clause WITHOUT the status filter
+    // This ensures summary cards show totals for all statuses even when one is selected
+    const statsWhere = { ...where };
+    delete statsWhere.status;
+    delete statsWhere.documentKind; // Remove documentKind as well if it was used for REFUND status filter
+
     const allMatchingInvoices = await prisma.invoice.findMany({
-      where,
+      where: statsWhere,
       select: {
         status: true,
         documentKind: true,
         totalGross: true,
         totalTax: true,
-        items: {
-          select: {
-            taxRate: {
-              select: { rate: true }
-            }
-          }
-        }
       }
     })
 
@@ -192,7 +215,7 @@ export async function GET(req: Request) {
       },
       stats: {
         totalAmount: allMatchingInvoices.reduce((sum, inv) => sum + toNumber(inv.totalGross), 0),
-        count: total,
+        count: allMatchingInvoices.length,
         totalPaidAmount,
         paidInvoicesCount,
         openInvoicesCount,
