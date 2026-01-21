@@ -79,3 +79,47 @@ export async function POST(req: Request) {
         return new NextResponse('Internal Error', { status: 500 })
     }
 }
+
+// Statistics endpoint
+export async function PATCH(req: Request) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session) {
+            return new NextResponse('Unauthorized', { status: 401 })
+        }
+
+        const organizationId = 'default-org-id'
+
+        const [totalBlocked, attemptsThisWeek, recentAttempts] = await Promise.all([
+            prisma.blockedUser.count({ where: { organizationId } }),
+            prisma.blockedUserAttempt.count({
+                where: {
+                    organizationId,
+                    createdAt: {
+                        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                    }
+                }
+            }),
+            prisma.blockedUserAttempt.findMany({
+                where: { organizationId },
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+                select: {
+                    email: true,
+                    attemptType: true,
+                    createdAt: true
+                }
+            })
+        ])
+
+        return NextResponse.json({
+            totalBlocked,
+            attemptsThisWeek,
+            recentAttempts
+        })
+    } catch (error) {
+        console.error('Error fetching stats:', error)
+        return new NextResponse('Internal Error', { status: 500 })
+    }
+}
+

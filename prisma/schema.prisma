@@ -122,6 +122,7 @@ model Organization {
   realEstateProfiles RealEstateSearchProfile[]
   apiKeys           ApiKey[]
   blockedUsers      BlockedUser[]
+  blockedUserAttempts BlockedUserAttempt[]
 }
 
 model WidgetSettings {
@@ -232,6 +233,24 @@ model BlockedUser {
   
   @@unique([organizationId, email])
   @@index([email])
+}
+
+model BlockedUserAttempt {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  email          String
+  attemptType    String       // ORDER_CREATE, REFUND_REQUEST, CANCEL_REQUEST
+  orderId        String?
+  invoiceId      String?
+  ipAddress      String?
+  userAgent      String?
+  blocked        Boolean      @default(true)
+  reason         String?
+  createdAt      DateTime     @default(now())
+  
+  @@index([email])
+  @@index([organizationId, createdAt])
 }
 
 model CustomerDocument {

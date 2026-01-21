@@ -5,6 +5,7 @@ import { handleOrderCreate, handleOrderUpdate } from '@/lib/shopify-order-handle
 import { log } from '@/lib/logger'
 import { sendInvoiceEmail } from '@/lib/email-service'
 import { getShopifySettings } from '@/lib/shopify-settings'
+import { checkAndLogBlockedUser } from '@/lib/blocklist'
 
 export async function POST(req: Request) {
   try {
@@ -113,6 +114,57 @@ export async function POST(req: Request) {
     // 2. Route based on topic
     if (topic === 'orders/create' || topic === 'orders/updated') {
       log('🔄 Processing order...')
+
+      // ========== BLOCKLIST CHECK ==========
+      const customerEmail = payload.email || payload.customer?.email
+      const organizationId = 'default-org-id' // TODO: Get from shop domain mapping
+
+      if (customerEmail && topic === 'orders/create') {
+        log(`🛡️ Checking blocklist for: ${customerEmail}`)
+        const blockCheck = await checkAndLogBlockedUser({
+          email: customerEmail,
+          organizationId,
+          attemptType: 'ORDER_CREATE',
+          orderId: String(payload.id),
+          ipAddress: undefined, // Not available in webhook
+          userAgent: undefined
+        })
+
+        if (blockCheck.blocked) {
+          log(`🚫 BLOCKED USER DETECTED: ${customerEmail} - Reason: ${blockCheck.reason}`)
+          log(`⚠️ Order ${payload.id} will be marked as BLOCKED for manual review`)
+
+          // Import prisma to update order status
+          try {
+            const { prisma } = await import('@/lib/prisma')
+            const shopifyOrderId = String(payload.id)
+
+            // Find or create order with BLOCKED status
+            const order = await prisma.order.findFirst({
+              where: { shopifyOrderId }
+            })
+
+            if (order) {
+              await prisma.order.update({
+                where: { id: order.id },
+                data: { status: 'BLOCKED' }
+              })
+              log(`✅ Order ${shopifyOrderId} status set to BLOCKED`)
+            }
+          } catch (err) {
+            log('❌ Error updating order status to BLOCKED:', err)
+          }
+
+          // Skip invoice creation and digital product delivery for blocked users
+          log('🚫 Skipping invoice creation and product delivery for blocked user')
+          return NextResponse.json({
+            success: true,
+            blocked: true,
+            message: 'Order blocked for manual review'
+          })
+        }
+      }
+      // ========== END BLOCKLIST CHECK ==========
 
       // Create invoice for all orders (including voided - they will be marked as cancelled)
       if (payload.financial_status !== 'refunded') {

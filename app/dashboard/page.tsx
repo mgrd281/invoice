@@ -28,7 +28,8 @@ import {
   Gift,
   Globe,
   Star,
-  RotateCcw
+  RotateCcw,
+  ShieldAlert
 } from 'lucide-react'
 import {
   DndContext,
@@ -528,6 +529,20 @@ export default function DashboardPage() {
                       <CardTitle className="text-xl">Benutzerverwaltung</CardTitle>
                       <CardDescription>
                         Alle Benutzer und Berechtigungen verwalten
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+
+                <Link href="/blocked-users">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-rose-100 bg-rose-50">
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-gradient-to-r from-rose-600 to-red-700 rounded-xl flex items-center justify-center mb-4">
+                        <ShieldAlert className="h-6 w-6 text-white" />
+                      </div>
+                      <CardTitle className="text-xl">Blockierte Benutzer</CardTitle>
+                      <CardDescription>
+                        Missbrauch verhindern und Blacklist verwalten
                       </CardDescription>
                     </CardHeader>
                   </Card>

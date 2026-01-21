@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { InvoiceType, generateInvoiceNumber, createRefundItems, ExtendedInvoice } from '@/lib/invoice-types'
+import { checkAndLogBlockedUser } from '@/lib/blocklist'
 
 // Mock storage - in einer echten Anwendung würde dies eine Datenbank sein
 declare global {
@@ -41,6 +42,37 @@ export async function POST(
         { status: 404 }
       )
     }
+
+    // ========== BLOCKLIST CHECK ==========
+    const customerEmail = originalInvoice.customerEmail
+    const organizationId = 'default-org-id'
+
+    if (customerEmail) {
+      console.log(`🛡️ Checking blocklist for refund request: ${customerEmail}`)
+      const blockCheck = await checkAndLogBlockedUser({
+        email: customerEmail,
+        organizationId,
+        attemptType: 'REFUND_REQUEST',
+        invoiceId: invoiceId,
+        ipAddress: undefined,
+        userAgent: undefined
+      })
+
+      if (blockCheck.blocked) {
+        console.log(`🚫 BLOCKED USER REFUND ATTEMPT: ${customerEmail} - Reason: ${blockCheck.reason}`)
+        console.log(`⚠️ Refund for invoice ${originalInvoice.number} requires manual review`)
+
+        // Mark invoice for manual review instead of processing automatic refund
+        return NextResponse.json({
+          success: false,
+          blocked: true,
+          message: 'Refund request from blocked user requires manual review',
+          reason: blockCheck.reason,
+          requiresManualReview: true
+        }, { status: 403 })
+      }
+    }
+    // ========== END BLOCKLIST CHECK ==========
 
     // Prüfen ob Rechnung rückerstattungsfähig ist
     if (originalInvoice.type !== InvoiceType.REGULAR) {

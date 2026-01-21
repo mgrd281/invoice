@@ -21,7 +21,8 @@ import {
     Globe,
     Star,
     Zap,
-    Store
+    Store,
+    ShieldAlert
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -167,6 +168,17 @@ export const DEFAULT_FEATURES = [
         icon: Key,
         iconBg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50'
+    },
+    {
+        id: 'blocked-users',
+        href: '/blocked-users',
+        title: 'Blockierte Benutzer',
+        description: 'Missbrauch verhindern & Blacklist verwalten',
+        icon: ShieldAlert,
+        iconBg: 'bg-gradient-to-r from-red-600 to-rose-700',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-white to-red-50',
+        badge: 'SECURITY',
+        badgeClass: 'bg-red-100 text-red-700'
     },
     {
         id: 'settings',
