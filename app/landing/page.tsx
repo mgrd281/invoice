@@ -5,6 +5,7 @@ import { FileText, Users, Upload, Settings, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import './landing.css'
+import './mobile.css' // Mobile-only optimizations (≤768px)
 
 export default function LandingPage() {
   const router = useRouter()
