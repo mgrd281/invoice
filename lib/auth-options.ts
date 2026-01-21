@@ -64,12 +64,16 @@ export const authOptions: NextAuthOptions = {
             if (session.user) {
                 // @ts-ignore
                 session.user.id = token.sub
+                // @ts-ignore
+                session.user.organizationId = token.organizationId
             }
             return session
         },
         async jwt({ token, user }) {
             if (user) {
                 token.sub = user.id
+                // @ts-ignore
+                token.organizationId = user.organizationId
             }
             return token
         }

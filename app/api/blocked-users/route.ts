@@ -10,8 +10,8 @@ export async function GET(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        // Fixed Organization ID for now
-        const organizationId = 'default-org-id'
+        // Get organizationId from session
+        const organizationId = (session.user as any)?.organizationId || 'default-org-id'
 
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search') || ''
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const organizationId = 'default-org-id'
+        const organizationId = (session.user as any)?.organizationId || 'default-org-id'
         const body = await req.json()
         const { email, name, reason } = body
 
@@ -88,7 +88,7 @@ export async function PATCH(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const organizationId = 'default-org-id'
+        const organizationId = (session.user as any)?.organizationId || 'default-org-id'
 
         const [totalBlocked, attemptsThisWeek, recentAttempts] = await Promise.all([
             prisma.blockedUser.count({ where: { organizationId } }),

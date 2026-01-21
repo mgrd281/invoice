@@ -10,7 +10,7 @@ export async function GET(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const organizationId = 'default-org-id'
+        const organizationId = (session.user as any)?.organizationId || 'default-org-id'
 
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search') || ''
