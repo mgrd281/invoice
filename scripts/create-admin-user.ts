@@ -4,9 +4,18 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function createAdminUser() {
-    const email = 'mgrdegh@web.de'
-    const password = '1532@@@'
+    // ✅ SECURE: Read from environment variables
+    const email = process.env.ADMIN_EMAIL
+    const password = process.env.ADMIN_PASSWORD
     const role = 'ADMIN'
+
+    if (!email || !password) {
+        console.error('❌ Error: Missing environment variables!')
+        console.error('Please set ADMIN_EMAIL and ADMIN_PASSWORD')
+        console.error('\nUsage:')
+        console.error('  ADMIN_EMAIL=your@email.com ADMIN_PASSWORD=yourpass npx tsx scripts/create-admin-user.ts')
+        process.exit(1)
+    }
 
     try {
         // Check if user already exists
@@ -52,9 +61,9 @@ async function createAdminUser() {
             console.log('Role:', user.role)
         }
 
-        console.log('\n🔐 Login credentials:')
+        console.log('\n🔐 User configured successfully!')
         console.log('Email:', email)
-        console.log('Password:', password)
+        console.log('Password: [HIDDEN for security]')
         console.log('\n🌐 You can now login at: /login')
 
     } catch (error) {
