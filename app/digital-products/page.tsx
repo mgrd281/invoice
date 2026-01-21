@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -229,9 +230,7 @@ export default function DigitalProductsPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                            </Button>
+                            <BackButton fallbackUrl="/dashboard" variant="ghost" />
                             <div>
                                 <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                                 <p className="text-xs text-gray-500">Verwalten Sie Ihre Lizenzschlüssel und Downloads</p>

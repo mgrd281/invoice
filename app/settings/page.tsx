@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -284,10 +285,7 @@ export default function SettingsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Button variant="ghost" size="sm" className="mr-4" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Zurück
-              </Button>
+              <BackButton fallbackUrl="/dashboard" className="mr-4" />
               <Settings className="h-8 w-8 text-blue-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Einstellungen

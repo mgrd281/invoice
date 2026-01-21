@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -147,10 +148,7 @@ export default function NewDigitalProductPage() {
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => router.back()}>
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Zurück
-                    </Button>
+                    <BackButton fallbackUrl="/digital-products" />
                     <h1 className="text-xl font-bold text-gray-900">Digitales Produkt hinzufügen</h1>
                 </div>
             </header>

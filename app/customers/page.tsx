@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSafeNavigation } from '@/hooks/use-safe-navigation'
 import { useState, useEffect, Suspense } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -302,9 +303,7 @@ function CustomersPageContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.back()}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+              <BackButton fallbackUrl="/dashboard" variant="ghost" className="rounded-full" />
               <div>
                 <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Kunden

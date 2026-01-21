@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -187,14 +188,7 @@ export default function NewReceiptPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Zurück</span>
-          </Button>
+          <BackButton fallbackUrl="/dashboard" variant="outline" className="flex items-center space-x-2" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Neue Empfangsbestätigung

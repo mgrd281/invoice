@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -1195,10 +1196,7 @@ function ReviewsPageContent() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Zurück
-                            </Button>
+                            <BackButton fallbackUrl="/dashboard" />
                             <span className="text-gray-300">/</span>
                             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />

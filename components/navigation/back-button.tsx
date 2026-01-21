@@ -11,6 +11,7 @@ interface BackButtonProps {
     variant?: 'default' | 'outline' | 'ghost' | 'link' | 'destructive' | 'secondary'
     className?: string
     showIcon?: boolean
+    forceHierarchy?: boolean
 }
 
 export function BackButton({
@@ -18,11 +19,17 @@ export function BackButton({
     label = 'Zurück',
     variant = 'ghost',
     className,
-    showIcon = true
+    showIcon = true,
+    forceHierarchy = true // Default to true for hierarchical behavior
 }: BackButtonProps) {
     const router = useRouter()
 
     const handleBack = () => {
+        if (forceHierarchy) {
+            router.push(fallbackUrl)
+            return
+        }
+
         // Check if there's history to go back to
         if (typeof window !== 'undefined' && window.history.length > 1) {
             router.back()

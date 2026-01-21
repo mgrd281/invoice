@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -53,25 +54,25 @@ export default function NewExpensePage() {
   const handleInputChange = (field: keyof ExpenseFormData, value: any) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value }
-      
+
       // Auto-calculate amounts when net amount or tax rate changes
       if (field === 'netAmount' || field === 'taxRate') {
         const netAmount = field === 'netAmount' ? value : updated.netAmount
         const taxRate = field === 'taxRate' ? value : updated.taxRate
-        
+
         updated.taxAmount = (netAmount * taxRate) / 100
         updated.totalAmount = netAmount + updated.taxAmount
       }
-      
+
       // Auto-calculate net amount when total amount changes
       if (field === 'totalAmount') {
         const totalAmount = value
         const taxRate = updated.taxRate
-        
+
         updated.netAmount = totalAmount / (1 + taxRate / 100)
         updated.taxAmount = totalAmount - updated.netAmount
       }
-      
+
       // Auto-set accounting account based on category
       if (field === 'category') {
         const accountMap: { [key in ExpenseCategory]: string } = {
@@ -85,12 +86,12 @@ export default function NewExpensePage() {
         }
         updated.accountingAccount = accountMap[value as ExpenseCategory]
       }
-      
+
       // Auto-generate booking text
       if (field === 'description' || field === 'supplier') {
         updated.bookingText = `${updated.description} - ${updated.supplier}`.slice(0, 60)
       }
-      
+
       return updated
     })
   }
@@ -98,16 +99,16 @@ export default function NewExpensePage() {
   const handleFileUpload = async (file: File) => {
     try {
       setUploading(true)
-      
+
       const formDataUpload = new FormData()
       formDataUpload.append('file', file)
       formDataUpload.append('type', 'expense-receipt')
-      
+
       const response = await authenticatedFetch('/api/upload', {
         method: 'POST',
         body: formDataUpload
       })
-      
+
       if (response.ok) {
         const result = await response.json()
         return result.url
@@ -126,16 +127,16 @@ export default function NewExpensePage() {
   const handleSave = async () => {
     try {
       setSaving(true)
-      
+
       // Validate required fields
       if (!formData.description || !formData.supplier || !formData.totalAmount) {
         alert('Bitte füllen Sie alle Pflichtfelder aus')
         return
       }
-      
+
       let receiptUrl = null
       let receiptFileName = null
-      
+
       // Upload receipt file if provided
       if (formData.receiptFile) {
         receiptUrl = await handleFileUpload(formData.receiptFile)
@@ -144,7 +145,7 @@ export default function NewExpensePage() {
         }
         receiptFileName = formData.receiptFile.name
       }
-      
+
       // Prepare expense data
       const expenseData = {
         date: formData.date,
@@ -162,7 +163,7 @@ export default function NewExpensePage() {
         costCenter: formData.costCenter,
         bookingText: formData.bookingText
       }
-      
+
       // Save expense
       const response = await authenticatedFetch('/api/accounting/expenses', {
         method: 'POST',
@@ -171,7 +172,7 @@ export default function NewExpensePage() {
         },
         body: JSON.stringify(expenseData)
       })
-      
+
       if (response.ok) {
         alert('Ausgabe erfolgreich gespeichert!')
         router.push('/buchhaltung')
@@ -179,7 +180,7 @@ export default function NewExpensePage() {
         const error = await response.json()
         throw new Error(error.error || 'Failed to save expense')
       }
-      
+
     } catch (error) {
       console.error('Error saving expense:', error)
       alert('Fehler beim Speichern der Ausgabe')
@@ -192,14 +193,7 @@ export default function NewExpensePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Zurück</span>
-          </Button>
+          <BackButton fallbackUrl="/buchhaltung" variant="outline" className="flex items-center space-x-2" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
               <Calculator className="w-8 h-8 text-blue-600" />
@@ -235,7 +229,7 @@ export default function NewExpensePage() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="category">Kategorie *</Label>
                   <Select
@@ -257,7 +251,7 @@ export default function NewExpensePage() {
                   </Select>
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="description">Beschreibung *</Label>
                 <Textarea
@@ -291,7 +285,7 @@ export default function NewExpensePage() {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="supplierTaxId">Steuernummer (optional)</Label>
                 <Input
@@ -327,7 +321,7 @@ export default function NewExpensePage() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="taxRate">MwSt-Satz (%)</Label>
                   <Select
@@ -344,7 +338,7 @@ export default function NewExpensePage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="netAmount">Nettobetrag (€)</Label>
                   <Input
@@ -358,7 +352,7 @@ export default function NewExpensePage() {
                   />
                 </div>
               </div>
-              
+
               <div className="bg-gray-50 p-3 rounded">
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
@@ -403,7 +397,7 @@ export default function NewExpensePage() {
                     Unterstützte Formate: PDF, JPG, PNG (max. 10MB)
                   </p>
                 </div>
-                
+
                 {formData.receiptFile && (
                   <div className="bg-green-50 p-3 rounded border border-green-200">
                     <p className="text-sm text-green-800">
@@ -440,15 +434,15 @@ export default function NewExpensePage() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="border-t pt-4">
                 <div className="text-lg font-bold text-center">
                   €{formData.totalAmount.toFixed(2)}
                 </div>
                 <p className="text-xs text-gray-500 text-center">Gesamtbetrag</p>
               </div>
-              
-              <Button 
+
+              <Button
                 onClick={handleSave}
                 disabled={saving || !formData.description || !formData.supplier || !formData.totalAmount}
                 className="w-full"
@@ -483,7 +477,7 @@ export default function NewExpensePage() {
                   placeholder="6815"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="costCenter">Kostenstelle</Label>
                 <Input
@@ -493,7 +487,7 @@ export default function NewExpensePage() {
                   placeholder="ADMIN"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="bookingText">Buchungstext</Label>
                 <Input

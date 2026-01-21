@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -111,17 +112,17 @@ export default function CancelInvoicePage() {
         } else {
           console.error('Invalid invoice data structure or error:', data)
           alert('Fehler: Ungültige Rechnungsdaten / Error: Invalid invoice data')
-          router.back()
+          router.push(`/invoices/${params.id}`)
         }
       } else {
         console.error('Failed to load invoice')
         alert('Fehler beim Laden der Rechnung / Error loading invoice')
-        router.back()
+        router.push(`/invoices/${params.id}`)
       }
     } catch (error) {
       console.error('Error loading invoice:', error)
       alert('Fehler beim Laden der Rechnung / Error loading invoice')
-      router.back()
+      router.push(`/invoices/${params.id}`)
     } finally {
       setLoading(false)
     }
@@ -194,7 +195,7 @@ export default function CancelInvoicePage() {
           <X className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Rechnung nicht gefunden</h1>
           <p className="text-gray-600 mb-4">Die angeforderte Rechnung konnte nicht gefunden werden.</p>
-          <Button onClick={() => router.back()}>Zurück</Button>
+          <Button onClick={() => router.push('/invoices')}>Zurück</Button>
         </div>
       </div>
     )
@@ -204,14 +205,7 @@ export default function CancelInvoicePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Zurück / Back</span>
-          </Button>
+          <BackButton fallbackUrl={`/invoices/${params.id}`} variant="outline" className="flex items-center space-x-2" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
               <FileX className="w-8 h-8 text-red-500" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BackButton } from '@/components/navigation/back-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -142,10 +143,7 @@ function BlockedUsersContent() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Zurück
-                        </Button>
+                        <BackButton fallbackUrl="/dashboard" />
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                                 <ShieldAlert className="h-6 w-6 mr-2 text-red-600" />
