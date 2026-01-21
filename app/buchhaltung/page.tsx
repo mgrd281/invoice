@@ -632,3 +632,4 @@ export default function BuchhaltungPage() {
     </Suspense>
   )
 }
+

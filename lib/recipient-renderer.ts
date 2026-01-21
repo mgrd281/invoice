@@ -19,7 +19,7 @@ interface Customer {
 
 export function renderRecipientBlock(customer: Customer): string[] {
   const lines: string[] = []
-  
+
   // Extract fields
   const name = (customer.name || '').toString().trim()
   const companyName = (customer.companyName || customer.company || '').toString().trim()
@@ -51,12 +51,12 @@ export function renderRecipientBlock(customer: Customer): string[] {
     if (companyName) {
       lines.push(companyName)
     }
-    
+
     // Contact Person second (secondary)
     if (contactPerson) {
       lines.push(contactPerson)
     }
-    
+
     // Fallback only if both company name and contact person are empty
     if (!companyName && !contactPerson) {
       lines.push('Unbekannter Kunde')
@@ -90,6 +90,6 @@ export function renderRecipientBlock(customer: Customer): string[] {
 
   const finalLines = lines.filter(line => line.trim() !== '')
   console.log('✅ renderRecipientBlock output:', finalLines)
-  
+
   return finalLines
 }

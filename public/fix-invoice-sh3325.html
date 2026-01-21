@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fix PDF - Rechnung SH-3325</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            padding: 50px; 
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             min-height: 100vh;
@@ -97,7 +97,7 @@
 <body>
     <div class="fix-container">
         <h1>🔧 PDF Fix für Rechnung SH-3325</h1>
-        
+
         <div class="invoice-header">
             <h3>📄 Rechnung SH-3325</h3>
             <p><strong>Kunde:</strong> E-Commerce Kunde #3325</p>
@@ -105,20 +105,20 @@
             <p><strong>Datum:</strong> 10.10.2025</p>
             <p><strong>ID:</strong> inv-1760129064902-7w5jonn44</p>
         </div>
-        
+
         <button class="big-download-btn" onclick="downloadPDF()" id="downloadBtn">
             🚀 PDF JETZT HERUNTERLADEN
         </button>
-        
+
         <div class="progress-container" id="progressContainer" style="display: none;">
             <div class="progress-bar" id="progressBar"></div>
         </div>
-        
+
         <div id="status"></div>
-        
+
         <div class="alternative-links">
             <h4>🔗 Alternative Download-Links:</h4>
-            <a href="/api/invoices/inv-1760129064902-7w5jonn44/download-pdf" 
+            <a href="/api/invoices/inv-1760129064902-7w5jonn44/download-pdf"
                target="_blank" class="link-btn">
                📄 Direkter API Link
             </a>
@@ -129,7 +129,7 @@
                🚨 Notfall-Seite
             </a>
         </div>
-        
+
         <div style="margin-top: 30px; font-size: 14px; color: #666;">
             <p><strong>Hinweise:</strong></p>
             <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
@@ -143,17 +143,17 @@
     <script>
         const invoiceId = 'inv-1760129064902-7w5jonn44';
         const invoiceNumber = 'SH-3325';
-        
+
         function updateStatus(message, type = 'loading') {
             const status = document.getElementById('status');
             status.className = `status ${type}`;
             status.innerHTML = message;
         }
-        
+
         function updateProgress(percent) {
             const container = document.getElementById('progressContainer');
             const bar = document.getElementById('progressBar');
-            
+
             if (percent > 0) {
                 container.style.display = 'block';
                 bar.style.width = percent + '%';
@@ -161,18 +161,18 @@
                 container.style.display = 'none';
             }
         }
-        
+
         async function downloadPDF() {
             const btn = document.getElementById('downloadBtn');
             btn.disabled = true;
             btn.innerHTML = '⏳ Generiere PDF...';
-            
+
             updateStatus('🔄 PDF wird generiert...', 'loading');
             updateProgress(10);
-            
+
             try {
                 updateProgress(30);
-                
+
                 const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
                     method: 'GET',
                     headers: {
@@ -187,18 +187,18 @@
                         'Pragma': 'no-cache'
                     }
                 });
-                
+
                 updateProgress(60);
                 console.log('Response status:', response.status);
-                
+
                 if (response.ok) {
                     updateProgress(80);
                     const blob = await response.blob();
                     console.log('Blob size:', blob.size);
-                    
+
                     if (blob.size > 100) {
                         updateProgress(100);
-                        
+
                         // Create download
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -209,16 +209,16 @@
                         a.click();
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
-                        
+
                         updateStatus(`✅ PDF erfolgreich heruntergeladen! (${blob.size} bytes)`, 'success');
                         btn.innerHTML = '✅ Erfolgreich!';
-                        
+
                         setTimeout(() => {
                             btn.innerHTML = '🚀 PDF JETZT HERUNTERLADEN';
                             btn.disabled = false;
                             updateProgress(0);
                         }, 3000);
-                        
+
                     } else {
                         throw new Error(`PDF zu klein: ${blob.size} bytes`);
                     }
@@ -226,29 +226,29 @@
                     const errorText = await response.text();
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
-                
+
             } catch (error) {
                 console.error('Download error:', error);
                 updateProgress(0);
                 updateStatus(`❌ Fehler: ${error.message}`, 'error');
-                
+
                 // Try alternative method
                 setTimeout(() => {
                     updateStatus('🔄 Versuche alternative Methode...', 'loading');
                     openInNewTab();
                 }, 2000);
-                
+
                 btn.innerHTML = '🔄 Erneut versuchen';
                 btn.disabled = false;
             }
         }
-        
+
         function openInNewTab() {
             const url = `/api/invoices/${invoiceId}/download-pdf`;
             window.open(url, '_blank');
             updateStatus('📄 PDF wird in neuem Tab geöffnet...', 'success');
         }
-        
+
         // Auto-start download after 2 seconds
         window.addEventListener('load', () => {
             setTimeout(() => {

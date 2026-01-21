@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
         if (reviews.length === 0) {
             // If scraping failed (likely due to bot protection), we can return a specific error
-            // OR we can generate some mock reviews based on the product page content if we want to be "smart" 
+            // OR we can generate some mock reviews based on the product page content if we want to be "smart"
             // but that might be misleading.
             // Let's return an error for now.
             return NextResponse.json({

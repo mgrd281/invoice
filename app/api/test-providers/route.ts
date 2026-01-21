@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         domain: 'web.de'
       },
       {
-        name: 'GMX.de', 
+        name: 'GMX.de',
         email: 'test@gmx.de',
         domain: 'gmx.de'
       },
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Filter providers based on test type
     let providersToTest = testProviders
     if (testType !== 'all') {
-      providersToTest = testProviders.filter(p => 
+      providersToTest = testProviders.filter(p =>
         p.domain === testType || p.name.toLowerCase().includes(testType.toLowerCase())
       )
     }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Test each provider
     for (const provider of providersToTest) {
       console.log(`\n📧 Testing ${provider.name} (${provider.email})...`)
-      
+
       try {
         const result = await sendInvoiceEmail(
           `test-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
       } catch (error) {
         console.error(`❌ ${provider.name}: EXCEPTION -`, error)
-        
+
         testResults.push({
           provider: provider.name,
           email: provider.email,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in provider testing:', error)
-    
+
     return NextResponse.json(
       {
         success: false,
@@ -143,7 +143,7 @@ export async function GET() {
       },
       {
         name: 'GMX.de',
-        domain: 'gmx.de', 
+        domain: 'gmx.de',
         description: 'German email provider - tests deliverability to GMX mailboxes'
       },
       {
@@ -170,7 +170,7 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error getting provider info:', error)
-    
+
     return NextResponse.json(
       {
         success: false,

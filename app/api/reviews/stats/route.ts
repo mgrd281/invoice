@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         const averageRating = aggregate._avg.rating || 0
 
         // 3. Photo Reviews (reviews with images)
-        // Note: Prisma's array filtering can be tricky. 
+        // Note: Prisma's array filtering can be tricky.
         // We'll count where images is not empty.
         const photoReviews = await prisma.review.count({
             where: {

@@ -45,10 +45,10 @@ export default function SimpleRegisterPage() {
       }
 
       console.log('✅ Registration successful, user data:', userData)
-      
+
       login(userData)
       router.push('/dashboard')
-      
+
     } catch (error: any) {
       console.error('❌ Registration error:', error)
       setError(error.message || 'Registration failed')
@@ -68,7 +68,7 @@ export default function SimpleRegisterPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
         <h1 className="text-2xl font-bold mb-6 text-center">Simple Register</h1>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">

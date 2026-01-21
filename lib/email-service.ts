@@ -429,22 +429,22 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
       <div class="header">
         <h1>Rechnung karinex</h1>
       </div>
-      
+
       <div class="content">
         <p>Sehr geehrte/r ${customerName},</p>
-        
+
         <p>anbei erhalten Sie Ihre Rechnung karinex.</p>
-        
+
         <p>Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.</p>
-        
+
         <p>Bitte überweisen Sie den Rechnungsbetrag innerhalb der angegebenen Zahlungsfrist.</p>
-        
+
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-        
+
         <p>Mit freundlichen Grüßen<br>
         <strong>Ihr Team von karinex</strong></p>
       </div>
-      
+
       <div class="footer">
         <p><strong>Wichtige Hinweise:</strong></p>
         <ul>
@@ -515,31 +515,31 @@ function generateCustomEmailHTML(
       <div class="header">
         <h1>Rechnung karinex</h1>
       </div>
-      
+
       <div class="content">
         <p>Sehr geehrte/r ${customerName},</p>
-        
+
         ${customMessage ? `<div class="custom-message"><strong>Persönliche Nachricht:</strong><br>${customMessage.replace(/\n/g, '<br>')}</div>` : ''}
-        
+
         <div class="invoice-details">
           <h3>Rechnungsdetails:</h3>
           <p><strong>Rechnungsnummer:</strong> ${invoiceNumber}</p>
           ${invoiceAmount ? `<p><strong>Rechnungsbetrag:</strong> <span class="amount">${invoiceAmount}</span></p>` : ''}
           <p><strong>Fälligkeitsdatum:</strong> ${formattedDueDate}</p>
         </div>
-        
+
         <p>anbei erhalten Sie Ihre Rechnung karinex.</p>
-        
+
         <p>Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.</p>
-        
+
         <p>Bitte überweisen Sie den Rechnungsbetrag bis zum angegebenen Fälligkeitsdatum.</p>
-        
+
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-        
+
         <p>Mit freundlichen Grüßen<br>
         <strong>Ihr Team von karinex</strong></p>
       </div>
-      
+
       <div class="footer">
         <p><strong>Wichtige Hinweise:</strong></p>
         <ul>

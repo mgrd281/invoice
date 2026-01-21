@@ -251,3 +251,4 @@ export function formatIBAN(iban: string): string {
   const cleanIBAN = iban.replace(/\s/g, '').toUpperCase()
   return cleanIBAN.replace(/(.{4})/g, '$1 ').trim()
 }
+

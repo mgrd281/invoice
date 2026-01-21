@@ -297,3 +297,4 @@ export const orderStatusFilters = {
   cancelled: { status: 'cancelled' as const, label: 'Storniert' },
   any: { status: 'any' as const, label: 'Alle' }
 }
+

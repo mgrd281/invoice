@@ -191,3 +191,4 @@ export function InvoicesTable({ invoices, additionalIncomes = [] }: InvoicesTabl
         </div>
     )
 }
+

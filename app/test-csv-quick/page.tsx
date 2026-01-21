@@ -15,7 +15,7 @@ export default function QuickCSVTestPage() {
 
     try {
       console.log('🔄 Testing CSV export...')
-      
+
       const response = await fetch('/api/invoices/export/csv', {
         method: 'POST',
         headers: {
@@ -116,7 +116,7 @@ export default function QuickCSVTestPage() {
 
             {result && (
               <div className={`p-4 rounded-lg border ${
-                result.success 
+                result.success
                   ? 'bg-green-50 border-green-200 text-green-700'
                   : 'bg-red-50 border-red-200 text-red-700'
               }`}>
@@ -130,9 +130,9 @@ export default function QuickCSVTestPage() {
                     {result.success ? 'Test erfolgreich!' : 'Test fehlgeschlagen'}
                   </span>
                 </div>
-                
+
                 <p className="text-sm mb-3">{result.message}</p>
-                
+
                 {result.details && (
                   <div className="text-xs space-y-1 bg-white bg-opacity-50 p-3 rounded">
                     {result.success ? (

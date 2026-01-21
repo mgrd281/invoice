@@ -11,11 +11,11 @@ const defaultSettings = {
   emailNotifications: true,
   invoiceReminders: true,
   paymentAlerts: true,
-  
+
   // Security
   twoFactorAuth: false,
   sessionTimeout: 60,
-  
+
   // Display
   theme: 'light',
   compactMode: false
@@ -29,7 +29,7 @@ if (!global.userSettings) {
 export async function GET() {
   try {
     console.log('Fetching user settings:', global.userSettings)
-    
+
     return NextResponse.json(global.userSettings || defaultSettings)
   } catch (error) {
     console.error('Error fetching settings:', error)
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
-          { 
+          {
             error: 'Validation failed',
             message: `Field '${field}' is required`,
             field: field
@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest) {
 
     if (typeof body.sessionTimeout !== 'number' || body.sessionTimeout < 5 || body.sessionTimeout > 480) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           message: 'Session timeout must be between 5 and 480 minutes',
           field: 'sessionTimeout'
@@ -76,7 +76,7 @@ export async function PUT(request: NextRequest) {
     for (const field of booleanFields) {
       if (typeof body[field] !== 'boolean') {
         return NextResponse.json(
-          { 
+          {
             error: 'Validation failed',
             message: `Field '${field}' must be a boolean`,
             field: field
@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest) {
     const validThemes = ['light', 'dark', 'auto']
     if (body.theme && !validThemes.includes(body.theme)) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           message: 'Invalid theme. Must be one of: ' + validThemes.join(', '),
           field: 'theme'
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating settings:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update settings',
         message: 'Ein unerwarteter Fehler ist aufgetreten'
       },
@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
   // Reset to default settings
   try {
     console.log('Resetting settings to default')
-    
-    global.userSettings = { 
+
+    global.userSettings = {
       ...defaultSettings,
       updatedAt: new Date().toISOString()
     }
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error resetting settings:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to reset settings',
         message: 'Fehler beim Zurücksetzen der Einstellungen'
       },

@@ -19,3 +19,4 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to approve review' }, { status: 500 })
     }
 }
+

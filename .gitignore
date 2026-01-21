@@ -56,3 +56,4 @@ logs
 *.log
 shopify-config.json
 google-cloud-credentials.json
+

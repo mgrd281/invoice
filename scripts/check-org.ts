@@ -17,7 +17,7 @@ async function main() {
                 zipCode: '12345',
                 city: 'Musterstadt',
                 // email: 'info@example.com' // Assuming email field exists or is optional? Checking schema...
-                // Schema says: name, slug, address, zipCode, city, country (default DE). 
+                // Schema says: name, slug, address, zipCode, city, country (default DE).
                 // Let's check schema again to be sure about required fields.
             }
         })

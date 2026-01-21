@@ -343,3 +343,4 @@ export function validateSEPAQRData(data: string): boolean {
   console.log('SEPA QR-Code data validation passed')
   return true
 }
+

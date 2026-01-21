@@ -9,7 +9,7 @@ export default function TestAuthPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
         <h1 className="text-2xl font-bold mb-4">Auth Test</h1>
-        
+
         <div className="space-y-2">
           <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
           <p><strong>Authenticated:</strong> {isAuthenticated ? 'Yes' : 'No'}</p>

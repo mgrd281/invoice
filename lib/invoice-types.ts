@@ -81,7 +81,7 @@ export interface ExtendedInvoice {
   statusColor: string
   amount: string
   createdAt: string
-  
+
   // Erweiterte Felder für Storno/Rückerstattung
   originalInvoiceId?: string      // Referenz zur ursprünglichen Rechnung
   originalInvoiceNumber?: string  // Nummer der ursprünglichen Rechnung
@@ -127,7 +127,7 @@ export function createStornoItems(originalItems: ExtendedInvoiceItem[]): Extende
 }
 
 export function createRefundItems(
-  originalItems: ExtendedInvoiceItem[], 
+  originalItems: ExtendedInvoiceItem[],
   refundQuantities: Record<string, number>
 ): ExtendedInvoiceItem[] {
   return originalItems
@@ -135,7 +135,7 @@ export function createRefundItems(
     .map(item => {
       const refundQty = refundQuantities[item.id]
       const refundTotal = (item.total / item.quantity) * refundQty
-      
+
       return {
         ...item,
         id: `refund-${item.id}`,

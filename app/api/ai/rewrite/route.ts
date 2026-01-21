@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         } else {
             // Default rewrite
             prompt = `Rewrite the following text to be more professional and clear. Language: German.
-            
+
             Original Text:
             ${text}`
         }

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (connection) {
-            // FIX: If connection exists but points to a different (likely empty/new) org, 
+            // FIX: If connection exists but points to a different (likely empty/new) org,
             // update it to point to the Main Org.
             if (mainOrg && connection.organizationId !== mainOrg.id) {
                 console.log(`Fixing connection for ${shop}: Moving from ${connection.organizationId} to ${mainOrg.id}`);

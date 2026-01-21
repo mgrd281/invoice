@@ -178,13 +178,13 @@ function generateEmailHTML(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Rechnung ${invoiceNumber}</title>
       <style>
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-          line-height: 1.6; 
-          color: #333; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
           background-color: #f8f9fa;
         }
         .container {
@@ -193,11 +193,11 @@ function generateEmailHTML(
           overflow: hidden;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .header { 
+        .header {
           background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-          color: white; 
-          padding: 30px; 
-          text-align: center; 
+          color: white;
+          padding: 30px;
+          text-align: center;
         }
         .header h1 {
           margin: 0 0 10px 0;
@@ -209,35 +209,35 @@ function generateEmailHTML(
           opacity: 0.9;
           font-size: 16px;
         }
-        .content { 
-          padding: 30px; 
+        .content {
+          padding: 30px;
         }
-        .invoice-details { 
-          background: #f8fafc; 
-          padding: 20px; 
-          border-radius: 8px; 
-          margin: 20px 0; 
-          border-left: 4px solid #2563eb; 
+        .invoice-details {
+          background: #f8fafc;
+          padding: 20px;
+          border-radius: 8px;
+          margin: 20px 0;
+          border-left: 4px solid #2563eb;
         }
-        .custom-message { 
-          background: #e0f2fe; 
-          padding: 20px; 
-          border-radius: 8px; 
-          margin: 20px 0; 
-          border-left: 4px solid #0284c7; 
+        .custom-message {
+          background: #e0f2fe;
+          padding: 20px;
+          border-radius: 8px;
+          margin: 20px 0;
+          border-left: 4px solid #0284c7;
         }
-        .footer { 
-          background: #f1f5f9; 
-          padding: 20px; 
-          text-align: center; 
-          font-size: 14px; 
-          color: #64748b; 
+        .footer {
+          background: #f1f5f9;
+          padding: 20px;
+          text-align: center;
+          font-size: 14px;
+          color: #64748b;
           border-top: 1px solid #e2e8f0;
         }
-        .amount { 
-          font-size: 20px; 
-          font-weight: 700; 
-          color: #059669; 
+        .amount {
+          font-size: 20px;
+          font-weight: 700;
+          color: #059669;
         }
         .highlight {
           background: #fef3c7;
@@ -253,41 +253,41 @@ function generateEmailHTML(
           <h1>Rechnung ${invoiceNumber}</h1>
           <p>von ${companyName}</p>
         </div>
-        
+
         <div class="content">
           <p>Sehr geehrte/r <strong>${customerName}</strong>,</p>
-          
+
           ${customMessage ? `
             <div class="custom-message">
               <strong>📝 Persönliche Nachricht:</strong><br>
               ${customMessage.replace(/\n/g, '<br>')}
             </div>
           ` : ''}
-          
+
           <div class="invoice-details">
             <h3 style="margin-top: 0; color: #1e293b;">📄 Rechnungsdetails</h3>
             <p><strong>Rechnungsnummer:</strong> <span class="highlight">${invoiceNumber}</span></p>
             ${invoiceAmount ? `<p><strong>Rechnungsbetrag:</strong> <span class="amount">${invoiceAmount}</span></p>` : ''}
             <p><strong>Fälligkeitsdatum:</strong> ${formattedDueDate}</p>
           </div>
-          
+
           <p>📎 Die Rechnung finden Sie als <strong>PDF-Anhang</strong> zu dieser E-Mail.</p>
-          
+
           <p>💳 Bitte überweisen Sie den Rechnungsbetrag bis zum angegebenen Fälligkeitsdatum.</p>
-          
+
           <p>❓ Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-          
+
           <p style="margin-top: 30px;">
             Mit freundlichen Grüßen<br>
             <strong>${companyName}</strong><br>
             <small style="color: #64748b;">Rechnung@karinex.de</small>
           </p>
         </div>
-        
+
         <div class="footer">
           <p><strong>ℹ️ Wichtige Hinweise:</strong></p>
           <p style="margin: 10px 0;">
-            Diese E-Mail wurde automatisch generiert • 
+            Diese E-Mail wurde automatisch generiert •
             Bei Fragen kontaktieren Sie uns über Rechnung@karinex.de
           </p>
         </div>

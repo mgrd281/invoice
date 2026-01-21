@@ -94,3 +94,4 @@ export function ExpensesTable({ expenses, onEdit, onDelete }: ExpensesTableProps
         </Card>
     )
 }
+

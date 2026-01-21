@@ -4,10 +4,10 @@ model DigitalProductVariantSetting {
   digitalProductId String
   digitalProduct   DigitalProduct @relation(fields: [digitalProductId], references: [id], onDelete: Cascade)
   shopifyVariantId String
-  
+
   emailTemplate    String?
   downloadButtons  Json?    // Array of { text, url, color, textColor }
-  
+
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

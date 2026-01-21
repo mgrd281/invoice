@@ -7,7 +7,7 @@ import { getKauflandSettings } from '@/lib/kaufland-settings'
 /**
  * POST /api/kaufland/sync-from-shopify
  * Sync a product from Shopify to Kaufland
- * 
+ *
  * Body: { productId: string | number }
  */
 export async function POST(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Check Kaufland settings
     const kauflandSettings = getKauflandSettings()
     const hasValidCredentials = !!(kauflandSettings.clientKey && kauflandSettings.secretKey)
-    
+
     if (!hasValidCredentials) {
       return NextResponse.json({
         success: false,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 function convertShopifyToKaufland(shopifyProduct: any): any {
   // Get the first variant (or you can loop through all variants)
   const variant = shopifyProduct.variants?.[0] || {}
-  
+
   // Get EAN from barcode (required for Kaufland)
   const ean = variant.barcode || shopifyProduct.barcode || null
 
@@ -122,10 +122,10 @@ function convertShopifyToKaufland(shopifyProduct: any): any {
   const price = parseFloat(variant.price || '0')
 
   // Get description (remove HTML tags and limit length to reduce size)
-  let description = shopifyProduct.body_html 
-    ? shopifyProduct.body_html.replace(/<[^>]*>/g, '').trim() 
+  let description = shopifyProduct.body_html
+    ? shopifyProduct.body_html.replace(/<[^>]*>/g, '').trim()
     : shopifyProduct.title
-  
+
   // Limit description to 1000 characters to reduce payload
   if (description.length > 1000) {
     description = description.substring(0, 1000) + '...'
@@ -164,7 +164,7 @@ export async function PUT(request: NextRequest) {
     // Check Kaufland settings
     const kauflandSettings = getKauflandSettings()
     const hasValidCredentials = !!(kauflandSettings.clientKey && kauflandSettings.secretKey)
-    
+
     if (!hasValidCredentials) {
       return NextResponse.json({
         success: false,
@@ -176,7 +176,7 @@ export async function PUT(request: NextRequest) {
 
     // 1. Fetch products from Shopify (only essential fields to reduce data size)
     const shopifyApi = new ShopifyAPI(shopifySettings)
-    const shopifyProducts = await shopifyApi.getProducts({ 
+    const shopifyProducts = await shopifyApi.getProducts({
       limit: Math.min(limit, 100), // Limit to 100 to reduce data transfer
       tags: tags || undefined,
       fields: 'id,title,handle,variants,images' // Only essential fields
@@ -208,7 +208,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const result = await kauflandApi.syncProduct(kauflandProduct)
-        
+
         results.push({
           shopifyProductId: shopifyProduct.id,
           title: shopifyProduct.title,

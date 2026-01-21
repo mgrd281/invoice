@@ -139,3 +139,4 @@ export class PriceScraper {
         return this.parsePrice(priceText);
     }
 }
+

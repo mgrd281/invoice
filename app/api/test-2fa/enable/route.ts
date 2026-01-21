@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     // Generate secret and QR code URL
     const secret = generateTwoFactorSecret()
     const qrCodeUrl = generateQRCodeUrl(mockUser.email, secret)
-    
+
     return NextResponse.json({
       enabled: false,
       secret: secret,

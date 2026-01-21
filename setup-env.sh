@@ -44,3 +44,4 @@ echo "- Lassen Sie EMAIL_DEV_MODE=true für Entwicklung (E-Mail-Simulation)"
 echo "- Ändern Sie zu EMAIL_DEV_MODE=false für Produktion mit korrekten SMTP-Einstellungen"
 echo "- Verwenden Sie Gmail mit App-Passwort für einfache Einrichtung"
 echo ""
+

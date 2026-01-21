@@ -170,3 +170,4 @@ export class ImmoscoutProvider implements RealEstateProvider {
         ]
     }
 }
+

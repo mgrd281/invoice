@@ -199,3 +199,4 @@ export function getDocumentCategoryLabel(category: DocumentTemplate['category'])
   }
   return labels[category] || category
 }
+

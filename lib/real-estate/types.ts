@@ -28,3 +28,4 @@ export interface RealEstateProvider {
     name: string
     search(filter: RealEstateFilter): Promise<RealEstateListing[]>
 }
+

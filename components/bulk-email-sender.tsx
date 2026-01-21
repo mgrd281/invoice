@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Mail, 
-  Send, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Mail,
+  Send,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Settings,
   Play,
@@ -65,10 +65,10 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
       try {
         const response = await fetch(`/api/send-bulk-emails?operationId=${operationId}`)
         const data = await response.json()
-        
+
         if (data.success) {
           setProgress(data.data)
-          
+
           // Updates stoppen wenn der Vorgang abgeschlossen ist
           if (!data.data.inProgress) {
             clearInterval(interval)
@@ -99,7 +99,7 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         setOperationId(data.operationId)
         setIsStarted(true)
@@ -122,14 +122,14 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
   // Verbleibende Zeit berechnen
   const getEstimatedTimeRemaining = () => {
     if (!progress || !progress.estimatedCompletion) return null
-    
+
     const now = new Date().getTime()
     const completion = new Date(progress.estimatedCompletion).getTime()
     const remaining = Math.max(0, completion - now)
-    
+
     const minutes = Math.floor(remaining / 60000)
     const seconds = Math.floor((remaining % 60000) / 1000)
-    
+
     if (minutes > 0) {
       return `${minutes} Minuten und ${seconds} Sekunden`
     }
@@ -210,9 +210,9 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
                   {getProgressPercentage()}%
                 </span>
               </div>
-              
+
               <Progress value={getProgressPercentage()} className="h-3" />
-              
+
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>
                   {progress.sent + progress.failed} von {progress.total}
@@ -327,8 +327,8 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
                   <Settings className="w-5 h-5" />
                   Leistungseinstellungen
                 </CardTitle>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowSettings(!showSettings)}
                 >
@@ -414,8 +414,8 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
                 </div>
 
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={applyRecommendedSettings}
                     disabled={isStarted}
@@ -423,10 +423,10 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
                     <RotateCcw className="w-4 h-4 mr-1" />
                     Empfohlene Einstellungen
                   </Button>
-                  
+
                   <div className="text-xs text-gray-500 flex items-center">
-                    Für Menge {selectedInvoices.length.toLocaleString()}: 
-                    Batch {getRecommendedSettings(selectedInvoices.length).batchSize}, 
+                    Für Menge {selectedInvoices.length.toLocaleString()}:
+                    Batch {getRecommendedSettings(selectedInvoices.length).batchSize},
                     Verzögerung {getRecommendedSettings(selectedInvoices.length).delayBetweenBatches}ms
                   </div>
                 </div>
@@ -469,9 +469,9 @@ export default function BulkEmailSender({ selectedInvoices, onClose }: BulkEmail
             <Button variant="outline" onClick={onClose}>
               Schließen
             </Button>
-            
+
             {!isStarted ? (
-              <Button 
+              <Button
                 onClick={startBulkSending}
                 className="bg-blue-600 hover:bg-blue-700"
               >

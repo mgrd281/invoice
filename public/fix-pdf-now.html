@@ -6,7 +6,7 @@
     <title>PDF Fix - Rechnung SH-3322</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -77,25 +77,25 @@
 <body>
     <div class="card">
         <h1>📄 PDF Download Fix</h1>
-        
+
         <div class="invoice-info">
             <strong>Rechnung:</strong> SH-3322<br>
             <strong>Kunde:</strong> E-Commerce Kunde #3322<br>
             <strong>Betrag:</strong> €4.90
         </div>
-        
+
         <button class="btn" onclick="downloadPDF()" id="downloadBtn">
             🚀 PDF HERUNTERLADEN
         </button>
-        
+
         <div class="progress" id="progress" style="display: none;">
             <div class="progress-bar" id="progressBar"></div>
         </div>
-        
+
         <div id="status"></div>
-        
+
         <div style="margin-top: 30px; font-size: 14px; color: #666;">
-            <p><strong>Hinweis:</strong> Falls der Download nicht automatisch startet, 
+            <p><strong>Hinweis:</strong> Falls der Download nicht automatisch startet,
             versuchen Sie es mit einem anderen Browser oder deaktivieren Sie den Popup-Blocker.</p>
         </div>
     </div>
@@ -114,7 +114,7 @@
         function updateProgress(percent) {
             const progress = document.getElementById('progress');
             const progressBar = document.getElementById('progressBar');
-            
+
             if (percent > 0) {
                 progress.style.display = 'block';
                 progressBar.style.width = percent + '%';
@@ -126,10 +126,10 @@
         async function downloadPDF() {
             downloadAttempts++;
             const btn = document.getElementById('downloadBtn');
-            
+
             btn.disabled = true;
             btn.innerHTML = '⏳ Generiere PDF...';
-            
+
             updateStatus(`🔄 Versuch ${downloadAttempts}/${maxAttempts} - PDF wird generiert...`, 'loading');
             updateProgress(20);
 
@@ -162,30 +162,30 @@
 
                     if (blob.size > 100) { // Minimum reasonable PDF size
                         updateProgress(100);
-                        
+
                         // Create download link
                         const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
                         link.download = 'Rechnung-SH-3322.pdf';
                         link.style.display = 'none';
-                        
+
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        
+
                         // Clean up
                         setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                        
+
                         updateStatus(`✅ PDF erfolgreich heruntergeladen! (${blob.size} bytes)`, 'success');
                         updateProgress(0);
-                        
+
                         btn.innerHTML = '✅ Erfolgreich!';
                         setTimeout(() => {
                             btn.innerHTML = '🚀 PDF HERUNTERLADEN';
                             btn.disabled = false;
                         }, 3000);
-                        
+
                         return; // Success, exit function
                     } else {
                         throw new Error(`PDF zu klein: ${blob.size} bytes`);
@@ -197,10 +197,10 @@
             } catch (error) {
                 console.error('Download attempt failed:', error);
                 updateProgress(0);
-                
+
                 if (downloadAttempts < maxAttempts) {
                     updateStatus(`❌ Versuch ${downloadAttempts} fehlgeschlagen: ${error.message}. Versuche erneut...`, 'error');
-                    
+
                     // Retry after delay
                     setTimeout(() => {
                         btn.innerHTML = '🔄 Erneut versuchen';
@@ -216,24 +216,24 @@
 
         async function tryAlternativeMethod() {
             updateStatus('🔄 Versuche alternative Download-Methode...', 'loading');
-            
+
             try {
                 // Method 2: Direct window.open
                 const url = '/api/invoices/inv-1760128245502-aqq4trk4p/download-pdf';
                 window.open(url, '_blank');
-                
+
                 updateStatus('✅ Alternative Methode gestartet. Prüfen Sie Ihre Downloads!', 'success');
-                
+
                 const btn = document.getElementById('downloadBtn');
                 btn.innerHTML = '🚀 PDF HERUNTERLADEN';
                 btn.disabled = false;
-                
+
             } catch (error) {
                 updateStatus(`❌ Auch alternative Methode fehlgeschlagen: ${error.message}`, 'error');
-                
+
                 const btn = document.getElementById('downloadBtn');
                 btn.innerHTML = '❌ Fehlgeschlagen';
-                
+
                 // Show manual link as last resort
                 setTimeout(() => {
                     const status = document.getElementById('status');
@@ -241,7 +241,7 @@
                         <div class="error">
                             ❌ Automatischer Download fehlgeschlagen.<br><br>
                             <strong>Manueller Download:</strong><br>
-                            <a href="/api/invoices/inv-1760128245502-aqq4trk4p/download-pdf" 
+                            <a href="/api/invoices/inv-1760128245502-aqq4trk4p/download-pdf"
                                target="_blank" style="color: #007bff; text-decoration: underline;">
                                Hier klicken für direkten Download
                             </a>

@@ -247,3 +247,4 @@ export class CheckpointManager {
 if (typeof window !== 'undefined') {
   CheckpointManager.loadCheckpoints()
 }
+

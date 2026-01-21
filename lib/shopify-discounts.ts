@@ -44,7 +44,7 @@ export async function createCustomerDiscount(
         // Note: We need to access the private makeRequest method or add a public method to ShopifyAPI.
         // Since makeRequest is private, we'll extend the class or use a workaround.
         // Ideally, we should add createPriceRule to ShopifyAPI, but for now let's assume we can add a helper or use 'any' cast if needed,
-        // but better to add a method to ShopifyAPI. 
+        // but better to add a method to ShopifyAPI.
         // Since I cannot easily modify the large ShopifyAPI class without potentially breaking things or dealing with large file edits,
         // I will use a new instance and cast to any to access makeRequest if I have to, OR better:
         // I will implement the fetch call directly here using the settings, duplicating the basic fetch logic to avoid touching the big file too much.

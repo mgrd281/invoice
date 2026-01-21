@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emergency PDF Download</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            padding: 50px; 
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
             background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
             color: white;
             min-height: 100vh;
@@ -75,11 +75,11 @@
     <div class="emergency-box">
         <h1>🚨 EMERGENCY PDF DOWNLOAD</h1>
         <p>Direkter PDF Download für alle Rechnungen</p>
-        
+
         <button class="big-btn" onclick="loadAllInvoices()">
             📄 ALLE RECHNUNGEN LADEN
         </button>
-        
+
         <div id="invoices" class="invoice-list"></div>
         <div id="status"></div>
     </div>
@@ -100,7 +100,7 @@
 
         async function downloadPDFDirect(invoiceId, invoiceNumber) {
             updateStatus(`⏳ Lade PDF für ${invoiceNumber}...`);
-            
+
             try {
                 const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
                     method: 'GET',
@@ -118,7 +118,7 @@
 
                 if (response.ok) {
                     const blob = await response.blob();
-                    
+
                     if (blob.size > 100) {
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -128,7 +128,7 @@
                         a.click();
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
-                        
+
                         updateStatus(`✅ ${invoiceNumber} erfolgreich heruntergeladen! (${blob.size} bytes)`);
                         return true;
                     } else {
@@ -140,12 +140,12 @@
                 }
             } catch (error) {
                 updateStatus(`❌ Fehler bei ${invoiceNumber}: ${error.message}`, true);
-                
+
                 // Fallback: Direct link
                 const directUrl = `/api/invoices/${invoiceId}/download-pdf`;
                 window.open(directUrl, '_blank');
                 updateStatus(`🔄 ${invoiceNumber} wird in neuem Tab geöffnet...`);
-                
+
                 return false;
             }
         }
@@ -153,9 +153,9 @@
         async function loadAllInvoices() {
             const container = document.getElementById('invoices');
             container.innerHTML = '';
-            
+
             updateStatus('📋 Lade bekannte Rechnungen...');
-            
+
             // Display known invoices
             knownInvoices.forEach(invoice => {
                 const div = document.createElement('div');
@@ -184,10 +184,10 @@
                         })
                     }
                 });
-                
+
                 if (response.ok) {
                     const apiInvoices = await response.json();
-                    
+
                     // Add any additional invoices from API
                     apiInvoices.forEach(invoice => {
                         if (!knownInvoices.find(k => k.id === invoice.id)) {
@@ -205,7 +205,7 @@
                             container.appendChild(div);
                         }
                     });
-                    
+
                     updateStatus(`✅ ${apiInvoices.length} Rechnungen geladen`);
                 } else {
                     updateStatus('⚠️ API nicht verfügbar, zeige bekannte Rechnungen');
@@ -217,12 +217,12 @@
 
         async function downloadAllPDFs() {
             updateStatus('🚀 Lade alle PDFs herunter...');
-            
+
             for (const invoice of knownInvoices) {
                 await downloadPDFDirect(invoice.id, invoice.number);
                 await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
             }
-            
+
             updateStatus('✅ Alle Downloads abgeschlossen!');
         }
 

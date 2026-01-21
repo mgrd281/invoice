@@ -43,7 +43,7 @@ export class DashboardUpdater {
 
   public subscribe(callback: (stats: DashboardStats) => void): () => void {
     this.listeners.add(callback)
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.delete(callback)
@@ -54,13 +54,13 @@ export class DashboardUpdater {
     try {
       console.log('🔄 Fetching dashboard stats...')
       const response = await fetch('/api/dashboard-stats')
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
-      
+
       if (data.success && data.data) {
         this.currentStats = data.data
         this.notifyListeners(data.data)
@@ -106,32 +106,32 @@ export class DashboardUpdater {
   // Dispatch custom events for invoice operations
   public static dispatchInvoiceCreated(invoiceData?: any) {
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('invoiceCreated', { 
-        detail: invoiceData 
+      window.dispatchEvent(new CustomEvent('invoiceCreated', {
+        detail: invoiceData
       }))
     }
   }
 
   public static dispatchInvoiceUpdated(invoiceData?: any) {
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('invoiceUpdated', { 
-        detail: invoiceData 
+      window.dispatchEvent(new CustomEvent('invoiceUpdated', {
+        detail: invoiceData
       }))
     }
   }
 
   public static dispatchInvoiceDeleted(invoiceId?: string) {
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('invoiceDeleted', { 
-        detail: { invoiceId } 
+      window.dispatchEvent(new CustomEvent('invoiceDeleted', {
+        detail: { invoiceId }
       }))
     }
   }
 
   public static dispatchInvoiceStatusChanged(invoiceId: string, oldStatus: string, newStatus: string) {
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('invoiceStatusChanged', { 
-        detail: { invoiceId, oldStatus, newStatus } 
+      window.dispatchEvent(new CustomEvent('invoiceStatusChanged', {
+        detail: { invoiceId, oldStatus, newStatus }
       }))
     }
   }

@@ -7,9 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import CSVExportButton from '@/components/csv-export-button'
-import { 
-  FileSpreadsheet, 
-  Filter, 
+import {
+  FileSpreadsheet,
+  Filter,
   Calendar,
   Package,
   Users,
@@ -48,8 +48,8 @@ export default function TestCSVExportPage() {
   }
 
   const handleSelectInvoice = (id: string) => {
-    setSelectedIds(prev => 
-      prev.includes(id) 
+    setSelectedIds(prev =>
+      prev.includes(id)
         ? prev.filter(selectedId => selectedId !== id)
         : [...prev, id]
     )
@@ -89,7 +89,7 @@ export default function TestCSVExportPage() {
             className="text-lg px-8 py-3 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white border-0"
           />
           <p className="text-sm text-gray-500 mt-2">
-            {selectedIds.length > 0 
+            {selectedIds.length > 0
               ? `${selectedIds.length} Rechnungen ausgewählt`
               : `Alle ${sampleInvoices.length} Rechnungen (nach Filterung)`
             }
@@ -299,7 +299,7 @@ export default function TestCSVExportPage() {
                   <li>• Automatisches Escaping</li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold text-blue-600">🔍 Filter & Auswahl</h4>
                 <ul className="space-y-1 text-gray-600">
@@ -310,7 +310,7 @@ export default function TestCSVExportPage() {
                   <li>• Status-Filter</li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold text-purple-600">📊 Daten & Spalten</h4>
                 <ul className="space-y-1 text-gray-600">
@@ -321,7 +321,7 @@ export default function TestCSVExportPage() {
                   <li>• MwSt-Berechnung</li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold text-orange-600">⚡ Performance</h4>
                 <ul className="space-y-1 text-gray-600">
@@ -332,7 +332,7 @@ export default function TestCSVExportPage() {
                   <li>• Speicher-optimiert</li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold text-red-600">🛡️ Sicherheit</h4>
                 <ul className="space-y-1 text-gray-600">
@@ -343,7 +343,7 @@ export default function TestCSVExportPage() {
                   <li>• Audit Logging</li>
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-semibold text-teal-600">🎨 Benutzerfreundlichkeit</h4>
                 <ul className="space-y-1 text-gray-600">

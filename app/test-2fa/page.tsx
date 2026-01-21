@@ -42,17 +42,17 @@ export default function Test2FAPage() {
       const response = await fetch('/api/test-2fa/enable', {
         method: 'POST'
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setTwoFactorStatus(data)
-        
+
         // Generate QR Code
         if (data.qrCodeUrl) {
           const qrImage = await QRCode.toDataURL(data.qrCodeUrl)
           setQrCodeImage(qrImage)
         }
-        
+
         setShowSetup(true)
         setStep(1)
         showToast('2FA Setup gestartet', 'success')
@@ -164,7 +164,7 @@ export default function Test2FAPage() {
               </div>
               <div>
                 {!twoFactorStatus.enabled ? (
-                  <Button 
+                  <Button
                     onClick={enableTwoFactor}
                     disabled={isEnabling}
                     className="bg-purple-600 hover:bg-purple-700"
@@ -172,7 +172,7 @@ export default function Test2FAPage() {
                     {isEnabling ? 'Wird aktiviert...' : 'Zwei-Faktor-Authentifizierung einrichten'}
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => {
                       setTwoFactorStatus({ enabled: false, backupCodes: [] })
@@ -206,7 +206,7 @@ export default function Test2FAPage() {
                   <span className={step >= 1 ? 'text-purple-600 font-medium' : 'text-gray-500'}>
                     Authentifizierungs-App aufrufen
                   </span>
-                  
+
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                     step >= 2 ? 'bg-purple-600 text-white' : 'bg-gray-200'
                   }`}>
@@ -215,7 +215,7 @@ export default function Test2FAPage() {
                   <span className={step >= 2 ? 'text-purple-600 font-medium' : 'text-gray-500'}>
                     Code verifizieren
                   </span>
-                  
+
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                     step >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200'
                   }`}>
@@ -234,30 +234,30 @@ export default function Test2FAPage() {
                       <p className="text-sm text-gray-600 mb-4">
                         Klicke das + in deiner Authentifizierungs-App und scanne den QR Code mit deiner Kamera.
                       </p>
-                      
+
                       {qrCodeImage && (
                         <div className="bg-white p-4 rounded-lg border inline-block">
                           <img src={qrCodeImage} alt="QR Code" className="w-48 h-48" />
                         </div>
                       )}
-                      
+
                       <p className="text-xs text-gray-500 mt-4">
                         Test-Secret: {twoFactorStatus.secret}
                       </p>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-lg font-medium mb-4">
                         Lade zuerst eine Authentifizierungs-App herunter
                       </h3>
-                      
+
                       <div className="mb-6">
                         <h4 className="font-medium mb-3">Google Authenticator</h4>
                         <p className="text-sm text-gray-600 mb-4">
                           Für den Test können Sie auch einen beliebigen 6-stelligen Code eingeben.
                         </p>
                       </div>
-                      
+
                       <Button onClick={() => setStep(2)} className="bg-purple-600 hover:bg-purple-700">
                         Nächster Schritt
                       </Button>
@@ -272,7 +272,7 @@ export default function Test2FAPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Gib einen 6-stelligen Code ein (für den Test funktioniert jeder 6-stellige Code).
                     </p>
-                    
+
                     <div className="max-w-xs">
                       <Label htmlFor="verification-code">6-stelliger Code</Label>
                       <Input
@@ -285,7 +285,7 @@ export default function Test2FAPage() {
                         className="text-center text-lg font-mono"
                       />
                     </div>
-                    
+
                     <div className="flex gap-3 mt-6">
                       <Button onClick={() => setStep(1)} variant="outline">
                         Zurück
@@ -304,7 +304,7 @@ export default function Test2FAPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Speichere diese Codes an einem sicheren Ort.
                     </p>
-                    
+
                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
                       <div className="grid grid-cols-2 gap-2 font-mono text-sm">
                         {twoFactorStatus.backupCodes.map((code, index) => (
@@ -314,7 +314,7 @@ export default function Test2FAPage() {
                         ))}
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-3">
                       <Button onClick={downloadBackupCodes} variant="outline">
                         Codes herunterladen
@@ -349,7 +349,7 @@ export default function Test2FAPage() {
                   ))}
                 </div>
               </div>
-              
+
               <Button onClick={downloadBackupCodes} variant="outline">
                 Codes herunterladen
               </Button>
@@ -357,7 +357,7 @@ export default function Test2FAPage() {
           </Card>
         )}
       </div>
-      
+
       <ToastContainer />
     </div>
   )

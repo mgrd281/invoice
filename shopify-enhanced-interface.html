@@ -424,7 +424,7 @@
                 <button class="btn">Alle auswählen</button>
                 <button class="btn">Auswahl löschen</button>
                 <button class="btn" style="background: #10b981; color: white;">📄 0 zu Rechnungen</button>
-                
+
                 <!-- View Toggle -->
                 <div class="view-toggle">
                     <button class="view-list active" data-view="list">
@@ -573,19 +573,19 @@
 
             handleViewToggle(e) {
                 const view = e.currentTarget.dataset.view;
-                
+
                 // Update button states
                 document.querySelectorAll('.view-toggle button').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 e.currentTarget.classList.add('active');
-                
+
                 // Update body class
                 document.body.classList.remove('list-mode', 'grid-mode');
                 document.body.classList.add(`${view}-mode`);
-                
+
                 this.currentView = view;
-                
+
                 if (view === 'grid') {
                     this.populateGridView();
                 }
@@ -597,7 +597,7 @@
                     chip.classList.remove('active');
                 });
                 e.currentTarget.classList.add('active');
-                
+
                 // Filter logic would go here
                 console.log('Filter by:', e.currentTarget.textContent);
             }
@@ -605,10 +605,10 @@
             populateGridView() {
                 const gridContainer = document.getElementById('gridContainer');
                 const tableRows = document.querySelectorAll('tbody tr');
-                
+
                 // Clear existing grid
                 gridContainer.innerHTML = '';
-                
+
                 // Convert table rows to grid cards
                 tableRows.forEach(row => {
                     const invoiceData = this.extractInvoiceData(row);
@@ -638,7 +638,7 @@
             createGridCard(data) {
                 const card = document.createElement('div');
                 card.className = 'invoice-grid-card';
-                
+
                 card.innerHTML = `
                     <div class="invoice-grid-header">
                         <div class="invoice-grid-number">${data.number}</div>
@@ -659,7 +659,7 @@
                         <button class="invoice-grid-btn">✉️ Senden</button>
                     </div>
                 `;
-                
+
                 // Add click handler
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('invoice-grid-btn')) {
@@ -670,7 +670,7 @@
                         }
                     }
                 });
-                
+
                 return card;
             }
         }

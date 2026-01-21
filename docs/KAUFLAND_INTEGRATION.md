@@ -127,3 +127,4 @@ Produkte von Kaufland abrufen
 - `lib/kaufland-api.ts` - Kaufland API-Bibliothek
 - `app/api/kaufland/` - API Endpoints
 - `app/settings/kaufland/` - Einstellungsseite (Frontend)
+

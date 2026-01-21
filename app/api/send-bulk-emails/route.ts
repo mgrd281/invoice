@@ -345,3 +345,4 @@ async function sendSingleInvoiceEmail(invoiceId: string, customSubject?: string,
 
   return result
 }
+

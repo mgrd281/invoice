@@ -4,3 +4,4 @@ Bestellnummer,Name,Email,Financial Status,Fulfillment Status,Total,Created at,Li
 "RE-2024-003","Peter Müller","peter.mueller@email.com","pending","unfulfilled","234.75","2024-01-17 09:15:00","1","Deluxe Hoodie","234.75","HOODIE-001","Peter Müller","Teststraße 789","Hamburg","20095","Germany","Peter Müller","Teststraße 789","Hamburg","20095","Germany"
 "RE-2024-004","Maria Weber","maria.weber@email.com","paid","fulfilled","156.90","2024-01-18 16:45:00","3","Standard Mug","52.30","MUG-001","Maria Weber","Probestraße 321","Köln","50667","Germany","Maria Weber","Probestraße 321","Köln","50667","Germany"
 "RE-2024-005","Thomas Klein","thomas.klein@email.com","paid","partial","78.25","2024-01-19 11:30:00","1","Basic Notebook","78.25","NOTEBOOK-001","Thomas Klein","Demoweg 654","Frankfurt","60311","Germany","Thomas Klein","Demoweg 654","Frankfurt","60311","Germany"
+

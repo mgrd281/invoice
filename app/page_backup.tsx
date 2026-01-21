@@ -24,7 +24,7 @@ export default function HomePage() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         showToast('Erfolgreich abgemeldet', 'success')
         router.push('/landing')
@@ -42,7 +42,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <ToastContainer />
-      
+
       {/* Modern Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -108,7 +108,7 @@ export default function HomePage() {
           <div className="absolute top-0 right-1/4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
           <div className="absolute bottom-0 left-1/3 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000"></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
@@ -116,7 +116,7 @@ export default function HomePage() {
                 <Star className="w-4 h-4 mr-2" />
                 Neu: Automatische Shopify Integration
               </div>
-              
+
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                 Rechnung
                 <br />
@@ -126,13 +126,13 @@ export default function HomePage() {
                 <br />
                 gemacht
               </h1>
-              
+
               <p className="text-xl text-gray-600 mb-8 leading-relaxed max-w-lg">
-                Mit RechnungsProfi schnell und rechtssicher online 
-                schreiben und direkt an Kunden versenden. Für zahlreiche 
+                Mit RechnungsProfi schnell und rechtssicher online
+                schreiben und direkt an Kunden versenden. Für zahlreiche
                 Branchen geeignet!
               </p>
-              
+
               <div className="space-y-3 mb-8">
                 <div className="flex items-center text-gray-700">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
@@ -151,7 +151,7 @@ export default function HomePage() {
                   <span>Nahtlose Anbindung an Online-Shops</span>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/invoices/new">
                   <Button size="lg" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
@@ -165,7 +165,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </div>
-              
+
               <div className="flex items-center space-x-6 mt-8 pt-8 border-t border-gray-200">
                 <div className="flex items-center text-sm text-gray-600">
                   <Shield className="w-4 h-4 text-green-500 mr-2" />
@@ -181,7 +181,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="relative lg:ml-8">
               <div className="relative">
                 <div className="bg-white rounded-2xl shadow-2xl p-6 transform rotate-3 hover:rotate-0 transition-transform duration-300">
@@ -223,7 +223,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 animate-bounce">
                   <FileText className="w-6 h-6 text-blue-500" />
                 </div>
@@ -386,7 +386,7 @@ export default function HomePage() {
                 System online
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Schnellzugriff</h4>
               <ul className="space-y-2 text-gray-300">
@@ -396,7 +396,7 @@ export default function HomePage() {
                 <li><Link href="/upload" className="hover:text-white transition-colors">CSV Import</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-300">
@@ -407,7 +407,7 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
             <p>&copy; 2024 RechnungsProfi. Alle Rechte vorbehalten.</p>
           </div>

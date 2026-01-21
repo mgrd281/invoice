@@ -139,13 +139,13 @@ export async function POST(request: NextRequest) {
             ]
         }
 
-        // If original product had variants, we might want to try mapping them, 
+        // If original product had variants, we might want to try mapping them,
         // but for this simple import we'll stick to a single variant created from the main price
         // to avoid complex option mapping issues unless we want to do a full clone.
-        // For a "Migration" tool, a full clone is better, but let's start with the simple version 
+        // For a "Migration" tool, a full clone is better, but let's start with the simple version
         // that matches the preview data.
 
-        // If the user provided a collection, we can't easily add it during creation 
+        // If the user provided a collection, we can't easily add it during creation
         // (requires a separate call to Collects API), so we'll skip it for now or handle it later.
 
         const createdProduct = await api.createProduct(shopifyProduct)

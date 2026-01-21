@@ -18,7 +18,7 @@ export async function POST() {
 
     console.log('All data cleared successfully')
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'All data cleared successfully',
       cleared: {
         csvInvoices: 0,

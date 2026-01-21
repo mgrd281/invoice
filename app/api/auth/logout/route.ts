@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     // Alle authentifizierungsbezogenen Cookies löschen
     response.cookies.delete('auth-token')
     response.cookies.delete('user-info')
-    
+
     // Abgelaufene Cookies setzen, um Löschung sicherzustellen
     response.cookies.set('auth-token', '', {
       httpOnly: true,
@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Fehler beim Abmelden:', error)
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Fehler beim Abmelden aufgetreten'
       },
       { status: 500 }

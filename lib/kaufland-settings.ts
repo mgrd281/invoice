@@ -42,7 +42,7 @@ export function getKauflandSettings(): KauflandSettings {
     // Server-side: load from file or database
     const fileSettings = loadKauflandSettingsFromFile()
     const hasEnvVars = !!(envSettings.clientKey && envSettings.secretKey)
-    
+
     return {
       ...fileSettings,
       // Override with env vars if present
@@ -165,9 +165,9 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
   try {
     // Create basic auth header
     const credentials = Buffer.from(`${settings.clientKey}:${settings.secretKey}`).toString('base64')
-    
+
     const apiUrl = settings.apiBaseUrl || 'https://sellerapi.kaufland.com'
-    
+
     // Try multiple endpoints to test connection
     const endpoints = [
       '/units',
@@ -176,9 +176,9 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
       '/seller-api/units',
       '/'
     ]
-    
+
     let lastError: string = ''
-    
+
     for (const endpoint of endpoints) {
       try {
         const response = await fetch(`${apiUrl}${endpoint}`, {
@@ -197,12 +197,12 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
             message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
           }
         }
-        
+
         if (response.status === 404) {
           lastError = `Endpoint nicht gefunden: ${endpoint}`
           continue // Try next endpoint
         }
-        
+
         const errorText = await response.text().catch(() => '')
         lastError = `Status ${response.status}: ${errorText.substring(0, 100)}`
       } catch (err) {
@@ -210,7 +210,7 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
         continue
       }
     }
-    
+
     // If all endpoints failed, return helpful message
     return {
       success: false,

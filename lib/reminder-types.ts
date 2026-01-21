@@ -322,3 +322,4 @@ export const DEFAULT_REMINDER_SETTINGS: ReminderSettings = {
   includePaymentLink: true,
   includeQrCode: false
 }
+

@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
             try {
                 // We use the internal makeRequest method if possible, or we need to expose it.
                 // Since makeRequest is private/protected in some implementations, let's check if we can use it.
-                // If not, we'll use a public method or extend the class. 
+                // If not, we'll use a public method or extend the class.
                 // Assuming we can't easily access makeRequest from here without casting or changing visibility.
                 // Let's modify ShopifyAPI to support search or use a workaround.
                 // Actually, let's just add a searchOrders method to ShopifyAPI in the next step.

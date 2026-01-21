@@ -126,3 +126,4 @@ Erstelle jetzt das JSON-Objekt mit dem NEUEN Text.`
         return NextResponse.json({ error: errorMessage }, { status: 500 })
     }
 }
+

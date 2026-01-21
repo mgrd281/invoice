@@ -78,7 +78,7 @@ NEXTAUTH_URL="http://localhost:3000"`
                   placeholder="ihre-email@gmail.com"
                   className="text-lg"
                 />
-                <Button 
+                <Button
                   onClick={() => setStep(2)}
                   disabled={!userEmail || !userEmail.includes('@')}
                   className="w-full"
@@ -112,9 +112,9 @@ NEXTAUTH_URL="http://localhost:3000"`
                     <li>Kopieren Sie das 16-stellige Passwort</li>
                   </ol>
                 </div>
-                
+
                 <div className="flex gap-4">
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => window.open('https://myaccount.google.com/security', '_blank')}
                     className="flex-1"
@@ -122,7 +122,7 @@ NEXTAUTH_URL="http://localhost:3000"`
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Google Account öffnen
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => setStep(3)}
                     className="flex-1"
                   >
@@ -171,7 +171,7 @@ NEXTAUTH_URL="http://localhost:3000"`
                   </ul>
                 </div>
 
-                <Button 
+                <Button
                   onClick={() => setStep(4)}
                   className="w-full"
                 >
@@ -202,7 +202,7 @@ NEXTAUTH_URL="http://localhost:3000"`
                   </ol>
                 </div>
 
-                <Button 
+                <Button
                   onClick={() => setStep(5)}
                   className="w-full"
                 >
@@ -227,17 +227,17 @@ NEXTAUTH_URL="http://localhost:3000"`
                 <p className="mb-4">
                   <strong>Jetzt sollte alles funktionieren!</strong>
                 </p>
-                
+
                 <div className="space-y-2">
-                  <Button 
+                  <Button
                     onClick={() => window.open('/auth/register', '_blank')}
                     className="w-full mb-2"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Registrierung testen
                   </Button>
-                  
-                  <Button 
+
+                  <Button
                     variant="outline"
                     onClick={() => window.open('/test-email-verification', '_blank')}
                     className="w-full"
@@ -263,16 +263,16 @@ NEXTAUTH_URL="http://localhost:3000"`
         {/* Navigation */}
         <div className="flex justify-between">
           {step > 1 && (
-            <Button 
+            <Button
               variant="outline"
               onClick={() => setStep(step - 1)}
             >
               Zurück
             </Button>
           )}
-          
+
           {step < 5 && (
-            <Button 
+            <Button
               onClick={() => setStep(step + 1)}
               className="ml-auto"
             >
@@ -288,7 +288,7 @@ NEXTAUTH_URL="http://localhost:3000"`
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-4">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => window.open('/admin/email-status', '_blank')}
                 className="h-auto p-4 flex flex-col"
@@ -297,8 +297,8 @@ NEXTAUTH_URL="http://localhost:3000"`
                 <span>E-Mail Status</span>
                 <span className="text-xs text-gray-500">Diagnose-Tool</span>
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => window.open('/test-email-verification', '_blank')}
                 className="h-auto p-4 flex flex-col"
@@ -307,8 +307,8 @@ NEXTAUTH_URL="http://localhost:3000"`
                 <span>Test-Suite</span>
                 <span className="text-xs text-gray-500">E-Mail testen</span>
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={() => window.open('https://myaccount.google.com/security', '_blank')}
                 className="h-auto p-4 flex flex-col"

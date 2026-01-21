@@ -55,7 +55,7 @@ export function createEmailLog(data: {
 
 // Update email log status
 export function updateEmailLog(
-  logId: string, 
+  logId: string,
   updates: Partial<EmailLog>
 ): EmailLog | null {
   const logIndex = emailLogs.findIndex(log => log.id === logId)
@@ -66,7 +66,7 @@ export function updateEmailLog(
 
   const log = emailLogs[logIndex]
   const updatedLog = { ...log, ...updates }
-  
+
   // Set timestamps based on status
   if (updates.status === 'sent' && !updatedLog.sentAt) {
     updatedLog.sentAt = new Date()
@@ -83,8 +83,8 @@ export function updateEmailLog(
 
 // Mark email as sent with message ID
 export function markEmailSent(
-  logId: string, 
-  messageId: string, 
+  logId: string,
+  messageId: string,
   smtpResponse?: string
 ): EmailLog | null {
   const existingLog = emailLogs.find(log => log.id === logId)
@@ -102,7 +102,7 @@ export function markEmailSent(
 
 // Mark email as failed
 export function markEmailFailed(
-  logId: string, 
+  logId: string,
   errorMessage: string
 ): EmailLog | null {
   return updateEmailLog(logId, {
@@ -134,8 +134,8 @@ export function getEmailLogsForInvoice(invoiceId: string): EmailLog[] {
 
 // Get failed emails for retry
 export function getFailedEmails(maxRetries: number = 3): EmailLog[] {
-  return emailLogs.filter(log => 
-    log.status === 'failed' && 
+  return emailLogs.filter(log =>
+    log.status === 'failed' &&
     log.retryCount < maxRetries
   )
 }
@@ -154,7 +154,7 @@ export function getEmailStats(): {
   const delivered = emailLogs.filter(log => log.status === 'delivered').length
   const failed = emailLogs.filter(log => log.status === 'failed').length
   const pending = emailLogs.filter(log => log.status === 'pending').length
-  
+
   const successRate = total > 0 ? ((sent + delivered) / total) * 100 : 0
 
   return {

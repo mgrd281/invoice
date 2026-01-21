@@ -36,7 +36,7 @@ export default function DebugPage() {
   return (
     <div style={{ padding: '20px', fontFamily: 'monospace', fontSize: '14px' }}>
       <h1>🔍 Debug Dashboard</h1>
-      
+
       <div style={{ marginBottom: '20px' }}>
         <button onClick={testAuth} style={{ marginRight: '10px', padding: '5px 10px' }}>
           Test Auth

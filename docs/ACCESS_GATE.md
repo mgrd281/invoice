@@ -212,3 +212,4 @@ Bei Fragen oder Problemen:
 - Prüfen Sie die Server-Logs
 - Prüfen Sie die Browser-Konsole
 - Prüfen Sie die Middleware-Logik in `middleware.ts`
+

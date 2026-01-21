@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const settings = getKauflandSettings()
-    
+
     if (!settings.enabled || !settings.clientKey || !settings.secretKey) {
       return NextResponse.json({
         success: false,
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const settings = getKauflandSettings()
-    
+
     if (!settings.enabled || !settings.clientKey || !settings.secretKey) {
       return NextResponse.json({
         success: false,

@@ -74,18 +74,18 @@ function loadUserReminderSettings(userId: number): ReminderSettings {
 export async function POST(request: NextRequest) {
   try {
     const auth = await getServerAuth()
-    
+
     if (!auth.isAuthenticated || !auth.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Load user's reminder settings
     const settings = loadUserReminderSettings(auth.user.id)
-    
+
     if (!settings.enabled) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Reminder system is disabled',
-        processed: 0 
+        processed: 0
       })
     }
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     // Generate reminder queue for all invoices
     const queue = await reminderEngine.generateReminderQueue(MOCK_INVOICES)
-    
+
     // Process reminders that are due now
     const now = new Date()
     const dueReminders = queue.filter(item => {
@@ -106,11 +106,11 @@ export async function POST(request: NextRequest) {
     })
 
     const results = []
-    
+
     for (const queueItem of dueReminders) {
       const invoice = MOCK_INVOICES.find(inv => inv.id === queueItem.invoiceId)
       const customer = MOCK_CUSTOMERS.find(cust => cust.id === invoice?.customerId)
-      
+
       if (!invoice || !customer) {
         console.error(`Invoice or customer not found for queue item ${queueItem.id}`)
         continue
@@ -121,12 +121,12 @@ export async function POST(request: NextRequest) {
       if (!schedule) continue
 
       const lastReminderDate = reminderManager.getLastReminderDate(invoice.id)
-      
+
       if (reminderEngine.shouldSendReminder(invoice, schedule, lastReminderDate)) {
         try {
           const reminderLog = await reminderEngine.processReminder(queueItem, invoice, customer)
           reminderManager.addLog(reminderLog)
-          
+
           results.push({
             invoiceId: invoice.id,
             customerEmail: customer.email,
@@ -165,15 +165,15 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const auth = await getServerAuth()
-    
+
     if (!auth.isAuthenticated || !auth.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const settings = loadUserReminderSettings(auth.user.id)
-    
+
     if (!settings.enabled) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         enabled: false,
         queue: [],
         nextReminder: null
@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
 
     const reminderEngine = new ReminderEngine(settings, MOCK_COMPANY_SETTINGS)
     const queue = await reminderEngine.generateReminderQueue(MOCK_INVOICES)
-    
+
     // Find next reminder
     const now = new Date()
     const upcomingReminders = queue

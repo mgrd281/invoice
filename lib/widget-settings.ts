@@ -87,3 +87,4 @@ export async function saveWidgetSettings(settings: Partial<WidgetSettings>): Pro
         throw error
     }
 }
+

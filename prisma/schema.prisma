@@ -54,7 +54,7 @@ model User {
   sessions        Session[]
   uploadJobs      UploadJob[]
   auditLogs       AuditLog[]
-  
+
   // New fields for user management
   isSuspended     Boolean   @default(false)
   lastIp          String?
@@ -128,16 +128,16 @@ model WidgetSettings {
   id             String       @id @default(uuid())
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   primaryColor   String       @default("#2563eb")
   layout         String       @default("list") // list, grid
-  
+
   // Email Automation Settings
   emailEnabled   Boolean      @default(false)
   emailDelayDays Int          @default(3)
   emailSubject   String       @default("Ihre Meinung ist uns wichtig! 🌟")
   emailBody      String       @default("Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team")
-  
+
   // General Settings
   reviewsEnabled Boolean      @default(true)
 
@@ -199,7 +199,7 @@ model Customer {
   emails            EmailMessage[]
   payments          Payment[]
   reviews           Review[]
-  
+
   // Marketing / Automation
   firstPurchaseDiscountSentAt DateTime?
   firstPurchaseDiscountCode   String?
@@ -208,7 +208,7 @@ model Customer {
   status            String    @default("ACTIVE") // ACTIVE, INACTIVE, VIP, NEW
   type              String    @default("PRIVATE") // PRIVATE, BUSINESS
   tags              String[]
-  
+
   // Delivery Address
   deliveryAddress   String?
   deliveryZip       String?
@@ -229,7 +229,7 @@ model BlockedUser {
   reason         String?
   blockedBy      String?      // ID or Name of admin who blocked
   blockedAt      DateTime     @default(now())
-  
+
   @@unique([organizationId, email])
   @@index([email])
 }
@@ -256,7 +256,7 @@ model Order {
   currency       String       @default("EUR")
   status         OrderStatus  @default(PENDING)
   shopifyOrderId String?      @unique(map: "Order_shopifyOrderId_key") // Add a unique constraint for this field
-  
+
   // Vorkasse Automation
   vorkasseReminderLevel Int @default(0) // 0=None, 1=First, 2=Second
   vorkasseLastReminderAt DateTime?
@@ -312,20 +312,20 @@ model Invoice {
   payments        Payment[]
   // ... existing fields
   dunningLogs     DunningLog[]
-  
+
   // New fields for document types
   documentKind    String        @default("INVOICE")
   referenceNumber String?
   originalDate    DateTime?
   reason          String?
   refundAmount    Decimal?      @db.Decimal(10, 2)
-  
+
   // New fields for custom invoice text and settings
   headerSubject   String?
   headerText      String?
   footerText      String?
   settings        Json?         // Stores currency, skonto, internalContact, etc.
-  
+
   // Imported fields
   paymentMethod   String?
   orderNumber     String?
@@ -454,7 +454,7 @@ model DigitalProduct {
   shopifyProductId String @unique
   title          String
   emailTemplate  String?
-  
+
   // Download Button Configuration
   downloadUrl     String?
   buttonText      String?  @default("Download")
@@ -462,7 +462,7 @@ model DigitalProduct {
   buttonTextColor String?  @default("#ffffff")
   buttonAlignment String?  @default("left") // "left", "center", "right"
   downloadButtons Json?    // Array of { text, url, color, textColor }
-  
+
   variantSettings DigitalProductVariantSetting[]
 
   keys           LicenseKey[]
@@ -477,10 +477,10 @@ model DigitalProductVariantSetting {
   digitalProductId String
   digitalProduct   DigitalProduct @relation(fields: [digitalProductId], references: [id], onDelete: Cascade)
   shopifyVariantId String
-  
+
   emailTemplate    String?
   downloadButtons  Json?    // Array of { text, url, color, textColor }
-  
+
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -501,7 +501,7 @@ model LicenseKey {
   usedAt           DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  
+
   // Delivery Tracking
   emailSent        Boolean        @default(false)
   emailSentAt      DateTime?
@@ -579,7 +579,7 @@ model DunningSettings {
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
   enabled        Boolean      @default(false)
-  
+
   // Intervals (days)
   reminderDays      Int @default(7)
   warning1Days      Int @default(3)
@@ -621,14 +621,14 @@ model MarketingSettings {
   id             String       @id @default(uuid())
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   // First Purchase Discount (FPD)
   fpdEnabled       Boolean @default(false)
   fpdPercentage    Int     @default(10)
   fpdValidityDays  Int     @default(30)
   fpdEmailSubject  String  @default("Ihr persönlicher 10%-Rabattcode als Dankeschön 🎁")
-  fpdEmailBody     String 
-  
+  fpdEmailBody     String
+
   // Exit Intent Popup
   exitIntentEnabled Boolean @default(false)
 
@@ -691,7 +691,7 @@ model Review {
   id             String       @id @default(uuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   // Product Info
   productId      String       // Shopify Product ID or internal ID
   productTitle   String?
@@ -703,16 +703,16 @@ model Review {
   customer       Customer?    @relation(fields: [customerId], references: [id])
   customerName   String
   customerEmail  String
-  
+
   // Review Content
   rating         Int          // 1-5
   title          String?
   content        String?
-  
+
   // Media
   images         String[]     // Array of image URLs
   videos         String[]     // Array of video URLs
-  
+
   // Status & Metadata
   status         String       @default("PENDING") // PENDING, APPROVED, REJECTED, HIDDEN
   source         String       @default("web")     // web, email, import, loox, judgeme, amazon
@@ -720,12 +720,12 @@ model Review {
   isFeatured     Boolean      @default(false)
   helpful        Int          @default(0)
   notHelpful     Int          @default(0)
-  
+
   // Admin Reply
   reply          String?
   repliedAt      DateTime?
   handlingStatus String       @default("OPEN") // OPEN, REPLIED, RESOLVED
-  
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -745,16 +745,16 @@ model AutoReviewSettings {
   id             String       @id @default(uuid())
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   enabled        Boolean      @default(false)
   delayMinutes   Int          @default(0) // Delay after order creation
   percentage     Int          @default(100) // Percentage of orders to generate reviews for (0-100)
   minRating      Int          @default(4)
   maxRating      Int          @default(5)
-  
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  
+
   templates      AutoReviewTemplate[]
 }
 
@@ -762,12 +762,12 @@ model AutoReviewTemplate {
   id             String             @id @default(uuid())
   settingsId     String
   settings       AutoReviewSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
-  
+
   title          String?
   content        String
   rating         Int?               // If null, use random between min/max from settings
   productId      String?            // Optional: if set, this template is for a specific product
-  
+
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 }
@@ -776,7 +776,7 @@ model GoogleShoppingSettings {
   id                    String       @id @default(uuid())
   organizationId        String       @unique
   organization          Organization @relation(fields: [organizationId], references: [id])
-  
+
   productSelection      String       @default("all") // all, some
   filterCustomerReviews Boolean      @default(true)
   filterImportedReviews Boolean      @default(true)
@@ -784,7 +784,7 @@ model GoogleShoppingSettings {
   countryFilter         String       @default("all")
   keywordFilter         String?      // Comma separated
   productIdentification String       @default("gtin") // gtin, mpn, sku
-  
+
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
 }
@@ -802,16 +802,16 @@ model ReviewIncentiveSettings {
   id             String       @id @default(uuid())
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   enabled        Boolean      @default(false)
   discountType   String       @default("percentage") // percentage, fixed_amount
   discountValue  Float        @default(10)
-  minRating      Int          @default(1) 
+  minRating      Int          @default(1)
   requirePhoto   Boolean      @default(false)
   validityDays   Int          @default(30)
   emailSubject   String       @default("Danke für Ihre Bewertung! Hier ist Ihr Gutschein")
   emailBody      String       @default("Vielen Dank für Ihre Bewertung. Als Dankeschön erhalten Sie einen Rabatt auf Ihre nächste Bestellung.")
-  
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -820,7 +820,7 @@ model AbandonedCart {
   id             String       @id @default(uuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   checkoutId     String       @unique // Shopify Checkout ID
   checkoutToken  String?      // Shopify Checkout Token
   email          String
@@ -828,11 +828,11 @@ model AbandonedCart {
   lineItems      Json?        // Store cart items for email display
   totalPrice     Decimal?     @db.Decimal(10, 2)
   currency       String       @default("EUR")
-  
+
   isRecovered    Boolean      @default(false)
   recoverySent   Boolean      @default(false)
   recoverySentAt DateTime?
-  
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -846,7 +846,7 @@ model RealEstateSearchProfile {
   name           String
   isActive       Boolean      @default(true)
   provider       String       @default("IMMOSCOUT24")
-  
+
   // Filters
   city           String?
   zipCode        String?
@@ -860,15 +860,15 @@ model RealEstateSearchProfile {
   roomsMax       Int?
   areaMin        Int?
   areaMax        Int?
-  
+
   // Notification
   email          String?
   telegramChatId String?
-  
+
   lastRunAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  
+
   seenListings   RealEstateSeenListing[]
 }
 
@@ -876,21 +876,21 @@ model VorkasseSettings {
   id             String       @id @default(uuid())
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   enabled        Boolean      @default(true)
-  
+
   reminder1Days    Int    @default(3)
   reminder1Subject String @default("Zahlungserinnerung für Ihre Bestellung")
   reminder1Text    String @default("Hallo, wir haben festgestellt, dass Ihre Bestellung (Nr. {orderNumber}) noch nicht bezahlt wurde. Bitte überweisen Sie den offenen Betrag. Vielen Dank!")
-  
+
   reminder2Days    Int    @default(10)
   reminder2Subject String @default("Letzte Zahlungserinnerung")
   reminder2Text    String @default("Dies ist eine letzte Zahlungserinnerung für Ihre Bestellung (Nr. {orderNumber}). Bitte begleichen Sie den Betrag, um eine automatische Stornierung zu vermeiden.")
-  
+
   cancellationDays    Int    @default(14)
   cancellationSubject String @default("Bestellung storniert")
   cancellationText    String @default("Ihre Bestellung wurde storniert, da kein Zahlungseingang verzeichnet wurde.")
-  
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -899,25 +899,25 @@ model RechnungSettings {
   id             String       @id @default(uuid())
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  
+
   enabled        Boolean      @default(true)
-  
+
   // Initial Email (3 mins after order)
   initialEmailSubject String @default("Rechnung für Ihre Bestellung")
   initialEmailText    String @default("Sehr geehrte Frau/Herr,\n\nvielen Dank für Ihre Bestellung...") // Truncated for brevity in schema default
-  
+
   reminder1Days    Int    @default(3)
   reminder1Subject String @default("Zahlungserinnerung für Ihre Bestellung")
   reminder1Text    String @default("Hallo, wir haben festgestellt, dass Ihre Bestellung (Nr. {orderNumber}) noch nicht bezahlt wurde. Bitte überweisen Sie den offenen Betrag. Vielen Dank!")
-  
+
   reminder2Days    Int    @default(10)
   reminder2Subject String @default("Letzte Zahlungserinnerung")
   reminder2Text    String @default("Dies ist eine letzte Zahlungserinnerung für Ihre Bestellung (Nr. {orderNumber}). Bitte begleichen Sie den Betrag, um eine automatische Stornierung zu vermeiden.")
-  
+
   cancellationDays    Int    @default(14)
   cancellationSubject String @default("Bestellung storniert")
   cancellationText    String @default("Ihre Bestellung wurde storniert, da kein Zahlungseingang verzeichnet wurde.")
-  
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -928,6 +928,6 @@ model RealEstateSeenListing {
   profile        RealEstateSearchProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   externalId     String
   seenAt         DateTime                @default(now())
-  
+
   @@unique([profileId, externalId])
 }

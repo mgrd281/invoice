@@ -21,7 +21,7 @@ export function TwoFactorLogin({ email, onSuccess, onBack }: TwoFactorLoginProps
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!code || code.length < 6) {
       setError('Bitte geben Sie einen gültigen Code ein')
       return
@@ -69,7 +69,7 @@ export function TwoFactorLogin({ email, onSuccess, onBack }: TwoFactorLoginProps
           Geben Sie den 6-stelligen Code aus Ihrer Authentifizierungs-App ein
         </p>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleVerify} className="space-y-4">
           <div>
@@ -107,9 +107,9 @@ export function TwoFactorLogin({ email, onSuccess, onBack }: TwoFactorLoginProps
           )}
 
           <div className="space-y-3">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isVerifying || !code}
             >
               {isVerifying ? 'Wird überprüft...' : 'Anmelden'}
@@ -121,16 +121,16 @@ export function TwoFactorLogin({ email, onSuccess, onBack }: TwoFactorLoginProps
                 onClick={() => setUseBackupCode(!useBackupCode)}
                 className="text-sm text-blue-600 hover:text-blue-700 underline"
               >
-                {useBackupCode 
-                  ? 'Authentifizierungs-App verwenden' 
+                {useBackupCode
+                  ? 'Authentifizierungs-App verwenden'
                   : 'Wiederherstellungscode verwenden'
                 }
               </button>
             </div>
 
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               className="w-full"
               onClick={onBack}
             >

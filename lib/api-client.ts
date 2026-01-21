@@ -70,3 +70,4 @@ export function createAuthenticatedFetchOptions(user: any, options: RequestInit 
     }
   }
 }
+

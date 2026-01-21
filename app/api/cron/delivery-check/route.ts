@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 /**
  * CRON JOB: Delivery Check
  * Checks for "PENDING" license key deliveries that should be sent.
- * 
+ *
  * Logic:
  * 1. Find keys with deliveryStatus = 'PENDING'
  * 2. Check their Shopify Order status

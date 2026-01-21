@@ -148,7 +148,7 @@ export async function POST(
       data: {
         status: 'CANCELLED',
         reason: reason, // Store reason on original too?
-        // We might want to store the link to the storno invoice somewhere, 
+        // We might want to store the link to the storno invoice somewhere,
         // but currently there's no direct field for "cancellationInvoiceId" on Invoice.
         // We can rely on referenceNumber in the storno invoice.
       }

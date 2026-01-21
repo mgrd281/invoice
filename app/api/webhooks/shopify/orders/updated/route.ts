@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         const financialStatus = body.financial_status
 
         if (financialStatus !== 'paid') {
-            // We only trigger on PAID. 
+            // We only trigger on PAID.
             // Note: If you want to trigger on "authorized" for instant delivery before capture, change this.
             // But user requirement says "Zahlung als bezahlt markieren" (Mark as paid) -> Send key.
             return NextResponse.json({ message: 'Order not paid, skipping' })

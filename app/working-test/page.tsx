@@ -3,7 +3,7 @@ export default function WorkingTestPage() {
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
       <h1>Working Test Page</h1>
       <p>If you can see this page, Next.js is working correctly.</p>
-      
+
       <div style={{ marginTop: '20px' }}>
         <h2>Navigation Test:</h2>
         <ul>

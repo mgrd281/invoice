@@ -56,3 +56,4 @@ If you don't provide environment variables:
 ❌ Error: Missing environment variables!
 Please set ADMIN_EMAIL and ADMIN_PASSWORD
 ```
+

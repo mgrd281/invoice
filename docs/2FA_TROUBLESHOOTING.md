@@ -233,3 +233,4 @@ npm --version
 6. Download sollte funktionieren
 
 **Wenn alle Schritte funktionieren, ist die 2FA-Installation erfolgreich!**
+

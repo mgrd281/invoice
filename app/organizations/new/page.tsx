@@ -50,14 +50,14 @@ export default function NewOrganizationPage() {
     try {
       // In a real app, you'd send POST request to /api/organizations
       console.log('Creating new organization:', organization)
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       alert('Organisation erfolgreich erstellt!')
       // Redirect back to organizations page
       window.location.href = '/organizations'
-      
+
     } catch (error) {
       console.error('Error creating organization:', error)
       alert('Fehler beim Erstellen der Organisation')

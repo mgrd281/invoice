@@ -47,7 +47,7 @@ export class KauflandAPI {
    */
   private async request(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     const headers = {
       'Authorization': `Basic ${this.credentials}`,
       'Content-Type': 'application/json',
@@ -75,13 +75,13 @@ export class KauflandAPI {
         '/seller-api/units',
         '/'
       ]
-      
+
       let lastError: string = ''
-      
+
       for (const endpoint of endpoints) {
         try {
           const response = await this.request(endpoint, { method: 'GET' })
-          
+
           // If we get any response (even 401/403), it means the API is reachable
           if (response.status === 200 || response.status === 401 || response.status === 403) {
             return {
@@ -89,12 +89,12 @@ export class KauflandAPI {
               message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
             }
           }
-          
+
           if (response.status === 404) {
             lastError = `Endpoint nicht gefunden: ${endpoint}`
             continue // Try next endpoint
           }
-          
+
           const errorText = await response.text().catch(() => '')
           lastError = `Status ${response.status}: ${errorText.substring(0, 100)}`
         } catch (err) {
@@ -102,7 +102,7 @@ export class KauflandAPI {
           continue
         }
       }
-      
+
       // If all endpoints failed, return the last error
       return {
         success: false,
@@ -152,7 +152,7 @@ export class KauflandAPI {
       quantity: product.quantity,
       shipping_time: product.shippingTime || this.settings.defaultShippingTime || 3,
       ...(product.sku && { sku: product.sku }),
-      ...(product.images && product.images.length > 0 && { 
+      ...(product.images && product.images.length > 0 && {
         images: product.images.map((url, index) => ({
           url,
           position: index + 1
@@ -231,7 +231,7 @@ export class KauflandAPI {
         price: parseFloat(internalProduct.price || internalProduct.variants?.[0]?.price || 0),
         quantity: internalProduct.quantity || internalProduct.inventory_quantity || 0,
         sku: internalProduct.sku || internalProduct.variants?.[0]?.sku,
-        images: internalProduct.images?.map((img: any) => 
+        images: internalProduct.images?.map((img: any) =>
           typeof img === 'string' ? img : img.src || img.url
         ) || [],
         shippingTime: this.settings.defaultShippingTime || 3,
@@ -253,7 +253,7 @@ export class KauflandAPI {
         }
       } catch (apiError) {
         const errorMessage = apiError instanceof Error ? apiError.message : 'Unbekannter Fehler'
-        
+
         // Provide more helpful error messages
         if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
           return {
@@ -261,7 +261,7 @@ export class KauflandAPI {
             message: `API Endpoint nicht gefunden. Bitte überprüfen Sie die API Base URL (aktuell: ${this.baseUrl}). Die Kaufland API-Endpunkte können sich je nach Version unterscheiden. Bitte konsultieren Sie die offizielle Kaufland Seller API-Dokumentation.`
           }
         }
-        
+
         return {
           success: false,
           message: `Fehler beim Synchronisieren: ${errorMessage}`
@@ -290,7 +290,7 @@ export class KauflandAPI {
           product: product.title || product.name,
           ...result
         })
-        
+
         if (result.success) {
           successCount++
         } else {

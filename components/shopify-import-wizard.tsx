@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
-import { 
-  Download, 
-  RefreshCw, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Download,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   ShoppingCart,
   FileText,
@@ -65,11 +65,11 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
   const loadOrders = async () => {
     setLoading(true)
     setMessage('')
-    
+
     try {
       const response = await fetch('/api/shopify/import?limit=50&financial_status=paid')
       const data = await response.json()
-      
+
       if (data.success) {
         setOrders(data.orders)
         // Auto-select all paid orders
@@ -121,7 +121,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
 
     try {
       const selectedOrdersList = orders.filter(order => selectedOrders.has(order.id))
-      
+
       // Import orders in batches
       const batchSize = 5
       let processed = 0
@@ -131,7 +131,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
 
       for (let i = 0; i < selectedOrdersList.length; i += batchSize) {
         const batch = selectedOrdersList.slice(i, i + batchSize)
-        
+
         for (const order of batch) {
           setProgress(prev => ({
             ...prev,
@@ -193,7 +193,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
       refunded: { variant: 'destructive', label: 'Erstattet' },
       cancelled: { variant: 'outline', label: 'Storniert' }
     }
-    
+
     const config = statusMap[status] || { variant: 'outline', label: status }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -202,7 +202,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
     const selectedOrdersList = orders.filter(order => selectedOrders.has(order.id))
     const totalAmount = selectedOrdersList.reduce((sum, order) => sum + parseFloat(order.total_price), 0)
     const totalCustomers = new Set(selectedOrdersList.map(order => order.customer.email)).size
-    
+
     return { totalAmount, totalCustomers, totalOrders: selectedOrdersList.length }
   }
 
@@ -225,7 +225,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
-          
+
           <div className="text-center">
             <Button
               onClick={loadOrders}
@@ -250,7 +250,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
 
   if (step === 'confirm') {
     const totals = calculateTotals()
-    
+
     return (
       <div className="space-y-6">
         <Card>
@@ -338,7 +338,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
               <Alert className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Die ausgewählten Bestellungen werden als Rechnungen in Ihr System importiert. 
+                  Die ausgewählten Bestellungen werden als Rechnungen in Ihr System importiert.
                   Bereits existierende Rechnungen werden übersprungen.
                 </AlertDescription>
               </Alert>
@@ -361,7 +361,7 @@ export default function ShopifyImportWizard({ onComplete }: ShopifyImportWizardP
 
   if (step === 'importing') {
     const progressPercentage = progress.total > 0 ? (progress.processed / progress.total) * 100 : 0
-    
+
     return (
       <Card>
         <CardHeader>

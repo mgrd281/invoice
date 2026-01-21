@@ -79,3 +79,4 @@ export async function PATCH(
         return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 })
     }
 }
+

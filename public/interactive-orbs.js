@@ -1,7 +1,7 @@
 // Optimized Interactive Orbs JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     const orbs = document.querySelectorAll('.interactive-orb');
-    
+
     orbs.forEach((orb, index) => {
         // Simple click effect
         orb.addEventListener('click', function(e) {
@@ -13,40 +13,40 @@ document.addEventListener('DOMContentLoaded', function() {
             ripple.style.left = '0';
             ripple.style.top = '0';
             ripple.style.background = window.getComputedStyle(this).background;
-            
+
             this.appendChild(ripple);
-            
+
             // Remove ripple after animation
             setTimeout(() => {
                 if (ripple.parentNode) {
                     ripple.parentNode.removeChild(ripple);
                 }
             }, 1000);
-            
+
             // Simple glow effect
             this.style.boxShadow = '0 0 30px rgba(59, 130, 246, 0.8)';
             this.style.transform = 'scale(1.2)';
-            
+
             setTimeout(() => {
                 this.style.boxShadow = '';
                 this.style.transform = '';
             }, 500);
         });
-        
+
         // Simple mouse move effect
         orb.addEventListener('mousemove', function(e) {
             const rect = this.getBoundingClientRect();
             const x = e.clientX - rect.left - rect.width / 2;
             const y = e.clientY - rect.top - rect.height / 2;
-            
+
             this.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px) scale(1.1)`;
         });
-        
+
         // Mouse leave effect
         orb.addEventListener('mouseleave', function() {
             this.style.transform = '';
         });
-        
+
         // Random color change on double click
         orb.addEventListener('dblclick', function() {
             const colors = [
@@ -59,10 +59,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 'linear-gradient(45deg, #f97316, #ea580c)',
                 'linear-gradient(45deg, #84cc16, #65a30d)'
             ];
-            
+
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             this.style.background = randomColor;
-            
+
             // Add sparkle effect
             for (let i = 0; i < 5; i++) {
                 setTimeout(() => {
@@ -72,9 +72,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     sparkle.style.left = Math.random() * 20 - 10 + 'px';
                     sparkle.style.top = Math.random() * 20 - 10 + 'px';
                     sparkle.style.animation = 'orbTrail 0.8s ease-out forwards';
-                    
+
                     this.appendChild(sparkle);
-                    
+
                     setTimeout(() => {
                         if (sparkle.parentNode) {
                             sparkle.parentNode.removeChild(sparkle);
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     // Add floating animation to particles
     const particles = document.querySelectorAll('.particle');
     particles.forEach((particle, index) => {
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.transform = 'scale(1.5)';
             this.style.opacity = '1';
         });
-        
+
         particle.addEventListener('mouseleave', function() {
             this.style.transform = '';
             this.style.opacity = '0.7';

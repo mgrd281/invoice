@@ -95,7 +95,7 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error in email diagnostics:', error)
-    
+
     return NextResponse.json(
       {
         success: false,
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error testing email provider:', error)
-    
+
     return NextResponse.json(
       {
         success: false,

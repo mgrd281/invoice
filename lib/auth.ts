@@ -153,3 +153,4 @@ export function canAccessResource(userId: number, resourceOwnerId: number, userR
   // Benutzer kann nur auf eigene Ressourcen zugreifen
   return userId === resourceOwnerId
 }
+

@@ -52,17 +52,17 @@ export default function TwoFactorAuthPage() {
       const response = await fetch('/api/auth/two-factor/enable', {
         method: 'POST'
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setTwoFactorStatus(data)
-        
+
         // Generate QR Code
         if (data.qrCodeUrl) {
           const qrImage = await QRCode.toDataURL(data.qrCodeUrl)
           setQrCodeImage(qrImage)
         }
-        
+
         setShowSetup(true)
         setStep(1)
       } else {
@@ -163,9 +163,9 @@ export default function TwoFactorAuthPage() {
           </div>
         </div>
         <p className="text-gray-600 mt-2">
-          Erhöhe die Sicherheit deines Accountable Kontos durch den extra Zugriff auf dein Smartphone. Nach 
-          der Aktivierung ist dein Konto geschützt (selbst wenn dein Passwort verloren geht oder gestohlen 
-          wird), denn du musst sowohl dein Passwort als auch einen Authentifizierungscode von deinem Smart 
+          Erhöhe die Sicherheit deines Accountable Kontos durch den extra Zugriff auf dein Smartphone. Nach
+          der Aktivierung ist dein Konto geschützt (selbst wenn dein Passwort verloren geht oder gestohlen
+          wird), denn du musst sowohl dein Passwort als auch einen Authentifizierungscode von deinem Smart
           phone eingeben, um dich in deinem Konto anzumelden.
         </p>
       </div>
@@ -196,7 +196,7 @@ export default function TwoFactorAuthPage() {
               </div>
               <div>
                 {!twoFactorStatus.enabled ? (
-                  <Button 
+                  <Button
                     onClick={enableTwoFactor}
                     disabled={isEnabling}
                     className="bg-purple-600 hover:bg-purple-700"
@@ -204,7 +204,7 @@ export default function TwoFactorAuthPage() {
                     {isEnabling ? 'Wird aktiviert...' : 'Zwei-Faktor-Authentifizierung einrichten'}
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     variant="destructive"
                     onClick={() => setShowSetup(true)}
                     disabled={isDisabling}
@@ -235,7 +235,7 @@ export default function TwoFactorAuthPage() {
                   <span className={step >= 1 ? 'text-purple-600 font-medium' : 'text-gray-500'}>
                     Authentifizierungs-App aufrufen
                   </span>
-                  
+
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                     step >= 2 ? 'bg-purple-600 text-white' : 'bg-gray-200'
                   }`}>
@@ -244,7 +244,7 @@ export default function TwoFactorAuthPage() {
                   <span className={step >= 2 ? 'text-purple-600 font-medium' : 'text-gray-500'}>
                     Code verifizieren
                   </span>
-                  
+
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                     step >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200'
                   }`}>
@@ -263,24 +263,24 @@ export default function TwoFactorAuthPage() {
                       <p className="text-sm text-gray-600 mb-4">
                         Klicke das + in deiner Authentifizierungs-App und scanne den QR Code mit deiner Kamera.
                       </p>
-                      
+
                       {qrCodeImage && (
                         <div className="bg-white p-4 rounded-lg border inline-block">
                           <img src={qrCodeImage} alt="QR Code" className="w-48 h-48" />
                         </div>
                       )}
-                      
+
                       <p className="text-xs text-gray-500 mt-4">
                         Kannst du keinen QR Code nutzen, trage stattdessen diesen{' '}
                         <button className="text-blue-600 underline">Setup Schlüssel</button> ein.
                       </p>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-lg font-medium mb-4">
                         Lade zuerst eine Authentifizierungs-App herunter und installiere sie.
                       </h3>
-                      
+
                       <div className="mb-6">
                         <h4 className="font-medium mb-3">Google Authenticator</h4>
                         <div className="flex gap-3">
@@ -288,11 +288,11 @@ export default function TwoFactorAuthPage() {
                           <img src="/google-play-badge.png" alt="Get it on Google Play" className="h-10" />
                         </div>
                       </div>
-                      
+
                       <p className="text-sm text-gray-600 mb-4">
                         Du hast bereits eine Authentifizierungs-App? Gehe zum nächsten Schritt, um deinen Code zu verifizieren.
                       </p>
-                      
+
                       <Button onClick={() => setStep(2)} className="bg-purple-600 hover:bg-purple-700">
                         Nächster Schritt
                       </Button>
@@ -307,7 +307,7 @@ export default function TwoFactorAuthPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Nachdem du den Barcode gescannt hast, gib den 6-stelligen Code ein, der von deiner Authentifizierungs-App generiert wurde.
                     </p>
-                    
+
                     <div className="max-w-xs">
                       <Label htmlFor="verification-code">6-stelliger Code</Label>
                       <Input
@@ -320,7 +320,7 @@ export default function TwoFactorAuthPage() {
                         className="text-center text-lg font-mono"
                       />
                     </div>
-                    
+
                     <div className="flex gap-3 mt-6">
                       <Button onClick={() => setStep(1)} variant="outline">
                         Zurück
@@ -339,7 +339,7 @@ export default function TwoFactorAuthPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Speichere diese Codes an einem sicheren Ort. Du kannst jeden Code nur einmal verwenden, um dich anzumelden, falls du keinen Zugriff auf dein Telefon hast.
                     </p>
-                    
+
                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
                       <div className="grid grid-cols-2 gap-2 font-mono text-sm">
                         {twoFactorStatus.backupCodes.map((code, index) => (
@@ -349,7 +349,7 @@ export default function TwoFactorAuthPage() {
                         ))}
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-3">
                       <Button onClick={downloadBackupCodes} variant="outline">
                         Codes herunterladen
@@ -375,7 +375,7 @@ export default function TwoFactorAuthPage() {
               <p className="text-sm text-gray-600 mb-4">
                 Gib den aktuellen 6-stelligen Code aus deiner Authentifizierungs-App ein, um die Zwei-Faktor-Authentifizierung zu deaktivieren.
               </p>
-              
+
               <div className="max-w-xs mb-4">
                 <Label htmlFor="disable-code">6-stelliger Code</Label>
                 <Input
@@ -388,13 +388,13 @@ export default function TwoFactorAuthPage() {
                   className="text-center text-lg font-mono"
                 />
               </div>
-              
+
               <div className="flex gap-3">
                 <Button onClick={() => setShowSetup(false)} variant="outline">
                   Abbrechen
                 </Button>
-                <Button 
-                  onClick={disableTwoFactor} 
+                <Button
+                  onClick={disableTwoFactor}
                   variant="destructive"
                   disabled={isDisabling || !verificationCode}
                 >
@@ -418,7 +418,7 @@ export default function TwoFactorAuthPage() {
               <p className="text-sm text-gray-600 mb-4">
                 Falls du keinen Zugriff auf dein Telefon hast, kannst du einen dieser Codes verwenden, um dich anzumelden.
               </p>
-              
+
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <div className="grid grid-cols-2 gap-2 font-mono text-sm">
                   {twoFactorStatus.backupCodes.map((code, index) => (
@@ -428,7 +428,7 @@ export default function TwoFactorAuthPage() {
                   ))}
                 </div>
               </div>
-              
+
               <Button onClick={downloadBackupCodes} variant="outline">
                 Codes herunterladen
               </Button>
@@ -436,7 +436,7 @@ export default function TwoFactorAuthPage() {
           </Card>
         )}
       </div>
-      
+
       <ToastContainer />
     </div>
   )

@@ -56,3 +56,4 @@ export async function sendVerificationEmail(email: string, token: string) {
     return false;
   }
 }
+

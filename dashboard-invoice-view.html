@@ -575,15 +575,15 @@
 
             updateView() {
                 const container = document.getElementById('invoicesContainer');
-                
+
                 // Remove existing view classes
                 container.classList.remove('list-view', 'grid-view');
-                
+
                 // Add new view class
                 container.classList.add(`${this.currentView}-view`);
 
                 // Update accessibility
-                container.setAttribute('aria-label', 
+                container.setAttribute('aria-label',
                     this.currentView === 'grid' ? 'Rechnungen in Rasteransicht' : 'Rechnungen in Listenansicht'
                 );
             }
@@ -619,11 +619,11 @@
                 // Placeholder for actual filtering logic
                 // In a real application, this would filter the invoices based on the selected period
                 const invoices = document.querySelectorAll('.invoice-card');
-                
+
                 // Example: Show loading state
                 const container = document.getElementById('invoicesContainer');
                 container.style.opacity = '0.6';
-                
+
                 // Simulate API call
                 setTimeout(() => {
                     container.style.opacity = '1';
@@ -642,7 +642,7 @@
                 const card = document.createElement('div');
                 card.className = 'invoice-card';
                 card.tabIndex = 0;
-                
+
                 card.innerHTML = `
                     <div class="invoice-info">
                         <div class="invoice-number">${data.number}</div>
@@ -655,7 +655,7 @@
                         <div class="invoice-status">${data.status}</div>
                     </div>
                 `;
-                
+
                 return card;
             }
         }

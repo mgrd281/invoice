@@ -525,3 +525,4 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
         </Dialog>
     )
 }
+

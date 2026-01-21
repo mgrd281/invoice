@@ -3,10 +3,10 @@ export type Theme = 'light' | 'dark' | 'auto'
 
 export function applyTheme(theme: Theme) {
   const root = document.documentElement
-  
+
   // Remove existing theme classes
   root.classList.remove('dark', 'light')
-  
+
   if (theme === 'dark') {
     root.classList.add('dark')
   } else if (theme === 'light') {
@@ -20,7 +20,7 @@ export function applyTheme(theme: Theme) {
       root.classList.add('light')
     }
   }
-  
+
   console.log('Theme applied:', theme, 'Classes:', root.classList.toString())
 }
 
@@ -34,16 +34,16 @@ export function getSystemTheme(): 'light' | 'dark' {
 export function initializeTheme(theme: Theme) {
   if (typeof window !== 'undefined') {
     applyTheme(theme)
-    
+
     // Listen for system theme changes when in auto mode
     if (theme === 'auto') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
       const handleChange = () => {
         applyTheme('auto')
       }
-      
+
       mediaQuery.addEventListener('change', handleChange)
-      
+
       // Return cleanup function
       return () => {
         mediaQuery.removeEventListener('change', handleChange)

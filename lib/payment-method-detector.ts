@@ -74,7 +74,7 @@ export function isManualPaymentMethod(paymentMethod: string): boolean {
 
 /**
  * Main decision function: Should digital product keys be sent now?
- * 
+ *
  * @param order - Shopify order object from webhook
  * @param isUpdateWebhook - True if this is an orders/updated webhook (vs orders/create)
  * @returns boolean - True if keys should be sent immediately

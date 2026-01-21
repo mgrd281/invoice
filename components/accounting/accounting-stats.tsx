@@ -81,3 +81,4 @@ export function AccountingStats({ summary }: AccountingStatsProps) {
         </div>
     )
 }
+

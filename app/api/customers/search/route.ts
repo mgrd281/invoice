@@ -13,12 +13,12 @@ declare global {
 // Extract unique customers from invoices
 function extractCustomersFromInvoices(invoices: any[]): any[] {
   const customerMap = new Map()
-  
+
   invoices.forEach(invoice => {
     if (!invoice.deleted_at) { // Skip soft-deleted invoices
       let customerEmail = ''
       let customerName = ''
-      
+
       // Handle different invoice data structures
       if (invoice.customer) {
         customerEmail = invoice.customer.email || invoice.customerEmail || ''
@@ -27,11 +27,11 @@ function extractCustomersFromInvoices(invoices: any[]): any[] {
         customerEmail = invoice.customerEmail || invoice.email || ''
         customerName = invoice.customerName || invoice.name || ''
       }
-      
+
       // Only process if we have a valid email
       if (customerEmail && customerEmail.includes('@')) {
         const customerId = customerEmail.toLowerCase().trim()
-        
+
         if (!customerMap.has(customerId)) {
           customerMap.set(customerId, {
             id: customerId,
@@ -44,7 +44,7 @@ function extractCustomersFromInvoices(invoices: any[]): any[] {
             invoices: []
           })
         }
-        
+
         const customer = customerMap.get(customerId)
         // Only add invoice if it's not already there
         const existingInvoice = customer.invoices.find((inv: any) => inv.id === invoice.id)
@@ -62,7 +62,7 @@ function extractCustomersFromInvoices(invoices: any[]): any[] {
       }
     }
   })
-  
+
   // Format total amounts
   return Array.from(customerMap.values()).map(customer => ({
     ...customer,
@@ -75,34 +75,34 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     const query = searchParams.get('q') // General search query
-    
+
     // Get all invoices from different sources
     const allInvoices = [
       ...(global.csvInvoices || []),
       ...(global.allInvoices || [])
     ]
-    
+
     console.log(`[GET] Data sources - CSV invoices: ${global.csvInvoices?.length || 0}, Manual invoices: ${global.allInvoices?.length || 0}`)
-    
+
     // Extract customers from invoices
     const invoiceCustomers = extractCustomersFromInvoices(allInvoices)
-    
+
     // Combine all customers (no mock data)
     const allCustomers = [
       ...invoiceCustomers,
       ...(global.csvCustomers || []),
       ...(global.allCustomers || [])
     ]
-    
+
     console.log(`[GET] Customer sources - From invoices: ${invoiceCustomers.length}, CSV customers: ${global.csvCustomers?.length || 0}, Manual customers: ${global.allCustomers?.length || 0}`)
-    
+
     // Remove duplicates FIRST based on email (this is the main issue!)
     const uniqueCustomers = allCustomers.reduce((acc, customer) => {
       if (!customer.email) return acc // Skip customers without email
-      
+
       const emailLower = customer.email.toLowerCase()
       const existingIndex = acc.findIndex((c: any) => c.email?.toLowerCase() === emailLower)
-      
+
       if (existingIndex === -1) {
         acc.push({
           ...customer,
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
           ...existing,
           ...customer,
           invoiceCount: Math.max(existing.invoiceCount || 0, customer.invoiceCount || 0),
-          invoices: [...(existing.invoices || []), ...(customer.invoices || [])].filter((invoice, index, arr) => 
+          invoices: [...(existing.invoices || []), ...(customer.invoices || [])].filter((invoice, index, arr) =>
             arr.findIndex(inv => inv.id === invoice.id) === index // Remove duplicate invoices too
           )
         }
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     }, [] as any[])
 
     let filteredCustomers = uniqueCustomers
-    
+
     // Filter by email if provided (use contains for partial matches)
     if (email) {
       const emailLower = email.toLowerCase().trim()
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
         return matches
       })
     }
-    
+
     // Filter by general query if provided
     if (query && !email) {
       const queryLower = query.toLowerCase().trim()
@@ -147,28 +147,28 @@ export async function GET(request: NextRequest) {
         const emailMatch = customer.email && customer.email.toLowerCase().includes(queryLower)
         const nameMatch = customer.name && customer.name.toLowerCase().includes(queryLower)
         const phoneMatch = customer.phone && customer.phone.includes(queryLower)
-        
+
         if (emailMatch || nameMatch || phoneMatch) {
           console.log(`[GET] Found match: ${customer.email} (${customer.name})`)
         }
-        
+
         return emailMatch || nameMatch || phoneMatch
       })
     }
-    
+
     console.log(`Customer search - Query: "${email || query}"`)
     console.log(`Total customers before filtering: ${allCustomers.length}`)
     console.log(`Unique customers after deduplication: ${uniqueCustomers.length}`)
     console.log(`Filtered customers: ${filteredCustomers.length}`)
-    
+
     // Debug: Log first few customers for debugging
     if (process.env.NODE_ENV === 'development') {
-      console.log('Sample customers:', uniqueCustomers.slice(0, 3).map((c: any) => ({ 
-        email: c.email, 
-        name: c.name, 
-        source: c.source || 'unknown' 
+      console.log('Sample customers:', uniqueCustomers.slice(0, 3).map((c: any) => ({
+        email: c.email,
+        name: c.name,
+        source: c.source || 'unknown'
       })))
-      
+
       // If searching for specific email, check if it exists in any form
       if (email) {
         const emailLower = email.toLowerCase().trim()
@@ -178,18 +178,18 @@ export async function GET(request: NextRequest) {
         console.log(`Email exists in data:`, allEmails.some((e: string) => e.includes(emailLower)))
       }
     }
-    
+
     return NextResponse.json({
       success: true,
       customers: filteredCustomers,
       total: filteredCustomers.length,
       query: email || query || ''
     })
-    
+
   } catch (error) {
     console.error('Error searching customers:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Fehler beim Suchen der Kunden',
         customers: [],
@@ -205,46 +205,46 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, name, phone, includeInvoices = false } = body
-    
+
     // Get all invoices from different sources
     const allInvoices = [
       ...(global.csvInvoices || []),
       ...(global.allInvoices || [])
     ]
-    
+
     // Extract customers from invoices
     const invoiceCustomers = extractCustomersFromInvoices(allInvoices)
-    
+
     // Combine all customers (no mock data)
     const allCustomers = [
       ...invoiceCustomers,
       ...(global.csvCustomers || []),
       ...(global.allCustomers || [])
     ]
-    
+
     // Advanced filtering
     let filteredCustomers = allCustomers
-    
+
     if (email) {
       const emailLower = email.toLowerCase().trim()
-      filteredCustomers = filteredCustomers.filter(customer => 
+      filteredCustomers = filteredCustomers.filter(customer =>
         customer.email && customer.email.toLowerCase().includes(emailLower)
       )
     }
-    
+
     if (name) {
       const nameLower = name.toLowerCase().trim()
-      filteredCustomers = filteredCustomers.filter(customer => 
+      filteredCustomers = filteredCustomers.filter(customer =>
         customer.name && customer.name.toLowerCase().includes(nameLower)
       )
     }
-    
+
     if (phone) {
-      filteredCustomers = filteredCustomers.filter(customer => 
+      filteredCustomers = filteredCustomers.filter(customer =>
         customer.phone && customer.phone.includes(phone.trim())
       )
     }
-    
+
     // Remove duplicates based on email
     const uniqueCustomers = filteredCustomers.reduce((acc, customer) => {
       const existingIndex = acc.findIndex((c: any) => c.email?.toLowerCase() === customer.email?.toLowerCase())
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
       }
       return acc
     }, [] as any[])
-    
+
     // Include detailed invoice information if requested
     if (includeInvoices) {
       for (const customer of uniqueCustomers) {
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
           const invoiceEmail = invoice.customer?.email || invoice.customerEmail || invoice.email || ''
           return invoiceEmail.toLowerCase() === customer.email?.toLowerCase() && !invoice.deleted_at
         })
-        
+
         customer.detailedInvoices = customerInvoices.map(invoice => ({
           id: invoice.id,
           number: invoice.number || invoice.invoiceNumber,
@@ -273,20 +273,20 @@ export async function POST(request: NextRequest) {
         }))
       }
     }
-    
+
     console.log(`Advanced customer search - Found: ${uniqueCustomers.length} customers`)
-    
+
     return NextResponse.json({
       success: true,
       customers: uniqueCustomers,
       total: uniqueCustomers.length,
       searchCriteria: { email, name, phone, includeInvoices }
     })
-    
+
   } catch (error) {
     console.error('Error in advanced customer search:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Fehler bei der erweiterten Kundensuche',
         customers: [],

@@ -142,7 +142,7 @@ export function InvoiceActions({ invoice, onInvoiceUpdated }: InvoiceActionsProp
               Möchten Sie die Rechnung <strong>{invoice.number}</strong> wirklich stornieren?
               Dies erstellt eine Stornorechnung und markiert die ursprüngliche Rechnung als storniert.
             </p>
-            
+
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">
                 Grund für die Stornierung *
@@ -184,7 +184,7 @@ export function InvoiceActions({ invoice, onInvoiceUpdated }: InvoiceActionsProp
             <p className="text-sm text-gray-600 mb-4">
               Wählen Sie die Positionen und Mengen für die Rückerstattung der Rechnung <strong>{invoice.number}</strong>:
             </p>
-            
+
             {/* Rechnungspositionen */}
             <div className="mb-4">
               <h4 className="font-medium mb-2">Rechnungspositionen:</h4>

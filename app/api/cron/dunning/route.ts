@@ -81,8 +81,8 @@ export async function GET() {
                     // Calculate Surcharge
                     const originalAmount = Number(invoice.totalGross)
                     const surchargeAmount = (originalAmount * surchargePercent) / 100
-                    const totalOpenAmount = originalAmount + surchargeAmount // Note: This adds to the *current* step. 
-                    // Ideally, surcharges accumulate. 
+                    const totalOpenAmount = originalAmount + surchargeAmount // Note: This adds to the *current* step.
+                    // Ideally, surcharges accumulate.
                     // If Warning 1 added 5%, and Warning 2 adds 3%, is it 3% on top of (100+5)? Or 3% of original?
                     // User said: "Zusätzlich wird ein weiterer Zuschlag von +3% auf den ursprünglichen Rechnungsbetrag erhoben"
                     // So it's based on original amount.

@@ -26,7 +26,7 @@ export async function sendRecoveryEmail(to: string, discountCode: string, cartUr
                 <p style="font-size: 16px; color: #333;">
                     Wir haben bemerkt, dass Sie Ihren Einkauf nicht abgeschlossen haben. Da wir Sie gerne als Kunden gewinnen möchten, schenken wir Ihnen einen <strong>10% Rabattcode</strong> für Ihre Bestellung!
                 </p>
-                
+
                 <div style="background-color: #f3f4f6; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
                     <p style="margin: 0; color: #666; font-size: 14px;">Ihr Gutscheincode:</p>
                     <h1 style="margin: 10px 0; color: #2563eb; letter-spacing: 2px;">${discountCode}</h1>

@@ -44,14 +44,14 @@
         const modalHTML = `
             <div id="rp-exit-modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 999999; opacity: 0; transition: opacity 0.4s ease;">
                 <div id="rp-exit-modal" style="background: #111111; width: 90%; max-width: 420px; border-radius: 20px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); transform: scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; position: relative; border: 1px solid #333;">
-                    
+
                     <button id="rp-exit-close" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; color: #fff; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">&times;</button>
-                    
+
                     <div style="padding: 40px 30px 30px 30px; text-align: center; color: white;">
                         <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);">
                             <span style="font-size: 30px;">🎁</span>
                         </div>
-                        
+
                         <h2 style="margin: 0 0 10px 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #ccc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Ein Geschenk für Sie</h2>
                         <p style="margin: 0; color: #9ca3af; font-size: 15px; line-height: 1.6;">Bevor Sie gehen: Sichern Sie sich jetzt Ihren exklusiven Vorteil für diese Bestellung.</p>
                     </div>
@@ -71,7 +71,7 @@
                         <button id="rp-exit-cta" style="width: 100%; background: linear-gradient(135deg, #D4AF37 0%, #B4941F 100%); color: #000; border: none; padding: 16px; border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);">
                             Code kopieren & Sparen
                         </button>
-                        
+
                         <button id="rp-exit-decline" style="background: none; border: none; color: #6b7280; font-size: 13px; margin-top: 20px; cursor: pointer; transition: color 0.2s;">
                             Nein danke, ich möchte den vollen Preis zahlen
                         </button>

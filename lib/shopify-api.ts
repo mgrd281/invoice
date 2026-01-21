@@ -881,7 +881,7 @@ export class ShopifyAPI {
       // For now, we'll skip explicit shipping refund unless we fetch it from 'order' object which has it.
       // The 'ShopifyOrder' interface in this file doesn't show 'shipping_lines', but the API returns it.
       // Let's rely on what we have. If we want to refund shipping, we need the amount.
-      // We can try to refund the full 'total_price' via 'transactions' if it was paid, 
+      // We can try to refund the full 'total_price' via 'transactions' if it was paid,
       // but 'refund_line_items' is safer for inventory/status.
 
       // If we want to refund the *amount* (money), we need 'transactions'.

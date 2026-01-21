@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const settings = getKauflandSettings()
-    
+
     if (!settings.enabled || !settings.clientKey || !settings.secretKey) {
       return NextResponse.json({
         success: false,

@@ -134,3 +134,4 @@ export function EditReceiptDialog({ open, onOpenChange, receipt, onSave }: EditR
         </Dialog>
     )
 }
+

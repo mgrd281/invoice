@@ -1,11 +1,11 @@
-import { 
-  ReminderSettings, 
-  ReminderSchedule, 
-  ReminderTemplate, 
-  ReminderLog, 
+import {
+  ReminderSettings,
+  ReminderSchedule,
+  ReminderTemplate,
+  ReminderLog,
   ReminderQueue,
   ReminderStatus,
-  REMINDER_VARIABLES 
+  REMINDER_VARIABLES
 } from './reminder-types'
 
 // Mock invoice and customer interfaces
@@ -48,8 +48,8 @@ export class ReminderEngine {
    * Replace template variables with actual values
    */
   public replaceTemplateVariables(
-    template: string, 
-    invoice: Invoice, 
+    template: string,
+    invoice: Invoice,
     customer: Customer
   ): string {
     const variables: Record<string, string> = {
@@ -79,7 +79,7 @@ export class ReminderEngine {
    * Check if an invoice should receive a reminder
    */
   public shouldSendReminder(
-    invoice: Invoice, 
+    invoice: Invoice,
     schedule: ReminderSchedule,
     lastReminderDate?: Date
   ): boolean {
