@@ -89,6 +89,7 @@ import {
 } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ShoppingBag, Globe, Info } from 'lucide-react'
+import { useAuthenticatedFetch } from '@/lib/api-client'
 
 function timeAgo(dateString: string) {
     const date = new Date(dateString)
@@ -134,12 +135,13 @@ interface Product {
 function useShopifyProducts() {
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(false)
+    const authenticatedFetch = useAuthenticatedFetch()
 
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true)
             try {
-                const res = await fetch('/api/shopify/products')
+                const res = await authenticatedFetch('/api/shopify/products')
                 const data = await res.json()
                 if (data.success) {
                     setProducts(data.data)
@@ -161,6 +163,7 @@ export default function ReviewsPage() {
     const [activeTab, setActiveTab] = useState('overview')
     const { products: shopifyProducts } = useShopifyProducts()
     const [origin, setOrigin] = useState('')
+    const authenticatedFetch = useAuthenticatedFetch()
 
     useEffect(() => {
         setOrigin(window.location.origin)
@@ -260,7 +263,7 @@ export default function ReviewsPage() {
 
     const saveGoogleSettings = async () => {
         try {
-            await fetch('/api/reviews/google-settings', {
+            await authenticatedFetch('/api/reviews/google-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(googleShoppingSettings)
@@ -285,7 +288,7 @@ export default function ReviewsPage() {
             // Note: API might not support rating/search filtering yet, but we can add it later or filter client-side if needed
             // For now, let's assume basic filtering is handled or we add query params
 
-            const res = await fetch(url)
+            const res = await authenticatedFetch(url)
             const data = await res.json()
             if (data.reviews) {
                 let filteredReviews = data.reviews
@@ -317,7 +320,7 @@ export default function ReviewsPage() {
     const fetchProductStats = async () => {
         setLoadingProductStats(true)
         try {
-            const res = await fetch('/api/reviews/products-stats')
+            const res = await authenticatedFetch('/api/reviews/products-stats')
             const data = await res.json()
             if (!data.error) {
                 setProductStats(data)
@@ -334,7 +337,7 @@ export default function ReviewsPage() {
     const fetchStats = async () => {
         setLoadingStats(true)
         try {
-            const res = await fetch('/api/reviews/stats')
+            const res = await authenticatedFetch('/api/reviews/stats')
             const data = await res.json()
             if (!data.error) {
                 setStats(data)
@@ -385,7 +388,7 @@ export default function ReviewsPage() {
 
         try {
             const productIds = selectedProducts.join(',')
-            const res = await fetch(`/api/reviews/export?productIds=${productIds}`)
+            const res = await authenticatedFetch(`/api/reviews/export?productIds=${productIds}`)
             const data = await res.json()
 
             if (data.reviews && data.reviews.length > 0) {
@@ -459,7 +462,7 @@ export default function ReviewsPage() {
             formData.append('type', isVideo ? 'review-video' : 'review-image')
 
             try {
-                const res = await fetch('/api/upload', {
+                const res = await authenticatedFetch('/api/upload', {
                     method: 'POST',
                     body: formData
                 })
@@ -540,7 +543,7 @@ export default function ReviewsPage() {
         if (!editingReview) return
         setIsUpdating(true)
         try {
-            const res = await fetch(`/api/reviews/${editingReview.id}`, {
+            const res = await authenticatedFetch(`/api/reviews/${editingReview.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -572,7 +575,7 @@ export default function ReviewsPage() {
     const handleDeleteReview = async () => {
         if (!deletingReviewId) return
         try {
-            const res = await fetch(`/api/reviews/${deletingReviewId}`, {
+            const res = await authenticatedFetch(`/api/reviews/${deletingReviewId}`, {
                 method: 'DELETE'
             })
             if (res.ok) {
@@ -608,7 +611,7 @@ export default function ReviewsPage() {
     const handleDeleteProductReviews = async () => {
         if (!deletingProductStat) return
         try {
-            const res = await fetch('/api/reviews', {
+            const res = await authenticatedFetch('/api/reviews', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ productId: deletingProductStat.productId })
@@ -647,7 +650,7 @@ export default function ReviewsPage() {
     const handleBulkDelete = async () => {
         setIsBulkDeleting(true)
         try {
-            const res = await fetch('/api/reviews', {
+            const res = await authenticatedFetch('/api/reviews', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: selectedReviews })
@@ -731,7 +734,7 @@ export default function ReviewsPage() {
                 emailSubject: emailSettings.subject,
                 emailBody: emailSettings.body
             }
-            await fetch('/api/reviews/settings', {
+            await authenticatedFetch('/api/reviews/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -748,7 +751,7 @@ export default function ReviewsPage() {
     const saveIncentiveSettings = async () => {
         setIsIncentiveSaving(true)
         try {
-            const res = await fetch('/api/reviews/incentive-settings', {
+            const res = await authenticatedFetch('/api/reviews/incentive-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(incentiveSettings)
@@ -769,7 +772,7 @@ export default function ReviewsPage() {
     const generateAiSummary = async (productId: string) => {
         setSummaryLoading(true)
         try {
-            const res = await fetch('/api/reviews/generate-summary', {
+            const res = await authenticatedFetch('/api/reviews/generate-summary', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ productId })
@@ -802,7 +805,7 @@ export default function ReviewsPage() {
                 emailSubject: emailSettings.subject,
                 emailBody: emailSettings.body
             }
-            await fetch('/api/reviews/settings', {
+            await authenticatedFetch('/api/reviews/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -825,7 +828,7 @@ export default function ReviewsPage() {
     const fetchProducts = async () => {
         setLoadingProducts(true)
         try {
-            const res = await fetch('/api/shopify/products')
+            const res = await authenticatedFetch('/api/shopify/products')
             const data = await res.json()
             if (data.success) {
                 setProducts(data.data)
@@ -879,7 +882,7 @@ export default function ReviewsPage() {
             for (const productId of selectedProducts) {
                 const product = products.find(p => p.id === productId)
 
-                await fetch('/api/reviews/create', {
+                await authenticatedFetch('/api/reviews/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -929,7 +932,7 @@ export default function ReviewsPage() {
 
         setIsImportingUrl(true)
         try {
-            const res = await fetch('/api/reviews/import-url', {
+            const res = await authenticatedFetch('/api/reviews/import-url', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1032,7 +1035,7 @@ export default function ReviewsPage() {
 
                 for (const productId of selectedProducts) {
                     const product = products.find(p => p.id === productId)
-                    await fetch('/api/reviews/create', {
+                    await authenticatedFetch('/api/reviews/create', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1424,7 +1427,7 @@ export default function ReviewsPage() {
                                                         <div className="mt-3 flex gap-2">
                                                             <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={async () => {
                                                                 try {
-                                                                    await fetch(`/api/reviews/${review.id}/approve`, { method: 'POST' });
+                                                                    await authenticatedFetch(`/api/reviews/${review.id}/approve`, { method: 'POST' });
                                                                     toast.success('Bewertung freigegeben');
                                                                     fetchStats(); // Refresh stats
                                                                 } catch (e) {
@@ -3143,6 +3146,7 @@ export default function ReviewsPage() {
 
 function AutoReviewsSettings() {
     const { products } = useShopifyProducts()
+    const authenticatedFetch = useAuthenticatedFetch()
     const [settings, setSettings] = useState({
         enabled: false,
         delayMinutes: 0,
@@ -3161,7 +3165,7 @@ function AutoReviewsSettings() {
     const [deletingTemplateIndex, setDeletingTemplateIndex] = useState<number | null>(null)
 
     useEffect(() => {
-        fetch('/api/reviews/auto-settings')
+        authenticatedFetch('/api/reviews/auto-settings')
             .then(res => res.json())
             .then(data => {
                 if (!data.error) {
@@ -3175,7 +3179,7 @@ function AutoReviewsSettings() {
     const handleSave = async (updatedSettings = settings) => {
         setSaving(true)
         try {
-            await fetch('/api/reviews/auto-settings', {
+            await authenticatedFetch('/api/reviews/auto-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedSettings)
