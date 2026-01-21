@@ -847,6 +847,20 @@ export default function ProductImportPage() {
                                                 />
                                             )}
 
+                                            {/* Source Badge - Top Left */}
+                                            {product.sourceDomain && (
+                                                <div className="absolute top-3 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-200 shadow-md">
+                                                    <img
+                                                        src={getFaviconUrl(product.sourceDomain)}
+                                                        alt=""
+                                                        className="h-4 w-4"
+                                                    />
+                                                    <span className="text-xs text-gray-700 font-medium">
+                                                        {product.sourceDomain}
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             {/* Status Badge */}
                                             <div className="absolute top-3 right-3">
                                                 <Badge className={`${getStatusColor(product.status)} border backdrop-blur-sm shadow-lg`}>
