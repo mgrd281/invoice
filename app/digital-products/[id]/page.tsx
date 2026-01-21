@@ -580,7 +580,7 @@ Viel Spaß!`
                                         )}
 
                                         {/* Card-Based Layout - Professional SaaS Style */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-4">
                                             {(() => {
                                                 const displayedKeys = activeKeyTab === 'history'
                                                     ? filteredKeys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
@@ -597,161 +597,154 @@ Viel Spaß!`
                                                 return displayedKeys.map((key) => (
                                                     <div
                                                         key={key.id}
-                                                        className="group bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 hover:shadow-sm transition-all duration-200"
+                                                        className="group relative bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all duration-200 overflow-hidden"
                                                     >
-                                                        <div className="flex items-center gap-4">
-                                                            {/* Checkbox */}
-                                                            <div className="flex-shrink-0">
+                                                        <div className="flex items-stretch h-full">
+                                                            {/* 1. Checkbox Column */}
+                                                            <div className="flex-shrink-0 w-12 flex items-center justify-center border-r border-gray-50 bg-gray-50/30">
                                                                 <Checkbox
                                                                     checked={selectedKeys.has(key.id)}
                                                                     onCheckedChange={(checked) => handleSelectKey(key.id, checked as boolean)}
                                                                 />
                                                             </div>
 
-                                                            {/* Main Content Area - Flex Layout */}
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-start justify-between gap-4">
-                                                                    {/* Left Section: Key + Metadata */}
-                                                                    <div className="flex-1 min-w-0">
-                                                                        {/* Key (Prominent with larger font) */}
-                                                                        <div className="flex items-center gap-3 mb-3">
-                                                                            <span className="font-mono text-base font-bold text-gray-900 tracking-tight">
-                                                                                {key.key}
-                                                                            </span>
-                                                                            {/* Status Badge - Softer colors */}
-                                                                            {key.isUsed ? (
-                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
-                                                                                    Verbraucht
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                                                                    Verfügbar
-                                                                                </span>
-                                                                            )}
+                                                            {/* 2. Main Content (Zones A & B) */}
+                                                            <div className="flex-1 p-5 min-w-0 flex flex-col justify-center">
+                                                                {/* ZONE A: Header (Key + Status) */}
+                                                                <div className="flex items-center gap-4 mb-4">
+                                                                    <span className="font-mono text-lg font-bold text-gray-900 tracking-tight select-all">
+                                                                        {key.key}
+                                                                    </span>
+                                                                    {/* Status Badge - Subtle & Clean */}
+                                                                    {key.isUsed ? (
+                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-600 border border-red-100/50">
+                                                                            Verbraucht
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100/50">
+                                                                            Verfügbar
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* ZONE B: Metadata Grid (2x2) */}
+                                                                {activeKeyTab === 'history' ? (
+                                                                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                                                                        {/* Row 1: Variant & Date */}
+                                                                        <div>
+                                                                            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Variante</div>
+                                                                            <div className="text-sm font-medium text-gray-700 truncate">
+                                                                                {key.shopifyVariantId ? (
+                                                                                    variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
+                                                                                ) : (
+                                                                                    <span className="text-gray-400 italic">Alle Varianten</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Verwendet am</div>
+                                                                            <div className="text-sm font-medium text-gray-700 font-mono">
+                                                                                {key.usedAt ? new Date(key.usedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                                            </div>
                                                                         </div>
 
-                                                                        {/* Metadata Grid - Improved spacing and typography */}
-                                                                        {activeKeyTab === 'history' && (
-                                                                            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                                                                                {/* Variant */}
-                                                                                {variants.length > 0 && (
-                                                                                    <div className="flex items-baseline gap-2">
-                                                                                        <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Variante</span>
-                                                                                        <span className="text-gray-600 font-medium truncate">
-                                                                                            {key.shopifyVariantId ? (
-                                                                                                variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
-                                                                                            ) : (
-                                                                                                <span className="text-gray-400 italic">Alle</span>
-                                                                                            )}
+                                                                        {/* Row 2: Order & Customer */}
+                                                                        <div>
+                                                                            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Bestellung</div>
+                                                                            <div className="text-sm font-medium text-gray-900 font-mono">
+                                                                                {key.orderId ? (
+                                                                                    <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded text-xs">{key.orderId}</span>
+                                                                                ) : (
+                                                                                    key.shopifyOrderId ? (
+                                                                                        <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded text-xs">
+                                                                                            {key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST') ? key.shopifyOrderId : `#${key.shopifyOrderId}`}
                                                                                         </span>
-                                                                                    </div>
+                                                                                    ) : '-'
                                                                                 )}
-
-                                                                                {/* Used Date */}
-                                                                                <div className="flex items-baseline gap-2">
-                                                                                    <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Datum</span>
-                                                                                    <span className="text-gray-600 font-medium">
-                                                                                        {key.usedAt ? new Date(key.usedAt).toLocaleDateString('de-DE') : '-'}
-                                                                                    </span>
-                                                                                </div>
-
-                                                                                {/* Order Number */}
-                                                                                <div className="flex items-baseline gap-2">
-                                                                                    <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Bestellung</span>
-                                                                                    <span className="text-gray-900 font-semibold">
-                                                                                        {key.orderId ? (
-                                                                                            key.orderId
-                                                                                        ) : (
-                                                                                            key.shopifyOrderId ? (
-                                                                                                key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
-                                                                                                    ? key.shopifyOrderId
-                                                                                                    : `#${key.shopifyOrderId}`
-                                                                                            ) : '-'
-                                                                                        )}
-                                                                                    </span>
-                                                                                </div>
-
-                                                                                {/* Customer Email */}
-                                                                                <div className="flex items-baseline gap-2 col-span-2">
-                                                                                    <span className="text-gray-400 text-xs font-medium uppercase tracking-wide flex-shrink-0">Kunde</span>
-                                                                                    <span
-                                                                                        className="text-gray-600 font-medium truncate"
-                                                                                        title={key.customer?.email}
-                                                                                    >
-                                                                                        {key.customer?.email || '-'}
-                                                                                    </span>
-                                                                                </div>
                                                                             </div>
-                                                                        )}
-
-                                                                        {/* For Available Keys - Show Variant if exists */}
-                                                                        {activeKeyTab === 'inventory' && variants.length > 0 && (
-                                                                            <div className="text-sm text-gray-600">
-                                                                                <span className="text-gray-400 text-xs">Variante: </span>
-                                                                                <span className="text-gray-700">
-                                                                                    {key.shopifyVariantId ? (
-                                                                                        variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
-                                                                                    ) : (
-                                                                                        <span className="text-gray-400 italic">Alle</span>
-                                                                                    )}
-                                                                                </span>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Actions - Fade in on hover */}
-                                                                    <div className="flex-shrink-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                                        {activeKeyTab === 'history' && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                                                title="E-Mail erneut senden"
-                                                                                disabled={resendingKeys.has(key.id)}
-                                                                                onClick={async () => {
-                                                                                    // One-click resend - no confirmation
-                                                                                    setResendingKeys(prev => new Set([...prev, key.id]))
-                                                                                    try {
-                                                                                        const res = await fetch(`/api/digital-products/${params.id}/keys`, {
-                                                                                            method: 'POST',
-                                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                                            body: JSON.stringify({ action: 'resend', keyId: key.id })
-                                                                                        })
-                                                                                        if (res.ok) {
-                                                                                            showToast('✓ E-Mail erfolgreich versendet', 'success')
-                                                                                            loadData() // Refresh data
-                                                                                        } else {
-                                                                                            showToast('❌ Fehler beim Senden', 'error')
-                                                                                        }
-                                                                                    } catch (e) {
-                                                                                        console.error(e)
-                                                                                        showToast('❌ Fehler', 'error')
-                                                                                    } finally {
-                                                                                        // Re-enable after 2 seconds
-                                                                                        setTimeout(() => {
-                                                                                            setResendingKeys(prev => {
-                                                                                                const next = new Set(prev)
-                                                                                                next.delete(key.id)
-                                                                                                return next
-                                                                                            })
-                                                                                        }, 2000)
-                                                                                    }
-                                                                                }}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Kunde</div>
+                                                                            <div
+                                                                                className="text-sm font-medium text-blue-600 truncate max-w-[200px] cursor-help"
+                                                                                title={key.customer?.email || 'Unbekannt'}
                                                                             >
-                                                                                <RefreshCw className={`w-4 h-4 ${resendingKeys.has(key.id) ? 'animate-spin' : ''}`} />
-                                                                            </Button>
-                                                                        )}
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                            onClick={() => handleDeleteKey(key.id)}
-                                                                            title="Löschen"
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                        </Button>
+                                                                                {key.customer?.email || '-'}
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
+                                                                ) : (
+                                                                    /* For Available Keys - Simpler Layout */
+                                                                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                                                                        <div>
+                                                                            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Variante</div>
+                                                                            <div className="text-sm font-medium text-gray-700 truncate">
+                                                                                {key.shopifyVariantId ? (
+                                                                                    variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
+                                                                                ) : (
+                                                                                    <span className="text-gray-400 italic">Alle Varianten</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Hinzugefügt am</div>
+                                                                            <div className="text-sm font-medium text-gray-700 font-mono">
+                                                                                {new Date(key.createdAt).toLocaleDateString('de-DE')}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 3. ZONE C: Actions Side Column */}
+                                                            <div className="flex-shrink-0 w-14 flex flex-col items-center justify-center gap-3 border-l border-gray-100 bg-gray-50/50">
+                                                                {activeKeyTab === 'history' && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                        title="E-Mail erneut senden"
+                                                                        disabled={resendingKeys.has(key.id)}
+                                                                        onClick={async () => {
+                                                                            setResendingKeys(prev => new Set([...prev, key.id]))
+                                                                            try {
+                                                                                const res = await fetch(`/api/digital-products/${params.id}/keys`, {
+                                                                                    method: 'POST',
+                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                    body: JSON.stringify({ action: 'resend', keyId: key.id })
+                                                                                })
+                                                                                if (res.ok) {
+                                                                                    showToast('E-Mail versendet', 'success')
+                                                                                    loadData()
+                                                                                } else {
+                                                                                    showToast('Fehler beim Senden', 'error')
+                                                                                }
+                                                                            } catch (e) {
+                                                                                showToast('Netzwerkfehler', 'error')
+                                                                            } finally {
+                                                                                setTimeout(() => {
+                                                                                    setResendingKeys(prev => {
+                                                                                        const next = new Set(prev)
+                                                                                        next.delete(key.id)
+                                                                                        return next
+                                                                                    })
+                                                                                }, 2000)
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <RefreshCw className={`w-4 h-4 ${resendingKeys.has(key.id) ? 'animate-spin' : ''}`} />
+                                                                    </Button>
+                                                                )}
+
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    onClick={() => handleDeleteKey(key.id)}
+                                                                    title="Schlüssel löschen"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
                                                             </div>
                                                         </div>
                                                     </div>
