@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils'
 
 export default function CustomersPage() {
+  const router = useRouter()
   const [customers, setCustomers] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -257,11 +259,9 @@ export default function CustomersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.back()}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Kunden

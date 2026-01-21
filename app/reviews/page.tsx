@@ -37,9 +37,11 @@ import {
     AlertTriangle,
     X,
     Sparkles,
-    Video
+    Video,
+    ArrowLeft
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 
@@ -160,6 +162,7 @@ function useShopifyProducts() {
 }
 
 export default function ReviewsPage() {
+    const router = useRouter()
     const [activeTab, setActiveTab] = useState('overview')
     const { products: shopifyProducts } = useShopifyProducts()
     const [origin, setOrigin] = useState('')
@@ -1128,9 +1131,10 @@ export default function ReviewsPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <Link href="/dashboard" className="text-gray-500 hover:text-gray-700">
-                                Dashboard
-                            </Link>
+                            <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Zurück
+                            </Button>
                             <span className="text-gray-300">/</span>
                             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
@@ -1585,7 +1589,7 @@ export default function ReviewsPage() {
                                     setSelectedProductStat(null)
                                     setAllReviews([])
                                 }} className="pl-0 hover:pl-2 transition-all">
-                                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
                                     Zurück zur Übersicht
                                 </Button>
 
@@ -1894,7 +1898,7 @@ export default function ReviewsPage() {
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
                                         <Button variant="ghost" size="icon" onClick={() => setImportStep(1)}>
-                                            <ArrowRight className="h-4 w-4 rotate-180" />
+                                            <ArrowLeft className="h-4 w-4" />
                                         </Button>
                                         <div>
                                             <CardTitle>2. Quelle wählen</CardTitle>

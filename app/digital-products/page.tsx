@@ -229,11 +229,9 @@ export default function DigitalProductsPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                                </Button>
-                            </Link>
+                            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                            </Button>
                             <div>
                                 <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                                 <p className="text-xs text-gray-500">Verwalten Sie Ihre Lizenzschlüssel und Downloads</p>
@@ -332,8 +330,8 @@ export default function DigitalProductsPage() {
 
                                                     <div className="mt-4 flex items-center justify-between">
                                                         <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${keyCount > 0
-                                                                ? 'bg-green-50 text-green-700 border-green-200'
-                                                                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                                            ? 'bg-green-50 text-green-700 border-green-200'
+                                                            : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                                                             }`}>
                                                             {keyCount} Keys verfügbar
                                                         </div>

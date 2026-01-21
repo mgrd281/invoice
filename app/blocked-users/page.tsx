@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/components/ui/toast'
 import { ShieldAlert, Trash2, Search, Plus, UserX, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 
 interface BlockedUser {
@@ -21,6 +22,7 @@ interface BlockedUser {
 }
 
 export default function BlockedUsersPage() {
+    const router = useRouter()
     const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -121,12 +123,10 @@ export default function BlockedUsersPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/invoices">
-                            <Button variant="ghost" size="sm">
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Zurück
-                            </Button>
-                        </Link>
+                        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Zurück
+                        </Button>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                                 <ShieldAlert className="h-6 w-6 mr-2 text-red-600" />

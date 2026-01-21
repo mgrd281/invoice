@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -33,6 +34,7 @@ interface AppSettings {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
     companyName: '',
     taxNumber: '',
@@ -282,12 +284,10 @@ export default function SettingsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück
-                </Button>
-              </Link>
+              <Button variant="ghost" size="sm" className="mr-4" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Zurück
+              </Button>
               <Settings className="h-8 w-8 text-blue-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Einstellungen

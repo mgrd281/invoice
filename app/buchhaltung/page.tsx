@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calculator, RefreshCw, ArrowLeft, Briefcase, Download, BarChart3, FileText, Archive } from 'lucide-react'
@@ -44,6 +44,7 @@ interface Receipt {
 }
 
 function BuchhaltungContent() {
+  const router = useRouter()
   const authenticatedFetch = useAuthenticatedFetch()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -425,12 +426,10 @@ function BuchhaltungContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück
-                </Button>
-              </Link>
+              <Button variant="ghost" size="sm" className="mr-4" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Zurück
+              </Button>
               <Calculator className="h-6 w-6 text-blue-600 mr-2" />
               <h1 className="text-xl font-bold text-gray-900">
                 Buchhaltung

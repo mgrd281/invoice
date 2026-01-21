@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building2, Plus, ArrowLeft, Edit, Settings, Trash2 } from 'lucide-react'
@@ -21,6 +22,7 @@ interface Organization {
 }
 
 export default function OrganizationsPage() {
+  const router = useRouter()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -35,14 +37,14 @@ export default function OrganizationsPage() {
     try {
       console.log('Fetching organizations...')
       const response = await fetch('/api/organizations')
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       console.log('Fetched organizations:', data)
-      
+
       setOrganizations(data)
     } catch (error) {
       console.error('Error fetching organizations:', error)
@@ -69,24 +71,24 @@ export default function OrganizationsPage() {
   // Function to handle organization deletion
   const handleDeleteOrganization = async (organizationId: string, organizationName: string) => {
     const confirmed = window.confirm(`Organisation "${organizationName}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`)
-    
+
     if (!confirmed) {
       return
     }
 
     setDeletingId(organizationId)
-    
+
     try {
       console.log('Deleting organization:', organizationId)
-      
+
       const response = await fetch(`/api/organizations/${organizationId}`, {
         method: 'DELETE'
       })
-      
+
       console.log('Delete response status:', response.status)
       const data = await response.json()
       console.log('Delete response data:', data)
-      
+
       if (response.ok) {
         // Remove organization from local state
         setOrganizations(prev => prev.filter(org => org.id !== organizationId))
@@ -111,12 +113,10 @@ export default function OrganizationsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück
-                </Button>
-              </Link>
+              <Button variant="ghost" size="sm" className="mr-4" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Zurück
+              </Button>
               <Building2 className="h-8 w-8 text-purple-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Organisationen
@@ -147,24 +147,24 @@ export default function OrganizationsPage() {
                   <div className="flex items-center justify-between">
                     <Building2 className="h-8 w-8 text-purple-600" />
                     <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleEditOrganization(org.id)}
                         title="Organisation bearbeiten"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleSettings(org.id)}
                         title="Organisationseinstellungen"
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleDeleteOrganization(org.id, org.name)}
                         disabled={deletingId === org.id}
@@ -208,17 +208,17 @@ export default function OrganizationsPage() {
                   {/* Actions */}
                   <div className="pt-4 border-t">
                     <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1"
                         onClick={() => handleEditOrganization(org.id)}
                       >
                         Bearbeiten
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1"
                         onClick={() => handleViewInvoices(org.id)}
                       >
