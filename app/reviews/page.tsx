@@ -254,10 +254,47 @@ function ReviewsPageContent() {
         if (selectedProductStat) params.set('productId', selectedProductStat.productId)
 
         const newUrl = `${window.location.pathname}?${params.toString()}`
-        if (window.location.search !== (params.toString() ? `?${params.toString()}` : '')) {
-            router.replace(newUrl, { scroll: false })
+        const currentUrl = `${window.location.pathname}${window.location.search}`
+
+        if (currentUrl !== newUrl) {
+            // For major view changes (tab/mode), use push to keep history.
+            // For minor changes (search/pagination), use replace.
+            const isMajorChange =
+                params.get('tab') !== searchParams.get('tab') ||
+                params.get('mode') !== searchParams.get('mode') ||
+                params.get('productId') !== searchParams.get('productId');
+
+            if (isMajorChange) {
+                router.push(newUrl, { scroll: false })
+            } else {
+                router.replace(newUrl, { scroll: false })
+            }
         }
     }, [activeTab, viewMode, productSearch, reviewsPage, filterRating, filterStatus, reviewSearch, googleTab, selectedProductStat, router])
+
+    // Sync from URL (handle back button)
+    useEffect(() => {
+        const tab = searchParams.get('tab') || 'overview'
+        const mode = (searchParams.get('mode') as 'products' | 'details') || 'products'
+        const productId = searchParams.get('productId')
+
+        if (activeTab !== tab) setActiveTab(tab)
+        if (viewMode !== mode) setViewMode(mode)
+
+        // If we have a productId in URL but no selectedProductStat, or mismatched
+        if (productId && (!selectedProductStat || selectedProductStat.productId !== productId)) {
+            // We need to find the product stat if we go back to a detail view
+            const stat = productStats.find(s => s.productId === productId)
+            if (stat) {
+                setSelectedProductStat(stat)
+            } else if (productId && viewMode === 'details') {
+                // If not loaded yet, just set basic info
+                setSelectedProductStat({ productId, productTitle: 'Lade...' })
+            }
+        } else if (!productId && selectedProductStat) {
+            setSelectedProductStat(null)
+        }
+    }, [searchParams, productStats])
 
     useEffect(() => {
         if (activeTab === 'overview') {

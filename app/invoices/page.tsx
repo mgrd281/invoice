@@ -233,6 +233,49 @@ function InvoicesPageContent() {
     setIsDrawerOpen(true)
   }
 
+  // Handle Back Button and URL Sync
+  useEffect(() => {
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status')
+    const pageNum = parseInt(searchParams.get('page') || '1')
+    const limitNum = parseInt(searchParams.get('limit') || '50')
+    const from = searchParams.get('from') || new Date().toISOString().split('T')[0]
+    const to = searchParams.get('to') || new Date().toISOString().split('T')[0]
+
+    if (searchQuery !== search) setSearchQuery(search)
+    if (statusFilter !== status) setStatusFilter(status)
+    if (page !== pageNum) setPage(pageNum)
+    if (limit !== limitNum) setLimit(limitNum)
+    if (dateRange.from !== from || dateRange.to !== to) {
+      setDateRange({ from, to })
+    }
+  }, [searchParams])
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (searchQuery) params.set('search', searchQuery)
+    if (statusFilter) params.set('status', statusFilter)
+    if (page > 1) params.set('page', page.toString())
+    if (limit !== 50) params.set('limit', limit.toString())
+    if (dateRange.from) params.set('from', dateRange.from)
+    if (dateRange.to) params.set('to', dateRange.to)
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    const currentUrl = `${window.location.pathname}${window.location.search}`
+
+    if (currentUrl !== newUrl) {
+      // For status/tab changes, use push. For typing search, use replace.
+      const isMajorChange = params.get('status') !== searchParams.get('status') || params.get('page') !== searchParams.get('page')
+
+      if (isMajorChange) {
+        router.push(newUrl, { scroll: false })
+      } else {
+        router.replace(newUrl, { scroll: false })
+      }
+    }
+  }, [searchQuery, statusFilter, page, limit, dateRange, router, searchParams])
+
   const fetchInvoices = useCallback(async (isBackground = false) => {
     if (!isAuthenticated || !user) {
       console.log('User not authenticated, cannot load invoices')

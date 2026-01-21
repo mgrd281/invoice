@@ -80,10 +80,33 @@ function ShopifyEmbeddedContent() {
     }
 
     const newSearch = params.toString();
-    if (searchParams.toString() !== newSearch) {
-      window.history.replaceState(null, '', `${window.location.pathname}?${newSearch}`);
+    const currentSearch = searchParams.toString();
+
+    if (currentSearch !== newSearch) {
+      const newUrl = `${window.location.pathname}?${newSearch}`;
+      // Use push for tab changes, replace for filter changes
+      if (params.get('tab') !== searchParams.get('tab')) {
+        window.history.pushState(null, '', newUrl);
+      } else {
+        window.history.replaceState(null, '', newUrl);
+      }
     }
-  }, [activeTab, dateRange, statusFilter, customStartDate, customEndDate, shop]);
+  }, [activeTab, dateRange, statusFilter, customStartDate, customEndDate, shop, searchParams]);
+
+  // Handle Back Button for All Filters
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'dashboard';
+    const range = searchParams.get('range') || 'all';
+    const status = searchParams.get('status') || 'all';
+    const start = searchParams.get('start') || '';
+    const end = searchParams.get('end') || '';
+
+    if (activeTab !== tab) setActiveTab(tab);
+    if (dateRange !== range) setDateRange(range);
+    if (statusFilter !== status) setStatusFilter(status);
+    if (customStartDate !== start) setCustomStartDate(start);
+    if (customEndDate !== end) setCustomEndDate(end);
+  }, [searchParams]);
 
   // Refetch when filters change
   useEffect(() => {

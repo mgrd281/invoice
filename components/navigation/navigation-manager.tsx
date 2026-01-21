@@ -13,13 +13,15 @@ export function NavigationManager() {
     useEffect(() => {
         const handleBeforeUnload = () => {
             // Save scroll position for the current page
-            sessionStorage.setItem(`scroll-${window.location.pathname}`, window.scrollY.toString())
+            sessionStorage.setItem(`scroll-${window.location.pathname}${window.location.search}`, window.scrollY.toString())
         }
 
         window.addEventListener('beforeunload', handleBeforeUnload)
 
         // Check if we have a saved scroll position for the current page
-        const savedPosition = sessionStorage.getItem(`scroll-${pathname}`)
+        const fullPath = `${pathname}${searchParams.toString() ? '?' + searchParams.toString() : ''}`
+        const savedPosition = sessionStorage.getItem(`scroll-${fullPath}`) || sessionStorage.getItem(`scroll-${pathname}`)
+
         if (savedPosition) {
             // Small delay to allow content to load
             setTimeout(() => {
@@ -29,14 +31,16 @@ export function NavigationManager() {
                 })
             }, 50)
         } else {
-            // Default: scroll to top for new pages
+            // Only scroll to top if the pathname itself changed (new page)
+            // If it's just search params changing, we might want to stay where we are
+            // unless it's a pagination event.
             window.scrollTo(0, 0)
         }
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload)
         }
-    }, [pathname, searchParams])
+    }, [pathname]) // Only trigger on pathname change, not searchParams
 
     // 2. Clear stale scroll positions regularly
     useEffect(() => {
