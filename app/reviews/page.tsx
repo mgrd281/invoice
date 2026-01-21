@@ -509,7 +509,8 @@ export default function ReviewsPage() {
     const [widgetSettings, setWidgetSettings] = useState({
         primaryColor: '#2563eb',
         layout: 'list', // 'list' | 'grid'
-        reviewsEnabled: true
+        reviewsEnabled: true,
+        starTemplate: 'default' // Star rating template
     })
 
     // Email Settings State
@@ -702,7 +703,8 @@ export default function ReviewsPage() {
                     setWidgetSettings({
                         primaryColor: data.primaryColor || '#2563eb',
                         layout: data.layout || 'list',
-                        reviewsEnabled: data.reviewsEnabled !== undefined ? data.reviewsEnabled : true
+                        reviewsEnabled: data.reviewsEnabled !== undefined ? data.reviewsEnabled : true,
+                        starTemplate: data.starTemplate || 'default'
                     })
                     setEmailSettings({
                         enabled: data.emailEnabled || false,
@@ -2256,6 +2258,53 @@ export default function ReviewsPage() {
                                                 <span className={`text-sm font-medium ${widgetSettings.layout === 'grid' ? 'text-blue-700' : 'text-gray-600'}`}>Raster</span>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Star Rating Template Selector */}
+                                    <div className="space-y-2">
+                                        <Label>Stern-Bewertung Template</Label>
+                                        <p className="text-xs text-gray-500 mb-3">Wählen Sie das Design für die Sternbewertungen</p>
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {[
+                                                { id: 'default', name: 'Standard', icon: '⭐' },
+                                                { id: 'minimal', name: 'Minimal', icon: '✦' },
+                                                { id: 'badge', name: 'Badge', icon: '🏷️' },
+                                                { id: 'outlined', name: 'Umriss', icon: '☆' },
+                                                { id: 'gradient', name: 'Verlauf', icon: '🌟' },
+                                                { id: 'large-primary', name: 'Groß', icon: '⭐' },
+                                                { id: 'card', name: 'Karte', icon: '📇' },
+                                                { id: 'inline-compact', name: 'Kompakt', icon: '⚡' },
+                                                { id: 'percentage-bar', name: 'Fortschritt', icon: '📊' }
+                                            ].map((template) => (
+                                                <div
+                                                    key={template.id}
+                                                    className={`border-2 rounded-lg p-3 cursor-pointer text-center transition-all hover:shadow-md ${widgetSettings.starTemplate === template.id
+                                                        ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-200'
+                                                        : 'border-gray-200 hover:border-blue-300'
+                                                        }`}
+                                                    onClick={() => setWidgetSettings({ ...widgetSettings, starTemplate: template.id })}>
+                                                    <div className="text-2xl mb-1">{template.icon}</div>
+                                                    <span className={`text-xs font-medium ${widgetSettings.starTemplate === template.id
+                                                        ? 'text-blue-700'
+                                                        : 'text-gray-600'
+                                                        }`}>{template.name}</span>
+                                                    {widgetSettings.starTemplate === template.id && (
+                                                        <div className="mt-1">
+                                                            <div className="h-1 w-full bg-blue-600 rounded"></div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <a
+                                            href="/demo/star-rating-templates"
+                                            target="_blank"
+                                            className="inline-flex items-center text-xs text-blue-600 hover:text-blue-700 mt-2">
+                                            <span>Alle Templates live ansehen</span>
+                                            <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                        </a>
                                     </div>
                                     <div className="pt-4 flex justify-end">
                                         <Button onClick={() => updateWidgetSettings(widgetSettings)} disabled={isSavingSettings}>
