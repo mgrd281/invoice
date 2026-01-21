@@ -1,0 +1,147 @@
+Made by Ruben Hassid
+
+Act like a senior full-stack web architect, UX/UI lead designer, and German localization expert.
+
+OBJECTIVE
+You will design and (optionally) scaffold a production-grade Web App whose end-user interface is in German only (de-DE), enabling users to:
+1) Upload CSV files exported from Shopify (Bestellungen/Orders) for processing,
+2) Automatically generate elegant, professional, and editable PDF invoices in German,
+3) Manage everything via separate dashboards for Admin and End User,
+4) Provide secure authentication via Email/Passwort, Google, and Apple (Social Login), with a standard login flow,
+5) Offer a very clean, modern, accessible UI,
+6) Optionally connect directly to a live Shopify store for automated data sync (read-only to start),
+7) Include any additional, high-impact features you recommend.
+
+OUTPUT LANGUAGE & STYLE
+- All explanations, plans, and comments from you: Arabic.
+- All user-facing copy, UI labels, validation messages, PDF text, emails, and legal strings: German only.
+- Use concise bullets and clear headings. Provide code blocks with filenames and brief Arabic comments above each block.
+
+SCOPE & DELIVERABLES (Step-by-step)
+1) High-level Product Brief (Arabic):
+   - Summarize the product’s purpose, primary personas (Admin, End User), core jobs-to-be-done, and success metrics.
+   - Provide a quick German microcopy tone guide (e.g., “freundlich, präzise, professionell, knapp”).
+
+2) Architecture & Tech Stack Proposal:
+   - Recommend a modern, pragmatic stack (e.g., Next.js/React + TypeScript, Node.js, PostgreSQL, Prisma/Drizzle, file storage, queue, PDF generator like PDFKit/Playwright, optional serverless functions, Auth.js/NextAuth for OAuth Apple/Google, Shopify Admin API).
+   - Justify choices (performance, maintainability, cost, scalability, developer velocity).
+   - Include alternatives (e.g., NestJS + React, Laravel + Vue) with pros/cons.
+   - Diagram (ASCII) of key components: Web UI, API, DB, Storage, Auth, PDF service, Shopify integration, background jobs, logging, monitoring.
+
+3) Data Modeling & Validation:
+   - Define normalized DB schema (tables & fields) for: users, organizations/workspaces (optional multi-tenant), roles/permissions (RBAC), customers, orders, invoice templates, invoices, invoice items, taxes (MwSt), payments, upload jobs, audit logs, Shopify connections, OAuth accounts.
+   - Show Prisma (or Drizzle) schema code.
+   - Add TypeScript zod/yup validation schemas for CSV rows and API payloads.
+   - Include constraints for German invoicing: fortlaufende Rechnungsnummer, Ausstellungsdatum, Leistungsdatum, USt-IdNr., Steuersätze (z. B. 19%/7%), Netto/Brutto, IBAN/BIC, Adresse/PLZ/Ort, vollständige Anbieter-/Kundenangaben.
+
+4) CSV Intake & Parsing (Shopify Orders):
+   - Detail the expected Shopify CSV columns (assume typical fields; map to internal schema).
+   - Provide a robust parser pipeline (streaming, memory-safe) with error handling, row-level validation, and deduplication.
+   - Include sample CSV snippet and a full parsing example with unit tests.
+
+5) Invoice Generation (German PDF):
+   - Define a default, highly professional invoice layout (Typography hierarchy, spacing, table layout, logo/Branding, Farben neutral).
+   - Provide two German template variants (Classic/Minimal) with switchable branding (Logo, Farben, Fußzeile, AGB/Impressum).
+   - Show code to render PDF (PDFKit or HTML->PDF with headless browser). Include:
+     - Kopfbereich mit Firmenlogo, Rechnungsdaten, Kundendaten.
+     - Positionstabelle (Artikel, Menge, Einzelpreis, MwSt, Gesamt).
+     - Summenblock (Zwischensumme, Steuerbeträge, Gesamtbetrag brutto), Zahlungsinformationen (IBAN/BIC).
+     - Rechtliche Hinweise (USt-IdNr., fortlaufende Rechnungsnummer).
+   - Support for editing before finalization (draft state vs. finalized with immutable hash + audit log).
+   - Generate invoice filenames and number sequencing rules (configurable Präfix/Jahr/Monat).
+
+6) Admin & User Dashboards:
+   - Define screens (Arabic descriptions + German UI labels): 
+     - User dashboard: Uploads, Kunden, Aufträge, Rechnungen, Vorlagen, Einstellungen.
+     - Admin dashboard: Benutzerverwaltung, Rollen & Rechte, Organisationsübersicht, Systemmetriken, Audit-Log, Feature-Flags.
+   - Provide React/Next.js page structure, navigation, route guards, layout components, and sample components.
+   - Include RBAC middleware examples and policy checks.
+
+7) Authentication & Security:
+   - Implement Email/Password + OAuth (Google, Apple) via Auth.js/NextAuth (or equivalent).
+   - Session handling (HTTP-only cookies), CSRF protection, password hashing (Argon2/bcrypt).
+   - OAuth scopes (minimal), Apple requirements (JWT), Account linking.
+   - Security checklist: input validation, rate limiting, brute-force protection, file upload size/type limits, signed URLs, secure headers (CSP), encrypted secrets, backups, logging & alerting, GDPR compliance basics (DPA, data export/delete).
+
+8) Shopify Integration:
+   - App setup (private custom app or public app planning), required scopes (read_orders, read_customers).
+   - OAuth flow with Shopify, token storage, shop domain handling, webhooks (orders/create, orders/updated).
+   - Sync strategy: initial full import (paginated), incremental updates (webhooks + polling fallback).
+   - Mappers from Shopify objects to internal entities; idempotency keys.
+   - Feature: auto-generate invoices from incoming paid orders; allow manual override.
+
+9) File Handling & Storage:
+   - Upload flow for CSV: client-side validation, server-side scanning, streaming parse, status updates.
+   - Storage options (S3-compatible) with lifecycle policies; public vs private buckets; signed download URLs for PDFs.
+   - Caching strategy for invoice previews.
+
+10) UI/UX Design System:
+   - Recommend a component library (e.g., Radix + Tailwind) and accessibility targets (WCAG 2.1 AA).
+   - Provide a minimal token set (spacing, radius, typography scale) and responsive grid.
+   - German microcopy for critical flows (Upload, Fehler, Bestätigungen, Tooltips).
+   - Include 3 key screens as wireframes (ASCII): Dashboard, CSV-Upload, Rechnungsvorschau/Editor.
+
+11) Editing Experience (Invoice Editor):
+   - Inline edits for Kopf-/Fußzeile, Positionen, Rabatte, Steuersätze, Branding.
+   - Autosave drafts, version history, change tracking, and finalize action with lock.
+   - Print & E-Mail Versand (German E-Mail templates, with test tokens/links).
+
+12) Testing & Quality:
+   - Unit, integration, and E2E test plan (Vitest/Jest + Playwright).
+   - Sample tests for parser, numbering, RBAC, and PDF render determinism.
+   - Seed script for demo data.
+
+13) Deployment & DevOps:
+   - Local dev (Docker), environments (Dev/Staging/Prod), migrations, env vars template.
+   - CI/CD pipeline (build, test, lint, type-check, deploy).
+   - Monitoring/observability (logs, metrics, traces), error tracking, backups/restore.
+   - Performance budget and load testing plan.
+
+14) API Design:
+   - REST (or GraphQL) endpoints with request/response DTOs and error codes for: Auth, Uploads, Customers, Orders, Invoices, Templates, Settings, Shopify Sync.
+   - Pagination, filtering, sorting conventions.
+   - Versioning strategy and OpenAPI/Swagger spec snippet.
+
+15) Compliance & Legal (Germany):
+   - Mindestangaben einer Rechnung, DSGVO/GDPR essentials, Impressumspflicht, Aufbewahrungsfristen (Hinweis, keine Rechtsberatung).
+   - Logging of access and changes (audit trail).
+
+16) Extra High-Value Features (optional but recommended):
+   - Mehrmandantenfähigkeit (Mandanten/Workspaces).
+   - Rollen & Rechte-Editor.
+   - Abo-/Planverwaltung (Free/Pro) mit Limits (z. B. Anzahl Rechnungen/Monat).
+   - Mehrere Rechnungsvorlagen, Marken/Brands.
+   - Mehrsprachige Backend-Fähigkeit, aber UI fest auf Deutsch.
+   - Automatisierte E-Mail mit PDF-Anhang und Zahlungslink.
+   - Analytics: Umsatz nach Zeitraum/Kunde, offene Posten, Steuerreport.
+   - Export: ZIP aller PDFs/CSVs für Zeitraum.
+   - Webhook/Zapier für Integrationen.
+   - AI-Assists (nur bei Bedarf): automatische Feldzuordnung beim CSV-Import, Plausibilitätschecks (auf Deutsch).
+
+17) Comprehensive Delivery Bundle:
+   - Provide a README (Arabic) with setup steps, .env examples, OAuth keys, Shopify app setup.
+   - Include a “create-app” quickstart (CLI or scripts) to scaffold the repo.
+   - Supply sample data, sample CSVs, and at least one fully rendered German PDF example.
+   - Provide a backlog with prioritized issues and clear acceptance criteria.
+
+CONSTRAINTS & QUALITY BARS
+- Frontend responsiveness, keyboard navigation, and a11y are mandatory.
+- German content must be natural, correct, and consistent (use “Sie”-Form, unless noted).
+- Invoice numbers must be unique and sequential per tenant.
+- Do not expose secrets. Provide placeholders.
+- Include clear assumptions when ambiguous, but keep the UI strictly in German.
+
+FORMAT OF YOUR RESPONSE
+- Follow the step numbering above. For each step, deliver the requested artifacts (plans, code, examples).
+- Interleave code blocks with short Arabic explanations.
+- For any code sample, include a brief note on how to run it.
+- Provide checklists and acceptance criteria at the end of relevant steps.
+
+Initial Assumptions (adjust if needed and state changes explicitly):
+- Single-region deployment in the EU.
+- PostgreSQL as the primary DB.
+- File storage S3-compatible.
+- Next.js (App Router) + TypeScript + Tailwind + Prisma + Auth.js + PDFKit (or Playwright for HTML-to-PDF).
+- Shopify data source is Orders export or live API.
+
+Now, produce the full deliverable set as specified. Take a deep breath and work on this problem step-by-step.

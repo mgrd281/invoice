@@ -1,0 +1,50 @@
+# Kopieren Sie diesen Inhalt in eine .env.local Datei im Projektstammverzeichnis
+
+# Datenbank-Konfiguration
+DATABASE_URL="file:./dev.db"
+
+# Authentifizierung
+NEXTAUTH_SECRET="your-very-long-random-secret-key-here-minimum-32-characters-12345"
+NEXTAUTH_URL="http://localhost:3000"
+
+# E-Mail-Konfiguration - Entwicklungsmodus (E-Mail-Versand simulieren)
+EMAIL_DEV_MODE="true"
+EMAIL_FROM="shop@karinex.de"
+EMAIL_FROM_NAME="Karina Khrystych"
+EMAIL_CC=""
+EMAIL_REPLY_TO="shop@karinex.de"
+
+# SMTP-Konfiguration (für Produktion - im Entwicklungsmodus leer lassen)
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_SECURE="false"
+
+# Alternative: Gmail SMTP (Beispiel)
+# SMTP_HOST="smtp.gmail.com"
+# SMTP_PORT="587"
+# SMTP_USER="your-email@gmail.com"
+# SMTP_PASS="your-app-password"
+
+# Alternative: Web.de SMTP (Beispiel)
+# SMTP_HOST="smtp.web.de"
+# SMTP_PORT="587"
+# SMTP_USER="your-email@web.de"
+# SMTP_PASS="your-password"
+
+# Alternative: GMX SMTP (Beispiel)
+# SMTP_HOST="mail.gmx.net"
+# SMTP_PORT="587"
+# SMTP_USER="your-email@gmx.de"
+# SMTP_PASS="your-password"
+
+# Alternative: Resend Service (Empfohlen für Produktion)
+# RESEND_API_KEY="re_your_api_key_here"
+# RESEND_FROM_EMAIL="shop@karinex.de"
+
+# Datei-Upload
+UPLOAD_DIR="./user-storage"
+
+# Entwicklung
+NODE_ENV="development"

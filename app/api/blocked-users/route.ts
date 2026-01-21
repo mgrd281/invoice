@@ -1,0 +1,81 @@
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+
+export async function GET(req: Request) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session) {
+            return new NextResponse('Unauthorized', { status: 401 })
+        }
+
+        // Fixed Organization ID for now
+        const organizationId = 'default-org-id'
+
+        const { searchParams } = new URL(req.url)
+        const search = searchParams.get('search') || ''
+
+        const where: any = { organizationId }
+        if (search) {
+            where.OR = [
+                { email: { contains: search, mode: 'insensitive' } },
+                { name: { contains: search, mode: 'insensitive' } }
+            ]
+        }
+
+        const blockedUsers = await prisma.blockedUser.findMany({
+            where,
+            orderBy: { blockedAt: 'desc' }
+        })
+
+        return NextResponse.json(blockedUsers)
+    } catch (error) {
+        console.error('Error fetching blocked users:', error)
+        return new NextResponse('Internal Error', { status: 500 })
+    }
+}
+
+export async function POST(req: Request) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session) {
+            return new NextResponse('Unauthorized', { status: 401 })
+        }
+
+        const organizationId = 'default-org-id'
+        const body = await req.json()
+        const { email, name, reason } = body
+
+        if (!email) {
+            return new NextResponse('Email is required', { status: 400 })
+        }
+
+        // Check if already blocked
+        const existing = await prisma.blockedUser.findFirst({
+            where: {
+                organizationId,
+                email: { equals: email, mode: 'insensitive' }
+            }
+        })
+
+        if (existing) {
+            return new NextResponse('User is already blocked', { status: 400 })
+        }
+
+        const blockedUser = await prisma.blockedUser.create({
+            data: {
+                organizationId,
+                email: email.trim(),
+                name,
+                reason,
+                blockedBy: session.user?.email || 'Admin'
+            }
+        })
+
+        return NextResponse.json(blockedUser)
+    } catch (error) {
+        console.error('Error blocking user:', error)
+        return new NextResponse('Internal Error', { status: 500 })
+    }
+}

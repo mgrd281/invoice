@@ -1,0 +1,933 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+  BLOCKED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+  ON_HOLD
+  BLOCKED
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String?
+  name            String?
+  image           String?
+  emailVerified   DateTime?
+  verificationToken String?
+  role            UserRole  @default(USER)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  uploadJobs      UploadJob[]
+  auditLogs       AuditLog[]
+  
+  // New fields for user management
+  isSuspended     Boolean   @default(false)
+  lastIp          String?
+  country         String?
+  lastLoginAt     DateTime?
+  featureOrder    Json?
+}
+
+model ApiKey {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  key            String       @unique
+  lastUsedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Organization {
+  id                String             @id @default(uuid())
+  name              String
+  slug              String             @unique
+  address           String
+  zipCode           String
+  city              String
+  country           String             @default("DE")
+  taxId             String?
+  bankName          String?
+  iban              String?
+  bic               String?
+  logoUrl           String?
+  plan              String             @default("FREE") // FREE, PRO, ENTERPRISE
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  users             User[]
+  customers         Customer[]
+  orders            Order[]
+  invoiceTemplates  InvoiceTemplate[]
+  invoices          Invoice[]
+  taxRates          TaxRate[]
+  uploadJobs        UploadJob[]
+  auditLogs         AuditLog[]
+  shopifyConnection ShopifyConnection?
+  digitalProducts   DigitalProduct[]
+  supportTickets    SupportTicket[]
+  responseTemplates ResponseTemplate[]
+  replyTemplates    ReplyTemplate[]
+  dunningSettings DunningSettings?
+  vorkasseSettings VorkasseSettings?
+  rechnungSettings RechnungSettings?
+  dunningTemplates DunningTemplate[]
+  marketingSettings MarketingSettings?
+  expenses          Expense[]
+  additionalIncomes AdditionalIncome[]
+  receipts          Receipt[]
+  reviews           Review[]
+  widgetSettings    WidgetSettings?
+  autoReviewSettings AutoReviewSettings?
+  googleShoppingSettings GoogleShoppingSettings?
+  reviewIncentiveSettings ReviewIncentiveSettings?
+  abandonedCarts    AbandonedCart[]
+  realEstateProfiles RealEstateSearchProfile[]
+  apiKeys           ApiKey[]
+  blockedUsers      BlockedUser[]
+}
+
+model WidgetSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  primaryColor   String       @default("#2563eb")
+  layout         String       @default("list") // list, grid
+  
+  // Email Automation Settings
+  emailEnabled   Boolean      @default(false)
+  emailDelayDays Int          @default(3)
+  emailSubject   String       @default("Ihre Meinung ist uns wichtig! 🌟")
+  emailBody      String       @default("Hallo {customer_name},\n\nvielen Dank für Ihren Einkauf bei uns! Wir hoffen, Sie sind mit Ihrer Bestellung zufrieden.\n\nWir würden uns sehr freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um eine Bewertung für {product_title} abzugeben.\n\n[Link zur Bewertung]\n\nVielen Dank und beste Grüße,\nIhr Team")
+  
+  // General Settings
+  reviewsEnabled Boolean      @default(true)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Account {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String?
+  accessToken       String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?
+  sessionState      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Customer {
+  id                String    @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  name              String
+  email             String?
+  phone             String?
+  address           String
+  zipCode           String
+  city              String
+  country           String    @default("DE")
+  taxId             String?
+  shopifyCustomerId String?   @unique(map: "Customer_shopifyCustomerId_key") // Add a unique constraint for this field
+  vatId             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  orders            Order[]
+  invoices          Invoice[]
+  licenseKeys       LicenseKey[]
+  supportTickets    SupportTicket[]
+  notes             CustomerNote[]
+  emails            EmailMessage[]
+  payments          Payment[]
+  reviews           Review[]
+  
+  // Marketing / Automation
+  firstPurchaseDiscountSentAt DateTime?
+  firstPurchaseDiscountCode   String?
+
+  // Extended Customer Fields
+  status            String    @default("ACTIVE") // ACTIVE, INACTIVE, VIP, NEW
+  type              String    @default("PRIVATE") // PRIVATE, BUSINESS
+  tags              String[]
+  
+  // Delivery Address
+  deliveryAddress   String?
+  deliveryZip       String?
+  deliveryCity      String?
+  deliveryCountry   String?
+
+  documents         CustomerDocument[]
+
+  @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
+}
+
+model BlockedUser {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  email          String
+  name           String?
+  reason         String?
+  blockedBy      String?      // ID or Name of admin who blocked
+  blockedAt      DateTime     @default(now())
+  
+  @@unique([organizationId, email])
+  @@index([email])
+}
+
+model CustomerDocument {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name        String
+  url         String
+  type        String?
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  orderNumber    String
+  orderDate      DateTime
+  totalAmount    Decimal      @db.Decimal(10, 2)
+  currency       String       @default("EUR")
+  status         OrderStatus  @default(PENDING)
+  shopifyOrderId String?      @unique(map: "Order_shopifyOrderId_key") // Add a unique constraint for this field
+  
+  // Vorkasse Automation
+  vorkasseReminderLevel Int @default(0) // 0=None, 1=First, 2=Second
+  vorkasseLastReminderAt DateTime?
+  initialPaymentEmailSentAt DateTime?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  invoices       Invoice[]
+
+  @@unique([organizationId, orderNumber])
+  @@unique([organizationId, shopifyOrderId], name: "unique_shopify_order_per_organization")
+}
+
+model InvoiceTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  htmlContent    String
+  cssContent     String
+  isDefault      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  invoices       Invoice[]
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  orderId         String?
+  order           Order?        @relation(fields: [orderId], references: [id])
+  templateId      String
+  template        InvoiceTemplate @relation(fields: [templateId], references: [id])
+  invoiceNumber   String
+  issueDate       DateTime
+  serviceDate     DateTime?
+  dueDate         DateTime
+  totalNet        Decimal       @db.Decimal(10, 2)
+  totalGross      Decimal       @db.Decimal(10, 2)
+  totalTax        Decimal       @db.Decimal(10, 2)
+  currency        String        @default("EUR")
+  status          InvoiceStatus @default(DRAFT)
+  pdfUrl          String?
+  immutableHash   String?
+  auditLogId      String?
+  auditLog        AuditLog?     @relation(fields: [auditLogId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  items           InvoiceItem[]
+  payments        Payment[]
+  // ... existing fields
+  dunningLogs     DunningLog[]
+  
+  // New fields for document types
+  documentKind    String        @default("INVOICE")
+  referenceNumber String?
+  originalDate    DateTime?
+  reason          String?
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+  
+  // New fields for custom invoice text and settings
+  headerSubject   String?
+  headerText      String?
+  footerText      String?
+  settings        Json?         // Stores currency, skonto, internalContact, etc.
+  
+  // Imported fields
+  paymentMethod   String?
+  orderNumber     String?
+
+  @@unique([organizationId, invoiceNumber])
+  @@index([organizationId, issueDate(sort: Desc), invoiceNumber(sort: Desc)])
+
+  history         InvoiceHistory[]
+}
+
+model InvoiceHistory {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type      String   // CREATED, SENT, VIEWED, PAID, REMINDER, CANCELLED, STATUS_CHANGE
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+model InvoiceItem {
+  id            String    @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description   String
+  ean           String?
+  quantity      Decimal   @db.Decimal(10, 2)
+  unitPrice     Decimal   @db.Decimal(10, 2)
+  taxRateId     String
+  taxRate       TaxRate   @relation(fields: [taxRateId], references: [id])
+  netAmount     Decimal   @db.Decimal(10, 2)
+  grossAmount   Decimal   @db.Decimal(10, 2)
+  taxAmount     Decimal   @db.Decimal(10, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model TaxRate {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  name           String
+  rate           Decimal       @db.Decimal(5, 4) // e.g., 0.19 for 19%
+  isDefault      Boolean       @default(false)
+  invoiceItems   InvoiceItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  invoiceId     String?
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  amount        Decimal   @db.Decimal(10, 2)
+  paymentDate   DateTime
+  method        String
+  transactionId String?
+  status        String    @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model UploadJob {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  fileName       String
+  fileUrl        String
+  status         UploadStatus @default(PENDING)
+  totalRows      Int?
+  processedRows  Int?
+  failedRows     Int?
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model AuditLog {
+  id             String    @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id])
+  action         String
+  entityType     String
+  entityId       String?
+  details        Json?
+  ipAddress      String?
+  createdAt      DateTime  @default(now())
+
+  invoices       Invoice[] // For linking finalized invoices to their audit log entry
+}
+
+model ShopifyConnection {
+  id             String       @id @default(uuid())
+  organizationId String       @unique // One-to-one per organization
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  shopName       String
+  accessToken    String // Encrypted
+  scopes         String
+  isActive       Boolean      @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+
+
+model DigitalProduct {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  shopifyProductId String @unique
+  title          String
+  emailTemplate  String?
+  
+  // Download Button Configuration
+  downloadUrl     String?
+  buttonText      String?  @default("Download")
+  buttonColor     String?  @default("#000000")
+  buttonTextColor String?  @default("#ffffff")
+  buttonAlignment String?  @default("left") // "left", "center", "right"
+  downloadButtons Json?    // Array of { text, url, color, textColor }
+  
+  variantSettings DigitalProductVariantSetting[]
+
+  keys           LicenseKey[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, shopifyProductId])
+}
+
+model DigitalProductVariantSetting {
+  id               String         @id @default(uuid())
+  digitalProductId String
+  digitalProduct   DigitalProduct @relation(fields: [digitalProductId], references: [id], onDelete: Cascade)
+  shopifyVariantId String
+  
+  emailTemplate    String?
+  downloadButtons  Json?    // Array of { text, url, color, textColor }
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([digitalProductId, shopifyVariantId])
+}
+
+model LicenseKey {
+  id               String         @id @default(uuid())
+  digitalProductId String
+  digitalProduct   DigitalProduct @relation(fields: [digitalProductId], references: [id])
+  customerId       String?
+  customer         Customer?      @relation(fields: [customerId], references: [id])
+  key              String
+  isUsed           Boolean        @default(false)
+  orderId          String?
+  shopifyOrderId   String?
+  shopifyVariantId String?        // If set, this key is only for this specific variant
+  usedAt           DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Delivery Tracking
+  emailSent        Boolean        @default(false)
+  emailSentAt      DateTime?
+  deliveryStatus   String         @default("PENDING") // PENDING, SENT, FAILED
+}
+
+model SupportTicket {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  customerEmail  String
+  customerName   String?
+  orderNumber    String?
+  subject        String?
+  status         String   @default("OPEN") // OPEN, IN_PROGRESS, CLOSED
+  priority       String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  messages       TicketMessage[]
+  emails         EmailMessage[]
+}
+
+model TicketMessage {
+  id              String        @id @default(uuid())
+  ticketId        String
+  ticket          SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender          String        // "AGENT" or "CUSTOMER" or "SYSTEM"
+  content         String
+  createdAt       DateTime      @default(now())
+}
+
+model CustomerNote {
+  id             String    @id @default(uuid())
+  customerId     String
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  content        String
+  author         String    // Name of the user who created it
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model EmailMessage {
+  id             String    @id @default(uuid())
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  ticketId       String?
+  ticket         SupportTicket? @relation(fields: [ticketId], references: [id])
+  gmailId        String?   @unique
+  subject        String?
+  content        String
+  snippet        String?
+  from           String
+  to             String
+  receivedAt     DateTime  @default(now())
+  isInternal     Boolean   @default(false) // To distinguish between customer emails and internal/sent emails
+  createdAt      DateTime  @default(now())
+}
+
+model ResponseTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  title          String
+  content        String
+  category       String?      // e.g., "Technical", "Refund", "General"
+  autoReplyKeywords String?   // Comma separated keywords to trigger auto-reply
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model DunningSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  enabled        Boolean      @default(false)
+  
+  // Intervals (days)
+  reminderDays      Int @default(7)
+  warning1Days      Int @default(3)
+  warning2Days      Int @default(7)
+  finalWarningDays  Int @default(7)
+
+  // Surcharges (percentages)
+  warning1Surcharge Decimal @default(5.0) @db.Decimal(5, 2)
+  warning2Surcharge Decimal @default(3.0) @db.Decimal(5, 2)
+  finalWarningSurcharge Decimal @default(3.0) @db.Decimal(5, 2)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model DunningTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  level          String       // REMINDER, WARNING1, WARNING2, FINAL
+  subject        String
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, level])
+}
+
+model DunningLog {
+  id             String    @id @default(uuid())
+  invoiceId      String
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
+  level          String    // REMINDER, WARNING1, WARNING2, FINAL
+  sentAt         DateTime  @default(now())
+  surchargeAdded Decimal   @default(0.0) @db.Decimal(10, 2)
+}
+
+model MarketingSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  // First Purchase Discount (FPD)
+  fpdEnabled       Boolean @default(false)
+  fpdPercentage    Int     @default(10)
+  fpdValidityDays  Int     @default(30)
+  fpdEmailSubject  String  @default("Ihr persönlicher 10%-Rabattcode als Dankeschön 🎁")
+  fpdEmailBody     String 
+  
+  // Exit Intent Popup
+  exitIntentEnabled Boolean @default(false)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Expense {
+  id                String       @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  expenseNumber     String
+  date              DateTime
+  category          String
+  description       String
+  supplier          String
+  supplierTaxId     String?
+  netAmount         Decimal      @db.Decimal(10, 2)
+  taxRate           Decimal      @db.Decimal(5, 2)
+  taxAmount         Decimal      @db.Decimal(10, 2)
+  totalAmount       Decimal      @db.Decimal(10, 2)
+  receiptUrl        String?
+  receiptFileName   String?
+  accountingAccount String?
+  costCenter        String?
+  bookingText       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model AdditionalIncome {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  date           DateTime
+  description    String
+  amount         Decimal      @db.Decimal(10, 2)
+  type           String       // "INCOME" or "OTHER"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Receipt {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  filename       String
+  url            String
+  mimeType       String?
+  size           Int?
+  date           DateTime
+  description    String?
+  amount         Decimal?     @db.Decimal(10, 2)
+  category       String?      // "INCOME", "EXPENSE", "OTHER"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Review {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  // Product Info
+  productId      String       // Shopify Product ID or internal ID
+  productTitle   String?
+  productHandle  String?
+  productImage   String?
+
+  // Customer Info
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  customerName   String
+  customerEmail  String
+  
+  // Review Content
+  rating         Int          // 1-5
+  title          String?
+  content        String?
+  
+  // Media
+  images         String[]     // Array of image URLs
+  videos         String[]     // Array of video URLs
+  
+  // Status & Metadata
+  status         String       @default("PENDING") // PENDING, APPROVED, REJECTED, HIDDEN
+  source         String       @default("web")     // web, email, import, loox, judgeme, amazon
+  isVerified     Boolean      @default(false)
+  isFeatured     Boolean      @default(false)
+  helpful        Int          @default(0)
+  notHelpful     Int          @default(0)
+  
+  // Admin Reply
+  reply          String?
+  repliedAt      DateTime?
+  handlingStatus String       @default("OPEN") // OPEN, REPLIED, RESOLVED
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model ReplyTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  title          String
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+
+model AutoReviewSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(false)
+  delayMinutes   Int          @default(0) // Delay after order creation
+  percentage     Int          @default(100) // Percentage of orders to generate reviews for (0-100)
+  minRating      Int          @default(4)
+  maxRating      Int          @default(5)
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  templates      AutoReviewTemplate[]
+}
+
+model AutoReviewTemplate {
+  id             String             @id @default(uuid())
+  settingsId     String
+  settings       AutoReviewSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  
+  title          String?
+  content        String
+  rating         Int?               // If null, use random between min/max from settings
+  productId      String?            // Optional: if set, this template is for a specific product
+  
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model GoogleShoppingSettings {
+  id                    String       @id @default(uuid())
+  organizationId        String       @unique
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  
+  productSelection      String       @default("all") // all, some
+  filterCustomerReviews Boolean      @default(true)
+  filterImportedReviews Boolean      @default(true)
+  filterEmptyComments   Boolean      @default(false)
+  countryFilter         String       @default("all")
+  keywordFilter         String?      // Comma separated
+  productIdentification String       @default("gtin") // gtin, mpn, sku
+  
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+}
+
+model ProductReviewSummary {
+  id          String   @id @default(uuid())
+  productId   String   @unique // Shopify Product ID
+  summary     String   // General summary
+  pros        String   // JSON string or text
+  cons        String   // JSON string or text
+  lastUpdated DateTime @default(now())
+}
+
+model ReviewIncentiveSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(false)
+  discountType   String       @default("percentage") // percentage, fixed_amount
+  discountValue  Float        @default(10)
+  minRating      Int          @default(1) 
+  requirePhoto   Boolean      @default(false)
+  validityDays   Int          @default(30)
+  emailSubject   String       @default("Danke für Ihre Bewertung! Hier ist Ihr Gutschein")
+  emailBody      String       @default("Vielen Dank für Ihre Bewertung. Als Dankeschön erhalten Sie einen Rabatt auf Ihre nächste Bestellung.")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model AbandonedCart {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  checkoutId     String       @unique // Shopify Checkout ID
+  checkoutToken  String?      // Shopify Checkout Token
+  email          String
+  cartUrl        String
+  lineItems      Json?        // Store cart items for email display
+  totalPrice     Decimal?     @db.Decimal(10, 2)
+  currency       String       @default("EUR")
+  
+  isRecovered    Boolean      @default(false)
+  recoverySent   Boolean      @default(false)
+  recoverySentAt DateTime?
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, checkoutId])
+}
+
+model RealEstateSearchProfile {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  isActive       Boolean      @default(true)
+  provider       String       @default("IMMOSCOUT24")
+  
+  // Filters
+  city           String?
+  zipCode        String?
+  district       String?
+  transactionType String      @default("RENT") // RENT, BUY
+  propertyType   String       @default("APARTMENT") // APARTMENT, HOUSE
+  radius         Int?         @default(10) // km
+  priceMin       Int?
+  priceMax       Int?
+  roomsMin       Int?
+  roomsMax       Int?
+  areaMin        Int?
+  areaMax        Int?
+  
+  // Notification
+  email          String?
+  telegramChatId String?
+  
+  lastRunAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  seenListings   RealEstateSeenListing[]
+}
+
+model VorkasseSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(true)
+  
+  reminder1Days    Int    @default(3)
+  reminder1Subject String @default("Zahlungserinnerung für Ihre Bestellung")
+  reminder1Text    String @default("Hallo, wir haben festgestellt, dass Ihre Bestellung (Nr. {orderNumber}) noch nicht bezahlt wurde. Bitte überweisen Sie den offenen Betrag. Vielen Dank!")
+  
+  reminder2Days    Int    @default(10)
+  reminder2Subject String @default("Letzte Zahlungserinnerung")
+  reminder2Text    String @default("Dies ist eine letzte Zahlungserinnerung für Ihre Bestellung (Nr. {orderNumber}). Bitte begleichen Sie den Betrag, um eine automatische Stornierung zu vermeiden.")
+  
+  cancellationDays    Int    @default(14)
+  cancellationSubject String @default("Bestellung storniert")
+  cancellationText    String @default("Ihre Bestellung wurde storniert, da kein Zahlungseingang verzeichnet wurde.")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model RechnungSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(true)
+  
+  // Initial Email (3 mins after order)
+  initialEmailSubject String @default("Rechnung für Ihre Bestellung")
+  initialEmailText    String @default("Sehr geehrte Frau/Herr,\n\nvielen Dank für Ihre Bestellung...") // Truncated for brevity in schema default
+  
+  reminder1Days    Int    @default(3)
+  reminder1Subject String @default("Zahlungserinnerung für Ihre Bestellung")
+  reminder1Text    String @default("Hallo, wir haben festgestellt, dass Ihre Bestellung (Nr. {orderNumber}) noch nicht bezahlt wurde. Bitte überweisen Sie den offenen Betrag. Vielen Dank!")
+  
+  reminder2Days    Int    @default(10)
+  reminder2Subject String @default("Letzte Zahlungserinnerung")
+  reminder2Text    String @default("Dies ist eine letzte Zahlungserinnerung für Ihre Bestellung (Nr. {orderNumber}). Bitte begleichen Sie den Betrag, um eine automatische Stornierung zu vermeiden.")
+  
+  cancellationDays    Int    @default(14)
+  cancellationSubject String @default("Bestellung storniert")
+  cancellationText    String @default("Ihre Bestellung wurde storniert, da kein Zahlungseingang verzeichnet wurde.")
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model RealEstateSeenListing {
+  id             String                  @id @default(uuid())
+  profileId      String
+  profile        RealEstateSearchProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  externalId     String
+  seenAt         DateTime                @default(now())
+  
+  @@unique([profileId, externalId])
+}
