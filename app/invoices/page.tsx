@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 // ... other imports
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -84,7 +85,9 @@ function getGermanStatus(status: string) {
   }
 }
 
-export default function InvoicesPage() {
+import { Suspense } from 'react'
+
+function InvoicesPageContent() {
   // Persistent audio reference to bypass autoplay policies
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -141,8 +144,10 @@ export default function InvoicesPage() {
   }, [isSoundEnabled, isAudioBlessed])
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
+  const { navigate } = useSafeNavigation()
 
   // State definitions
   const [invoices, setInvoices] = useState<any[]>([])
@@ -155,17 +160,17 @@ export default function InvoicesPage() {
   const [deletingByNumber, setDeletingByNumber] = useState<string | null>(null)
   const [emailStatuses, setEmailStatuses] = useState<Record<string, any>>({})
   const [showBulkEmailSender, setShowBulkEmailSender] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [hiddenInvoices, setHiddenInvoices] = useState<Set<string>>(new Set())
-  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>(searchParams.get('status'))
   const { showToast, ToastContainer } = useToast()
 
   // Pagination State
-  const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(50) // Default limit set to 50 as requested
+  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
+  const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '50')) // Default limit set to 50 as requested
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
   const [vat19Sum, setVat19Sum] = useState(0)
@@ -186,8 +191,10 @@ export default function InvoicesPage() {
 
   // Date Filter State
   const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>(() => {
+    const from = searchParams.get('from')
+    const to = searchParams.get('to')
     const today = new Date().toISOString().split('T')[0]
-    return { from: today, to: today }
+    return { from: from || today, to: to || today }
   })
 
 
@@ -398,6 +405,24 @@ export default function InvoicesPage() {
   }
 
   const duplicateNumbers = getDuplicateInvoiceNumbers()
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (searchQuery) params.set('search', searchQuery)
+    if (statusFilter) params.set('status', statusFilter)
+    if (page > 1) params.set('page', page.toString())
+    if (limit !== 50) params.set('limit', limit.toString())
+    if (dateRange.from) params.set('from', dateRange.from)
+    if (dateRange.to) params.set('to', dateRange.to)
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    if (window.location.search !== `?${params.toString()}`) {
+      // Use safe navigation to update URL without trigger full reload
+      // We use replace: true to avoid cluttering history with filter changes
+      router.replace(newUrl, { scroll: false })
+    }
+  }, [searchQuery, statusFilter, page, limit, dateRange, router])
 
   // Handle date range changes
   useEffect(() => {
@@ -2020,5 +2045,20 @@ export default function InvoicesPage() {
 
       <ToastContainer />
     </div >
+  )
+}
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Lade Rechnungen...</p>
+        </div>
+      </div>
+    }>
+      <InvoicesPageContent />
+    </Suspense>
   )
 }

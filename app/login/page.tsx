@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, Loader2, Lock } from 'lucide-react'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
 
 function LoginForm() {
     const router = useRouter()
+    const { navigate } = useSafeNavigation()
     const searchParams = useSearchParams()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -52,7 +54,7 @@ function LoginForm() {
             await new Promise(resolve => setTimeout(resolve, 100))
 
             // Redirect to the original page or default to /invoices
-            window.location.href = redirect
+            navigate(redirect)
 
         } catch (error: any) {
             console.error('❌ Login error:', error)

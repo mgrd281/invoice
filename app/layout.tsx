@@ -5,6 +5,8 @@ import './animations.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { AuthProvider as CustomAuthProvider } from '@/lib/auth-context'
+import { NavigationManager } from '@/components/navigation/navigation-manager'
+import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,6 +26,9 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="light">
           <CustomAuthProvider>
             <AuthProvider>
+              <Suspense fallback={null}>
+                <NavigationManager />
+              </Suspense>
               {children}
             </AuthProvider>
           </CustomAuthProvider>

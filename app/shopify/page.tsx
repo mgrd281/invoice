@@ -32,14 +32,14 @@ interface Invoice {
 function ShopifyEmbeddedContent() {
   const searchParams = useSearchParams();
   const shop = searchParams.get('shop');
-  const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabParam || 'dashboard');
+  const activeTabParam = searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTab] = useState(activeTabParam);
 
   useEffect(() => {
-    if (tabParam) {
-      setActiveTab(tabParam);
+    if (activeTabParam !== activeTab) {
+      setActiveTab(activeTabParam);
     }
-  }, [tabParam]);
+  }, [activeTabParam]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -48,8 +48,8 @@ function ShopifyEmbeddedContent() {
   const [stats, setStats] = useState({ totalRevenue: 0, openInvoices: 0, paidInvoices: 0 });
 
   // New State for Filters & Actions
-  const [dateRange, setDateRange] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(searchParams.get('range') || 'all');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -63,6 +63,27 @@ function ShopifyEmbeddedContent() {
       initShop();
     }
   }, [shop]);
+
+  // Sync state to URL
+  useEffect(() => {
+    if (!shop) return;
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', activeTab);
+    params.set('range', dateRange);
+    params.set('status', statusFilter);
+    if (dateRange === 'custom') {
+      if (customStartDate) params.set('start', customStartDate);
+      if (customEndDate) params.set('end', customEndDate);
+    } else {
+      params.delete('start');
+      params.delete('end');
+    }
+
+    const newSearch = params.toString();
+    if (searchParams.toString() !== newSearch) {
+      window.history.replaceState(null, '', `${window.location.pathname}?${newSearch}`);
+    }
+  }, [activeTab, dateRange, statusFilter, customStartDate, customEndDate, shop]);
 
   // Refetch when filters change
   useEffect(() => {

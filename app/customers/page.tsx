@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { useState, useEffect, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -15,10 +16,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
-export default function CustomersPage() {
+function CustomersPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { navigate } = useSafeNavigation()
   const [customers, setCustomers] = useState<any[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
@@ -26,8 +29,11 @@ export default function CustomersPage() {
   const [selectAll, setSelectAll] = useState(false)
 
   // New States for Sorting and Filtering
-  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' })
-  const [filterStatus, setFilterStatus] = useState('ALL')
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({
+    key: searchParams.get('sort') || 'createdAt',
+    direction: (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
+  })
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || 'ALL')
 
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean
@@ -162,6 +168,20 @@ export default function CustomersPage() {
       return 0
     })
   }
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (searchQuery) params.set('search', searchQuery)
+    if (filterStatus && filterStatus !== 'ALL') params.set('status', filterStatus)
+    if (sortConfig.key !== 'createdAt') params.set('sort', sortConfig.key)
+    if (sortConfig.direction !== 'desc') params.set('dir', sortConfig.direction)
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    if (window.location.search !== (params.toString() ? `?${params.toString()}` : '')) {
+      router.replace(newUrl, { scroll: false })
+    }
+  }, [searchQuery, filterStatus, sortConfig, router])
 
   const displayedCustomers = getProcessedCustomers()
 
@@ -389,7 +409,7 @@ export default function CustomersPage() {
 
             <Select value={`${sortConfig.key}-${sortConfig.direction}`} onValueChange={(val) => {
               const [key, direction] = val.split('-')
-              setSortConfig({ key, direction })
+              setSortConfig({ key, direction: direction as 'asc' | 'desc' })
             }}>
               <SelectTrigger className="w-[180px]">
                 <ArrowUpDown className="h-4 w-4 mr-2 text-gray-500" />
@@ -550,5 +570,20 @@ export default function CustomersPage() {
 
       <ToastContainer />
     </div>
+  )
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Lade Kunden...</p>
+        </div>
+      </div>
+    }>
+      <CustomersPageContent />
+    </Suspense>
   )
 }

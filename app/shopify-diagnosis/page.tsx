@@ -5,14 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw, 
+import {
+  CheckCircle,
+  XCircle,
+  RefreshCw,
   AlertTriangle,
   ExternalLink,
   ArrowLeft
 } from 'lucide-react'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { BackButton } from '@/components/navigation/back-button'
 
 interface TestResult {
   name: string
@@ -30,6 +32,7 @@ interface DiagnosisResults {
 }
 
 export default function ShopifyDiagnosisPage() {
+  const { navigate, refresh } = useSafeNavigation()
   const [results, setResults] = useState<DiagnosisResults | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +40,7 @@ export default function ShopifyDiagnosisPage() {
   const runDiagnosis = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const response = await fetch('/api/shopify/test-all', {
         cache: 'no-cache',
@@ -46,11 +49,11 @@ export default function ShopifyDiagnosisPage() {
           'Pragma': 'no-cache'
         }
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       setResults(data)
     } catch (err) {
@@ -87,15 +90,7 @@ export default function ShopifyDiagnosisPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => window.history.back()}
-                className="mr-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Zurück
-              </Button>
+              <BackButton fallbackUrl="/shopify" />
               <AlertTriangle className="h-8 w-8 text-orange-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Shopify API Diagnose
@@ -115,7 +110,7 @@ export default function ShopifyDiagnosisPage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        
+
         {/* Status Overview */}
         <Alert className="mb-6">
           <AlertTriangle className="h-4 w-4" />
@@ -212,7 +207,7 @@ export default function ShopifyDiagnosisPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       {test.error && (
                         <div>
                           <h4 className="font-medium text-red-900 mb-2">Fehler Details</h4>
@@ -221,7 +216,7 @@ export default function ShopifyDiagnosisPage() {
                           </div>
                         </div>
                       )}
-                      
+
                       {test.success && !test.error && (
                         <div>
                           <h4 className="font-medium text-green-900 mb-2">✅ Funktioniert korrekt</h4>
@@ -247,7 +242,7 @@ export default function ShopifyDiagnosisPage() {
                     <Alert>
                       <CheckCircle className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Alle Tests erfolgreich!</strong> Alle Shopify API Endpoints funktionieren korrekt. 
+                        <strong>Alle Tests erfolgreich!</strong> Alle Shopify API Endpoints funktionieren korrekt.
                         Wenn Sie trotzdem Probleme haben, versuchen Sie:
                         <ul className="list-disc list-inside mt-2 ml-4">
                           <li>Browser Cache leeren (Strg+F5)</li>
@@ -260,18 +255,18 @@ export default function ShopifyDiagnosisPage() {
                     <Alert variant="destructive">
                       <XCircle className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Probleme gefunden!</strong> Einige API Endpoints funktionieren nicht korrekt. 
+                        <strong>Probleme gefunden!</strong> Einige API Endpoints funktionieren nicht korrekt.
                         Bitte kontaktieren Sie den Support mit diesen Diagnoseergebnissen.
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   <div className="flex gap-4">
-                    <Button onClick={() => window.location.href = '/shopify'}>
+                    <Button onClick={() => navigate('/shopify')}>
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Shopify Integration testen
                     </Button>
-                    <Button variant="outline" onClick={() => window.location.reload()}>
+                    <Button variant="outline" onClick={() => refresh()}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Seite neu laden
                     </Button>

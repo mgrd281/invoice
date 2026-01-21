@@ -18,8 +18,9 @@ import { useToast } from '@/components/ui/toast'
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
-// Removed problematic import
 import { DocumentKind } from '@/lib/document-types'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { BackButton } from '@/components/navigation/back-button'
 
 interface InvoiceItem {
   id: string
@@ -56,6 +57,7 @@ import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
 
 export default function NewInvoicePage() {
   const { user, isAuthenticated } = useAuth()
+  const { navigate } = useSafeNavigation()
   const authenticatedFetch = useAuthenticatedFetch()
   const { showToast } = useToast()
 
@@ -412,7 +414,7 @@ export default function NewInvoicePage() {
       if (result.success) {
         DashboardUpdater.dispatchInvoiceCreated()
         showToast('Rechnung erfolgreich erstellt', 'success')
-        window.location.href = '/invoices'
+        navigate('/invoices')
       } else {
         throw new Error(result.error || 'Fehler beim Erstellen der Rechnung')
       }
@@ -433,11 +435,7 @@ export default function NewInvoicePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <Link href="/invoices">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <BackButton fallbackUrl="/invoices" label="" />
               <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
               <div className="flex items-center gap-2 ml-4">
                 <Switch

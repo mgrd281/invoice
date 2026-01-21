@@ -21,6 +21,8 @@ import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { renderRecipientBlock } from '@/lib/recipient-renderer'
 import { InvoiceTimeline } from '@/components/invoice-timeline'
 import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { BackButton } from '@/components/navigation/back-button'
 
 interface InvoiceItem {
   id: string
@@ -82,6 +84,7 @@ interface Invoice {
 }
 
 export default function InvoiceViewPage() {
+  const { navigate } = useSafeNavigation()
   const params = useParams()
   const id = params?.id as string
 
@@ -311,7 +314,7 @@ export default function InvoiceViewPage() {
     }
 
     // Navigate to cancellation page
-    window.location.href = `/invoices/${invoice.id}/cancel`
+    navigate(`/invoices/${invoice.id}/cancel`)
   }
 
   const handleEditInvoice = () => {
@@ -548,12 +551,7 @@ export default function InvoiceViewPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link href="/invoices">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück zu Rechnungen
-                </Button>
-              </Link>
+              <BackButton fallbackUrl="/invoices" label="" />
               <FileText className="h-8 w-8 text-blue-600 mr-3" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center">

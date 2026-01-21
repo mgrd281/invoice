@@ -14,6 +14,8 @@ import { Users, ArrowLeft, Save, Plus, Building2, User, Upload, FileText, CheckC
 import { useToast } from '@/components/ui/toast'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { BackButton } from '@/components/navigation/back-button'
 
 interface NewCustomer {
   name: string
@@ -35,6 +37,7 @@ interface NewCustomer {
 }
 
 export default function NewCustomerPage() {
+  const { navigate } = useSafeNavigation()
   const [customer, setCustomer] = useState<NewCustomer>({
     name: '',
     email: '',
@@ -112,7 +115,7 @@ export default function NewCustomerPage() {
       if (data.success) {
         showToast('Kunde erfolgreich erstellt!', 'success')
         setTimeout(() => {
-          window.location.href = '/customers'
+          navigate('/customers')
         }, 1000)
       } else {
         showToast(data.error || 'Fehler beim Erstellen', 'error')
@@ -135,11 +138,7 @@ export default function NewCustomerPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-4">
-              <Link href="/customers">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <BackButton fallbackUrl="/customers" showIcon={true} label="" />
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Neuen Kunden erstellen</h1>
                 <div className="flex items-center gap-2 text-sm text-gray-500">

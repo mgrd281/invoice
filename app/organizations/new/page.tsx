@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Building2, ArrowLeft, Save, Plus } from 'lucide-react'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { BackButton } from '@/components/navigation/back-button'
 
 interface NewOrganization {
   name: string
@@ -23,6 +25,7 @@ interface NewOrganization {
 }
 
 export default function NewOrganizationPage() {
+  const { navigate } = useSafeNavigation()
   const [organization, setOrganization] = useState<NewOrganization>({
     name: '',
     address: '',
@@ -50,14 +53,14 @@ export default function NewOrganizationPage() {
     try {
       // In a real app, you'd send POST request to /api/organizations
       console.log('Creating new organization:', organization)
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       alert('Organisation erfolgreich erstellt!')
       // Redirect back to organizations page
-      window.location.href = '/organizations'
-      
+      navigate('/organizations')
+
     } catch (error) {
       console.error('Error creating organization:', error)
       alert('Fehler beim Erstellen der Organisation')
@@ -77,12 +80,7 @@ export default function NewOrganizationPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link href="/organizations">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück zu Organisationen
-                </Button>
-              </Link>
+              <BackButton fallbackUrl="/organizations" />
               <Building2 className="h-8 w-8 text-purple-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Neue Organisation erstellen

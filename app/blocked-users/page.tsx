@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/components/ui/toast'
 import { ShieldAlert, Trash2, Search, Plus, UserX, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/lib/api-client'
+import { Suspense } from 'react'
 
 interface BlockedUser {
     id: string
@@ -21,11 +22,12 @@ interface BlockedUser {
     blockedAt: string
 }
 
-export default function BlockedUsersPage() {
+function BlockedUsersContent() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
     const [loading, setLoading] = useState(true)
-    const [searchQuery, setSearchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const authenticatedFetch = useAuthenticatedFetch()
     const { showToast } = useToast()
@@ -59,7 +61,15 @@ export default function BlockedUsersPage() {
 
     useEffect(() => {
         fetchBlockedUsers()
-    }, [searchQuery])
+
+        // Sync to URL
+        const params = new URLSearchParams()
+        if (searchQuery) params.set('search', searchQuery)
+        const newUrl = `${window.location.pathname}?${params.toString()}`
+        if (window.location.search !== (params.toString() ? `?${params.toString()}` : '')) {
+            router.replace(newUrl, { scroll: false })
+        }
+    }, [searchQuery, router])
 
     const handleBlockUser = async () => {
         if (!newEmail) {
@@ -259,5 +269,20 @@ export default function BlockedUsersPage() {
                 </Card>
             </div>
         </div>
+    )
+}
+
+export default function BlockedUsersPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <ShieldAlert className="h-12 w-12 animate-pulse text-red-600 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium">Lade Blockliste...</p>
+                </div>
+            </div>
+        }>
+            <BlockedUsersContent />
+        </Suspense>
     )
 }

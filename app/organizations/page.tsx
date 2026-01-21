@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building2, Plus, ArrowLeft, Edit, Settings, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
+import { BackButton } from '@/components/navigation/back-button'
 
 interface Organization {
   id: string
@@ -23,6 +25,7 @@ interface Organization {
 
 export default function OrganizationsPage() {
   const router = useRouter()
+  const { navigate } = useSafeNavigation()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -55,17 +58,17 @@ export default function OrganizationsPage() {
   }
   // Function to handle organization editing
   const handleEditOrganization = (organizationId: string) => {
-    window.location.href = `/organizations/${organizationId}/edit`
+    navigate(`/organizations/${organizationId}/edit`)
   }
 
   // Function to view organization invoices
   const handleViewInvoices = (organizationId: string) => {
-    window.location.href = `/invoices?organization=${organizationId}`
+    navigate(`/invoices?organization=${organizationId}`)
   }
 
   // Function to handle organization settings
   const handleSettings = (organizationId: string) => {
-    window.location.href = `/organizations/${organizationId}/settings`
+    navigate(`/organizations/${organizationId}/settings`)
   }
 
   // Function to handle organization deletion
@@ -113,10 +116,7 @@ export default function OrganizationsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Button variant="ghost" size="sm" className="mr-4" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Zurück
-              </Button>
+              <BackButton fallbackUrl="/dashboard" />
               <Building2 className="h-8 w-8 text-purple-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Organisationen

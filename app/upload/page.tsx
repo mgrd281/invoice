@@ -18,6 +18,7 @@ import dynamicImport from 'next/dynamic'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { useRouter } from 'next/navigation'
+import { useSafeNavigation } from '@/hooks/use-safe-navigation'
 
 const InvoicePreviewDialog = dynamicImport(() => import('@/components/invoice-preview-dialog').then(mod => mod.InvoicePreviewDialog), {
   ssr: false
@@ -27,6 +28,7 @@ export const dynamic = 'force-dynamic'
 
 export default function UploadPage() {
   const router = useRouter()
+  const { navigate } = useSafeNavigation()
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
   const [file, setFile] = useState<File | null>(null)
@@ -327,9 +329,9 @@ export default function UploadPage() {
         // Redirect to invoices page after successful save
         setTimeout(() => {
           if (importTarget === 'accounting') {
-            window.location.href = '/buchhaltung?period=all'
+            navigate('/buchhaltung?period=all')
           } else {
-            window.location.href = '/invoices'
+            navigate('/invoices')
           }
         }, 1500)
       }
