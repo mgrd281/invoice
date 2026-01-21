@@ -579,8 +579,8 @@ Viel Spaß!`
                                             </div>
                                         )}
 
-                                        {/* Card-Based Layout - No Horizontal Scroll */}
-                                        <div className="space-y-2">
+                                        {/* Card-Based Layout - Professional SaaS Style */}
+                                        <div className="space-y-3">
                                             {(() => {
                                                 const displayedKeys = activeKeyTab === 'history'
                                                     ? filteredKeys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
@@ -597,7 +597,7 @@ Viel Spaß!`
                                                 return displayedKeys.map((key) => (
                                                     <div
                                                         key={key.id}
-                                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                                                        className="group bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 hover:shadow-sm transition-all duration-200"
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             {/* Checkbox */}
@@ -613,31 +613,31 @@ Viel Spaß!`
                                                                 <div className="flex items-start justify-between gap-4">
                                                                     {/* Left Section: Key + Metadata */}
                                                                     <div className="flex-1 min-w-0">
-                                                                        {/* Key (Prominent) */}
-                                                                        <div className="flex items-center gap-3 mb-2">
-                                                                            <span className="font-mono text-sm font-semibold text-gray-900 truncate">
+                                                                        {/* Key (Prominent with larger font) */}
+                                                                        <div className="flex items-center gap-3 mb-3">
+                                                                            <span className="font-mono text-base font-bold text-gray-900 tracking-tight">
                                                                                 {key.key}
                                                                             </span>
-                                                                            {/* Status Badge */}
+                                                                            {/* Status Badge - Softer colors */}
                                                                             {key.isUsed ? (
-                                                                                <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap">
+                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
                                                                                     Verbraucht
                                                                                 </span>
                                                                             ) : (
-                                                                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap">
+                                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
                                                                                     Verfügbar
                                                                                 </span>
                                                                             )}
                                                                         </div>
 
-                                                                        {/* Metadata Grid - Compact 2-column layout for history */}
+                                                                        {/* Metadata Grid - Improved spacing and typography */}
                                                                         {activeKeyTab === 'history' && (
-                                                                            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
+                                                                            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
                                                                                 {/* Variant */}
                                                                                 {variants.length > 0 && (
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-gray-400 text-xs">Variante:</span>
-                                                                                        <span className="text-gray-700">
+                                                                                    <div className="flex items-baseline gap-2">
+                                                                                        <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Variante</span>
+                                                                                        <span className="text-gray-600 font-medium truncate">
                                                                                             {key.shopifyVariantId ? (
                                                                                                 variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
                                                                                             ) : (
@@ -648,17 +648,17 @@ Viel Spaß!`
                                                                                 )}
 
                                                                                 {/* Used Date */}
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className="text-gray-400 text-xs">Verwendet:</span>
-                                                                                    <span className="text-gray-700">
+                                                                                <div className="flex items-baseline gap-2">
+                                                                                    <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Datum</span>
+                                                                                    <span className="text-gray-600 font-medium">
                                                                                         {key.usedAt ? new Date(key.usedAt).toLocaleDateString('de-DE') : '-'}
                                                                                     </span>
                                                                                 </div>
 
                                                                                 {/* Order Number */}
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className="text-gray-400 text-xs">Bestellung:</span>
-                                                                                    <span className="text-gray-700 font-medium">
+                                                                                <div className="flex items-baseline gap-2">
+                                                                                    <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Bestellung</span>
+                                                                                    <span className="text-gray-900 font-semibold">
                                                                                         {key.orderId ? (
                                                                                             key.orderId
                                                                                         ) : (
@@ -672,10 +672,10 @@ Viel Spaß!`
                                                                                 </div>
 
                                                                                 {/* Customer Email */}
-                                                                                <div className="flex items-center gap-2 col-span-2">
-                                                                                    <span className="text-gray-400 text-xs">Kunde:</span>
+                                                                                <div className="flex items-baseline gap-2 col-span-2">
+                                                                                    <span className="text-gray-400 text-xs font-medium uppercase tracking-wide flex-shrink-0">Kunde</span>
                                                                                     <span
-                                                                                        className="text-gray-700 truncate"
+                                                                                        className="text-gray-600 font-medium truncate"
                                                                                         title={key.customer?.email}
                                                                                     >
                                                                                         {key.customer?.email || '-'}
@@ -699,13 +699,13 @@ Viel Spaß!`
                                                                         )}
                                                                     </div>
 
-                                                                    {/* Right Section: Actions */}
-                                                                    <div className="flex-shrink-0 flex items-center gap-2">
+                                                                    {/* Actions - Fade in on hover */}
+                                                                    <div className="flex-shrink-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                                         {activeKeyTab === 'history' && (
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="sm"
-                                                                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                                                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                                                                 title="E-Mail erneut senden"
                                                                                 disabled={resendingKeys.has(key.id)}
                                                                                 onClick={async () => {
@@ -744,7 +744,7 @@ Viel Spaß!`
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
-                                                                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                                                             onClick={() => handleDeleteKey(key.id)}
                                                                             title="Löschen"
                                                                         >
