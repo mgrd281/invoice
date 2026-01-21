@@ -169,8 +169,16 @@ export async function GET(req: Request) {
       total: Number(inv.totalGross),
       currency: inv.currency || 'EUR',
       notes: '', // Notes field does not exist on Invoice model
-      orderNumber: inv.orderNumber,
-      paymentMethod: inv.paymentMethod,
+      number: inv.invoiceNumber, // Alias for frontend compatibility
+      orderNumber: inv.orderNumber || (inv.order?.shopifyOrderId ? (inv.order.shopifyOrderId.startsWith('#') ? inv.order.shopifyOrderId : `#${inv.order.shopifyOrderId}`) : inv.order?.orderNumber),
+      order: inv.order ? {
+        id: inv.order.id,
+        orderNumber: inv.order.orderNumber,
+        shopifyOrderId: inv.order.shopifyOrderId,
+        totalAmount: Number(inv.order.totalAmount),
+        createdAt: inv.order.createdAt.toISOString()
+      } : null,
+      paymentMethod: inv.paymentMethod || 'Shopify Payments',
       settings: inv.settings,
     }))
 

@@ -1088,10 +1088,10 @@ export default function InvoicesPage() {
                   }
                 }}
                 className={`mr-2 ${isAudioBlessed && isSoundEnabled
-                    ? "text-green-600 border-green-600 bg-green-50 shadow-sm"
-                    : isSoundEnabled
-                      ? "text-yellow-600 border-yellow-300 bg-yellow-50"
-                      : "text-gray-400 border-gray-300"
+                  ? "text-green-600 border-green-600 bg-green-50 shadow-sm"
+                  : isSoundEnabled
+                    ? "text-yellow-600 border-yellow-300 bg-yellow-50"
+                    : "text-gray-400 border-gray-300"
                   }`}
                 title={
                   soundError
@@ -1685,16 +1685,27 @@ export default function InvoicesPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        <div className="flex items-center">
-                          {invoice.orderNumber || invoice.order?.orderNumber || invoice.number}
-                          {duplicateNumbers.includes(invoice.number) && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                              Duplikat
+                        <div className="flex flex-col items-start gap-0.5">
+                          <div className="flex items-center gap-2">
+                            {/* Order Number (Bold) */}
+                            <span className="font-bold text-gray-900">
+                              {invoice.orderNumber || (invoice.order?.shopifyOrderId ? (invoice.order.shopifyOrderId.startsWith('#') ? invoice.order.shopifyOrderId : `#${invoice.order.shopifyOrderId}`) : (invoice.order?.orderNumber || '-'))}
+                            </span>
+                            {duplicateNumbers.includes(invoice.number) && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800">
+                                Duplikat
+                              </span>
+                            )}
+                          </div>
+                          {/* Invoice Number (Subtle) */}
+                          {invoice.number && (
+                            <span className="text-xs text-gray-500 font-mono" title="Rechnungsnummer">
+                              {invoice.number}
                             </span>
                           )}
                           {invoice.originalInvoiceNumber && (
-                            <span className="ml-2 text-xs text-gray-500">
-                              (Ref: {invoice.originalInvoiceNumber})
+                            <span className="text-[10px] text-gray-400">
+                              Ref: {invoice.originalInvoiceNumber}
                             </span>
                           )}
                         </div>
