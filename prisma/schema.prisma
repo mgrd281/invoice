@@ -16,11 +16,8 @@ enum OrderStatus {
   PENDING
   COMPLETED
   CANCELLED
-<<<<<<< HEAD
   ON_HOLD
   BLOCKED
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 }
 
 enum InvoiceStatus {
@@ -29,11 +26,8 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
-<<<<<<< HEAD
   ON_HOLD
   BLOCKED
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 }
 
 enum UploadStatus {
@@ -69,7 +63,6 @@ model User {
   featureOrder    Json?
 }
 
-<<<<<<< HEAD
 model ApiKey {
   id             String       @id @default(uuid())
   organizationId String
@@ -83,8 +76,6 @@ model ApiKey {
   @@index([organizationId])
 }
 
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 model Organization {
   id                String             @id @default(uuid())
   name              String
@@ -129,11 +120,8 @@ model Organization {
   reviewIncentiveSettings ReviewIncentiveSettings?
   abandonedCarts    AbandonedCart[]
   realEstateProfiles RealEstateSearchProfile[]
-<<<<<<< HEAD
   apiKeys           ApiKey[]
   blockedUsers      BlockedUser[]
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 }
 
 model WidgetSettings {
@@ -232,7 +220,6 @@ model Customer {
   @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
 }
 
-<<<<<<< HEAD
 model BlockedUser {
   id             String       @id @default(uuid())
   organizationId String
@@ -247,8 +234,6 @@ model BlockedUser {
   @@index([email])
 }
 
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 model CustomerDocument {
   id          String   @id @default(uuid())
   customerId  String
@@ -516,14 +501,11 @@ model LicenseKey {
   usedAt           DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-<<<<<<< HEAD
   
   // Delivery Tracking
   emailSent        Boolean        @default(false)
   emailSentAt      DateTime?
   deliveryStatus   String         @default("PENDING") // PENDING, SENT, FAILED
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 }
 
 model SupportTicket {

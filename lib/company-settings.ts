@@ -33,13 +33,8 @@ declare global {
   }
 }
 
-<<<<<<< HEAD
 // Initialize global storage (server-side only)
 if (typeof window === 'undefined' && !global.companySettings) {
-=======
-// Initialize global storage
-if (!global.companySettings) {
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   global.companySettings = { ...DEFAULT_COMPANY_SETTINGS }
 }
 

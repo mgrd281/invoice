@@ -2,16 +2,28 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { ensureOrganization } from '@/lib/db-operations'
+
+async function getOrganizationId(email: string) {
+    const user = await prisma.user.findUnique({
+        where: { email },
+        select: { organizationId: true }
+    })
+    
+    if (user?.organizationId) return user.organizationId
+    
+    const org = await ensureOrganization()
+    return org.id
+}
 
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session) {
+        if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        // Fixed Organization ID for now
-        const organizationId = 'default-org-id'
+        const organizationId = await getOrganizationId(session.user.email)
 
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search') || ''
@@ -39,11 +51,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session) {
+        if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const organizationId = 'default-org-id'
+        const organizationId = await getOrganizationId(session.user.email)
         const body = await req.json()
         const { email, name, reason } = body
 
@@ -69,7 +81,7 @@ export async function POST(req: Request) {
                 email: email.trim(),
                 name,
                 reason,
-                blockedBy: session.user?.email || 'Admin'
+                blockedBy: session.user.email || 'Admin'
             }
         })
 
