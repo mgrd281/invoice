@@ -11,66 +11,66 @@ export default function StarRatingTemplatesPage() {
     const templates = [
         {
             id: 'default',
-            name: 'Default (كلاسيكي)',
-            description: 'التصميم الافتراضي مع النجوم الممتلئة',
+            name: 'Standard',
+            description: 'Klassisches Design mit gefüllten Sternen',
             recommended: true,
         },
         {
             id: 'minimal',
-            name: 'Minimal (بسيط)',
-            description: 'تصميم مضغوط وبسيط للمساحات الصغيرة',
+            name: 'Minimal',
+            description: 'Kompaktes Design für enge Bereiche',
             recommended: false,
         },
         {
             id: 'badge',
-            name: 'Badge (شارة)',
-            description: 'نمط الشارة مع خلفية ملونة',
+            name: 'Abzeichen',
+            description: 'Abzeichen-Stil mit farbigem Hintergrund',
             recommended: true,
         },
         {
             id: 'outlined',
-            name: 'Outlined (محدد)',
-            description: 'نجوم بإطار فقط، تصميم عصري',
+            name: 'Umriss',
+            description: 'Nur Umriss-Sterne, modernes Design',
             recommended: false,
         },
         {
             id: 'gradient',
-            name: 'Gradient (متدرج)',
-            description: 'نجوم مع تدرج لوني وظل',
+            name: 'Verlauf',
+            description: 'Sterne mit Farbverlauf und Schatten',
             recommended: true,
         },
         {
             id: 'large-primary',
-            name: 'Large Primary (كبير)',
-            description: 'رقم كبير بارز مع النجوم',
+            name: 'Groß',
+            description: 'Große, prominente Bewertungsanzeige',
             recommended: false,
         },
         {
             id: 'card',
-            name: 'Card (بطاقة)',
-            description: 'تصميم البطاقة مع خلفية',
+            name: 'Karte',
+            description: 'Karten-Design mit Hintergrund',
             recommended: true,
         },
         {
             id: 'inline-compact',
-            name: 'Inline Compact (مضغوط جداً)',
-            description: 'تصميم مضغوط للغاية للأماكن الضيقة',
+            name: 'Ultra-Kompakt',
+            description: 'Sehr kompaktes Design für schmale Bereiche',
             recommended: false,
         },
         {
             id: 'percentage-bar',
-            name: 'Percentage Bar (شريط النسبة)',
-            description: 'نجوم مع شريط نسبة مئوية',
+            name: 'Fortschrittsbalken',
+            description: 'Sterne mit Fortschrittsbalken',
             recommended: true,
         },
     ];
 
     const colors = [
-        { name: 'Yellow (أصفر)', value: 'yellow', hex: '#FBBF24' },
-        { name: 'Blue (أزرق)', value: 'blue', hex: '#3B82F6' },
-        { name: 'Purple (بنفسجي)', value: 'purple', hex: '#A855F7' },
-        { name: 'Green (أخضر)', value: 'green', hex: '#10B981' },
-        { name: 'Orange (برتقالي)', value: 'orange', hex: '#F97316' },
+        { name: 'Gelb', value: 'yellow', hex: '#FBBF24' },
+        { name: 'Blau', value: 'blue', hex: '#3B82F6' },
+        { name: 'Lila', value: 'purple', hex: '#A855F7' },
+        { name: 'Grün', value: 'green', hex: '#10B981' },
+        { name: 'Orange', value: 'orange', hex: '#F97316' },
     ];
 
     return (
@@ -79,18 +79,18 @@ export default function StarRatingTemplatesPage() {
                 {/* Header */}
                 <div className="text-center">
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                        قوالب تقييم النجوم | Star Rating Templates
+                        Stern-Bewertung Vorlagen
                     </h1>
                     <p className="text-gray-600">
-                        9 قوالب مختلفة لعرض التقييمات | 9 different templates for displaying ratings
+                        9 verschiedene Vorlagen für die Anzeige von Bewertungen
                     </p>
                 </div>
 
                 {/* Color Selector */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>اختر اللون الأساسي | Choose Primary Color</CardTitle>
-                        <CardDescription>سيتم تطبيق اللون على جميع القوالب أدناه</CardDescription>
+                        <CardTitle>Primärfarbe wählen</CardTitle>
+                        <CardDescription>Die Farbe wird auf alle untenstehenden Vorlagen angewendet</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-wrap gap-3">
@@ -124,7 +124,7 @@ export default function StarRatingTemplatesPage() {
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-xl">{template.name}</CardTitle>
                                     {template.recommended && (
-                                        <Badge className="bg-green-100 text-green-800">موصى به</Badge>
+                                        <Badge className="bg-green-100 text-green-800">Empfohlen</Badge>
                                     )}
                                 </div>
                                 <CardDescription className="text-right">{template.description}</CardDescription>
@@ -133,7 +133,7 @@ export default function StarRatingTemplatesPage() {
                                 {/* With Reviews */}
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        مع تقييمات | With Reviews
+                                        Mit Bewertungen
                                     </p>
                                     <div className="p-4 bg-white rounded-lg border border-gray-200">
                                         <StarRatingMulti
@@ -148,7 +148,7 @@ export default function StarRatingTemplatesPage() {
                                 {/* Without Reviews */}
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        بدون تقييمات | Without Reviews (0)
+                                        Ohne Bewertungen (0)
                                     </p>
                                     <div className="p-4 bg-white rounded-lg border border-gray-200">
                                         <StarRatingMulti
@@ -163,11 +163,11 @@ export default function StarRatingTemplatesPage() {
                                 {/* Size Variations */}
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        الأحجام | Sizes
+                                        Größen
                                     </p>
                                     <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-3">
                                         <div className="flex items-center gap-4">
-                                            <span className="text-xs text-gray-500 w-12">Small:</span>
+                                            <span className="text-xs text-gray-500 w-12">Klein:</span>
                                             <StarRatingMulti
                                                 rating={4.2}
                                                 reviewCount={42}
@@ -177,7 +177,7 @@ export default function StarRatingTemplatesPage() {
                                             />
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-xs text-gray-500 w-12">Medium:</span>
+                                            <span className="text-xs text-gray-500 w-12">Mittel:</span>
                                             <StarRatingMulti
                                                 rating={4.2}
                                                 reviewCount={42}
@@ -187,7 +187,7 @@ export default function StarRatingTemplatesPage() {
                                             />
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-xs text-gray-500 w-12">Large:</span>
+                                            <span className="text-xs text-gray-500 w-12">Groß:</span>
                                             <StarRatingMulti
                                                 rating={4.2}
                                                 reviewCount={42}
@@ -206,27 +206,27 @@ export default function StarRatingTemplatesPage() {
                 {/* Usage Example */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>كيفية الاستخدام | How to Use</CardTitle>
+                        <CardTitle>Verwendung</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
                             {`import { StarRatingMulti } from '@/components/ui/star-rating-multi';
 
-// استخدام قالب معين
+// Verwendung einer bestimmten Vorlage
 <StarRatingMulti 
   rating={4.5} 
   reviewCount={128} 
-  template="badge"        // اختر القالب
-  primaryColor="blue"     // اختر اللون
+  template="badge"        // Wähle die Vorlage
+  primaryColor="blue"     // Wähle die Farbe
   size="md" 
 />
 
-// القوالب المتاحة:
+// Verfügbare Vorlagen:
 // 'default', 'minimal', 'badge', 'outlined', 
 // 'gradient', 'large-primary', 'card', 
 // 'inline-compact', 'percentage-bar'
 
-// الألوان المتاحة:
+// Verfügbare Farben:
 // 'yellow', 'blue', 'purple', 'green', 'orange'`}
                         </pre>
                     </CardContent>
@@ -235,7 +235,7 @@ export default function StarRatingTemplatesPage() {
                 {/* Product Cards Demo */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>مثال: بطاقات المنتجات | Example: Product Cards</CardTitle>
+                        <CardTitle>Beispiel: Produktkarten</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
