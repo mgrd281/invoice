@@ -3,8 +3,6 @@ cmd = "npm run build"
 
 [deploy]
 startCommand = "npm start"
-healthcheckPath = "/api/system-status"
-healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
