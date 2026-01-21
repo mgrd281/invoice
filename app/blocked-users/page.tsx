@@ -59,17 +59,26 @@ function BlockedUsersContent() {
         }
     }
 
+    // Handle Back Button and URL Sync
+    useEffect(() => {
+        const search = searchParams.get('search') || ''
+        if (searchQuery !== search) setSearchQuery(search)
+    }, [searchParams])
+
     useEffect(() => {
         fetchBlockedUsers()
 
         // Sync to URL
         const params = new URLSearchParams()
         if (searchQuery) params.set('search', searchQuery)
+
         const newUrl = `${window.location.pathname}?${params.toString()}`
-        if (window.location.search !== (params.toString() ? `?${params.toString()}` : '')) {
+        const currentUrl = `${window.location.pathname}${window.location.search}`
+
+        if (currentUrl !== newUrl) {
             router.replace(newUrl, { scroll: false })
         }
-    }, [searchQuery, router])
+    }, [searchQuery, router, searchParams])
 
     const handleBlockUser = async () => {
         if (!newEmail) {

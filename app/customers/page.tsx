@@ -169,6 +169,20 @@ function CustomersPageContent() {
     })
   }
 
+  // Handle Back Button and URL Sync
+  useEffect(() => {
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || 'ALL'
+    const sort = searchParams.get('sort') || 'createdAt'
+    const dir = (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
+
+    if (searchQuery !== search) setSearchQuery(search)
+    if (filterStatus !== status) setFilterStatus(status)
+    if (sortConfig.key !== sort || sortConfig.direction !== dir) {
+      setSortConfig({ key: sort, direction: dir })
+    }
+  }, [searchParams])
+
   // Sync state to URL
   useEffect(() => {
     const params = new URLSearchParams()
@@ -178,10 +192,19 @@ function CustomersPageContent() {
     if (sortConfig.direction !== 'desc') params.set('dir', sortConfig.direction)
 
     const newUrl = `${window.location.pathname}?${params.toString()}`
-    if (window.location.search !== (params.toString() ? `?${params.toString()}` : '')) {
-      router.replace(newUrl, { scroll: false })
+    const currentUrl = `${window.location.pathname}${window.location.search}`
+
+    if (currentUrl !== newUrl) {
+      // For status/sort changes, use push. For typing search, use replace.
+      const isMajorChange = params.get('status') !== searchParams.get('status') || params.get('sort') !== searchParams.get('sort')
+
+      if (isMajorChange) {
+        router.push(newUrl, { scroll: false })
+      } else {
+        router.replace(newUrl, { scroll: false })
+      }
     }
-  }, [searchQuery, filterStatus, sortConfig, router])
+  }, [searchQuery, filterStatus, sortConfig, router, searchParams])
 
   const displayedCustomers = getProcessedCustomers()
 
