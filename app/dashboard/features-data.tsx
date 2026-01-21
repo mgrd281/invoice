@@ -20,12 +20,8 @@ import {
     Gift,
     Globe,
     Star,
-<<<<<<< HEAD
     Zap,
     Store
-=======
-    Zap
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -40,7 +36,6 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
-<<<<<<< HEAD
         id: 'digital-products',
         href: '/digital-products',
         title: 'Digitale Produkte',
@@ -51,8 +46,6 @@ export const DEFAULT_FEATURES = [
         iconShadow: 'shadow-md'
     },
     {
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         id: 'product-import',
         href: '/products/import',
         title: 'Produkt Import',
@@ -76,7 +69,6 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
-<<<<<<< HEAD
         id: 'kaufland',
         href: '/settings/kaufland',
         title: 'Kaufland Integration',
@@ -91,8 +83,6 @@ export const DEFAULT_FEATURES = [
         pingDotColor: 'bg-orange-500'
     },
     {
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         id: 'buchhaltung',
         href: '/buchhaltung',
         title: 'Buchhaltung',
@@ -103,20 +93,7 @@ export const DEFAULT_FEATURES = [
     },
 
 
-<<<<<<< HEAD
 
-=======
-    {
-        id: 'digital-products',
-        href: '/digital-products',
-        title: 'Digitale Produkte',
-        description: 'Lizenzschlüssel und Downloads verwalten',
-        icon: Package,
-        iconBg: 'bg-gradient-to-r from-blue-600 to-indigo-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
-        iconShadow: 'shadow-md'
-    },
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     {
         id: 'reviews',
         href: '/reviews',
@@ -183,7 +160,6 @@ export const DEFAULT_FEATURES = [
         pingDotColor: 'bg-emerald-500'
     },
     {
-<<<<<<< HEAD
         id: 'api-keys',
         href: '/settings/api-keys',
         title: 'API Zugang',
@@ -193,8 +169,6 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50'
     },
     {
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',

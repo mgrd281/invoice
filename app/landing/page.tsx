@@ -5,31 +5,20 @@ import { FileText, Users, Upload, Settings, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import './landing.css'
-<<<<<<< HEAD
 import './mobile.css' // Mobile-only optimizations (≤768px)
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
 export default function LandingPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [animationStage, setAnimationStage] = useState(0)
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   // Login-Status
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [fieldError, setFieldError] = useState('')
-<<<<<<< HEAD
-=======
-  const [showDemoCredentials, setShowDemoCredentials] = useState(false)
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimationStage(1), 100)
@@ -64,11 +53,7 @@ export default function LandingPage() {
         if (rememberMe) {
           localStorage.setItem('rememberLogin', 'true')
         }
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         // Zur entsprechenden Seite weiterleiten
         router.push(data.redirectTo || '/')
       } else {
@@ -147,11 +132,7 @@ export default function LandingPage() {
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-16">
         <div className="grid lg:grid-cols-2 gap-16 items-start lg:items-center">
-<<<<<<< HEAD
 
-=======
-          
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
           {/* Hero Section */}
           <div className={`space-y-8 transition-all duration-1000 delay-200 ${animationStage >= 1 ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}`}>
             <div className="space-y-12">
@@ -204,46 +185,7 @@ export default function LandingPage() {
                   Anmelden
                 </h3>
                 <p className="text-gray-600">Zugang zu Ihrem Dashboard</p>
-<<<<<<< HEAD
                 {/* Credentials are stored securely in database - no display needed */}
-=======
-                {/* Admin credentials are configured in the API */}
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-blue-600">
-                      <strong>Einziger autorisierter Zugang:</strong> Nur diese Admin-Anmeldedaten sind berechtigt
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowDemoCredentials(!showDemoCredentials)}
-                      className="text-xs text-blue-700 hover:text-blue-800 underline"
-                    >
-                      {showDemoCredentials ? 'Ausblenden' : 'Anzeigen'}
-                    </button>
-                  </div>
-                  {showDemoCredentials && (
-                    <div className="mt-2 pt-2 border-t border-blue-200">
-                      <p className="text-xs text-blue-700 mb-2">
-                        <strong>⚠️ Einziger gültiger Admin-Account:</strong>
-                      </p>
-                      <p className="text-xs text-blue-700">
-                        <strong>E-Mail:</strong> mgrdegh@web.de<br/>
-                        <strong>Passwort:</strong> Mkarina321@
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('mgrdegh@web.de')
-                          setPassword('Mkarina321@')
-                        }}
-                        className="mt-2 text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
-                      >
-                        Felder ausfüllen
-                      </button>
-                    </div>
-                  )}
-                </div>
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
               </div>
 
               {/* Allgemeine Fehlermeldung */}
@@ -263,14 +205,8 @@ export default function LandingPage() {
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-<<<<<<< HEAD
                     className={`w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${fieldError === 'email' ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                       }`}
-=======
-                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                      fieldError === 'email' ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                    }`}
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                     placeholder="ihre@email.com"
                     required
                     disabled={isLoading}
@@ -290,14 +226,8 @@ export default function LandingPage() {
                       id="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-<<<<<<< HEAD
                       className={`w-full px-4 py-3 pr-12 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${fieldError === 'password' ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                         }`}
-=======
-                      className={`w-full px-4 py-3 pr-12 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        fieldError === 'password' ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                      }`}
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                       placeholder="••••••••"
                       required
                       disabled={isLoading}
@@ -337,18 +267,10 @@ export default function LandingPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-<<<<<<< HEAD
                   className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center ${isLoading
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
-=======
-                  className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center ${
-                    isLoading 
-                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                 >
                   {isLoading ? (
                     <>

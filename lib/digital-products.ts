@@ -217,7 +217,6 @@ export async function processDigitalProductOrder(
 
     const subject = `Ihr Produktschlüssel für ${productTitle}`
 
-<<<<<<< HEAD
     try {
         await sendEmail({
             to: customerEmail,
@@ -245,15 +244,6 @@ export async function processDigitalProductOrder(
     }
 
     // Automatically fulfill order in Shopify ONLY if email was sent
-=======
-    await sendEmail({
-        to: customerEmail,
-        subject,
-        html: emailBody
-    })
-
-    // Automatically fulfill order in Shopify
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     try {
         console.log(`📦 Auto-fulfilling Shopify order: ${shopifyOrderId}`)
         const { ShopifyAPI } = await import('@/lib/shopify-api')
@@ -268,10 +258,6 @@ export async function processDigitalProductOrder(
         }
     } catch (fulfillError) {
         console.error('Failed to auto-fulfill Shopify order:', fulfillError)
-<<<<<<< HEAD
-=======
-        // We don't fail the whole process if fulfillment fails, as the key was already sent
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     }
 
     return { success: true, key: key.key }
@@ -308,7 +294,6 @@ function convertToHtml(text: string) {
     // especially when content comes from contentEditable which might use newlines for breaks
     return text.replace(/\n/g, '<br/>');
 }
-<<<<<<< HEAD
 
 export async function resendDigitalProductEmail(keyId: string) {
     const key = await prisma.licenseKey.findUnique({
@@ -436,5 +421,3 @@ export async function resendDigitalProductEmail(keyId: string) {
 
     return { success: true }
 }
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
