@@ -111,11 +111,11 @@ export async function middleware(request: NextRequest) {
         }
 
         // Check user role for admin-only routes
-        const userRole = payload.role as string
+        const userRole = (payload.role as string)?.toUpperCase() // Normalize to uppercase
 
         // All protected routes require at least 'user' role
         // You can add more granular checks here
-        if (!userRole || (userRole !== 'admin' && userRole !== 'manager' && userRole !== 'user')) {
+        if (!userRole || (userRole !== 'ADMIN' && userRole !== 'MANAGER' && userRole !== 'USER')) {
             console.log('❌ Insufficient permissions for:', pathname, 'Role:', userRole)
 
             if (isProtectedApi) {
