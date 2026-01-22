@@ -101,6 +101,69 @@ export async function POST(req: Request) {
         const currency = data.currency
         const lineItems = data.line_items
 
+        // Find existing cart to compare for removals
+        const existingCart = await prisma.abandonedCart.findUnique({
+            where: {
+                organizationId_checkoutId: {
+                    organizationId: connection.organizationId,
+                    checkoutId: checkoutId
+                }
+            }
+        })
+
+        let removedItems = existingCart?.removedItems ? (existingCart.removedItems as any[]) : []
+        let currentTotalPricePeak = existingCart?.totalPricePeak ? Number(existingCart.totalPricePeak) : 0
+        const newTotalPrice = Number(totalPrice)
+
+        if (existingCart && existingCart.lineItems) {
+            const oldItems = existingCart.lineItems as any[]
+            const newItems = lineItems as any[]
+
+            // Identify removed items (items that were in the cart but aren't anymore)
+            oldItems.forEach(oldItem => {
+                const stillExists = newItems.some(newItem =>
+                    (newItem.variant_id && newItem.variant_id === oldItem.variant_id) ||
+                    (newItem.product_id === oldItem.product_id && newItem.title === oldItem.title)
+                )
+
+                if (!stillExists) {
+                    console.log(`[Webhook] Item removed detected: ${oldItem.title}`)
+                    // Check if already in removed list to avoid duplicates
+                    const alreadyRemoved = removedItems.some(rm =>
+                        (rm.variant_id && rm.variant_id === oldItem.variant_id) ||
+                        (rm.product_id === oldItem.product_id && rm.title === oldItem.title)
+                    )
+
+                    if (!alreadyRemoved) {
+                        removedItems.push({
+                            ...oldItem,
+                            removedAt: new Date().toISOString(),
+                            isRemoved: true
+                        })
+                    }
+                }
+
+                // Also check if quantity decreased
+                const newItem = newItems.find(ni =>
+                    (ni.variant_id && ni.variant_id === oldItem.variant_id) ||
+                    (ni.product_id === oldItem.product_id && ni.title === oldItem.title)
+                )
+
+                if (newItem && newItem.quantity < oldItem.quantity) {
+                    console.log(`[Webhook] Quantity decreased for: ${oldItem.title}`)
+                    removedItems.push({
+                        ...oldItem,
+                        quantity: oldItem.quantity - newItem.quantity,
+                        removedAt: new Date().toISOString(),
+                        isPartialRemoval: true
+                    })
+                }
+            })
+        }
+
+        // Update Price Peak
+        const totalPricePeak = Math.max(currentTotalPricePeak, newTotalPrice)
+
         await prisma.abandonedCart.upsert({
             where: {
                 organizationId_checkoutId: {
@@ -115,9 +178,10 @@ export async function POST(req: Request) {
                 email: customerEmail,
                 cartUrl: cartUrl,
                 totalPrice: totalPrice,
+                totalPricePeak: totalPricePeak,
                 currency: currency,
                 lineItems: lineItems,
-                // New carts are not recovered and email not sent
+                removedItems: removedItems,
                 isRecovered: false,
                 recoverySent: false
             },
@@ -126,7 +190,9 @@ export async function POST(req: Request) {
                 email: customerEmail,
                 cartUrl: cartUrl,
                 totalPrice: totalPrice,
+                totalPricePeak: totalPricePeak,
                 lineItems: lineItems,
+                removedItems: removedItems,
                 updatedAt: new Date()
             }
         })

@@ -54,11 +54,16 @@ export async function GET(req: Request) {
         })
 
         // 3. Image Enrichment
-        // Collect all unique product IDs across all carts
+        // Collect all unique product IDs across all carts (current and removed)
         const productIds = new Set<string>()
         carts.forEach(cart => {
             if (Array.isArray(cart.lineItems)) {
                 (cart.lineItems as any[]).forEach(item => {
+                    if (item.product_id) productIds.add(item.product_id.toString())
+                })
+            }
+            if (Array.isArray(cart.removedItems)) {
+                (cart.removedItems as any[]).forEach(item => {
                     if (item.product_id) productIds.add(item.product_id.toString())
                 })
             }
@@ -106,6 +111,8 @@ export async function GET(req: Request) {
                     // Map images back to carts
                     for (const cart of carts) {
                         let cartModified = false
+
+                        // Current Items
                         if (Array.isArray(cart.lineItems)) {
                             (cart.lineItems as any[]).forEach(item => {
                                 if (item.product_id && !item.image?.src) {
@@ -117,17 +124,34 @@ export async function GET(req: Request) {
                                     }
                                 }
                             })
+                        }
 
-                            // Persist to DB if modified
-                            if (cartModified) {
-                                try {
-                                    await prisma.abandonedCart.update({
-                                        where: { id: cart.id },
-                                        data: { lineItems: cart.lineItems as any }
-                                    })
-                                } catch (dbErr) {
-                                    console.error(`[AbandonedCarts] Failed to persist images for cart ${cart.id}:`, dbErr)
+                        // Removed Items
+                        if (Array.isArray(cart.removedItems)) {
+                            (cart.removedItems as any[]).forEach(item => {
+                                if (item.product_id && !item.image?.src) {
+                                    const imgSrc = productImageMap[item.product_id.toString()]
+                                    if (imgSrc) {
+                                        item.image = { src: imgSrc }
+                                        cartModified = true
+                                        hasNewImages = true
+                                    }
                                 }
+                            })
+                        }
+
+                        // Persist to DB if modified
+                        if (cartModified) {
+                            try {
+                                await prisma.abandonedCart.update({
+                                    where: { id: cart.id },
+                                    data: {
+                                        lineItems: cart.lineItems as any,
+                                        removedItems: cart.removedItems as any
+                                    }
+                                })
+                            } catch (dbErr) {
+                                console.error(`[AbandonedCarts] Failed to persist images for cart ${cart.id}:`, dbErr)
                             }
                         }
                     }

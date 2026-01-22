@@ -303,61 +303,104 @@ export default function AbandonedCartsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-6 vertical-top align-top">
-                                                <div className="text-lg font-black text-gray-900 mb-3">
-                                                    {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
+                                                <div className="flex flex-col mb-4">
+                                                    <div className="text-xl font-black text-gray-900 leading-none">
+                                                        {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
+                                                    </div>
+                                                    {cart.totalPricePeak && Number(cart.totalPricePeak) > Number(cart.totalPrice) && (
+                                                        <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">
+                                                            HÖCHSTWERT: {Number(cart.totalPricePeak).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                <div className="flex flex-col gap-2">
-                                                    {Array.isArray(cart.lineItems) && cart.lineItems.length > 0 ? (
-                                                        <>
-                                                            {(expandedCarts.has(cart.id) ? cart.lineItems : cart.lineItems.slice(0, 3)).map((item: any, idx: number) => (
-                                                                <div key={idx} className="flex items-center gap-2 group">
-                                                                    <div className="w-8 h-8 bg-gray-50 rounded-md border border-gray-100 flex-shrink-0 overflow-hidden shadow-sm group-hover:scale-110 transition-transform duration-200">
-                                                                        <img
-                                                                            src={item.image?.src || 'https://via.placeholder.com/32?text='}
-                                                                            alt=""
-                                                                            className="w-full h-full object-cover"
-                                                                            loading="lazy"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex flex-col min-w-0">
-                                                                        <div className="text-[11px] font-semibold text-gray-700 truncate max-w-[180px]" title={item.title}>
-                                                                            {item.title}
+                                                <div className="space-y-4">
+                                                    <div className="flex flex-col gap-2">
+                                                        {Array.isArray(cart.lineItems) && cart.lineItems.length > 0 ? (
+                                                            <>
+                                                                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">Aktuelle Artikel</div>
+                                                                {(expandedCarts.has(cart.id) ? cart.lineItems : cart.lineItems.slice(0, 3)).map((item: any, idx: number) => (
+                                                                    <div key={idx} className="flex items-center gap-2 group">
+                                                                        <div className="w-8 h-8 bg-gray-50 rounded-md border border-gray-100 flex-shrink-0 overflow-hidden shadow-sm group-hover:scale-110 transition-transform duration-200">
+                                                                            <img
+                                                                                src={item.image?.src || 'https://via.placeholder.com/32?text='}
+                                                                                alt=""
+                                                                                className="w-full h-full object-cover"
+                                                                                loading="lazy"
+                                                                            />
                                                                         </div>
-                                                                        {(item.variant_title && item.variant_title !== 'Default Title') && (
-                                                                            <span className="text-[9px] text-gray-400 -mt-0.5">
-                                                                                x{item.quantity} · {item.variant_title}
-                                                                            </span>
-                                                                        )}
-                                                                        {(!item.variant_title || item.variant_title === 'Default Title') && (
-                                                                            <span className="text-[9px] text-gray-400 -mt-0.5">
-                                                                                Menge: {item.quantity}
-                                                                            </span>
-                                                                        )}
+                                                                        <div className="flex flex-col min-w-0">
+                                                                            <div className="text-[11px] font-semibold text-gray-700 truncate max-w-[180px]" title={item.title}>
+                                                                                {item.title}
+                                                                            </div>
+                                                                            {(item.variant_title && item.variant_title !== 'Default Title') && (
+                                                                                <span className="text-[9px] text-gray-400 -mt-0.5">
+                                                                                    x{item.quantity} · {item.variant_title}
+                                                                                </span>
+                                                                            )}
+                                                                            {(!item.variant_title || item.variant_title === 'Default Title') && (
+                                                                                <span className="text-[9px] text-gray-400 -mt-0.5">
+                                                                                    Menge: {item.quantity}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
+                                                                ))}
 
-                                                            {cart.lineItems.length > 3 && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const next = new Set(expandedCarts)
-                                                                        if (next.has(cart.id)) next.delete(cart.id)
-                                                                        else next.add(cart.id)
-                                                                        setExpandedCarts(next)
-                                                                    }}
-                                                                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1 transition-colors"
-                                                                >
-                                                                    {expandedCarts.has(cart.id) ? (
-                                                                        <><ChevronUp className="w-3 h-3" /> verbergen</>
-                                                                    ) : (
-                                                                        <><ChevronDown className="w-3 h-3" /> {cart.lineItems.length - 3} weitere anzeigen</>
-                                                                    )}
-                                                                </button>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-400 italic">Keine Artikeldetails</span>
+                                                                {cart.lineItems.length > 3 && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const next = new Set(expandedCarts)
+                                                                            if (next.has(cart.id)) next.delete(cart.id)
+                                                                            else next.add(cart.id)
+                                                                            setExpandedCarts(next)
+                                                                        }}
+                                                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1 transition-colors"
+                                                                    >
+                                                                        {expandedCarts.has(cart.id) ? (
+                                                                            <><ChevronUp className="w-3 h-3" /> verbergen</>
+                                                                        ) : (
+                                                                            <><ChevronDown className="w-3 h-3" /> {cart.lineItems.length - 3} weitere anzeigen</>
+                                                                        )}
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100 w-fit">
+                                                                <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                                                                <span className="text-[11px] font-black text-red-600 uppercase tracking-tight">Warenkorb geleert</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Section: Entfernte Artikel */}
+                                                    {Array.isArray(cart.removedItems) && (cart.removedItems as any[]).length > 0 && (
+                                                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-50">
+                                                            <div className="text-[9px] font-bold text-red-400/70 uppercase tracking-widest pl-0.5">Entfernte Artikel</div>
+                                                            <div className="space-y-2 opacity-60">
+                                                                {(cart.removedItems as any[]).map((item: any, idx: number) => (
+                                                                    <div key={idx} className="flex items-center gap-2 group grayscale hover:grayscale-0 transition-all duration-300">
+                                                                        <div className="w-6 h-6 bg-gray-50 rounded border border-gray-100 flex-shrink-0 overflow-hidden">
+                                                                            <img
+                                                                                src={item.image?.src || 'https://via.placeholder.com/24?text='}
+                                                                                alt=""
+                                                                                className="w-full h-full object-cover"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="flex flex-col min-w-0">
+                                                                            <div className="text-[10px] font-medium text-gray-500 line-through truncate max-w-[160px]" title={item.title}>
+                                                                                {item.title}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <span className="text-[8px] font-bold text-red-500 bg-red-50 px-1 rounded truncate uppercase">
+                                                                                    {item.isPartialRemoval ? `QTY REDUZIERT (-${item.quantity})` : 'ENTFERNT'}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </td>
