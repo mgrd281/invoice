@@ -164,9 +164,14 @@ export async function POST(req: Request) {
         // Update Price Peak
         const totalPricePeak = Math.max(currentTotalPricePeak, newTotalPrice)
 
-        // Parse User Agent for Device/OS Detection
+        // Parse User Agent for Device/OS Detection (Fallback logic)
         const userAgent = data.user_agent || ''
-        const deviceInfo = parseUserAgent(userAgent)
+        const existingDeviceInfo = existingCart?.deviceInfo as any
+
+        // ONLY parse if we don't have high confidence data from the client yet
+        let deviceInfo = existingDeviceInfo?.detection_confidence === 'high'
+            ? existingDeviceInfo
+            : { ...parseUserAgent(userAgent), detection_confidence: 'low' }
 
         await prisma.abandonedCart.upsert({
             where: {

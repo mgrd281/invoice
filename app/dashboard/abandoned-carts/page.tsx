@@ -434,8 +434,11 @@ export default function AbandonedCartsPage() {
                                                     {/* Device info */}
                                                     {cart.deviceInfo && (
                                                         <div
-                                                            className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-400/80 font-medium bg-gray-50/50 w-fit px-1.5 py-0.5 rounded border border-gray-100/50"
-                                                            title={`Gerät: ${(cart.deviceInfo as any).device} | System: ${(cart.deviceInfo as any).os} | Browser: ${(cart.deviceInfo as any).browser}`}
+                                                            className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium w-fit px-1.5 py-0.5 rounded border transition-colors ${(cart.deviceInfo as any).detection_confidence === 'high'
+                                                                    ? 'text-green-600 bg-green-50 border-green-100'
+                                                                    : 'text-gray-400/80 bg-gray-50/50 border-gray-100/50'
+                                                                }`}
+                                                            title={`Gerät: ${(cart.deviceInfo as any).device} | System: ${(cart.deviceInfo as any).os} | Browser: ${(cart.deviceInfo as any).browser} | Erkennung: ${(cart.deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'}`}
                                                         >
                                                             {(cart.deviceInfo as any).device === 'Mobile' ? (
                                                                 <Smartphone className="w-2.5 h-2.5" />
@@ -443,6 +446,9 @@ export default function AbandonedCartsPage() {
                                                                 <Monitor className="w-2.5 h-2.5" />
                                                             )}
                                                             <span>{(cart.deviceInfo as any).device} · {(cart.deviceInfo as any).os}</span>
+                                                            {(cart.deviceInfo as any).detection_confidence === 'high' && (
+                                                                <CheckCircle className="w-2 h-2" />
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
