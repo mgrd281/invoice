@@ -9,6 +9,22 @@ export interface AbandonedCartEmailTemplate {
 
 export const ABANDONED_CART_TEMPLATES: AbandonedCartEmailTemplate[] = [
     {
+        id: 'professional-marketing',
+        name: 'Professional Marketing (Product Cards & High Conversion)',
+        subject: 'Wartet da noch etwas auf Sie? Ihr persönlicher Warenkorb bei [ShopName]',
+        body: `Hallo [CustomerName],
+
+wir haben bemerkt, dass Sie einige großartige Artikel in Ihrem Warenkorb zurückgelassen haben. Wir wollten nur sicherstellen, dass Sie nichts Wichtiges verpassen!
+
+Besonders diese Artikel sind aktuell sehr beliebt:
+
+[CartItemsHTML]
+
+Sichern Sie sich jetzt Ihre Wunschartikel, bevor sie vergriffen sind.`,
+        cta: 'Jetzt Bestellung abschließen',
+        description: 'Hoch-konvertierendes Marketing-Template mit Produktbildern, Preisen und Trust-Badges. Ideal für den 2. oder 3. Reminder.'
+    },
+    {
         id: 'friendly-reminder',
         name: 'Friendly Reminder',
         subject: 'Haben Sie etwas vergessen? Ihrem Warenkorb bei [ShopName] fehlt etwas...',
@@ -111,22 +127,6 @@ Wir löschen die Reservierung heute Nacht. Hier ist ein letztes Mal der direkte 
         cta: 'Jetzt letzte Chance nutzen',
         description: 'Der finale Abschluss. Klare Ansage, dass das Angebot endet.'
     },
-    {
-        id: 'professional-marketing',
-        name: 'Professional Marketing (Product Cards & High Conversion)',
-        subject: 'Wartet da noch etwas auf Sie? Ihr persönlicher Warenkorb bei [ShopName]',
-        body: `Hallo [CustomerName],
-
-wir haben bemerkt, dass Sie einige großartige Artikel in Ihrem Warenkorb zurückgelassen haben. Wir wollten nur sicherstellen, dass Sie nichts Wichtiges verpassen!
-
-Besonders diese Artikel sind aktuell sehr beliebt:
-
-[CartItemsHTML]
-
-Sichern Sie sich jetzt Ihre Wunschartikel, bevor sie vergriffen sind.`,
-        cta: 'Jetzt Bestellung abschließen',
-        description: 'Hoch-konvertierendes Marketing-Template mit Produktbildern, Preisen und Trust-Badges. Ideal für den 2. oder 3. Reminder.'
-    }
 ];
 
 export function getPersonalizedTemplate(templateId: string, data: {
