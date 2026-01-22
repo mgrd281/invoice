@@ -654,7 +654,7 @@ export function generateRecoveryEmailHTML(
   `
 }
 
-// Generate professional marketing-style recovery email HTML
+// Generate professional marketing-style recovery email HTML with product cards, images and dynamic pricing
 export function generateMarketingRecoveryEmailHTML(data: {
   customerName: string,
   bodyText: string,
