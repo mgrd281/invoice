@@ -1,6 +1,8 @@
 
 # 📄 Deutsches Rechnungsverwaltungssystem
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?template=https%3A%2F%2Fgithub.com%2Fmgrd281%2Finvoice&plugins=postgresql)
+
 Ein umfassendes System zur Verwaltung und Erstellung von Rechnungen auf Deutsch mit CSV-Unterstützung und E-Mail-Versand.
 
 ## ✨ Funktionen
