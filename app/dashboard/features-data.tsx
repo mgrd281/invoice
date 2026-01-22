@@ -71,20 +71,6 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
-        id: 'kaufland',
-        href: '/settings/kaufland',
-        title: 'Kaufland Integration',
-        description: 'Produkte zu Kaufland Marketplace synchronisieren',
-        icon: Store,
-        iconBg: 'bg-gradient-to-r from-orange-500 to-orange-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-orange-300 bg-gradient-to-br from-white to-orange-50',
-        badge: 'NEU',
-        badgeClass: 'bg-orange-100 text-orange-700',
-        hasPing: true,
-        pingColor: 'bg-orange-400',
-        pingDotColor: 'bg-orange-500'
-    },
-    {
         id: 'buchhaltung',
         href: '/buchhaltung',
         title: 'Buchhaltung',

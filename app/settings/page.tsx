@@ -497,34 +497,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Integrations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Settings className="h-5 w-5 mr-2 text-indigo-600" />
-              Integrationen
-            </CardTitle>
-            <CardDescription>
-              Verbinden Sie Ihr System mit externen Plattformen
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Kaufland Integration</Label>
-                <p className="text-sm text-muted-foreground">
-                  Synchronisieren Sie Produkte mit Kaufland Marketplace
-                </p>
-              </div>
-              <Link href="/settings/kaufland">
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Konfigurieren
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Data Management */}
         <Card>
