@@ -137,6 +137,18 @@ export async function middleware(request: NextRequest) {
 
         // Add user info to request headers (for API routes that need it)
         const requestHeaders = new Headers(request.headers)
+
+        // Prepare base64 encoded user info for x-user-info (legacy/compat support)
+        const userInfo = {
+            id: payload.userId,
+            email: payload.email,
+            role: payload.role,
+            firstName: payload.firstName || '',
+            lastName: payload.lastName || ''
+        }
+        const userInfoBase64 = btoa(JSON.stringify(userInfo))
+
+        requestHeaders.set('x-user-info', userInfoBase64)
         requestHeaders.set('x-user-id', payload.userId as string)
         requestHeaders.set('x-user-email', payload.email as string)
         requestHeaders.set('x-user-role', payload.role as string)

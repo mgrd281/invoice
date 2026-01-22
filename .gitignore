@@ -52,7 +52,7 @@ user-storage/
 *.sqlite
 
 # Logs
-logs
+/logs
 *.log
 shopify-config.json
 google-cloud-credentials.json
