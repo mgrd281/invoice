@@ -306,7 +306,11 @@ export default function AbandonedCartsPage() {
                                                     {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
                                                 </div>
                                                 <div className="text-xs text-gray-500 max-w-[200px] truncate">
-                                                    {Array.isArray(cart.lineItems) ? cart.lineItems.map((i: any) => i.title).join(', ') : 'Details loading...'}
+                                                    {Array.isArray(cart.lineItems) && cart.lineItems.length > 0 ? (
+                                                        cart.lineItems.length === 1
+                                                            ? cart.lineItems[0].title
+                                                            : `${cart.lineItems[0].title} + ${cart.lineItems.length - 1} weitere`
+                                                    ) : 'Details loading...'}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-6">
