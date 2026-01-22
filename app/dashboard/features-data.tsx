@@ -173,6 +173,17 @@ export const DEFAULT_FEATURES = [
         badgeClass: 'bg-blue-100 text-blue-700'
     },
     {
+        id: 'logs',
+        href: '/dashboard/logs',
+        title: 'System Logs',
+        description: 'Echtzeit-Status und Fehlerdiagnose',
+        icon: Terminal,
+        iconBg: 'bg-black',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
+        badge: 'NEW',
+        badgeClass: 'bg-gray-100 text-gray-700'
+    },
+    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',
