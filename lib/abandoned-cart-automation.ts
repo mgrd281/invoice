@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+// Automated Abandoned Cart Recovery Logic - Updated for Railway build trigger
 import { sendEmail } from './email-service'
 import { getPersonalizedTemplate } from './abandoned-cart-templates'
 import { ShopifyAPI } from './shopify-api'
