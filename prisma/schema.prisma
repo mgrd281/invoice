@@ -846,6 +846,7 @@ model AbandonedCart {
   cartUrl        String
   lineItems      Json?        // Store cart items for email display
   removedItems   Json?        // Store history of removed products
+  deviceInfo     Json?        // Store device, OS, and browser info
   totalPrice     Decimal?     @db.Decimal(10, 2)
   totalPricePeak Decimal?     @db.Decimal(10, 2) // Highest cart value reached
   currency       String       @default("EUR")

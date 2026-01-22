@@ -164,6 +164,10 @@ export async function POST(req: Request) {
         // Update Price Peak
         const totalPricePeak = Math.max(currentTotalPricePeak, newTotalPrice)
 
+        // Parse User Agent for Device/OS Detection
+        const userAgent = data.user_agent || ''
+        const deviceInfo = parseUserAgent(userAgent)
+
         await prisma.abandonedCart.upsert({
             where: {
                 organizationId_checkoutId: {
@@ -182,6 +186,7 @@ export async function POST(req: Request) {
                 currency: currency,
                 lineItems: lineItems,
                 removedItems: removedItems,
+                deviceInfo: deviceInfo,
                 isRecovered: false,
                 recoverySent: false
             },
@@ -193,15 +198,55 @@ export async function POST(req: Request) {
                 totalPricePeak: totalPricePeak,
                 lineItems: lineItems,
                 removedItems: removedItems,
+                deviceInfo: deviceInfo,
                 updatedAt: new Date()
             }
         })
 
-        console.log(`[Webhook] Saved abandoned cart for ${customerEmail}`)
+        console.log(`[Webhook] Saved abandoned cart for ${customerEmail} (Device: ${deviceInfo.os} ${deviceInfo.device})`)
 
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('[Webhook] Error processing checkout webhook:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
+}
+
+/**
+ * Simple User Agent Parser for Dashboard Visibility
+ */
+function parseUserAgent(ua: string) {
+    const info = {
+        device: 'Desktop',
+        os: 'Unknown',
+        browser: 'Unknown',
+        ua: ua
+    }
+
+    if (!ua) return info
+
+    const lowerUA = ua.toLowerCase()
+
+    // 1. Device Type
+    if (/mobile|android|iphone|ipad|phone/i.test(lowerUA)) {
+        info.device = 'Mobile'
+    } else if (/tablet|playbook|silk/i.test(lowerUA)) {
+        info.device = 'Tablet'
+    }
+
+    // 2. OS Detection
+    if (lowerUA.includes('windows')) info.os = 'Windows'
+    else if (lowerUA.includes('iphone') || lowerUA.includes('ipad')) info.os = 'iOS'
+    else if (lowerUA.includes('android')) info.os = 'Android'
+    else if (lowerUA.includes('macintosh') || lowerUA.includes('mac os x')) info.os = 'macOS'
+    else if (lowerUA.includes('linux')) info.os = 'Linux'
+
+    // 3. Browser Detection
+    if (lowerUA.includes('edg/')) info.browser = 'Edge'
+    else if (lowerUA.includes('chrome') && !lowerUA.includes('edg/')) info.browser = 'Chrome'
+    else if (lowerUA.includes('safari') && !lowerUA.includes('chrome')) info.browser = 'Safari'
+    else if (lowerUA.includes('firefox')) info.browser = 'Firefox'
+    else if (lowerUA.includes('opera') || lowerUA.includes('opr/')) info.browser = 'Opera'
+
+    return info
 }

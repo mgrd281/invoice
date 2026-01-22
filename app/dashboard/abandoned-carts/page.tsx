@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { de } from 'date-fns/locale'
@@ -430,6 +430,21 @@ export default function AbandonedCartsPage() {
                                                     <span className="text-[10px] text-gray-400 mt-0.5">
                                                         {format(new Date(cart.updatedAt), 'dd.MM.yyyy – HH:mm')}
                                                     </span>
+
+                                                    {/* Device info */}
+                                                    {cart.deviceInfo && (
+                                                        <div
+                                                            className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-400/80 font-medium bg-gray-50/50 w-fit px-1.5 py-0.5 rounded border border-gray-100/50"
+                                                            title={`Gerät: ${(cart.deviceInfo as any).device} | System: ${(cart.deviceInfo as any).os} | Browser: ${(cart.deviceInfo as any).browser}`}
+                                                        >
+                                                            {(cart.deviceInfo as any).device === 'Mobile' ? (
+                                                                <Smartphone className="w-2.5 h-2.5" />
+                                                            ) : (
+                                                                <Monitor className="w-2.5 h-2.5" />
+                                                            )}
+                                                            <span>{(cart.deviceInfo as any).device} · {(cart.deviceInfo as any).os}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-6 text-right">
