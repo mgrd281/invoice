@@ -68,8 +68,9 @@ export async function GET(req: Request) {
             const castCart = cart as any
             const allItems = [...(Array.isArray(castCart.lineItems) ? castCart.lineItems : []), ...(Array.isArray(castCart.removedItems) ? castCart.removedItems : [])]
             allItems.forEach(item => {
-                if (item.product_id && item.image?.src) {
-                    productImageMap[item.product_id.toString()] = item.image.src
+                const itemImg = item.image?.src || (typeof item.image === 'string' ? item.image : null)
+                if (item.product_id && itemImg) {
+                    productImageMap[item.product_id.toString()] = itemImg
                 }
             })
 
@@ -79,7 +80,8 @@ export async function GET(req: Request) {
             if (isCoolingOff) return
 
             allItems.forEach(item => {
-                if (item.product_id && !item.image?.src) {
+                const hasImage = item.image?.src || (typeof item.image === 'string' && item.image.length > 0)
+                if (item.product_id && !hasImage) {
                     if (!productImageMap[item.product_id.toString()]) {
                         productIds.add(item.product_id.toString())
                     }
@@ -95,7 +97,8 @@ export async function GET(req: Request) {
 
             const processItems = (items: any[]) => {
                 items.forEach(item => {
-                    if (item.product_id && !item.image?.src) {
+                    const hasImage = item.image?.src || (typeof item.image === 'string' && item.image.length > 0)
+                    if (item.product_id && !hasImage) {
                         const cached = productImageMap[item.product_id.toString()]
                         if (cached) {
                             item.image = { src: cached }
@@ -171,7 +174,8 @@ export async function GET(req: Request) {
 
                         const processItemsWithMap = (items: any[]) => {
                             items.forEach(item => {
-                                if (item.product_id && !item.image?.src) {
+                                const hasImage = item.image?.src || (typeof item.image === 'string' && item.image.length > 0)
+                                if (item.product_id && !hasImage) {
                                     const imgSrc = shopifyImageMap[item.product_id.toString()]
                                     if (imgSrc) {
                                         item.image = { src: imgSrc }

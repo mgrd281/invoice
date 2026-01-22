@@ -307,9 +307,9 @@ export default function AbandonedCartsPage() {
                                                     <div className="text-xl font-black text-gray-900 leading-none">
                                                         {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
                                                     </div>
-                                                    {cart.totalPricePeak && Number(cart.totalPricePeak) > Number(cart.totalPrice) && (
+                                                    {(cart as any).totalPricePeak && Number((cart as any).totalPricePeak) > Number(cart.totalPrice) && (
                                                         <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">
-                                                            HÖCHSTWERT: {Number(cart.totalPricePeak).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
+                                                            HÖCHSTWERT: {Number((cart as any).totalPricePeak).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
                                                         </div>
                                                     )}
                                                 </div>
@@ -323,7 +323,7 @@ export default function AbandonedCartsPage() {
                                                                     <div key={idx} className="flex items-center gap-2 group">
                                                                         <div className="w-8 h-8 bg-gray-50 rounded-md border border-gray-100 flex-shrink-0 overflow-hidden shadow-sm group-hover:scale-110 transition-transform duration-200">
                                                                             <img
-                                                                                src={item.image?.src || 'https://via.placeholder.com/32?text='}
+                                                                                src={item.image?.src || (typeof item.image === 'string' ? item.image : 'https://via.placeholder.com/32?text=')}
                                                                                 alt=""
                                                                                 className="w-full h-full object-cover"
                                                                                 loading="lazy"
@@ -374,15 +374,15 @@ export default function AbandonedCartsPage() {
                                                     </div>
 
                                                     {/* Section: Entfernte Artikel */}
-                                                    {Array.isArray(cart.removedItems) && (cart.removedItems as any[]).length > 0 && (
+                                                    {Array.isArray((cart as any).removedItems) && ((cart as any).removedItems as any[]).length > 0 && (
                                                         <div className="flex flex-col gap-2 pt-2 border-t border-gray-50">
                                                             <div className="text-[9px] font-bold text-red-400/70 uppercase tracking-widest pl-0.5">Entfernte Artikel</div>
                                                             <div className="space-y-2 opacity-60">
-                                                                {(cart.removedItems as any[]).map((item: any, idx: number) => (
+                                                                {((cart as any).removedItems as any[]).map((item: any, idx: number) => (
                                                                     <div key={idx} className="flex items-center gap-2 group grayscale hover:grayscale-0 transition-all duration-300">
                                                                         <div className="w-6 h-6 bg-gray-50 rounded border border-gray-100 flex-shrink-0 overflow-hidden">
                                                                             <img
-                                                                                src={item.image?.src || 'https://via.placeholder.com/24?text='}
+                                                                                src={item.image?.src || (typeof item.image === 'string' ? item.image : 'https://via.placeholder.com/24?text=')}
                                                                                 alt=""
                                                                                 className="w-full h-full object-cover"
                                                                             />
@@ -432,21 +432,21 @@ export default function AbandonedCartsPage() {
                                                     </span>
 
                                                     {/* Device info */}
-                                                    {cart.deviceInfo && (
+                                                    {(cart as any).deviceInfo && (
                                                         <div
-                                                            className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium w-fit px-1.5 py-0.5 rounded border transition-colors ${(cart.deviceInfo as any).detection_confidence === 'high'
+                                                            className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium w-fit px-1.5 py-0.5 rounded border transition-colors ${((cart as any).deviceInfo as any).detection_confidence === 'high'
                                                                 ? 'text-green-600 bg-green-50 border-green-100'
                                                                 : 'text-gray-400/80 bg-gray-50/50 border-gray-100/50'
                                                                 }`}
-                                                            title={`Gerät: ${(cart.deviceInfo as any).device} | System: ${(cart.deviceInfo as any).os} | Browser: ${(cart.deviceInfo as any).browser} | Erkennung: ${(cart.deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'} | Raw UA: ${(cart.deviceInfo as any).ua || 'Leer'}`}
+                                                            title={`Gerät: ${((cart as any).deviceInfo as any).device} | System: ${((cart as any).deviceInfo as any).os} | Browser: ${((cart as any).deviceInfo as any).browser} | Erkennung: ${((cart as any).deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'} | Raw UA: ${((cart as any).deviceInfo as any).ua || 'Leer'}`}
                                                         >
-                                                            {(cart.deviceInfo as any).device === 'Mobile' ? (
+                                                            {((cart as any).deviceInfo as any).device === 'Mobile' ? (
                                                                 <Smartphone className="w-2.5 h-2.5" />
                                                             ) : (
                                                                 <Monitor className="w-2.5 h-2.5" />
                                                             )}
-                                                            <span>{(cart.deviceInfo as any).device} · {(cart.deviceInfo as any).os}</span>
-                                                            {(cart.deviceInfo as any).detection_confidence === 'high' && (
+                                                            <span>{((cart as any).deviceInfo as any).device} · {((cart as any).deviceInfo as any).os}</span>
+                                                            {((cart as any).deviceInfo as any).detection_confidence === 'high' && (
                                                                 <CheckCircle className="w-2 h-2" />
                                                             )}
                                                         </div>

@@ -111,8 +111,8 @@ export async function POST(req: Request) {
             }
         })
 
-        let removedItems = existingCart?.removedItems ? (existingCart.removedItems as any[]) : []
-        let currentTotalPricePeak = existingCart?.totalPricePeak ? Number(existingCart.totalPricePeak) : 0
+        let removedItems = (existingCart as any)?.removedItems ? ((existingCart as any).removedItems as any[]) : []
+        let currentTotalPricePeak = (existingCart as any)?.totalPricePeak ? Number((existingCart as any).totalPricePeak) : 0
         const newTotalPrice = Number(totalPrice)
 
         if (existingCart && existingCart.lineItems) {
@@ -167,17 +167,20 @@ export async function POST(req: Request) {
         // Parse User Agent for Device/OS Detection (Fallback logic)
         // Shopify often puts this in client_details
         const userAgent = data.user_agent || data.client_details?.user_agent || ''
-        console.log(`[Webhook] Raw User Agent from Shopify: "${userAgent}"`)
+        const sourceName = data.source_name || ''
+
+        console.log(`[Webhook] Raw Data Summary - Shop: ${shopDomain}, Source: ${sourceName}, UA: "${userAgent}"`)
         if (data.client_details) {
-            console.log(`[Webhook] Client Details:`, JSON.stringify(data.client_details))
+            console.log(`[Webhook] Client Details: ${JSON.stringify(data.client_details)}`)
+        } else {
+            console.log(`[Webhook] Client Details missing in payload`)
         }
 
-        const existingDeviceInfo = existingCart?.deviceInfo as any
+        const existingDeviceInfo = (existingCart as any)?.deviceInfo as any
 
-        // ONLY parse if we don't have high confidence data from the client yet
-        let deviceInfo = existingDeviceInfo?.detection_confidence === 'high'
-            ? existingDeviceInfo
-            : { ...parseUserAgent(userAgent, data.source_name), detection_confidence: 'low' }
+        let deviceInfo = (existingCart as any)?.deviceInfo?.detection_confidence === 'high'
+            ? (existingCart as any).deviceInfo
+            : { ...parseUserAgent(userAgent, sourceName), detection_confidence: 'low' }
 
         await prisma.abandonedCart.upsert({
             where: {
@@ -212,7 +215,7 @@ export async function POST(req: Request) {
                 deviceInfo: deviceInfo,
                 updatedAt: new Date()
             }
-        })
+        } as any)
 
         console.log(`[Webhook] Saved abandoned cart for ${customerEmail} (Device: ${deviceInfo.os} ${deviceInfo.device})`)
 
@@ -251,6 +254,10 @@ function parseUserAgent(ua: string, sourceName?: string) {
         info.device = 'Tablet'
     } else if (/windows|macintosh|linux|cros/i.test(lowerUA)) {
         info.device = 'Desktop'
+    } else if (sourceName === 'web') {
+        info.device = 'Desktop' // Default for web if UA is mystery
+    } else if (sourceName === 'shopify_draft_order' || sourceName === 'shopify_mobile' || sourceName === 'pos') {
+        info.device = 'Mobile'
     }
 
     // 2. OS Detection
