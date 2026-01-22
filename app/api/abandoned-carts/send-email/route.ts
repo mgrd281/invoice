@@ -107,16 +107,17 @@ export async function POST(req: Request) {
                 <div class="product-card">
                   <table class="product-table">
                     <tr>
-                      <td style="width: 70px;">
+                      <td style="width: 80px;">
                         <img src="${imageSrc}" class="product-image" alt="${item.title}">
                       </td>
                       <td class="product-info">
                         <p class="product-title">${item.title}</p>
                         ${variantTitle ? `<p class="product-variant">${variantTitle}</p>` : ''}
-                        <p style="margin: 0; font-size: 13px; color: #6b7280;">Qty: ${item.quantity}</p>
-                        <div>
+                        <p style="margin: 0; font-size: 13px; color: #6b7280;">Menge: ${item.quantity}</p>
+                        <div style="margin-top: 8px;">
                           <span class="price-original">${originalPrice.toFixed(2)} ${cart.currency}</span>
                           <span class="price-discounted">${discountedPrice.toFixed(2)} ${cart.currency}</span>
+                          <span class="save-amount">Sie sparen ${(originalPrice - discountedPrice).toFixed(2)} ${cart.currency}</span>
                         </div>
                       </td>
                     </tr>
@@ -130,13 +131,14 @@ export async function POST(req: Request) {
 
             // Generate Discount Section
             const expiresAt = expiryHours ? new Date(Date.now() + expiryHours * 3600000) : new Date(Date.now() + 24 * 3600000)
-            const expiresStr = expiresAt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            const expiresStr = expiresAt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
             let discountSectionHTML = ''
             if (couponCode) {
                 discountSectionHTML = `
                 <div class="discount-section">
-                  <div class="discount-title">Ihr exklusiver Rabatt: ${discount}%</div>
+                  <div class="discount-tag">${discount}% RABATT</div>
+                  <div class="discount-title">Nur für kurze Zeit</div>
                   <div class="discount-code">${couponCode}</div>
                   <div class="discount-expiry">Gültig bis: ${expiresStr}</div>
                 </div>`

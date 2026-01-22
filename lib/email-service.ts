@@ -605,26 +605,26 @@ export function generateRecoveryEmailHTML(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Warenkorb Wiederherstellung</title>
       <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; color: #374151; max-width: 600px; margin: 0 auto; padding: 15px; }
-        .header { background-color: #059669; color: white; padding: 20px 15px; text-align: center; border-radius: 10px 10px 0 0; }
-        .urgency-bar { background-color: #fef2f2; color: #dc2626; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; border-bottom: 1px solid #fee2e2; }
-        .content { background-color: #ffffff; padding: 25px 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; }
-        .cta-container { text-align: center; margin: 25px 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 15px; background-color: #f5f5f5; }
+        .header { background-color: #111111; color: #ffffff; padding: 25px 15px; text-align: center; border-radius: 12px 12px 0 0; }
+        .urgency-bar { background-color: #000000; color: #ffffff; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; border-bottom: 2px solid #C9A24D; }
+        .content { background-color: #ffffff; padding: 35px 25px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .cta-container { text-align: center; margin: 30px 0; }
         .button { 
           display: inline-block; 
-          padding: 12px 24px; 
-          background-color: #059669; 
+          padding: 16px 32px; 
+          background-color: #111111; 
           color: #ffffff !important; 
           text-decoration: none; 
-          border-radius: 6px; 
-          font-weight: 600;
-          font-size: 15px;
-          transition: background-color 0.2s;
+          border-radius: 8px; 
+          font-weight: 700;
+          font-size: 16px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
-        .footer { margin-top: 25px; text-align: center; font-size: 11px; color: #9ca3af; }
-        .divider { border-top: 1px solid #f3f4f6; margin: 25px 0; }
-        p { margin-bottom: 12px; }
-        .shop-name { color: #059669; font-weight: bold; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af; }
+        .divider { border-top: 1px solid #f3f4f6; margin: 30px 0; }
+        .shop-name { color: #111111; font-weight: 800; }
       </style>
     </head>
     <body>
@@ -678,34 +678,37 @@ export function generateMarketingRecoveryEmailHTML(data: {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Ihr Warenkorb bei ${companyName}</title>
       <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f9fafb; }
-        .wrapper { width: 100%; table-layout: fixed; background-color: #f9fafb; padding-bottom: 40px; }
-        .main { background-color: #ffffff; width: 100%; max-width: 600px; margin: 0 auto; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .header { background-color: #ffffff; padding: 30px 20px; text-align: center; border-bottom: 1px solid #f3f4f6; }
-        .urgency-bar { background-color: #fef2f2; color: #dc2626; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; border-bottom: 1px solid #fee2e2; }
-        .content { padding: 40px 30px; }
-        .product-card { border: 1px solid #f3f4f6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #111111; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .wrapper { width: 100%; table-layout: fixed; background-color: #f5f5f5; padding-top: 40px; padding-bottom: 40px; }
+        .main { background-color: #ffffff; width: 100%; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .header { background-color: #111111; padding: 40px 20px; text-align: center; color: #ffffff; }
+        .urgency-bar { background-color: #000000; color: #ffffff; padding: 12px; text-align: center; font-size: 14px; font-weight: 700; border-bottom: 2px solid #C9A24D; }
+        .content { padding: 48px 40px; }
+        .product-card { background-color: #ffffff; border: 1px solid #f0f0f0; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .product-table { width: 100%; border-collapse: collapse; }
-        .product-image { width: 70px; height: 70px; border-radius: 4px; object-fit: cover; }
-        .product-info { padding-left: 15px; vertical-align: top; }
-        .product-title { font-size: 15px; font-weight: 700; color: #111827; margin: 0 0 4px 0; }
-        .product-variant { font-size: 12px; color: #6b7280; margin: 0 0 8px 0; }
-        .price-original { font-size: 13px; color: #9ca3af; text-decoration: line-through; margin-right: 8px; }
-        .price-discounted { font-size: 15px; font-weight: 700; color: #059669; }
-        .discount-section { background-color: #ecfdf5; border: 1px dashed #10b981; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center; }
-        .discount-title { font-size: 14px; color: #065f46; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-        .discount-code { font-size: 24px; color: #059669; font-weight: 800; margin-bottom: 8px; }
-        .discount-expiry { font-size: 12px; color: #065f46; opacity: 0.8; }
-        .cta-container { text-align: center; margin: 35px 0; }
-        .button { display: inline-block; padding: 16px 32px; background-color: #059669; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 16px; transition: background-color 0.2s; }
-        .trust-badges { text-align: center; border-top: 1px solid #f3f4f6; padding-top: 25px; margin-top: 30px; }
-        .badge { display: inline-block; font-size: 11px; color: #6b7280; margin: 0 10px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-        .footer { padding: 30px; text-align: center; font-size: 12px; color: #9ca3af; }
-        .fallback-link { font-size: 12px; color: #9ca3af; margin-top: 15px; }
-        .fallback-link a { color: #6b7280; }
+        .product-image { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 1px solid #f0f0f0; }
+        .product-info { padding-left: 20px; vertical-align: middle; }
+        .product-title { font-size: 16px; font-weight: 700; color: #111111; margin: 0 0 4px 0; }
+        .product-variant { font-size: 13px; color: #6b7280; margin: 0 0 8px 0; }
+        .price-original { font-size: 14px; color: #9ca3af; text-decoration: line-through; margin-right: 8px; }
+        .price-discounted { font-size: 18px; font-weight: 800; color: #111111; }
+        .save-amount { font-size: 12px; color: #C62828; font-weight: 700; margin-top: 4px; display: block; }
+        .discount-section { background-color: #ffffff; border: 2px solid #111111; border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center; position: relative; }
+        .discount-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #C9A24D; color: #000; font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; white-space: nowrap; }
+        .discount-title { font-size: 12px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+        .discount-code { font-size: 32px; color: #111111; font-weight: 900; margin-bottom: 8px; font-family: 'Courier New', monospace; letter-spacing: 2px; }
+        .discount-expiry { font-size: 13px; color: #6b7280; }
+        .cta-container { text-align: center; margin: 48px 0; }
+        .button { display: inline-block; padding: 20px 48px; background-color: #111111; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .trust-badges { text-align: center; border-top: 1px solid #f0f0f0; padding-top: 32px; margin-top: 40px; }
+        .badge { display: inline-block; font-size: 12px; color: #6b7280; margin: 0 12px; font-weight: 600; }
+        .footer { padding: 40px; text-align: center; font-size: 13px; color: #9ca3af; }
+        .fallback-link { font-size: 13px; color: #9ca3af; margin-top: 24px; }
+        .fallback-link a { color: #111111; text-decoration: underline; }
         @media only screen and (max-width: 480px) {
-          .content { padding: 25px 20px; }
-          .product-image { width: 60px; height: 60px; }
+          .content { padding: 32px 20px; }
+          .product-image { width: 70px; height: 70px; }
+          .button { width: 100%; box-sizing: border-box; }
         }
       </style>
     </head>
@@ -714,7 +717,7 @@ export function generateMarketingRecoveryEmailHTML(data: {
         <div class="main">
           ${data.urgencyBarHTML || ''}
           <div class="header">
-            <span style="font-size: 20px; font-weight: 800; color: #059669;">${companyName}</span>
+            <h1 style="font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 2px;">${companyName}</h1>
           </div>
           
           <div class="content">

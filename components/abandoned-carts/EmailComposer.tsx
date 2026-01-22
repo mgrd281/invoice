@@ -82,7 +82,7 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-emerald-600" />
+                        <Mail className="w-5 h-5 text-black" />
                         Recovery E-Mail senden
                     </DialogTitle>
                     <DialogDescription>
@@ -136,14 +136,14 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="flex items-center gap-1 text-emerald-700 font-semibold">
+                            <Label className="flex items-center gap-1 text-black font-semibold">
                                 <Percent className="w-3 h-3" /> Manueller Gutscheincode (Optional)
                             </Label>
                             <Input
                                 placeholder="z.B. SAVE10"
                                 value={manualCouponCode}
                                 onChange={(e) => setManualCouponCode(e.target.value.toUpperCase())}
-                                className="border-emerald-200 focus:ring-emerald-500"
+                                className="border-gray-200 focus:ring-black"
                             />
                             <p className="text-[10px] text-gray-500">
                                 Falls leer, wird automatisch ein Code in Shopify erstellt.
@@ -172,13 +172,70 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                                 <div className="mb-4 pb-2 border-b">
                                     <span className="text-gray-400">Betreff:</span> <span className="font-medium text-gray-800">{preview.subject}</span>
                                 </div>
-                                <div className="whitespace-pre-wrap text-gray-600 leading-relaxed">
-                                    {preview.body}
-                                </div>
-                                <div className="mt-6 flex justify-center">
-                                    <Button variant="secondary" className="bg-emerald-600 text-white hover:bg-emerald-700 w-full max-w-xs">
+                                {templateId === 'professional-marketing' ? (
+                                    <div className="space-y-4">
+                                        <div className="text-gray-600 leading-relaxed italic border-l-2 border-black pl-3 py-1">
+                                            {preview.body.split('[CartItemsHTML]')[0]}
+                                        </div>
+
+                                        {/* Premium Product Cards Preview */}
+                                        <div className="space-y-3">
+                                            {(cart.lineItems as any[] || []).slice(0, 3).map((item, idx) => {
+                                                const originalPrice = parseFloat(item.price) || 0;
+                                                const discountedPrice = originalPrice * ((100 - discountValue) / 100);
+                                                const saved = originalPrice - discountedPrice;
+                                                return (
+                                                    <div key={idx} className="flex gap-4 p-4 border border-gray-100 rounded-xl bg-white shadow-sm">
+                                                        <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                                            <img
+                                                                src={item.image?.src || 'https://via.placeholder.com/64?text=Product'}
+                                                                alt={item.title}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="font-bold text-gray-900 truncate text-sm">{item.title}</div>
+                                                            <div className="text-[10px] text-gray-400">Menge: {item.quantity}</div>
+                                                            <div className="mt-1 flex flex-col">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] text-gray-400 line-through">{originalPrice.toFixed(2)} {cart.currency}</span>
+                                                                    <span className="text-sm font-black text-black">{discountedPrice.toFixed(2)} {cart.currency}</span>
+                                                                </div>
+                                                                <span className="text-[10px] text-[#C62828] font-bold">Sie sparen {saved.toFixed(2)} {cart.currency}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="text-gray-600 leading-relaxed italic border-l-2 border-black pl-3 py-1">
+                                            {preview.body.split('[CartItemsHTML]')[1]}
+                                        </div>
+
+                                        {/* Premium Discount Section Preview */}
+                                        <div className="bg-white border-2 border-black p-5 rounded-xl text-center relative overflow-hidden shadow-md">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-[#C9A24D]"></div>
+                                            <div className="text-[9px] text-gray-500 uppercase font-black tracking-[0.2em] mb-2">Nur für kurze Zeit</div>
+                                            <div className="text-3xl font-black text-black tracking-widest">{manualCouponCode || 'RECOVERY-CODE'}</div>
+                                            <div className="text-[10px] text-gray-400 mt-2">Gültig für {expiryHours} Stunden</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="whitespace-pre-wrap text-gray-600 leading-relaxed font-serif">
+                                        {preview.body}
+                                    </div>
+                                )}
+
+                                <div className="mt-8 flex flex-col items-center gap-3">
+                                    <Button variant="secondary" className="bg-black text-white hover:bg-gray-800 w-full max-w-xs h-14 text-base font-black shadow-xl rounded-lg uppercase tracking-wider">
                                         {preview.cta}
                                     </Button>
+                                    <div className="text-[10px] text-gray-400 flex gap-4 mt-2 font-bold uppercase tracking-tighter">
+                                        <span>✓ 14 Tage Rückgabe</span>
+                                        <span>✓ Sicher bezahlen</span>
+                                        <span>✓ Support</span>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -192,7 +249,7 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                     <Button
                         onClick={handleSend}
                         disabled={loading}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white w-32"
+                        className="bg-black hover:bg-gray-800 text-white w-32 font-bold"
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                         Senden
