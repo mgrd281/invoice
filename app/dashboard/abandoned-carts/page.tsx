@@ -435,10 +435,10 @@ export default function AbandonedCartsPage() {
                                                     {cart.deviceInfo && (
                                                         <div
                                                             className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium w-fit px-1.5 py-0.5 rounded border transition-colors ${(cart.deviceInfo as any).detection_confidence === 'high'
-                                                                    ? 'text-green-600 bg-green-50 border-green-100'
-                                                                    : 'text-gray-400/80 bg-gray-50/50 border-gray-100/50'
+                                                                ? 'text-green-600 bg-green-50 border-green-100'
+                                                                : 'text-gray-400/80 bg-gray-50/50 border-gray-100/50'
                                                                 }`}
-                                                            title={`Gerät: ${(cart.deviceInfo as any).device} | System: ${(cart.deviceInfo as any).os} | Browser: ${(cart.deviceInfo as any).browser} | Erkennung: ${(cart.deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'}`}
+                                                            title={`Gerät: ${(cart.deviceInfo as any).device} | System: ${(cart.deviceInfo as any).os} | Browser: ${(cart.deviceInfo as any).browser} | Erkennung: ${(cart.deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'} | Raw UA: ${(cart.deviceInfo as any).ua || 'Leer'}`}
                                                         >
                                                             {(cart.deviceInfo as any).device === 'Mobile' ? (
                                                                 <Smartphone className="w-2.5 h-2.5" />

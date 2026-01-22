@@ -166,6 +166,7 @@ export async function POST(req: Request) {
 
         // Parse User Agent for Device/OS Detection (Fallback logic)
         const userAgent = data.user_agent || ''
+        console.log(`[Webhook] Raw User Agent from Shopify: "${userAgent}"`)
         const existingDeviceInfo = existingCart?.deviceInfo as any
 
         // ONLY parse if we don't have high confidence data from the client yet
@@ -228,30 +229,44 @@ function parseUserAgent(ua: string) {
         ua: ua
     }
 
-    if (!ua) return info
+    if (!ua || ua.trim() === '') return info
 
     const lowerUA = ua.toLowerCase()
 
     // 1. Device Type
-    if (/mobile|android|iphone|ipad|phone/i.test(lowerUA)) {
+    // Broaden mobile detection to include common mobile strings, tablet strings, and in-app browsers
+    if (/mobile|android|iphone|ipad|ipod|phone|blackberry|iemobile|kindle|silk|opera mini|mobi|shopify|fbav|instagram/i.test(lowerUA)) {
         info.device = 'Mobile'
-    } else if (/tablet|playbook|silk/i.test(lowerUA)) {
+    } else if (/tablet|playbook/i.test(lowerUA)) {
         info.device = 'Tablet'
     }
 
     // 2. OS Detection
-    if (lowerUA.includes('windows')) info.os = 'Windows'
-    else if (lowerUA.includes('iphone') || lowerUA.includes('ipad')) info.os = 'iOS'
-    else if (lowerUA.includes('android')) info.os = 'Android'
-    else if (lowerUA.includes('macintosh') || lowerUA.includes('mac os x')) info.os = 'macOS'
-    else if (lowerUA.includes('linux')) info.os = 'Linux'
+    if (lowerUA.includes('iphone') || lowerUA.includes('ipad') || lowerUA.includes('ipod')) {
+        info.os = 'iOS'
+    } else if (lowerUA.includes('android')) {
+        info.os = 'Android'
+    } else if (lowerUA.includes('windows')) {
+        info.os = 'Windows'
+    } else if (lowerUA.includes('macintosh') || lowerUA.includes('mac os x')) {
+        // Special check for iPad Pro in "Desktop Mode"
+        if (info.device === 'Mobile') info.os = 'iOS'
+        else info.os = 'macOS'
+    } else if (lowerUA.includes('linux')) {
+        info.os = 'Linux'
+    } else if (lowerUA.includes('cros')) {
+        info.os = 'ChromeOS'
+    } else if (lowerUA.includes('shopify')) {
+        info.os = 'Mobile App'
+    }
 
     // 3. Browser Detection
     if (lowerUA.includes('edg/')) info.browser = 'Edge'
-    else if (lowerUA.includes('chrome') && !lowerUA.includes('edg/')) info.browser = 'Chrome'
+    else if (lowerUA.includes('chrome')) info.browser = 'Chrome'
     else if (lowerUA.includes('safari') && !lowerUA.includes('chrome')) info.browser = 'Safari'
     else if (lowerUA.includes('firefox')) info.browser = 'Firefox'
     else if (lowerUA.includes('opera') || lowerUA.includes('opr/')) info.browser = 'Opera'
+    else if (lowerUA.includes('msie') || lowerUA.includes('trident')) info.browser = 'IE'
 
     return info
 }
