@@ -118,7 +118,8 @@ model Organization {
   autoReviewSettings AutoReviewSettings?
   googleShoppingSettings GoogleShoppingSettings?
   reviewIncentiveSettings ReviewIncentiveSettings?
-  abandonedCarts    AbandonedCart[]
+   abandonedCarts    AbandonedCart[]
+   abandonedCartSettings AbandonedCartSettings?
   realEstateProfiles RealEstateSearchProfile[]
   apiKeys           ApiKey[]
   blockedUsers      BlockedUser[]
@@ -851,10 +852,45 @@ model AbandonedCart {
   recoverySent   Boolean      @default(false)
   recoverySentAt DateTime?
   
+  // New recovery fields
+  discountValue  Float?       // e.g. 10.0
+  discountType   String?      // PERCENTAGE, FIXED_AMOUNT
+  couponCode     String?
+  couponExpiresAt DateTime?
+  
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  emailLogs      AbandonedCartEmailLog[]
+
   @@unique([organizationId, checkoutId])
+}
+
+model AbandonedCartSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  enabled        Boolean      @default(false)
+  autoSendDelay  Int          @default(60) // in minutes
+  defaultDiscount Float       @default(10.0)
+  expiryHours    Int          @default(24)
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model AbandonedCartEmailLog {
+  id             String        @id @default(uuid())
+  cartId         String
+  cart           AbandonedCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  
+  subject        String
+  sentAt         DateTime      @default(now())
+  status         String        @default("SENT") // SENT, FAILED
+  error          String?
+  
+  createdAt      DateTime      @default(now())
 }
 
 model RealEstateSearchProfile {
