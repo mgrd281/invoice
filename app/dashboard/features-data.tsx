@@ -162,6 +162,17 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
+        id: 'logos',
+        href: '/dashboard/logos',
+        title: 'Logos & Branding',
+        description: 'Marken-Logos und Assets verwalten',
+        icon: Star,
+        iconBg: 'bg-gradient-to-r from-blue-400 to-blue-500',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
+        badge: 'NEU',
+        badgeClass: 'bg-blue-100 text-blue-700'
+    },
+    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',
