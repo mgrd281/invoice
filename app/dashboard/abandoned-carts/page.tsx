@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { EmailComposer } from '@/components/abandoned-carts/EmailComposer'
 import { RecoverySettings } from '@/components/abandoned-carts/RecoverySettings'
@@ -379,8 +379,15 @@ export default function AbandonedCartsPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-6 text-gray-500">
-                                                {formatDistanceToNow(new Date(cart.updatedAt), { addSuffix: true, locale: de })}
+                                            <td className="px-6 py-6 text-gray-500 align-top" title={`Erstellt am ${format(new Date(cart.createdAt), 'dd.MM.yyyy')} um ${format(new Date(cart.createdAt), 'HH:mm')} Uhr`}>
+                                                <div className="flex flex-col">
+                                                    <span className="text-gray-900 font-medium">
+                                                        {formatDistanceToNow(new Date(cart.updatedAt), { addSuffix: true, locale: de })}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 mt-0.5">
+                                                        {format(new Date(cart.updatedAt), 'dd.MM.yyyy – HH:mm')}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-6 text-right">
                                                 <div className="flex items-center justify-end gap-2">

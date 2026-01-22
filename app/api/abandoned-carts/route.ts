@@ -20,10 +20,14 @@ export async function GET(req: Request) {
         let whereClause = {}
 
         if (isAdmin) {
-            // Admins see all
-            whereClause = {}
+            // Admins see all within 30 days
+            whereClause = {
+                updatedAt: {
+                    gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                }
+            }
         } else {
-            // Non-admins need an organization
+            // Non-admins need an organization and 30 day filter
             const user = await prisma.user.findUnique({
                 where: { email: session.user?.email! },
                 include: { organization: true }
@@ -33,7 +37,12 @@ export async function GET(req: Request) {
                 console.error(`[AbandonedCarts] User ${session.user?.email} has no organization`)
                 return NextResponse.json({ error: 'No organization found' }, { status: 404 })
             }
-            whereClause = { organizationId: user.organizationId }
+            whereClause = {
+                organizationId: user.organizationId,
+                updatedAt: {
+                    gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                }
+            }
         }
 
         const carts = await prisma.abandonedCart.findMany({
