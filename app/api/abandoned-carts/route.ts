@@ -36,6 +36,13 @@ export async function GET(req: Request) {
 
         const carts = await prisma.abandonedCart.findMany({
             where: whereClause,
+            include: {
+                emailLogs: {
+                    orderBy: {
+                        sentAt: 'desc'
+                    }
+                }
+            },
             orderBy: {
                 updatedAt: 'desc'
             }
