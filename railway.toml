@@ -9,3 +9,4 @@ restartPolicyMaxRetries = 10
 [env]
 NODE_ENV = "production"
 PORT = "3000"
+NPM_CONFIG_LEGACY_PEER_DEPS = "true"
