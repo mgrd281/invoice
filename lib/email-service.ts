@@ -640,16 +640,14 @@ export function generateRecoveryEmailHTML(
           <a href="${ctaUrl}" class="button">${ctaText}</a>
         </div>
         
-        <div class="divider"></div>
-        
-        <p style="font-size: 14px; text-align: center;">
-          Vielen Dank für Ihr Vertrauen in <span class="shop-name">${companyName}</span>.
+        <p style="font-size: 13px; text-align: center; color: #111111; margin-top: 40px;">
+          Vielen Dank für Ihr Vertrauen in <strong>Karinex</strong>.
         </p>
       </div>
       
       <div class="footer">
-        <p>© ${new Date().getFullYear()} ${companyName}. Alle Rechte vorbehalten.</p>
-        <p>Dies ist eine automatische Benachrichtigung zu Ihrem abgebrochenen Warenkorb.</p>
+        <p>© ${new Date().getFullYear()} Karinex. Alle Rechte vorbehalten.</p>
+        <p>Automatische Erinnerung zu Ihrem gespeicherten Warenkorb.</p>
       </div>
     </body>
     </html>
@@ -747,8 +745,9 @@ export function generateMarketingRecoveryEmailHTML(data: {
         </div>
         
         <div class="footer">
-          <p>© ${new Date().getFullYear()} ${companyName}. Alle Rechte vorbehalten.</p>
-          <p>Sie erhalten diese E-Mail, weil Sie Artikel in Ihrem Warenkorb bei ${companyName} hinterlassen haben.</p>
+          <p style="margin-bottom: 8px;">Vielen Dank für Ihr Vertrauen in <strong>Karinex</strong>.</p>
+          <p style="margin-bottom: 4px;">© ${new Date().getFullYear()} Karinex.</p>
+          <p>Automatische Erinnerung zu Ihrem gespeicherten Warenkorb.</p>
         </div>
       </div>
     </body>

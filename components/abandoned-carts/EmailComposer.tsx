@@ -231,10 +231,14 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                                     <Button variant="secondary" className="bg-black text-white hover:bg-gray-800 w-full max-w-xs h-14 text-base font-black shadow-xl rounded-lg uppercase tracking-wider">
                                         {preview.cta}
                                     </Button>
-                                    <div className="text-[10px] text-gray-400 flex gap-4 mt-2 font-bold uppercase tracking-tighter">
-                                        <span>✓ 14 Tage Rückgabe</span>
-                                        <span>✓ Sicher bezahlen</span>
-                                        <span>✓ Support</span>
+                                    <div className="text-[10px] text-gray-400 flex flex-col items-center gap-1 mt-6 font-medium">
+                                        <span>Vielen Dank für Ihr Vertrauen in <strong>Karinex</strong>.</span>
+                                        <span>© 2026 Karinex.</span>
+                                        <div className="flex gap-3 mt-2 uppercase tracking-tighter font-bold">
+                                            <span>✓ Rückgabe</span>
+                                            <span>✓ Sicher bezahlen</span>
+                                            <span>✓ Support</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
