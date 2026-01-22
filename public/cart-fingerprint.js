@@ -3,6 +3,23 @@
  * Tracks Device, OS, and Browser with high confidence.
  */
 (function () {
+    // Determine our base URL from the script tag that loaded us
+    let baseUrl = '';
+    const scripts = document.getElementsByTagName('script');
+    for (let i = 0; i < scripts.length; i++) {
+        if (scripts[i].src && scripts[i].src.includes('cart-fingerprint.js')) {
+            const url = new URL(scripts[i].src);
+            baseUrl = url.origin;
+            break;
+        }
+    }
+
+    // Fallback if we can't find ourselves
+    if (!baseUrl && typeof window !== 'undefined') {
+        // You can hardcode your production URL here as a final fallback
+        // baseUrl = 'https://your-app.vercel.app';
+    }
+
     function getDeviceInfo() {
         const ua = navigator.userAgent;
         let device = 'Desktop';
@@ -42,34 +59,49 @@
             browser,
             screenWidth: window.screen.width,
             screenHeight: window.screen.height,
-            isTouch: isTouch
+            isTouch: isTouch,
+            ua: ua // Send raw UA for debugging
         };
     }
 
     function init() {
         // Look for Shopify Checkout Information
         const shopifyCheckout = window.Shopify && window.Shopify.checkout;
-        if (!shopifyCheckout || !shopifyCheckout.id) {
-            // If not found, retry in 2 seconds (sometimes Shopify objects load late)
+        if (!shopifyCheckout || (!shopifyCheckout.id && !shopifyCheckout.token)) {
+            // If not found, retry in 2 seconds
             setTimeout(init, 2000);
             return;
         }
 
+        const id = shopifyCheckout.id || shopifyCheckout.token;
+        const shop = (window.Shopify && window.Shopify.shop) || window.location.hostname;
+
         const payload = {
             checkoutId: shopifyCheckout.id,
-            shopDomain: window.location.hostname,
+            checkoutToken: shopifyCheckout.token,
+            shopDomain: shop,
             deviceInfo: getDeviceInfo()
         };
 
+        if (!baseUrl) {
+            console.error('[Fingerprint] Base URL not found. Please load script with absolute URL.');
+            return;
+        }
+
         // Send to our API
-        fetch('/api/abandoned-carts/device-fingerprint', {
+        fetch(`${baseUrl}/api/abandoned-carts/device-fingerprint`, {
             method: 'POST',
+            mode: 'cors', // Ensure CORS is used
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }).catch(err => console.error('[Fingerprint] Error sending data:', err));
+        })
+            .then(res => res.json())
+            .then(data => console.log('[Fingerprint] Success:', data))
+            .catch(err => console.error('[Fingerprint] Error sending data:', err));
     }
 
     // Run on load
     if (document.readyState === 'complete') init();
     else window.addEventListener('load', init);
 })();
+

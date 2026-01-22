@@ -137,33 +137,51 @@ export class ShopifyAPI {
 
 
   /**
-   * Make authenticated request to Shopify API
+   * Make authenticated request to Shopify API with retry logic for 429
    */
-  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  private async makeRequest(endpoint: string, options: RequestInit = {}, retries = 3): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`
 
     console.log(`🔗 Making Shopify API request to: ${url}`)
-    console.log(`🔑 Using access token: ${this.settings.accessToken.substring(0, 10)}...`)
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'X-Shopify-Access-Token': this.settings.accessToken,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
+    let lastError: any = null
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'X-Shopify-Access-Token': this.settings.accessToken,
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        })
 
-    console.log(`📡 Response status: ${response.status} ${response.statusText}`)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After') || '2'
+          const waitTime = parseInt(retryAfter) * 1000 + (attempt * 1000)
+          console.warn(`⏳ Shopify API Rate Limited (429). Waiting ${waitTime}ms before retry ${attempt + 1}/${retries}...`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
+          continue
+        }
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`❌ Shopify API Error Response:`, errorText)
-      throw new Error(`Shopify API Error: ${response.status} ${response.statusText} - ${errorText}`)
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error(`❌ Shopify API Error Response (${response.status}):`, errorText)
+          throw new Error(`Shopify API Error: ${response.status} ${response.statusText} - ${errorText}`)
+        }
+
+        return response
+      } catch (error) {
+        lastError = error
+        if (attempt < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        }
+      }
     }
 
-    return response
+    throw lastError || new Error('Max retries reached for Shopify API request')
   }
+
 
   /**
    * Test connection to Shopify

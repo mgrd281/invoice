@@ -860,6 +860,7 @@ model AbandonedCart {
   discountType   String?      // PERCENTAGE, FIXED_AMOUNT
   couponCode     String?
   couponExpiresAt DateTime?
+  lastEnrichmentAttempt DateTime?
   
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

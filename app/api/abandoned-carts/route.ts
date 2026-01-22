@@ -54,22 +54,38 @@ export async function GET(req: Request) {
         })
 
         // 3. Image Enrichment
-        // Collect all unique product IDs across all carts (current and removed)
+        // Collect all unique product IDs whose images we don't have yet, 
+        // AND that we haven't tried to enrich in the last 15 minutes.
         const productIds = new Set<string>()
+        const enrichmentCooloff = 15 * 60 * 1000 // 15 minutes
+        const now = Date.now()
+
         carts.forEach(cart => {
+            const lastAttempt = cart.lastEnrichmentAttempt ? new Date(cart.lastEnrichmentAttempt).getTime() : 0
+            const isCoolingOff = (now - lastAttempt) < enrichmentCooloff
+
+            if (isCoolingOff) return
+
             if (Array.isArray(cart.lineItems)) {
                 (cart.lineItems as any[]).forEach(item => {
-                    if (item.product_id) productIds.add(item.product_id.toString())
+                    if (item.product_id && !item.image?.src) {
+                        productIds.add(item.product_id.toString())
+                    }
                 })
             }
             if (Array.isArray(cart.removedItems)) {
                 (cart.removedItems as any[]).forEach(item => {
-                    if (item.product_id) productIds.add(item.product_id.toString())
+                    if (item.product_id && !item.image?.src) {
+                        productIds.add(item.product_id.toString())
+                    }
                 })
             }
         })
 
-        if (productIds.size > 0 && carts.length > 0) {
+        // Limit the number of products fetched to 20 per request (reduced from 50)
+        const productIdsArray = Array.from(productIds).slice(0, 20)
+
+        if (productIdsArray.length > 0 && carts.length > 0) {
             try {
                 const org = carts[0].organization
                 const shopifyConn = org.shopifyConnection
@@ -87,26 +103,18 @@ export async function GET(req: Request) {
 
                     // Fetch products to get images
                     const products = await shopify.getProducts({
-                        ids: Array.from(productIds).join(','),
-                        fields: 'id,images,variants'
+                        ids: productIdsArray.join(','),
+                        fields: 'id,images'
                     })
 
-                    // Create image maps
+                    // Create image map
                     const productImageMap: Record<string, string> = {}
-                    const variantImageMap: Record<string, string> = {}
-
                     products.forEach(p => {
                         const firstImage = p.images?.[0]?.src
                         if (firstImage) {
                             productImageMap[p.id.toString()] = firstImage
                         }
-
-                        // If variant has specific image, we could map it too
-                        // Note: v.image_id is not always present in simple fields, but p.images should contain it
                     })
-
-                    // Track if we made any changes that need persisting
-                    let hasNewImages = false
 
                     // Map images back to carts
                     for (const cart of carts) {
@@ -120,7 +128,6 @@ export async function GET(req: Request) {
                                     if (imgSrc) {
                                         item.image = { src: imgSrc }
                                         cartModified = true
-                                        hasNewImages = true
                                     }
                                 }
                             })
@@ -134,7 +141,6 @@ export async function GET(req: Request) {
                                     if (imgSrc) {
                                         item.image = { src: imgSrc }
                                         cartModified = true
-                                        hasNewImages = true
                                     }
                                 }
                             })
@@ -147,11 +153,23 @@ export async function GET(req: Request) {
                                     where: { id: cart.id },
                                     data: {
                                         lineItems: cart.lineItems as any,
-                                        removedItems: cart.removedItems as any
+                                        removedItems: cart.removedItems as any,
+                                        lastEnrichmentAttempt: new Date()
                                     }
                                 })
                             } catch (dbErr) {
                                 console.error(`[AbandonedCarts] Failed to persist images for cart ${cart.id}:`, dbErr)
+                            }
+                        } else {
+                            // If we tried but didn't find any images of interest, still mark attempt to avoid spamming
+                            const hasIncompleteItems = (cart.lineItems as any[])?.some(i => i.product_id && !i.image?.src)
+                            if (hasIncompleteItems) {
+                                try {
+                                    await prisma.abandonedCart.update({
+                                        where: { id: cart.id },
+                                        data: { lastEnrichmentAttempt: new Date() }
+                                    })
+                                } catch (e) { }
                             }
                         }
                     }

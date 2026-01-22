@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export async function OPTIONS() {
+    return new NextResponse(null, {
+        status: 204,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+    })
+}
+
 export async function POST(req: Request) {
     try {
         const data = await req.json()
-        const { checkoutId, shopDomain, deviceInfo } = data
+        const { checkoutId, checkoutToken, shopDomain, deviceInfo } = data
 
-        if (!checkoutId || !shopDomain || !deviceInfo) {
+        if ((!checkoutId && !checkoutToken) || !shopDomain || !deviceInfo) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
@@ -21,42 +32,66 @@ export async function POST(req: Request) {
         })
 
         if (!connection) {
+            console.error(`[DeviceFingerprint] No connection for shop: ${shopDomain}`)
             return NextResponse.json({ error: 'Shop connection not found' }, { status: 404 })
         }
 
-        // Upsert the abandoned cart with high-confidence device info
-        // We use upsert because the client might ping before the webhook arrives
-        await prisma.abandonedCart.upsert({
+        const id = checkoutId?.toString()
+        const token = checkoutToken?.toString()
+
+        // Try to find an existing cart by ID or Token
+        const existingCart = await prisma.abandonedCart.findFirst({
             where: {
-                organizationId_checkoutId: {
-                    organizationId: connection.organizationId,
-                    checkoutId: checkoutId.toString()
-                }
-            },
-            create: {
                 organizationId: connection.organizationId,
-                checkoutId: checkoutId.toString(),
-                email: 'pending@tracking.com', // Placeholder until webhook arrives
-                cartUrl: '#',
-                deviceInfo: {
-                    ...deviceInfo,
-                    detection_confidence: 'high'
-                },
-                isRecovered: false,
-                recoverySent: false
-            },
-            update: {
-                deviceInfo: {
-                    ...deviceInfo,
-                    detection_confidence: 'high'
-                },
-                updatedAt: new Date()
+                OR: [
+                    id ? { checkoutId: id } : {},
+                    token ? { checkoutToken: token } : {}
+                ].filter(o => Object.keys(o).length > 0)
             }
         })
 
-        return NextResponse.json({ success: true })
+        if (existingCart) {
+            await prisma.abandonedCart.update({
+                where: { id: existingCart.id },
+                data: {
+                    deviceInfo: {
+                        ...((deviceInfo as any) || {}),
+                        detection_confidence: 'high'
+                    },
+                    checkoutToken: token || existingCart.checkoutToken,
+                    updatedAt: new Date()
+                }
+            })
+        } else {
+            // Only create if we have at least a checkout ID
+            await prisma.abandonedCart.create({
+                data: {
+                    organizationId: connection.organizationId,
+                    checkoutId: id || `tmp-${token}`,
+                    checkoutToken: token,
+                    email: 'tracking-pending@hidden.com',
+                    cartUrl: '#',
+                    deviceInfo: {
+                        ...((deviceInfo as any) || {}),
+                        detection_confidence: 'high'
+                    },
+                    isRecovered: false,
+                    recoverySent: false
+                }
+            })
+        }
+
+        console.log(`[DeviceFingerprint] High confidence detection for ${id || token} on ${shopDomain}`)
+
+
+        return NextResponse.json({ success: true }, {
+            headers: { 'Access-Control-Allow-Origin': '*' }
+        })
     } catch (error) {
         console.error('[DeviceFingerprint] Error:', error)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 }, {
+            headers: { 'Access-Control-Allow-Origin': '*' }
+        })
     }
 }
+
