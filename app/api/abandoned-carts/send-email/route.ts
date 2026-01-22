@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json()
-        const { cartId, templateId, discountValue, expiryHours } = body
+        const { cartId, templateId, discountValue, expiryHours, manualCouponCode } = body
 
         if (!cartId || !templateId) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -34,9 +34,10 @@ export async function POST(req: Request) {
         const org = cart.organization
         const shopifyConn = org.shopifyConnection
 
-        // 2. Generate Discount Code if requested
-        let couponCode = ''
-        if (discountValue && discountValue > 0 && shopifyConn) {
+        // 2. Determine Discount Code (Manual or Auto-generated)
+        let couponCode = manualCouponCode || ''
+
+        if (!couponCode && discountValue && discountValue > 0 && shopifyConn) {
             try {
                 // Ensure the shopName is used as the domain if it looks like one
                 const shopDomain = shopifyConn.shopName.includes('.')

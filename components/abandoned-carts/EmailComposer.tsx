@@ -22,6 +22,7 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
     const [templateId, setTemplateId] = useState(ABANDONED_CART_TEMPLATES[0].id)
     const [discountValue, setDiscountValue] = useState(10)
     const [expiryHours, setExpiryHours] = useState(24)
+    const [manualCouponCode, setManualCouponCode] = useState('')
     const [loading, setLoading] = useState(false)
     const [preview, setPreview] = useState<any>(null)
 
@@ -37,13 +38,13 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
             customerName: cart.email.split('@')[0],
             shopName: 'Mein Shop', // Fallback
             itemsList,
-            discountCode: 'RECOVERY-CODE',
+            discountCode: manualCouponCode || 'RECOVERY-CODE',
             expiryTime: `${expiryHours} Stunden`,
             expiryHours: expiryHours.toString(),
             cartUrl: cart.cartUrl
         })
         setPreview(personalized)
-    }, [templateId, discountValue, expiryHours, cart])
+    }, [templateId, discountValue, expiryHours, manualCouponCode, cart])
 
     const handleSend = async () => {
         setLoading(true)
@@ -55,7 +56,8 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                     cartId: cart.id,
                     templateId,
                     discountValue,
-                    expiryHours
+                    expiryHours,
+                    manualCouponCode
                 })
             })
 
@@ -131,6 +133,21 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                                     onChange={(e) => setExpiryHours(Number(e.target.value))}
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-1 text-emerald-700 font-semibold">
+                                <Percent className="w-3 h-3" /> Manueller Gutscheincode (Optional)
+                            </Label>
+                            <Input
+                                placeholder="z.B. SAVE10"
+                                value={manualCouponCode}
+                                onChange={(e) => setManualCouponCode(e.target.value.toUpperCase())}
+                                className="border-emerald-200 focus:ring-emerald-500"
+                            />
+                            <p className="text-[10px] text-gray-500">
+                                Falls leer, wird automatisch ein Code in Shopify erstellt.
+                            </p>
                         </div>
 
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
