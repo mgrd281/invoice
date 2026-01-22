@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
-import { sendEmail } from '@/lib/email-service'
+import { sendEmail, generateRecoveryEmailHTML } from '@/lib/email-service'
 import { getPersonalizedTemplate } from '@/lib/abandoned-cart-templates'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { DEFAULT_SHOPIFY_SETTINGS } from '@/lib/shopify-settings'
@@ -83,10 +83,17 @@ export async function POST(req: Request) {
         }
 
         // 4. Send Email
+        const emailHtml = generateRecoveryEmailHTML(
+            personalized.body,
+            personalized.cta,
+            cart.cartUrl,
+            org.name
+        )
+
         const emailResult = await sendEmail({
             to: cart.email,
             subject: personalized.subject,
-            html: personalized.body.replace(/\n/g, '<br>')
+            html: emailHtml
         })
 
         if (!emailResult.success) {

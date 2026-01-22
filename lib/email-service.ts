@@ -589,3 +589,67 @@ Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht auf diese E-
 Bei Fragen kontaktieren Sie uns über unsere regulären Kanäle.
   `
 }
+
+// Generate recovery email HTML with emerald theme and button
+export function generateRecoveryEmailHTML(
+  body: string,
+  ctaText: string,
+  ctaUrl: string,
+  companyName: string = 'Karinex'
+): string {
+  return `
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Warenkorb Wiederherstellung</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #059669; color: white; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0; }
+        .content { background-color: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; }
+        .cta-container { text-align: center; margin: 35px 0; }
+        .button { 
+          display: inline-block; 
+          padding: 14px 28px; 
+          background-color: #059669; 
+          color: #ffffff !important; 
+          text-decoration: none; 
+          border-radius: 8px; 
+          font-weight: 600;
+          font-size: 16px;
+          transition: background-color 0.2s;
+        }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af; }
+        .divider { border-top: 1px solid #f3f4f6; margin: 30px 0; }
+        p { margin-bottom: 16px; }
+        .shop-name { color: #059669; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1 style="margin:0; font-size: 24px;">Ihr Warenkorb wartet!</h1>
+      </div>
+      
+      <div class="content">
+        <div style="white-space: pre-wrap; font-size: 16px; color: #4b5563;">${body}</div>
+        
+        <div class="cta-container">
+          <a href="${ctaUrl}" class="button">${ctaText}</a>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <p style="font-size: 14px; text-align: center;">
+          Vielen Dank für Ihr Vertrauen in <span class="shop-name">${companyName}</span>.
+        </p>
+      </div>
+      
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} ${companyName}. Alle Rechte vorbehalten.</p>
+        <p>Dies ist eine automatische Benachrichtigung zu Ihrem abgebrochenen Warenkorb.</p>
+      </div>
+    </body>
+    </html>
+  `
+}
