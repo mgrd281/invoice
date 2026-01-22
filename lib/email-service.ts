@@ -607,6 +607,7 @@ export function generateRecoveryEmailHTML(
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; color: #374151; max-width: 600px; margin: 0 auto; padding: 15px; }
         .header { background-color: #059669; color: white; padding: 20px 15px; text-align: center; border-radius: 10px 10px 0 0; }
+        .urgency-bar { background-color: #fef2f2; color: #dc2626; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; border-bottom: 1px solid #fee2e2; }
         .content { background-color: #ffffff; padding: 25px 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; }
         .cta-container { text-align: center; margin: 25px 0; }
         .button { 
@@ -630,6 +631,7 @@ export function generateRecoveryEmailHTML(
       <div class="header">
         <h1 style="margin:0; font-size: 20px;">Ihr Warenkorb wartet!</h1>
       </div>
+      <div class="urgency-bar">🔥 Nur noch für kurze Zeit verfügbar!</div>
       
       <div class="content">
         <div style="white-space: pre-wrap; font-size: 14.5px; color: #4b5563;">${body}</div>
