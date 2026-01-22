@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
                     isVerified: true,
                     images: review.images || [],
                     videos: review.videos || [],
-                    createdAt: review.date ? new Date(review.date) : new Date()
+                    createdAt: (review.date && !isNaN(new Date(review.date).getTime())) ? new Date(review.date) : new Date()
                 }
             })
             createdReviews.push(newReview)
