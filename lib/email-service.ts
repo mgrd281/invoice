@@ -605,34 +605,34 @@ export function generateRecoveryEmailHTML(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Warenkorb Wiederherstellung</title>
       <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #059669; color: white; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0; }
-        .content { background-color: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; }
-        .cta-container { text-align: center; margin: 35px 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; color: #374151; max-width: 600px; margin: 0 auto; padding: 15px; }
+        .header { background-color: #059669; color: white; padding: 20px 15px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background-color: #ffffff; padding: 25px 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; }
+        .cta-container { text-align: center; margin: 25px 0; }
         .button { 
           display: inline-block; 
-          padding: 14px 28px; 
+          padding: 12px 24px; 
           background-color: #059669; 
           color: #ffffff !important; 
           text-decoration: none; 
-          border-radius: 8px; 
+          border-radius: 6px; 
           font-weight: 600;
-          font-size: 16px;
+          font-size: 15px;
           transition: background-color 0.2s;
         }
-        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af; }
-        .divider { border-top: 1px solid #f3f4f6; margin: 30px 0; }
-        p { margin-bottom: 16px; }
+        .footer { margin-top: 25px; text-align: center; font-size: 11px; color: #9ca3af; }
+        .divider { border-top: 1px solid #f3f4f6; margin: 25px 0; }
+        p { margin-bottom: 12px; }
         .shop-name { color: #059669; font-weight: bold; }
       </style>
     </head>
     <body>
       <div class="header">
-        <h1 style="margin:0; font-size: 24px;">Ihr Warenkorb wartet!</h1>
+        <h1 style="margin:0; font-size: 20px;">Ihr Warenkorb wartet!</h1>
       </div>
       
       <div class="content">
-        <div style="white-space: pre-wrap; font-size: 16px; color: #4b5563;">${body}</div>
+        <div style="white-space: pre-wrap; font-size: 14.5px; color: #4b5563;">${body}</div>
         
         <div class="cta-container">
           <a href="${ctaUrl}" class="button">${ctaText}</a>

@@ -275,9 +275,9 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.setFont('helvetica', 'normal')
 
     // Company Info (Left side) - Simple and clean
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100) // Standard gray
-    let yPos = 55 // Back to normal spacing
+    doc.setFontSize(8)
+    doc.setTextColor(100, 100, 100)
+    let yPos = 45
     const senderCompanyName = companySettings.companyName || companySettings.name
     const senderZipCode = companySettings.zip || companySettings.zipCode
     const senderLine = `${senderCompanyName} • ${companySettings.address} • ${senderZipCode} ${companySettings.city}`
@@ -285,9 +285,9 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     // Invoice Info Box (Right side) - Simple and clean
     const boxX = 130
-    const boxY = 45 // Back to normal position
+    const boxY = 35
     const boxW = 65
-    const boxH = 40
+    const boxH = 35
 
     // Simple light green background
     doc.setFillColor(240, 248, 244) // Light green tint
@@ -298,7 +298,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.setLineWidth(0.5)
     doc.rect(boxX, boxY, boxW, boxH, 'S')
 
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setTextColor(0, 0, 0)
     doc.setFont('helvetica', 'bold')
 
@@ -323,22 +323,21 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     // Simple title
     doc.text(title, boxX + 5, boxY + 8)
 
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
+    doc.setFontSize(8)
 
-    yPos = boxY + 16
+    yPos = boxY + 12
     doc.text(`Beleg-Nr.`, boxX + 5, yPos)
-    doc.text(invoice.number.replace(/^#/, ''), boxX + 40, yPos)
+    doc.text(invoice.number.replace(/^#/, ''), boxX + 35, yPos)
 
-    yPos += 5
+    yPos += 4
     doc.text(`Kunden-Nr.`, boxX + 5, yPos)
-    doc.text(invoice.id.substring(0, 6), boxX + 40, yPos)
+    doc.text(invoice.id.substring(0, 6), boxX + 35, yPos)
 
-    yPos += 5
+    yPos += 4
     doc.text(`Datum`, boxX + 5, yPos)
-    doc.text(new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }), boxX + 40, yPos)
+    doc.text(new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }), boxX + 35, yPos)
 
-    yPos += 5
+    yPos += 4
     doc.text(`E-Mail`, boxX + 5, yPos)
 
     // Handle email display in same line with smaller font
@@ -352,17 +351,17 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     if (invoice.document_kind === DocumentKind.INVOICE && invoice.dueDate) {
       doc.text(`Lieferdatum`, boxX + 5, yPos)
-      doc.text(new Date(invoice.dueDate).toLocaleDateString('de-DE'), boxX + 40, yPos)
+      doc.text(new Date(invoice.dueDate).toLocaleDateString('de-DE'), boxX + 35, yPos)
     } else if (invoice.original_invoice_date) {
       doc.text(`Orig. Datum`, boxX + 5, yPos)
-      doc.text(new Date(invoice.original_invoice_date).toLocaleDateString('de-DE'), boxX + 40, yPos)
+      doc.text(new Date(invoice.original_invoice_date).toLocaleDateString('de-DE'), boxX + 35, yPos)
     } else if (invoice.reference_number) {
       doc.text(`Referenz`, boxX + 5, yPos)
-      doc.text(invoice.reference_number, boxX + 40, yPos)
+      doc.text(invoice.reference_number, boxX + 35, yPos)
     }
 
     // Customer Info - Enhanced: separate person name and company name
-    yPos = 70 // Back to normal spacing
+    yPos = 55
 
     // Get person name and company name from separate fields
     const personName = (invoice.customer.name || '').toString().trim()
@@ -370,7 +369,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     // Display person name (same as address format)
     if (personName) {
-      doc.setFontSize(9)
+      doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(100, 100, 100)
       doc.text(personName, 20, yPos)
@@ -379,7 +378,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     // Display company name (same as address format)
     if (companyName) {
-      doc.setFontSize(9)
+      doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(100, 100, 100)
       doc.text(companyName, 20, yPos)
@@ -387,7 +386,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     }
 
     // Address information (normal font)
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100, 100, 100)
 
@@ -426,15 +425,15 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     })
 
     // Invoice Title - Simple and clean
-    yPos = 130 // Back to normal position
-    doc.setFontSize(16)
+    yPos = 110
+    doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(0, 0, 0)
     doc.text(title, 20, yPos)
 
     // Intro/thank you message (German)
-    yPos += 10
-    doc.setFontSize(9)
+    yPos += 8
+    doc.setFontSize(8)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100, 100, 100)
 
@@ -451,7 +450,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text(thankYouMessage, 20, yPos)
 
     // Items Table
-    yPos += 15
+    yPos += 12
 
     // Table Header
     doc.setFillColor(240, 248, 244) // Light green tint
@@ -558,7 +557,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.setDrawColor(76, 130, 106) // KARNEX Green
     doc.line(140, yPos - 5, 190, yPos - 5)
 
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.text('Summe netto', 140, yPos)
     const subtotal = Math.abs(invoice.subtotal)
     if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
@@ -578,9 +577,9 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     }
 
     // Total
-    yPos += 8
+    yPos += 6
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.text('Gesamt', 140, yPos)
 
     const total = Math.abs(invoice.total)
@@ -594,9 +593,9 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.line(140, yPos + 2, 190, yPos + 2)
 
     // Footer Message
-    yPos += 20
+    yPos += 15
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
 
     // Thank you message section without background
