@@ -653,3 +653,100 @@ export function generateRecoveryEmailHTML(
     </html>
   `
 }
+
+// Generate professional marketing-style recovery email HTML
+export function generateMarketingRecoveryEmailHTML(data: {
+  customerName: string,
+  bodyText: string,
+  itemsHTML: string,
+  discountSectionHTML: string,
+  ctaText: string,
+  ctaUrl: string,
+  fallbackUrl: string,
+  urgencyBarHTML?: string,
+  companyName?: string
+}): string {
+  const companyName = data.companyName || 'Karinex';
+
+  return `
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Ihr Warenkorb bei ${companyName}</title>
+      <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f9fafb; }
+        .wrapper { width: 100%; table-layout: fixed; background-color: #f9fafb; padding-bottom: 40px; }
+        .main { background-color: #ffffff; width: 100%; max-width: 600px; margin: 0 auto; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .header { background-color: #ffffff; padding: 30px 20px; text-align: center; border-bottom: 1px solid #f3f4f6; }
+        .urgency-bar { background-color: #fef2f2; color: #dc2626; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; border-bottom: 1px solid #fee2e2; }
+        .content { padding: 40px 30px; }
+        .product-card { border: 1px solid #f3f4f6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .product-table { width: 100%; border-collapse: collapse; }
+        .product-image { width: 70px; height: 70px; border-radius: 4px; object-fit: cover; }
+        .product-info { padding-left: 15px; vertical-align: top; }
+        .product-title { font-size: 15px; font-weight: 700; color: #111827; margin: 0 0 4px 0; }
+        .product-variant { font-size: 12px; color: #6b7280; margin: 0 0 8px 0; }
+        .price-original { font-size: 13px; color: #9ca3af; text-decoration: line-through; margin-right: 8px; }
+        .price-discounted { font-size: 15px; font-weight: 700; color: #059669; }
+        .discount-section { background-color: #ecfdf5; border: 1px dashed #10b981; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center; }
+        .discount-title { font-size: 14px; color: #065f46; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .discount-code { font-size: 24px; color: #059669; font-weight: 800; margin-bottom: 8px; }
+        .discount-expiry { font-size: 12px; color: #065f46; opacity: 0.8; }
+        .cta-container { text-align: center; margin: 35px 0; }
+        .button { display: inline-block; padding: 16px 32px; background-color: #059669; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 16px; transition: background-color 0.2s; }
+        .trust-badges { text-align: center; border-top: 1px solid #f3f4f6; padding-top: 25px; margin-top: 30px; }
+        .badge { display: inline-block; font-size: 11px; color: #6b7280; margin: 0 10px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .footer { padding: 30px; text-align: center; font-size: 12px; color: #9ca3af; }
+        .fallback-link { font-size: 12px; color: #9ca3af; margin-top: 15px; }
+        .fallback-link a { color: #6b7280; }
+        @media only screen and (max-width: 480px) {
+          .content { padding: 25px 20px; }
+          .product-image { width: 60px; height: 60px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+        <div class="main">
+          ${data.urgencyBarHTML || ''}
+          <div class="header">
+            <span style="font-size: 20px; font-weight: 800; color: #059669;">${companyName}</span>
+          </div>
+          
+          <div class="content">
+            <h1 style="font-size: 22px; font-weight: 800; color: #111827; margin-bottom: 20px;">Hallo ${data.customerName},</h1>
+            <p style="font-size: 15px; color: #4b5563; margin-bottom: 25px;">${data.bodyText}</p>
+            
+            <div class="product-list">
+              ${data.itemsHTML}
+            </div>
+
+            ${data.discountSectionHTML}
+
+            <div class="cta-container">
+              <a href="${data.ctaUrl}" class="button">${data.ctaText}</a>
+              <div class="fallback-link">
+                Oder kopieren Sie diesen Link in Ihren Browser:<br>
+                <a href="${data.fallbackUrl}">${data.fallbackUrl}</a>
+              </div>
+            </div>
+
+            <div class="trust-badges">
+              <span class="badge">✓ 14 Tage Rückgabe</span>
+              <span class="badge">✓ Sicher bezahlen</span>
+              <span class="badge">✓ Deutscher Support</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} ${companyName}. Alle Rechte vorbehalten.</p>
+          <p>Sie erhalten diese E-Mail, weil Sie Artikel in Ihrem Warenkorb bei ${companyName} hinterlassen haben.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+}
