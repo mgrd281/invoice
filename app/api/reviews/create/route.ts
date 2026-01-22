@@ -29,34 +29,16 @@ export async function POST(request: NextRequest) {
             // Create or find customer
             let customerId = null
             if (review.customer_email) {
-                const customer = await prisma.customer.upsert({
+                // Find existing customer by email within the organization
+                let customer = await prisma.customer.findFirst({
                     where: {
-                        // We need a unique constraint for upsert. 
-                        // Since we don't have email unique globally (it's per org usually), 
-                        // we might just findFirst and then create if not found.
-                        // For simplicity in this specific schema which might not have email unique:
-                        id: 'temp-id-to-fail' // This won't work for upsert without unique.
-                    },
-                    update: {},
-                    create: {
                         organizationId: org.id,
-                        name: review.customer_name || 'Anonymous',
-                        email: review.customer_email,
-                        address: 'Imported',
-                        zipCode: '00000',
-                        city: 'Imported'
+                        email: review.customer_email
                     }
-                }).catch(async () => {
-                    // Fallback: find first by email and org
-                    const existing = await prisma.customer.findFirst({
-                        where: {
-                            organizationId: org.id,
-                            email: review.customer_email
-                        }
-                    })
-                    if (existing) return existing
+                })
 
-                    return await prisma.customer.create({
+                if (!customer) {
+                    customer = await prisma.customer.create({
                         data: {
                             organizationId: org.id,
                             name: review.customer_name || 'Anonymous',
@@ -66,7 +48,7 @@ export async function POST(request: NextRequest) {
                             city: 'Imported'
                         }
                     })
-                })
+                }
                 customerId = customer.id
             }
 
@@ -86,7 +68,7 @@ export async function POST(request: NextRequest) {
                     isVerified: true,
                     images: review.images || [],
                     videos: review.videos || [],
-                    createdAt: review.date ? new Date(review.date) : new Date()
+                    createdAt: (review.date && !isNaN(new Date(review.date).getTime())) ? new Date(review.date) : new Date()
                 }
             })
             createdReviews.push(newReview)

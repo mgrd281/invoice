@@ -468,12 +468,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-
-
-
-
-
-
         {/* Automation & Reminders */}
         <Card>
           <CardHeader>
@@ -590,11 +584,28 @@ export default function SettingsPage() {
               </Link>
             </div>
 
+            <Separator />
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Sitzungs-Timeout (Minuten)</Label>
+                <Label>Blockierte Benutzer</Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatische Abmeldung nach Inaktivität
+                  Verwalten Sie die Liste der gesperrten Kunden und E-Mails
+                </p>
+              </div>
+              <Link href="/blocked-users">
+                <Button variant="outline" size="sm">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Verwalten
+                </Button>
+              </Link>
+            </div>
+
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Session Timeout (Minuten)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Zeitraum bis zur automatischen Abmeldung
                 </p>
               </div>
               <Input
@@ -606,10 +617,9 @@ export default function SettingsPage() {
                 className="w-24"
               />
             </div>
+
           </CardContent>
         </Card>
-
-        <ToastContainer />
       </div>
     </div>
   )

@@ -54,7 +54,7 @@ function LoginForm() {
             await new Promise(resolve => setTimeout(resolve, 100))
 
             // Redirect to the original page or default to /invoices
-            navigate(redirect)
+            window.location.href = redirect
 
         } catch (error: any) {
             console.error('❌ Login error:', error)

@@ -420,7 +420,7 @@ export default function KauflandSettingsPage() {
                 <li>Die API-Endpunkte entsprechen der aktuellen Kaufland API-Dokumentation</li>
               </ul>
               <p className="text-sm text-yellow-800 mt-2">
-                <strong>Hinweis:</strong> Die API-Endpunkte können sich je nach Kaufland API-Version unterscheiden. 
+                <strong>Hinweis:</strong> Die API-Endpunkte können sich je nach Kaufland API-Version unterscheiden.
                 Bitte konsultieren Sie die offizielle Kaufland Seller API-Dokumentation für die korrekten Endpunkte.
               </p>
             </div>
@@ -432,4 +432,3 @@ export default function KauflandSettingsPage() {
     </div>
   )
 }
-

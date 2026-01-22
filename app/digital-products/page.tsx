@@ -32,6 +32,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    AlertDialogFooter as AlertDialogFooterUI,
 } from "@/components/ui/alert-dialog"
 
 interface ShopifyProduct {

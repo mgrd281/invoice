@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { ensureOrganization } from '@/lib/db-operations'
+
+async function getOrganizationId(session: any) {
+    if (session.user?.organizationId) return session.user.organizationId
+
+    if (!session.user?.email) return 'default-org-id'
+
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { organizationId: true }
+    })
+
+    if (user?.organizationId) return user.organizationId
+
+    const org = await ensureOrganization()
+    return org.id
+}
 
 export async function DELETE(
     req: Request,
@@ -9,11 +26,11 @@ export async function DELETE(
 ) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session) {
+        if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const organizationId = 'default-org-id'
+        const organizationId = await getOrganizationId(session)
         const { id } = await params
 
         // Verify ownership

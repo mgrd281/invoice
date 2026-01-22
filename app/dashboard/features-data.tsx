@@ -22,7 +22,8 @@ import {
     Star,
     Zap,
     Store,
-    ShieldAlert
+    ShieldAlert,
+    UserX
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -92,9 +93,6 @@ export const DEFAULT_FEATURES = [
         iconBg: 'bg-gradient-to-r from-blue-500 to-blue-600',
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
-
-
-
     {
         id: 'reviews',
         href: '/reviews',
@@ -123,7 +121,6 @@ export const DEFAULT_FEATURES = [
         pingColor: 'bg-red-400',
         pingDotColor: 'bg-red-500'
     },
-
     {
         id: 'dunning',
         href: '/dunning',
@@ -170,6 +167,15 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50'
     },
     {
+        id: 'blocked-users',
+        href: '/blocked-users',
+        title: 'Gesperrte Nutzer',
+        description: 'Zugriff für bestimmte Nutzer verweigern',
+        icon: ShieldAlert,
+        iconBg: 'bg-gradient-to-r from-red-600 to-red-700',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
+    },
+    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',
@@ -179,4 +185,3 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     }
 ]
-

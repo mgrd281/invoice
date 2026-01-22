@@ -1,6 +1,8 @@
 
 # 📄 Deutsches Rechnungsverwaltungssystem
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?template=https%3A%2F%2Fgithub.com%2Fmgrd281%2Finvoice&plugins=postgresql)
+
 Ein umfassendes System zur Verwaltung und Erstellung von Rechnungen auf Deutsch mit CSV-Unterstützung und E-Mail-Versand.
 
 ## ✨ Funktionen
@@ -9,6 +11,10 @@ Ein umfassendes System zur Verwaltung und Erstellung von Rechnungen auf Deutsch 
 - 📊 **CSV-Import** von Shopify und anderen Systemen
 - 📧 **Automatischer E-Mail-Versand** mit PDF-Anhang
 - 🏢 **Verwaltung von Unternehmen** und Kunden
+- ⭐ **Bewertungsmanagement** mit Google Shopping Integration
+- 📦 **Digitale Produkte** & Lizenzschlüssel-Verwaltung
+- 🛒 **Warenkorb-Wiederherstellung** (Abandoned Cart Recovery)
+- 💰 **Automatisiertes Mahnwesen** & Vorkasse-Erinnerungen
 - 🎨 **Moderne Benutzeroberfläche** mit Tailwind CSS
 - 🔐 **Sicheres Authentifizierungssystem**
 - 📱 **Responsives Design** für alle Geräte

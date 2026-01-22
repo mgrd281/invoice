@@ -223,4 +223,3 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
     }
   }
 }
-

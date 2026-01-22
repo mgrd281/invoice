@@ -15,6 +15,7 @@ interface ShopifyProduct {
     product_type?: string
     image?: { src: string }
     images?: { src: string }[]
+    variants?: { id: number, title: string }[]
 }
 
 export default function NewDigitalProductPage() {
