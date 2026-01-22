@@ -67,7 +67,7 @@ export default function CustomerInvoicesPage({ params }: { params: { id: string 
           statusColor: 'bg-red-100 text-red-800'
         }
       ]
-
+      
       setCustomer(mockCustomer)
       setInvoices(mockInvoices)
     } catch (error) {
@@ -168,7 +168,7 @@ export default function CustomerInvoicesPage({ params }: { params: { id: string 
               <div className="text-2xl font-bold text-gray-900">{invoices.length}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -179,7 +179,7 @@ export default function CustomerInvoicesPage({ params }: { params: { id: string 
               <div className="text-2xl font-bold text-green-600">{paidInvoices}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -190,7 +190,7 @@ export default function CustomerInvoicesPage({ params }: { params: { id: string 
               <div className="text-2xl font-bold text-yellow-600">{openInvoices}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -244,8 +244,8 @@ export default function CustomerInvoicesPage({ params }: { params: { id: string 
                               Anzeigen
                             </Button>
                           </Link>
-                          <Button
-                            variant="outline"
+                          <Button 
+                            variant="outline" 
                             size="sm"
                             onClick={() => handleDownloadPdf(invoice.id, invoice.number)}
                           >

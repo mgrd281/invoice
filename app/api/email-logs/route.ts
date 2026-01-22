@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import {
-  getEmailLogsForInvoice,
-  getEmailStats,
+import { 
+  getEmailLogsForInvoice, 
+  getEmailStats, 
   exportEmailLogs,
   getFailedEmails,
   incrementRetryCount
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching email logs:', error)
-
+    
     return NextResponse.json(
       {
         success: false,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
       // Retry sending email
       console.log('🔄 Retrying email send for invoice:', invoiceNumber || 'unknown')
-
+      
       const result = await sendInvoiceEmail(
         invoiceId,
         customerEmail,
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in email logs API:', error)
-
+    
     return NextResponse.json(
       {
         success: false,

@@ -3,10 +3,10 @@
 <head>
     <title>Download PDF SH-3322</title>
     <style>
-        body {
-            font-family: Arial;
-            text-align: center;
-            padding: 100px;
+        body { 
+            font-family: Arial; 
+            text-align: center; 
+            padding: 100px; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
@@ -16,19 +16,19 @@
             border-radius: 15px;
             backdrop-filter: blur(10px);
         }
-        .btn {
-            background: #28a745;
-            color: white;
-            padding: 20px 40px;
-            border: none;
-            border-radius: 10px;
-            font-size: 20px;
+        .btn { 
+            background: #28a745; 
+            color: white; 
+            padding: 20px 40px; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 20px; 
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             transition: all 0.3s;
         }
-        .btn:hover {
-            background: #218838;
+        .btn:hover { 
+            background: #218838; 
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
@@ -41,23 +41,23 @@
     <div class="container">
         <h1>📄 Rechnung SH-3322</h1>
         <p>Direkter PDF Download</p>
-
+        
         <button class="btn" onclick="downloadNow()">
             🚀 PDF HERUNTERLADEN
         </button>
-
+        
         <div id="status"></div>
     </div>
 
     <script>
         function updateStatus(msg, isError = false) {
-            document.getElementById('status').innerHTML =
+            document.getElementById('status').innerHTML = 
                 `<div class="${isError ? 'error' : 'success'}">${msg}</div>`;
         }
 
         async function downloadNow() {
             updateStatus('⏳ Generiere PDF...');
-
+            
             try {
                 const response = await fetch('/api/invoices/inv-1760128245502-aqq4trk4p/download-pdf', {
                     method: 'GET',
@@ -71,14 +71,14 @@
                         })
                     }
                 });
-
+                
                 console.log('Response status:', response.status);
                 console.log('Response headers:', response.headers);
-
+                
                 if (response.ok) {
                     const blob = await response.blob();
                     console.log('Blob size:', blob.size);
-
+                    
                     if (blob.size > 0) {
                         const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
@@ -88,7 +88,7 @@
                         link.click();
                         document.body.removeChild(link);
                         window.URL.revokeObjectURL(url);
-
+                        
                         updateStatus(`✅ PDF erfolgreich heruntergeladen! (${blob.size} bytes)`);
                     } else {
                         updateStatus('❌ PDF ist leer', true);
@@ -102,7 +102,7 @@
                 updateStatus(`❌ Netzwerk Fehler: ${error.message}`, true);
             }
         }
-
+        
         // Auto-download nach 3 Sekunden
         setTimeout(() => {
             updateStatus('🎯 Automatischer Download in 3 Sekunden...');

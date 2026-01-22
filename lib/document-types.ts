@@ -1,7 +1,7 @@
 // Document Types and Status Definitions
 export enum DocumentKind {
   INVOICE = 'INVOICE',           // Rechnung
-  CANCELLATION = 'CANCELLATION', // Stornorechnung
+  CANCELLATION = 'CANCELLATION', // Stornorechnung  
   CREDIT_NOTE = 'CREDIT_NOTE',   // Gutschrift (Legacy/Generic)
   REFUND_FULL = 'REFUND_FULL',   // Gutschrift für volle Rückerstattung
   REFUND_PARTIAL = 'REFUND_PARTIAL', // Gutschrift für teilweise Rückerstattung

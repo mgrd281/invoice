@@ -146,28 +146,28 @@
                 .rp-summary { text-align: center; min-width: 120px; flex-shrink: 0; }
                 .rp-big-rating { font-size: 48px; font-weight: 700; line-height: 1; color: ${primaryColor}; margin-bottom: 8px; }
                 .rp-total-count { font-size: 14px; color: #6b7280; margin-top: 4px; }
-
+                
                 .rp-bars { flex: 1; min-width: 250px; max-width: 500px; }
                 .rp-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; font-size: 13px; color: #4b5563; cursor: pointer; transition: opacity 0.2s; }
                 .rp-bar-row:hover { opacity: 0.8; }
                 .rp-bar-row.active .rp-stars { font-weight: bold; }
                 .rp-bar-bg { flex: 1; height: 8px; background-color: #f3f4f6; border-radius: 4px; overflow: hidden; }
                 .rp-bar-fill { height: 100%; background-color: ${primaryColor}; border-radius: 4px; }
-
+                
                 .rp-write-btn { background-color: ${primaryColor}; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
                 .rp-write-btn:hover { opacity: 0.9; }
-
+                
                 .rp-review-list { display: flex; flex-direction: column; gap: 24px; }
                 .rp-review-card { padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; }
                 .rp-review-card:last-child { border-bottom: none; }
-
+                
                 .rp-review-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
                 .rp-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
                 .rp-avatar { width: 32px; height: 32px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #4b5563; font-size: 14px; }
                 .rp-username { font-weight: 600; font-size: 14px; }
                 .rp-verified { color: #16a34a; font-size: 12px; display: flex; align-items: center; gap: 2px; }
                 .rp-date { color: #9ca3af; font-size: 12px; }
-
+                
                 .rp-stars { display: flex; color: ${primaryColor}; margin-bottom: 8px; }
                 .rp-content { font-size: 15px; line-height: 1.6; color: #374151; }
                 .rp-title { font-weight: 600; display: block; margin-bottom: 4px; color: #111827; }
@@ -191,7 +191,7 @@
                 .rp-textarea { min-height: 100px; resize: vertical; }
                 .rp-submit-btn { width: 100%; background-color: ${primaryColor}; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; }
                 .rp-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
+                
                 .rp-star-input { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
                 .rp-star-input input { display: none; }
                 .rp-star-input label { cursor: pointer; color: #d1d5db; font-size: 24px; transition: color 0.2s; }
@@ -204,13 +204,13 @@
                 .rp-helpful-btn { display: flex; align-items: center; gap: 6px; background: none; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 16px; cursor: pointer; color: #4b5563; font-size: 13px; transition: all 0.2s; }
                 .rp-helpful-btn:hover { background-color: #f9fafb; border-color: #d1d5db; }
                 .rp-helpful-btn svg { width: 14px; height: 14px; }
-
+                
                 /* Grid Layout Styles */
                 .rp-layout-grid .rp-review-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
                 .rp-layout-grid .rp-review-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; }
                 .rp-layout-grid .rp-review-card:last-child { border-bottom: 1px solid #e5e7eb; }
                 .rp-layout-grid .rp-content { flex: 1; }
-
+                
                 @media (max-width: 600px) {
                     .rp-header { flex-direction: column; gap: 20px; align-items: center; text-align: center; }
                     .rp-bars { width: 100%; }
@@ -476,12 +476,12 @@
                         </div>
                         <button class="rp-write-btn" id="rp-open-modal">Bewertung schreiben</button>
                     </div>
-
+                    
                     ${summaryHTML}
                     ${tabsHTML}
-
+                    
                     ${contentHTML}
-
+                    
                     ${modalHTML}
                 </div>
             `;

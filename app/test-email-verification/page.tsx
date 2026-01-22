@@ -406,4 +406,3 @@ export default function TestEmailVerificationPage() {
     </div>
   )
 }
-

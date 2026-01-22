@@ -367,4 +367,3 @@ export function getVerificationStats(): {
 if (typeof setInterval !== 'undefined') {
   setInterval(cleanupExpiredCodes, VERIFICATION_CONFIG.CLEANUP_INTERVAL_MINUTES * 60 * 1000)
 }
-

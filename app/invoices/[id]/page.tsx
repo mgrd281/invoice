@@ -8,7 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+<<<<<<< HEAD
 import { Eye, Download, Edit, Save, X, Mail, ArrowLeft, FileText, Plus, Trash2, Calculator, Bell, AlertTriangle, AlertOctagon, AlertCircle, UserX, ShieldAlert } from 'lucide-react'
+=======
+import { Eye, Download, Edit, Save, X, Mail, ArrowLeft, FileText, Plus, Trash2, Calculator, Bell, AlertTriangle, AlertOctagon, AlertCircle } from 'lucide-react'
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +24,10 @@ import {
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { renderRecipientBlock } from '@/lib/recipient-renderer'
 import { InvoiceTimeline } from '@/components/invoice-timeline'
+<<<<<<< HEAD
 import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
 interface InvoiceItem {
   id: string
@@ -74,11 +81,14 @@ interface Invoice {
   }
   history?: any[]
   paymentMethod?: string
+<<<<<<< HEAD
   headerSubject?: string | null
   headerText?: string | null
   footerText?: string | null
   serviceDate?: string | null
   settings?: any
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 }
 
 export default function InvoiceViewPage() {
@@ -94,7 +104,10 @@ export default function InvoiceViewPage() {
   const [editableInvoice, setEditableInvoice] = useState<Invoice | null>(null)
   const [saving, setSaving] = useState(false)
   const [toastMessage, setToastMessage] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
+<<<<<<< HEAD
   const [showPreview, setShowPreview] = useState(false)
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
   const showToast = (message: string, type: 'success' | 'error') => {
     console.log(`${type.toUpperCase()}: ${message}`)
@@ -487,6 +500,7 @@ export default function InvoiceViewPage() {
     )
   }
 
+<<<<<<< HEAD
   const handleBlockCustomer = async () => {
     if (!invoice || !invoice.customer.email) return
 
@@ -518,24 +532,38 @@ export default function InvoiceViewPage() {
     switch (status.toLowerCase()) {
       case 'bezahlt':
       case 'paid':
+=======
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'bezahlt':
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         return 'bg-green-100 text-green-800'
       case 'erstattet':
         return 'bg-blue-100 text-blue-800'
       case 'storniert':
+<<<<<<< HEAD
       case 'cancelled':
         return 'bg-gray-100 text-gray-800'
       case 'offen':
       case 'sent':
       case 'open':
+=======
+        return 'bg-gray-100 text-gray-800'
+      case 'offen':
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         return 'bg-gray-100 text-gray-600'
       case 'mahnung':
         return 'bg-red-100 text-red-800'
       case 'überfällig':
+<<<<<<< HEAD
       case 'overdue':
         return 'bg-red-100 text-red-800'
       case 'blocked':
       case 'on_hold':
         return 'bg-red-800 text-white'
+=======
+        return 'bg-red-100 text-red-800'
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       default:
         return 'bg-gray-100 text-gray-600'
     }
@@ -576,10 +604,13 @@ export default function InvoiceViewPage() {
               </div>
             </div>
             <div className="flex space-x-3">
+<<<<<<< HEAD
               <Button variant="outline" onClick={() => setShowPreview(true)}>
                 <Eye className="h-4 w-4 mr-2" />
                 Vorschau
               </Button>
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
               <Button variant="outline" onClick={handleDownloadPdf} disabled={downloadingPdf}>
                 {downloadingPdf ? (
                   <>
@@ -637,6 +668,7 @@ export default function InvoiceViewPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Invoice Details */}
           <div className="lg:col-span-2 space-y-6">
+<<<<<<< HEAD
             {(invoice.status === 'BLOCKED' || invoice.status === 'ON_HOLD') && (
               <div className="bg-red-50 border-l-4 border-red-500 p-4">
                 <div className="flex">
@@ -657,6 +689,8 @@ export default function InvoiceViewPage() {
                 </div>
               </div>
             )}
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
             {/* Invoice Header */}
             <Card>
               <CardHeader>
@@ -715,8 +749,11 @@ export default function InvoiceViewPage() {
                           <option value="Erstattet">Erstattet</option>
                           <option value="Storniert">Storniert</option>
                           <option value="Mahnung">Mahnung</option>
+<<<<<<< HEAD
                           <option value="BLOCKED">Gesperrt (Blocked)</option>
                           <option value="ON_HOLD">In Prüfung (On Hold)</option>
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                         </select>
                       </div>
                     ) : (
@@ -753,6 +790,7 @@ export default function InvoiceViewPage() {
 
               {/* To Customer */}
               <Card>
+<<<<<<< HEAD
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-lg">An</CardTitle>
                   <Button
@@ -764,6 +802,10 @@ export default function InvoiceViewPage() {
                   >
                     <UserX className="h-4 w-4" />
                   </Button>
+=======
+                <CardHeader>
+                  <CardTitle className="text-lg">An</CardTitle>
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                 </CardHeader>
                 <CardContent>
                   {isEditing && editableInvoice ? (
@@ -1226,6 +1268,7 @@ export default function InvoiceViewPage() {
           </div>
         </div>
       )}
+<<<<<<< HEAD
 
       {/* Invoice Preview Dialog */}
       {invoice && (
@@ -1262,7 +1305,8 @@ export default function InvoiceViewPage() {
           }}
         />
       )}
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     </div>
   )
 }
-

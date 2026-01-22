@@ -233,4 +233,3 @@ WICHTIG - SPRACHE & KOMMUNIKATION:
         )
     }
 }
-

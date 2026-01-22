@@ -150,7 +150,7 @@ async function fetchShopifyOrdersUnlimited(settings: ShopifySettings, params: an
         console.log('🔧 Using status=any + financial_status=any for MAXIMUM results')
       }
 
-      // Add date filters only if they're valid ISO strings
+      // Add date filters only if they're valid ISO strings  
       if (params.created_at_min) {
         try {
           const date = new Date(params.created_at_min)

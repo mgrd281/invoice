@@ -44,4 +44,3 @@ else
   echo "Server Log Tail:"
   tail -n 20 server_test.log
 fi
-

@@ -31,4 +31,3 @@ export async function GET(req: NextRequest) {
     response.cookies.set('shopify_oauth_state', state, { secure: true, httpOnly: true, sameSite: 'lax' });
     return response;
 }
-

@@ -82,4 +82,3 @@ export async function saveMarketingSettings(settings: Partial<MarketingSettings>
         throw error
     }
 }
-

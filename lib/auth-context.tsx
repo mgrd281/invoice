@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkAuthStatus = () => {
       try {
         console.log('🔍 AuthContext: Checking authentication status...')
-
+        
         // Check if localStorage is available
         if (typeof window === 'undefined' || !window.localStorage) {
           console.log('⚠️ AuthContext: localStorage not available')
@@ -82,13 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Add a small delay to prevent flash
     const timer = setTimeout(checkAuthStatus, 100)
-
+    
     return () => clearTimeout(timer)
   }, [])
 
   const login = (userData: User) => {
     console.log('🔐 AuthContext: User login attempt', userData)
-
+    
     // Validate user data
     if (!userData || !userData.email || !userData.id) {
       console.error('❌ AuthContext: Invalid user data provided')
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsAuthenticated(true)
       setUser(userData)
-
+      
       // Save to localStorage with error handling
       if (typeof window !== 'undefined' && window.localStorage) {
         const authData = {

@@ -51,7 +51,7 @@ SCOPE & DELIVERABLES (Step-by-step)
    - Generate invoice filenames and number sequencing rules (configurable Präfix/Jahr/Monat).
 
 6) Admin & User Dashboards:
-   - Define screens (Arabic descriptions + German UI labels):
+   - Define screens (Arabic descriptions + German UI labels): 
      - User dashboard: Uploads, Kunden, Aufträge, Rechnungen, Vorlagen, Einstellungen.
      - Admin dashboard: Benutzerverwaltung, Rollen & Rechte, Organisationsübersicht, Systemmetriken, Audit-Log, Feature-Flags.
    - Provide React/Next.js page structure, navigation, route guards, layout components, and sample components.

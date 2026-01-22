@@ -25,9 +25,9 @@ export function EmailInvoice({ invoice, onEmailSent }: EmailInvoiceProps) {
   // Standard-E-Mail-Template generieren
   const generateEmailTemplate = () => {
     const dueDate = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('de-DE') : 'Bei Erhalt'
-
+    
     const subject = `Rechnung ${invoice.number} - ${invoice.amount}`
-
+    
     const message = `Sehr geehrte/r ${invoice.customerName},
 
 anbei erhalten Sie Ihre Rechnung im PDF-Format.
@@ -65,7 +65,7 @@ Ihr Team`
     setSending(true)
     try {
       // Kombiniere Standard-Nachricht mit benutzerdefinierter Nachricht
-      const finalMessage = customMessage.trim()
+      const finalMessage = customMessage.trim() 
         ? `${customMessage}\n\n${emailMessage}`
         : emailMessage
 

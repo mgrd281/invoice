@@ -163,4 +163,3 @@ function ToolbarButton({ onClick, icon, title }: { onClick: () => void, icon: Re
         </button>
     );
 }
-

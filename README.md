@@ -175,4 +175,3 @@ Dieses Projekt ist unter der MIT-Lizenz lizenziert.
 ---
 
 **Entwickelt mit ❤️ für deutsches Rechnungsmanagement**
-

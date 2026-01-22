@@ -48,7 +48,7 @@ export const EMAIL_PROVIDERS: EmailProviderConfig[] = [
     domains: ['1und1.de', '1and1.com'],
     instructions: 'Verwenden Sie Ihre 1&1 E-Mail-Adresse und Ihr Passwort.'
   },
-
+  
   // International Providers
   {
     name: 'Microsoft 365',
@@ -93,7 +93,7 @@ export function detectEmailProvider(email: string): EmailProviderConfig | null {
   const domain = email.split('@')[1]?.toLowerCase()
   if (!domain) return null
 
-  return EMAIL_PROVIDERS.find(provider =>
+  return EMAIL_PROVIDERS.find(provider => 
     provider.domains.includes(domain)
   ) || null
 }
@@ -106,7 +106,7 @@ export function getSmtpConfig(email: string): {
   provider?: EmailProviderConfig
 } {
   const provider = detectEmailProvider(email)
-
+  
   if (provider) {
     return {
       host: provider.host,
@@ -132,14 +132,14 @@ export function validateGermanEmailConfig(email: string, password: string): {
 } {
   const errors: string[] = []
   const suggestions: string[] = []
-
+  
   if (!email || !password) {
     errors.push('E-Mail-Adresse und Passwort sind erforderlich')
     return { isValid: false, errors, suggestions }
   }
 
   const provider = detectEmailProvider(email)
-
+  
   if (!provider) {
     suggestions.push('Unbekannter E-Mail-Anbieter. Überprüfen Sie die SMTP-Einstellungen manuell.')
   }

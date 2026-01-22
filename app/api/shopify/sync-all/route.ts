@@ -41,8 +41,13 @@ export async function GET(req: Request) {
                     const emailResult = await sendInvoiceEmail(
                         invoice.id,
                         invoice.customer.email,
+<<<<<<< HEAD
                         invoice.customer.name,
                         invoice.number
+=======
+                        invoice.number,
+                        invoice.customer.name
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                     )
 
                     results.push({
@@ -77,4 +82,3 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
-

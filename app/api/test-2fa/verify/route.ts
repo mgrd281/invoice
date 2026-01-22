@@ -4,7 +4,7 @@ import { generateBackupCodes } from '@/lib/two-factor'
 export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json()
-
+    
     if (!code || code.length !== 6) {
       return NextResponse.json({ error: 'Invalid code format' }, { status: 400 })
     }
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (code.length === 6 && /^\d{6}$/.test(code)) {
       // Generate backup codes
       const backupCodes = generateBackupCodes()
-
+      
       return NextResponse.json({
         enabled: true,
         backupCodes: backupCodes

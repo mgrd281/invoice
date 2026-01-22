@@ -9,9 +9,9 @@ async function getOrganizationId(email: string) {
         where: { email },
         select: { organizationId: true }
     })
-
+    
     if (user?.organizationId) return user.organizationId
-
+    
     const org = await ensureOrganization()
     return org.id
 }

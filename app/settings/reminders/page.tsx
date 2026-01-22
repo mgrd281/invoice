@@ -12,15 +12,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  ArrowLeft,
-  Bell,
-  Clock,
-  Mail,
-  Save,
-  Plus,
-  Trash2,
-  Edit,
+import { 
+  ArrowLeft, 
+  Bell, 
+  Clock, 
+  Mail, 
+  Save, 
+  Plus, 
+  Trash2, 
+  Edit, 
   Eye,
   AlertTriangle,
   CheckCircle,
@@ -29,9 +29,9 @@ import {
   Settings
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
-import {
-  ReminderSettings,
-  ReminderSchedule,
+import { 
+  ReminderSettings, 
+  ReminderSchedule, 
   ReminderTemplate,
   ReminderLevel,
   DEFAULT_REMINDER_SETTINGS,
@@ -112,7 +112,7 @@ export default function RemindersSettingsPage() {
   const updateScheduleItem = (scheduleId: string, updates: Partial<ReminderSchedule>) => {
     setSettings(prev => ({
       ...prev,
-      schedule: prev.schedule.map(item =>
+      schedule: prev.schedule.map(item => 
         item.id === scheduleId ? { ...item, ...updates } : item
       )
     }))
@@ -170,7 +170,7 @@ export default function RemindersSettingsPage() {
           </div>
         </div>
         <p className="text-gray-600 mt-2">
-          Konfigurieren Sie automatische Erinnerungen für überfällige Rechnungen.
+          Konfigurieren Sie automatische Erinnerungen für überfällige Rechnungen. 
           Das System sendet automatisch E-Mails basierend auf Ihrem Zeitplan.
         </p>
       </div>
@@ -225,7 +225,7 @@ export default function RemindersSettingsPage() {
 
               <div className="space-y-4">
                 <Label className="text-base">E-Mail-Optionen</Label>
-
+                
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>PDF-Rechnung anhängen</Label>
@@ -298,7 +298,7 @@ export default function RemindersSettingsPage() {
                         <div className="flex items-center gap-4">
                           <Switch
                             checked={schedule.enabled}
-                            onCheckedChange={(checked) =>
+                            onCheckedChange={(checked) => 
                               updateScheduleItem(schedule.id, { enabled: checked })
                             }
                           />

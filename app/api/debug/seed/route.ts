@@ -107,4 +107,3 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Seeding failed', details: String(error) }, { status: 500 });
     }
 }
-

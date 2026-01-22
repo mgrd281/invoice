@@ -34,4 +34,3 @@ export async function isUserBlocked(email: string | null | undefined, organizati
 
     return { blocked: false }
 }
-

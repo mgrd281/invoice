@@ -16,4 +16,3 @@ async function checkInvoice() {
 }
 
 checkInvoice()
-

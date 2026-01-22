@@ -30,4 +30,3 @@ async function checkDatabaseStats() {
 }
 
 checkDatabaseStats()
-

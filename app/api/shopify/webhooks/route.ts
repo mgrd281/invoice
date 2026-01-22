@@ -130,8 +130,13 @@ export async function POST(req: Request) {
               const emailResult = await sendInvoiceEmail(
                 invoice.id,
                 invoice.customer.email,
+<<<<<<< HEAD
                 invoice.customer.name,
                 invoice.number
+=======
+                invoice.number,
+                invoice.customer.name
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
               )
               log(`📬 Email sending result: ${JSON.stringify(emailResult)}`)
             } else {
@@ -142,6 +147,7 @@ export async function POST(req: Request) {
           }
 
           // Process Digital Products
+<<<<<<< HEAD
           log('🔐 Checking for digital products...')
           const { processDigitalProductOrder } = await import('@/lib/digital-products')
           // Import payment detector
@@ -162,6 +168,11 @@ export async function POST(req: Request) {
           const shouldSendEmail = shouldSendKeysImmediately(payload, isUpdate)
 
           log(`🔐 Key Delivery Decision: Should send email? ${shouldSendEmail} (Topic: ${topic}, Status: ${payload.financial_status})`)
+=======
+          // if (payload.financial_status === 'paid') { // REMOVED: Send keys for all valid orders
+          log('🔐 Checking for digital products...')
+          const { processDigitalProductOrder } = await import('@/lib/digital-products')
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
           for (const item of payload.line_items) {
             if (item.product_id) {
@@ -169,23 +180,60 @@ export async function POST(req: Request) {
                 await processDigitalProductOrder(
                   String(item.product_id),
                   String(payload.id),
+<<<<<<< HEAD
                   payload.name || String(payload.order_number) || String(payload.id),
+=======
+                  payload.name || String(payload.order_number) || String(payload.id), // Pass visible order number
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                   payload.email || payload.customer?.email,
                   payload.shipping_address?.first_name || payload.customer?.first_name || 'Kunde',
                   item.title,
                   item.variant_id ? String(item.variant_id) : undefined,
                   (() => {
+<<<<<<< HEAD
                     const lastName = payload.customer?.last_name || payload.shipping_address?.last_name || '';
                     return `Sehr geehrte/r Kunde/Kundin ${lastName}`.trim();
                   })(),
                   shouldSendEmail // Pass the decision flag
+=======
+                    // Determine Salutation
+                    const lastName = payload.customer?.last_name || payload.shipping_address?.last_name || '';
+                    // Shopify doesn't always provide gender directly in the order payload, 
+                    // but if it's there (e.g. from a custom field or meta), we can use it.
+                    // Often it's not standard. We'll check for common indicators if available, 
+                    // otherwise fallback to neutral.
+                    // NOTE: Standard Shopify Order object doesn't have a 'gender' field on root or customer.
+                    // If you have a custom implementation or app adding it, adjust here.
+                    // For now, we'll try to guess or use a neutral default if unknown.
+
+                    // IF you had gender:
+                    // const gender = payload.customer?.gender; // Hypothetical
+
+                    // Since we don't have reliable gender in standard Shopify webhooks, 
+                    // we might need to rely on a neutral fallback OR if the user requested it,
+                    // we could try to infer from title if provided (e.g. "Mr", "Mrs" in note_attributes?)
+
+                    // Let's implement the logic requested:
+                    // "Sehr geehrte Frau {{ customer_last_name }}"
+                    // "Sehr geehrter Herr {{ customer_last_name }}"
+                    // "Sehr geehrte/r Kunde/Kundin {{ customer_last_name }}"
+
+                    // As we can't reliably know gender from standard payload, we'll use the neutral one 
+                    // UNLESS we find a strong hint.
+
+                    return `Sehr geehrte/r Kunde/Kundin ${lastName}`.trim();
+                  })()
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                 )
               } catch (err) {
                 log(`❌ Error processing digital product ${item.product_id}:`, err)
               }
             }
           }
-
+<<<<<<< HEAD
+=======
+          // }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
           // ---------------------------------------------------------
           // NEW: First Purchase Discount Automation
@@ -296,4 +344,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 }
-

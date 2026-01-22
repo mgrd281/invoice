@@ -38,4 +38,3 @@ export async function PATCH(
         return NextResponse.json({ error: 'Failed to update review' }, { status: 500 })
     }
 }
-

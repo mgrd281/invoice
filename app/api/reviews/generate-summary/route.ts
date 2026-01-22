@@ -39,15 +39,15 @@ export async function POST(req: NextRequest) {
         const reviewsText = reviews.map(r => `- ${r.content} (${r.rating} stars)`).join('\n')
         const prompt = `
         Analyze the following customer reviews for a product and provide a summary.
-
+        
         Reviews:
         ${reviewsText}
-
+        
         Please provide:
         1. A short summary paragraph (max 3 sentences) in German.
         2. A list of up to 5 Pros (in German).
         3. A list of up to 5 Cons (in German).
-
+        
         Format the output as JSON:
         {
             "summary": "...",

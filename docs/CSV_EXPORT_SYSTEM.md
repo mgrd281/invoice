@@ -14,7 +14,7 @@ Ein umfassendes CSV-Export-System für Rechnungen/Verkäufe mit Excel-Kompatibil
 
 **📋 Spalten (exakte Reihenfolge):**
 1. Datum
-2. Produktname
+2. Produktname  
 3. EAN
 4. Bestellnummer
 5. Kategorie
@@ -86,7 +86,7 @@ function formatNumberForCSV(value: number): string {
 function formatDateForCSV(date: Date): string {
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
-    month: '2-digit',
+    month: '2-digit', 
     year: 'numeric'
   })
 }
@@ -106,20 +106,20 @@ function escapeCSVValue(value: string): string {
 ```typescript
 const NUMERIC_COLUMNS = [
   'verkaufspreis', 'einkaufspreis', 'versandkosten',
-  'amazonGebuehren', 'mwst', 'retouren',
+  'amazonGebuehren', 'mwst', 'retouren', 
   'werbungskosten', 'sonstigeKosten', 'gewinn'
 ]
 
 function calculateSummary(data: InvoiceExportData[]): Record<string, number> {
   const summary: Record<string, number> = {}
-
+  
   NUMERIC_COLUMNS.forEach(column => {
     summary[column] = data.reduce((sum, row) => {
       const value = row[column as keyof InvoiceExportData] as number
       return sum + (typeof value === 'number' ? value : 0)
     }, 0)
   })
-
+  
   return summary
 }
 ```
@@ -141,11 +141,11 @@ const getExportData = () => {
   if (selectedIds.length > 0) {
     return data.filter(item => selectedIds.includes(item.id))
   }
-
+  
   if (hasActiveFilters) {
     return applyFilters(data, filters)
   }
-
+  
   return data
 }
 ```
@@ -190,7 +190,7 @@ function generateCSVFilename(customName?: string): string {
     .replace(/T/, '_')
     .replace(/:/g, '-')
     .substring(0, 16) // YYYY-MM-DD_HH-mm
-
+  
   return customName || `rechnungen_export_${timestamp}.csv`
 }
 ```

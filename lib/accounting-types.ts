@@ -277,4 +277,3 @@ export function calculateAccountingSummary(invoices: AccountingInvoice[], expens
 
   return summary
 }
-

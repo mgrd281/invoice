@@ -47,7 +47,7 @@ export class KauflandAPI {
    */
   private async request(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`
-
+    
     const headers = {
       'Authorization': `Basic ${this.credentials}`,
       'Content-Type': 'application/json',
@@ -66,6 +66,7 @@ export class KauflandAPI {
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
+<<<<<<< HEAD
       // Try multiple endpoints to test connection
       // Kaufland API might use different endpoints, so we'll try a few common ones
       const endpoints = [
@@ -75,13 +76,13 @@ export class KauflandAPI {
         '/seller-api/units',
         '/'
       ]
-
+      
       let lastError: string = ''
-
+      
       for (const endpoint of endpoints) {
         try {
           const response = await this.request(endpoint, { method: 'GET' })
-
+          
           // If we get any response (even 401/403), it means the API is reachable
           if (response.status === 200 || response.status === 401 || response.status === 403) {
             return {
@@ -89,12 +90,12 @@ export class KauflandAPI {
               message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
             }
           }
-
+          
           if (response.status === 404) {
             lastError = `Endpoint nicht gefunden: ${endpoint}`
             continue // Try next endpoint
           }
-
+          
           const errorText = await response.text().catch(() => '')
           lastError = `Status ${response.status}: ${errorText.substring(0, 100)}`
         } catch (err) {
@@ -102,11 +103,26 @@ export class KauflandAPI {
           continue
         }
       }
-
+      
       // If all endpoints failed, return the last error
       return {
         success: false,
         message: `Verbindungsfehler: ${lastError || 'API nicht erreichbar. Bitte überprüfen Sie die API Base URL.'}`
+=======
+      const response = await this.request('/units', { method: 'GET' })
+      
+      if (response.ok) {
+        return {
+          success: true,
+          message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
+        }
+      } else {
+        const errorText = await response.text()
+        return {
+          success: false,
+          message: `Verbindungsfehler: ${response.status} ${response.statusText}`
+        }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       }
     } catch (error) {
       return {
@@ -152,7 +168,7 @@ export class KauflandAPI {
       quantity: product.quantity,
       shipping_time: product.shippingTime || this.settings.defaultShippingTime || 3,
       ...(product.sku && { sku: product.sku }),
-      ...(product.images && product.images.length > 0 && {
+      ...(product.images && product.images.length > 0 && { 
         images: product.images.map((url, index) => ({
           url,
           position: index + 1
@@ -160,6 +176,7 @@ export class KauflandAPI {
       }),
     }
 
+<<<<<<< HEAD
     // Try multiple endpoint variations
     const endpoints = [
       { method: 'POST', path: '/units' },
@@ -202,6 +219,28 @@ export class KauflandAPI {
     // If all endpoints failed, return helpful error
     const errorMessage = lastError || 'API endpoint nicht gefunden'
     throw new Error(`Failed to create/update unit: ${errorMessage}. Bitte überprüfen Sie die API Base URL und die Kaufland API-Dokumentation für die korrekten Endpunkte.`)
+=======
+    // Try to update first (PUT), if not exists, create (POST)
+    let response = await this.request(`/units/${product.ean}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+
+    // If update fails with 404, try to create
+    if (response.status === 404) {
+      response = await this.request('/units', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create/update unit: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    return await response.json()
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   }
 
   /**
@@ -231,7 +270,7 @@ export class KauflandAPI {
         price: parseFloat(internalProduct.price || internalProduct.variants?.[0]?.price || 0),
         quantity: internalProduct.quantity || internalProduct.inventory_quantity || 0,
         sku: internalProduct.sku || internalProduct.variants?.[0]?.sku,
-        images: internalProduct.images?.map((img: any) =>
+        images: internalProduct.images?.map((img: any) => 
           typeof img === 'string' ? img : img.src || img.url
         ) || [],
         shippingTime: this.settings.defaultShippingTime || 3,
@@ -244,6 +283,7 @@ export class KauflandAPI {
         }
       }
 
+<<<<<<< HEAD
       try {
         const result = await this.createOrUpdateUnit(kauflandProduct)
         return {
@@ -253,7 +293,7 @@ export class KauflandAPI {
         }
       } catch (apiError) {
         const errorMessage = apiError instanceof Error ? apiError.message : 'Unbekannter Fehler'
-
+        
         // Provide more helpful error messages
         if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
           return {
@@ -261,11 +301,19 @@ export class KauflandAPI {
             message: `API Endpoint nicht gefunden. Bitte überprüfen Sie die API Base URL (aktuell: ${this.baseUrl}). Die Kaufland API-Endpunkte können sich je nach Version unterscheiden. Bitte konsultieren Sie die offizielle Kaufland Seller API-Dokumentation.`
           }
         }
-
+        
         return {
           success: false,
           message: `Fehler beim Synchronisieren: ${errorMessage}`
         }
+=======
+      const result = await this.createOrUpdateUnit(kauflandProduct)
+
+      return {
+        success: true,
+        message: `Produkt erfolgreich zu Kaufland synchronisiert: ${kauflandProduct.title}`,
+        data: result
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       }
     } catch (error) {
       return {
@@ -290,7 +338,7 @@ export class KauflandAPI {
           product: product.title || product.name,
           ...result
         })
-
+        
         if (result.success) {
           successCount++
         } else {

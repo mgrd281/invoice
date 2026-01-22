@@ -12,7 +12,7 @@ async function main() {
 
     // 2. Create Blocked User
     const testEmail = 'test-block@example.com'
-
+    
     // Cleanup if exists
     await prisma.blockedUser.deleteMany({
       where: { email: testEmail }

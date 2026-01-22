@@ -118,4 +118,3 @@ async function createInvoicesFromOrders() {
 }
 
 createInvoicesFromOrders()
-

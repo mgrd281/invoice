@@ -16,4 +16,3 @@ export function verifyShopifyWebhook(body: string, hmac: string, secret: string)
         return false
     }
 }
-

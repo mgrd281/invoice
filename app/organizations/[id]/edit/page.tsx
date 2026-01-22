@@ -71,9 +71,9 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
         },
         body: JSON.stringify(organization)
       })
-
+      
       const data = await response.json()
-
+      
       if (response.ok) {
         if (data.organization) {
           setOrganization(data.organization)

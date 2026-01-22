@@ -14,7 +14,10 @@ import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Checkbox } from '@/components/ui/checkbox'
+<<<<<<< HEAD
 import { useToast } from '@/components/ui/toast'
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 export default function DigitalProductDetailPage() {
     const params = useParams()
     const router = useRouter()
@@ -45,8 +48,11 @@ export default function DigitalProductDetailPage() {
     const [selectedVariant, setSelectedVariant] = useState<string>('any')
     const [variants, setVariants] = useState<any[]>([])
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+<<<<<<< HEAD
     const [resendingKeys, setResendingKeys] = useState<Set<string>>(new Set()) // Track resending state
     const { showToast, ToastContainer } = useToast()
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
     // Variant Settings State
     const [variantSettings, setVariantSettings] = useState<any[]>([])
@@ -578,6 +584,7 @@ Viel Spaß!`
                                                 </Button>
                                             </div>
                                         )}
+<<<<<<< HEAD
 
                                         {/* Card-Based Layout - Professional SaaS Style */}
                                         <div className="space-y-4">
@@ -752,6 +759,110 @@ Viel Spaß!`
                                             })()}
                                         </div>
 
+=======
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-4 py-3 w-[50px]">
+                                                            <Checkbox
+                                                                checked={(() => {
+                                                                    const displayedKeys = activeKeyTab === 'history'
+                                                                        ? keys.filter(k => k.isUsed)
+                                                                        : keys.filter(k => !k.isUsed)
+                                                                    return displayedKeys.length > 0 && displayedKeys.every(k => selectedKeys.has(k.id))
+                                                                })()}
+                                                                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                                            />
+                                                        </th>
+                                                        <th className="px-4 py-3">Key</th>
+                                                        {variants.length > 0 && <th className="px-4 py-3">Variante</th>}
+                                                        <th className="px-4 py-3">Status</th>
+                                                        {activeKeyTab === 'history' && (
+                                                            <>
+                                                                <th className="px-4 py-3">Verwendet am</th>
+                                                                <th className="px-4 py-3">Bestellung</th>
+                                                            </>
+                                                        )}
+                                                        <th className="px-4 py-3"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {(() => {
+                                                        const displayedKeys = activeKeyTab === 'history'
+                                                            ? filteredKeys.filter(k => k.isUsed).sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
+                                                            : filteredKeys.filter(k => !k.isUsed);
+
+                                                        if (displayedKeys.length === 0) {
+                                                            return (
+                                                                <tr>
+                                                                    <td colSpan={activeKeyTab === 'history' ? (variants.length > 0 ? 6 : 5) : (variants.length > 0 ? 4 : 3)} className="px-4 py-8 text-center text-gray-500">
+                                                                        {activeKeyTab === 'history' ? 'Noch keine Verkäufe' : 'Keine Keys verfügbar'}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        }
+
+                                                        return displayedKeys.map((key) => (
+                                                            <tr key={key.id} className="border-b hover:bg-gray-50">
+                                                                <td className="px-4 py-3">
+                                                                    <Checkbox
+                                                                        checked={selectedKeys.has(key.id)}
+                                                                        onCheckedChange={(checked) => handleSelectKey(key.id, checked as boolean)}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3 font-mono">{key.key}</td>
+                                                                {variants.length > 0 && (
+                                                                    <td className="px-4 py-3 text-gray-500">
+                                                                        {key.shopifyVariantId ? (
+                                                                            variants.find(v => String(v.id) === String(key.shopifyVariantId))?.title || key.shopifyVariantId
+                                                                        ) : (
+                                                                            <span className="text-gray-400 italic">Alle</span>
+                                                                        )}
+                                                                    </td>
+                                                                )}
+                                                                <td className="px-4 py-3">
+                                                                    {key.isUsed ? (
+                                                                        <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">Verbraucht</span>
+                                                                    ) : (
+                                                                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Verfügbar</span>
+                                                                    )}
+                                                                </td>
+                                                                {activeKeyTab === 'history' && (
+                                                                    <>
+                                                                        <td className="px-4 py-3">
+                                                                            {key.usedAt ? new Date(key.usedAt).toLocaleDateString() + ' ' + new Date(key.usedAt).toLocaleTimeString() : '-'}
+                                                                        </td>
+                                                                        <td className="px-4 py-3">
+                                                                            {key.orderId ? (
+                                                                                key.orderId
+                                                                            ) : (
+                                                                                key.shopifyOrderId ? (
+                                                                                    key.shopifyOrderId.startsWith('#') || key.shopifyOrderId.startsWith('TEST')
+                                                                                        ? key.shopifyOrderId
+                                                                                        : `#${key.shopifyOrderId}`
+                                                                                ) : '-'
+                                                                            )}
+                                                                        </td>
+                                                                    </>
+                                                                )}
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                                                        onClick={() => handleDeleteKey(key.id)}
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        ));
+                                                    })()}
+                                                </tbody>
+                                            </table>
+                                        </div>
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                                     </CardContent>
                                 </Card>
                             </TabsContent>
@@ -1127,8 +1238,10 @@ Viel Spaß!`
                     </div>
                 </div>
             </main >
+<<<<<<< HEAD
             <ToastContainer />
+=======
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         </div >
     )
 }
-

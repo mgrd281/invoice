@@ -184,7 +184,7 @@ async function run() {
                 invoicesFolder?.file(`Rechnung_${invoice.number}.pdf`, pdfBuffer)
 
                 // Add individual PDF to attachments (optional, but maybe too many? Let's keep them if not too many, or just ZIP)
-                // User asked for ZIP, but usually individual PDFs are good too if few.
+                // User asked for ZIP, but usually individual PDFs are good too if few. 
                 // However, user said "add also all invoices as zip", implying both or just zip.
                 // To avoid email size limits, let's ONLY attach the ZIP and the CSV if there are many.
                 // But for safety, let's attach the ZIP as the main thing.
@@ -281,7 +281,7 @@ async function run() {
         const emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto;">
         <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Rechnungsbericht: ${startOfDay.toLocaleDateString('de-DE')} - ${endOfDay.toLocaleDateString('de-DE')}</h1>
-
+        
         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h2 style="margin-top: 0;">Zusammenfassung</h2>
           <table style="width: 100%; max-width: 400px;">

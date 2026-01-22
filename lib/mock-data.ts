@@ -2,9 +2,9 @@
 
 // Export function to get mock data (for testing)
 export function getMockData() {
-  return {
-    invoices: global.csvInvoices || [],
-    customers: global.csvCustomers || []
+  return { 
+    invoices: global.csvInvoices || [], 
+    customers: global.csvCustomers || [] 
   }
 }
 

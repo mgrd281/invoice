@@ -179,7 +179,7 @@ async function generatePDFReport(
         <h1>Buchhaltungsbericht</h1>
         <p>Zeitraum: ${new Date(filter.startDate).toLocaleDateString('de-DE')} bis ${new Date(filter.endDate).toLocaleDateString('de-DE')}</p>
       </div>
-
+      
       <div class="summary">
         <h2>Zusammenfassung</h2>
         <table>
@@ -189,7 +189,7 @@ async function generatePDFReport(
           <tr><td>Umsatzsteuer:</td><td class="amount">€${summary.totalTax.toFixed(2)}</td></tr>
         </table>
       </div>
-
+      
       <h2>Rechnungen (${invoices.length})</h2>
       <table>
         <thead>
@@ -217,7 +217,7 @@ async function generatePDFReport(
           `).join('')}
         </tbody>
       </table>
-
+      
       <h2>Ausgaben (${expenses.length})</h2>
       <table>
         <thead>

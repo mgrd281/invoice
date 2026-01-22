@@ -128,4 +128,3 @@ export function loadUsersFromDisk(): any[] {
 export function saveUsersToDisk(users: any[]): boolean {
   return writeJson(USERS_FILE, { users, updatedAt: new Date().toISOString() })
 }
-

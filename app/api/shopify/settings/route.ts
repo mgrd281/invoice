@@ -5,7 +5,7 @@ import { getShopifySettings, saveShopifySettings, validateShopifySettings } from
 export async function GET() {
   try {
     const settings = getShopifySettings()
-
+    
     // Don't send sensitive data to client
     const safeSettings = {
       ...settings,
@@ -13,16 +13,16 @@ export async function GET() {
       apiKey: settings.apiKey ? `${settings.apiKey.substring(0, 8)}...${settings.apiKey.slice(-4)}` : '',
       secretKey: settings.secretKey ? '***' : ''
     }
-
+    
     return NextResponse.json({
       success: true,
       settings: safeSettings
     })
   } catch (error) {
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Laden der Shopify-Einstellungen'
+      { 
+        success: false, 
+        error: 'Fehler beim Laden der Shopify-Einstellungen' 
       },
       { status: 500 }
     )
@@ -33,7 +33,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const settings = await request.json()
-
+    
     console.log(' Saving Shopify settings:', {
       enabled: settings.enabled,
       shopDomain: settings.shopDomain,
@@ -42,23 +42,23 @@ export async function POST(request: NextRequest) {
       hasSecretKey: !!settings.secretKey,
       apiVersion: settings.apiVersion
     })
-
+    
     // Validate settings
     const errors = validateShopifySettings(settings)
     if (errors.length > 0) {
       return NextResponse.json(
-        {
-          success: false,
+        { 
+          success: false, 
           error: 'Ungültige Einstellungen',
           details: errors
         },
         { status: 400 }
       )
     }
-
+    
     // Save settings
     saveShopifySettings(settings)
-
+    
     return NextResponse.json({
       success: true,
       message: 'Shopify-Einstellungen gespeichert'
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error(' Error saving Shopify settings:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Speichern der Shopify-Einstellungen'
+      { 
+        success: false, 
+        error: 'Fehler beim Speichern der Shopify-Einstellungen' 
       },
       { status: 500 }
     )
@@ -80,10 +80,10 @@ export async function PUT(request: NextRequest) {
   try {
     const updates = await request.json()
     const currentSettings = getShopifySettings()
-
+    
     // Merge with current settings
     const newSettings = { ...currentSettings, ...updates }
-
+    
     console.log(' Updating Shopify settings:', {
       enabled: newSettings.enabled,
       shopDomain: newSettings.shopDomain,
@@ -91,23 +91,23 @@ export async function PUT(request: NextRequest) {
       hasApiKey: !!newSettings.apiKey,
       hasSecretKey: !!newSettings.secretKey
     })
-
+    
     // Validate merged settings
     const errors = validateShopifySettings(newSettings)
     if (errors.length > 0) {
       return NextResponse.json(
-        {
-          success: false,
+        { 
+          success: false, 
           error: 'Ungültige Einstellungen',
           details: errors
         },
         { status: 400 }
       )
     }
-
+    
     // Save updated settings
     saveShopifySettings(newSettings)
-
+    
     return NextResponse.json({
       success: true,
       message: 'Shopify-Einstellungen aktualisiert'
@@ -115,9 +115,9 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error(' Error updating Shopify settings:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Aktualisieren der Shopify-Einstellungen'
+      { 
+        success: false, 
+        error: 'Fehler beim Aktualisieren der Shopify-Einstellungen' 
       },
       { status: 500 }
     )

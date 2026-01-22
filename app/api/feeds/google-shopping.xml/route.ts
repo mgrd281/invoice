@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
 
         // Filter by source if needed (e.g. only verified buyers? settings.filterCustomerReviews)
         // For now, we include all sources unless specific logic is needed.
-        // The settings names 'filterCustomerReviews' and 'filterImportedReviews' are a bit ambiguous
-        // (do they mean "include only" or "exclude"?).
+        // The settings names 'filterCustomerReviews' and 'filterImportedReviews' are a bit ambiguous 
+        // (do they mean "include only" or "exclude"?). 
         // Based on the UI checkbox "Customer Reviews" (checked) usually means "Include".
-        // So if filterCustomerReviews is FALSE, we might exclude them?
+        // So if filterCustomerReviews is FALSE, we might exclude them? 
         // Let's assume the checkboxes mean "Include in feed".
 
         const sources = []
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
         // We need to fetch all products that are referenced in the reviews
         const productIds = Array.from(new Set(reviews.map(r => r.productId)))
 
-        // Fetch products in batches or all at once.
+        // Fetch products in batches or all at once. 
         // Since we don't have a bulk "get by IDs" that is efficient for hundreds of IDs in Shopify API (ids param limit),
         // we will fetch ALL products if the count is reasonable, or batch the IDs.
         // For stability, let's try to fetch all products using pagination.
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
             let hasNext = true
 
             while (hasNext) {
-                // We can't easily use the ShopifyAPI class's getProducts for unlimited pagination
+                // We can't easily use the ShopifyAPI class's getProducts for unlimited pagination 
                 // because it doesn't expose the cursor directly in the return.
                 // However, we can use the `ids` param if we batch them.
                 // Let's batch product IDs in chunks of 50 (Shopify limit)
@@ -195,7 +195,7 @@ function generateFeedXml(reviews: any[], productsMap: Map<string, any>, settings
             product.variants.forEach((v: any) => {
                 if (v.barcode) gtins.add(v.barcode)
                 if (v.sku) skus.add(v.sku)
-                if (v.mpn) mpns.add(v.mpn) // Shopify doesn't have standard MPN field in variant, usually it's SKU or barcode or metafield.
+                if (v.mpn) mpns.add(v.mpn) // Shopify doesn't have standard MPN field in variant, usually it's SKU or barcode or metafield. 
                 // Assuming SKU might be used as MPN if configured
             })
 

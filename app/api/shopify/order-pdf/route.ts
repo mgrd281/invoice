@@ -66,4 +66,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Fehler beim Generieren der PDF' }, { status: 500 })
   }
 }
-

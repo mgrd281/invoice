@@ -198,7 +198,11 @@ export async function sendInvoiceEmail(
   customerEmail: string,
   customerName: string,
   invoiceNumber: string,
+<<<<<<< HEAD
   companyName: string = 'Karinex',
+=======
+  companyName: string = 'Karina Khrystych',
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   customSubject?: string,
   customMessage?: string,
   invoiceAmount?: string,
@@ -419,7 +423,11 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
       <title>Rechnung ${invoiceNumber}</title>
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+<<<<<<< HEAD
         .header { background-color: #1D4739; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+=======
+        .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         .content { background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
         .footer { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 4px; font-size: 12px; color: #6c757d; }
         .button { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 15px 0; }
@@ -429,22 +437,22 @@ function generateEmailHTML(customerName: string, invoiceNumber: string, companyN
       <div class="header">
         <h1>Rechnung karinex</h1>
       </div>
-
+      
       <div class="content">
         <p>Sehr geehrte/r ${customerName},</p>
-
+        
         <p>anbei erhalten Sie Ihre Rechnung karinex.</p>
-
+        
         <p>Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.</p>
-
+        
         <p>Bitte überweisen Sie den Rechnungsbetrag innerhalb der angegebenen Zahlungsfrist.</p>
-
+        
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-
+        
         <p>Mit freundlichen Grüßen<br>
         <strong>Ihr Team von karinex</strong></p>
       </div>
-
+      
       <div class="footer">
         <p><strong>Wichtige Hinweise:</strong></p>
         <ul>
@@ -500,46 +508,56 @@ function generateCustomEmailHTML(
       <meta charset="utf-8">
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+<<<<<<< HEAD
         .header { background: #1D4739; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f8f9fa; padding: 30px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; }
         .invoice-details { background: white; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #1D4739; }
+=======
+        .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 30px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; }
+        .invoice-details { background: white; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2563eb; }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         .custom-message { background: #e0f2fe; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #0284c7; }
         .footer { background: #6b7280; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; }
         .footer ul { list-style: none; padding: 0; margin: 10px 0 0 0; }
         .footer li { margin: 5px 0; }
         h1 { margin: 0; font-size: 24px; }
+<<<<<<< HEAD
         .amount { font-size: 18px; font-weight: bold; color: #1D4739; }
+=======
+        .amount { font-size: 18px; font-weight: bold; color: #2563eb; }
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       </style>
     </head>
     <body>
       <div class="header">
         <h1>Rechnung karinex</h1>
       </div>
-
+      
       <div class="content">
         <p>Sehr geehrte/r ${customerName},</p>
-
+        
         ${customMessage ? `<div class="custom-message"><strong>Persönliche Nachricht:</strong><br>${customMessage.replace(/\n/g, '<br>')}</div>` : ''}
-
+        
         <div class="invoice-details">
           <h3>Rechnungsdetails:</h3>
           <p><strong>Rechnungsnummer:</strong> ${invoiceNumber}</p>
           ${invoiceAmount ? `<p><strong>Rechnungsbetrag:</strong> <span class="amount">${invoiceAmount}</span></p>` : ''}
           <p><strong>Fälligkeitsdatum:</strong> ${formattedDueDate}</p>
         </div>
-
+        
         <p>anbei erhalten Sie Ihre Rechnung karinex.</p>
-
+        
         <p>Die Rechnung finden Sie als PDF-Anhang zu dieser E-Mail.</p>
-
+        
         <p>Bitte überweisen Sie den Rechnungsbetrag bis zum angegebenen Fälligkeitsdatum.</p>
-
+        
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-
+        
         <p>Mit freundlichen Grüßen<br>
         <strong>Ihr Team von karinex</strong></p>
       </div>
-
+      
       <div class="footer">
         <p><strong>Wichtige Hinweise:</strong></p>
         <ul>

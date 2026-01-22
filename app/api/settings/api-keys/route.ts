@@ -28,11 +28,11 @@ export async function GET(req: Request) {
             select: {
                 id: true,
                 name: true,
-                key: true, // We might want to mask this in the future, but plan said show it.
+                key: true, // We might want to mask this in the future, but plan said show it. 
                 // Ideally we only show it once, but for now retrieving list shows it.
                 // Wait, best practice is to show only once. But simplistic requirement "Give key to person".
                 // Let's show it for now as per "simple" requirement, or mask it partial.
-                // User asked "if I give to person".
+                // User asked "if I give to person". 
                 // Let's return full key for now to be user friendly for this specific non-tech user.
                 lastUsedAt: true,
                 createdAt: true

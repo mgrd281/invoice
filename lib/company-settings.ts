@@ -93,4 +93,3 @@ export function setCompanySettingsClient(settings: Partial<typeof DEFAULT_COMPAN
     // Ignore storage errors
   }
 }
-

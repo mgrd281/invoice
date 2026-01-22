@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 7️⃣ Kontostatus überprüfen (aktiv/inaktiv)
-    // Note: isSuspended is the field in schema, defaulting to false.
+    // Note: isSuspended is the field in schema, defaulting to false. 
     // If you want to check active status, ensure logic matches schema.
     if (user.isSuspended) {
       return NextResponse.json(

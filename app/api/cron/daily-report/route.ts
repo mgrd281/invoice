@@ -205,7 +205,7 @@ export async function GET(req: Request) {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 700px; margin: 0 auto;">
         <h1 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">Tagesabschluss: ${now.toLocaleDateString('de-DE')}</h1>
-
+        
         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h2 style="margin-top: 0;">Zusammenfassung</h2>
           <table style="width: 100%; max-width: 400px;">

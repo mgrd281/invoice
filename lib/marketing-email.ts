@@ -57,4 +57,3 @@ export async function sendFirstPurchaseDiscountEmail(
         html: html
     })
 }
-

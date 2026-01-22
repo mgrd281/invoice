@@ -88,4 +88,3 @@ export function AccountingFilterBar({ filter, setFilter, handlePeriodChange }: A
         </Card>
     )
 }
-

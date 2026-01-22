@@ -592,28 +592,31 @@ export default function SettingsPage() {
               </Link>
             </div>
 
+            <Separator />
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Sitzungs-Timeout (Minuten)</Label>
+                <Label>Blockierte Benutzer</Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatische Abmeldung nach Inaktivität
+                  Verwalten Sie die Liste der gesperrten Kunden und E-Mails
                 </p>
               </div>
-              <Input
-                type="number"
-                min="5"
-                max="480"
-                value={settings.sessionTimeout || 60}
-                onChange={(e) => setSettings(prev => ({ ...prev, sessionTimeout: parseInt(e.target.value) || 60 }))}
-                className="w-24"
-              />
+              <Link href="/blocked-users">
+                <Button variant="outline" size="sm">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Verwalten
+                </Button>
+              </Link>
             </div>
+
+            <div className="flex items-center justify-between hidden">
+              <div className="space-y-0.5">
+                 {/* Placeholder for session timeout */}
+              </div>
+            </div>
+
           </CardContent>
         </Card>
-
-        <ToastContainer />
       </div>
     </div>
   )
 }
-

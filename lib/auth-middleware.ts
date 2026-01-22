@@ -89,4 +89,3 @@ export function isAdmin(user: AuthenticatedUser): boolean {
 export function shouldShowAllData(user: AuthenticatedUser): boolean {
   return isAdmin(user)
 }
-

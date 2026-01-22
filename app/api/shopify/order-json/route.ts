@@ -46,4 +46,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Fehler beim Abrufen der Bestelldaten' }, { status: 500 })
   }
 }
-

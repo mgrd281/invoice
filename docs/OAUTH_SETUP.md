@@ -22,7 +22,7 @@ Diese Anleitung erklärt, wie Sie Google und Apple OAuth für Ihr Rechnungssyste
 2. Klicken Sie auf **Create Credentials > OAuth 2.0 Client IDs**
 3. Wählen Sie **Web application** als Application type
 4. Fügen Sie Ihre URLs hinzu:
-   - **Authorized JavaScript origins**:
+   - **Authorized JavaScript origins**: 
      - `http://localhost:3000` (für Entwicklung)
      - `https://yourdomain.com` (für Produktion)
    - **Authorized redirect URIs**:

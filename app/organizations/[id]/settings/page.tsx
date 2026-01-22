@@ -61,7 +61,7 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
         currency: 'EUR',
         language: 'de'
       }
-
+      
       setSettings(mockSettings)
     } catch (error) {
       console.error('Error fetching settings:', error)
@@ -75,12 +75,12 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
     try {
       // In a real app, you'd send PUT request to /api/organizations/[id]/settings
       console.log('Saving settings:', settings)
-
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-
+      
       alert('Einstellungen erfolgreich gespeichert!')
-
+      
     } catch (error) {
       console.error('Error saving settings:', error)
       alert('Fehler beim Speichern der Einstellungen')

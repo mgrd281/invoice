@@ -69,4 +69,3 @@ export async function GET() {
         return NextResponse.json({ fatalError: error.message }, { status: 500 })
     }
 }
-

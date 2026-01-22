@@ -454,4 +454,3 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
     </div>
   )
 }
-

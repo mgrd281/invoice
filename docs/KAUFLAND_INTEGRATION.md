@@ -1,39 +1,39 @@
 # Kaufland Integration
 
-Diese Anleitung erklärt, wie Sie die Kaufland-Integration nutzen, um Produkte von Ihrer Anwendung an Ihren Kaufland-Shop zu senden.
+هذا الدليل يشرح كيفية استخدام تكامل Kaufland لإرسال المنتجات من تطبيقك إلى متجر Kaufland.
 
-## Erstkonfiguration
+## الإعداد الأولي
 
-1. **Öffnen Sie die Einstellungsseite:**
-   - Gehen Sie zu `/settings`
-   - Klicken Sie auf "Integrationen"
-   - Wählen Sie "Kaufland Integration"
+1. **افتح صفحة الإعدادات:**
+   - اذهب إلى `/settings`
+   - انقر على "Integrationen" (التكاملات)
+   - اختر "Kaufland Integration"
 
-2. **Geben Sie die API-Schlüssel ein:**
+2. **أدخل مفاتيح API:**
    - Client Key: `117126fd87983cb8f6594ac288fb407e`
    - Secret Key: `6dfe294b97f943a4c5a7f8de954357842aed6303d2318b7f28d0de699f807b68`
-   - Oder verwenden Sie den Button "Standard-Schlüssel verwenden", um die Schlüssel automatisch auszufüllen
+   - أو استخدم زر "Standard-Schlüssel verwenden" لملء المفاتيح تلقائياً
 
-3. **Verbindung testen:**
-   - Klicken Sie auf "Verbindung testen", um sicherzustellen, dass die Verbindung funktioniert
+3. **اختبر الاتصال:**
+   - انقر على "Verbindung testen" للتحقق من أن الاتصال يعمل
 
-4. **Einstellungen speichern:**
-   - Klicken Sie auf "Speichern"
+4. **احفظ الإعدادات:**
+   - انقر على "Speichern"
 
-## Produkte senden
+## إرسال المنتجات
 
-### Ein einzelnes Produkt senden
+### إرسال منتج واحد
 
 ```typescript
 const product = {
-  ean: "1234567890123", // EAN erforderlich
-  title: "Produktname",
-  description: "Produktbeschreibung",
+  ean: "1234567890123", // EAN مطلوب
+  title: "اسم المنتج",
+  description: "وصف المنتج",
   price: 29.99,
   quantity: 100,
   sku: "SKU-123",
   images: ["https://example.com/image.jpg"],
-  shippingTime: 3 // Tage (optional)
+  shippingTime: 3 // أيام (اختياري)
 }
 
 const response = await fetch('/api/kaufland/products/sync-single', {
@@ -43,21 +43,21 @@ const response = await fetch('/api/kaufland/products/sync-single', {
 })
 ```
 
-### Mehrere Produkte senden
+### إرسال عدة منتجات
 
 ```typescript
 const products = [
   {
     ean: "1234567890123",
-    title: "Produkt 1",
-    description: "Beschreibung Produkt 1",
+    title: "منتج 1",
+    description: "وصف المنتج 1",
     price: 29.99,
     quantity: 100
   },
   {
     ean: "1234567890124",
-    title: "Produkt 2",
-    description: "Beschreibung Produkt 2",
+    title: "منتج 2",
+    description: "وصف المنتج 2",
     price: 39.99,
     quantity: 50
   }
@@ -73,58 +73,58 @@ const response = await fetch('/api/kaufland/products/sync', {
 ## API Endpoints
 
 ### GET `/api/kaufland/settings`
-Aktuelle Kaufland-Einstellungen abrufen
+الحصول على إعدادات Kaufland الحالية
 
 ### POST `/api/kaufland/settings`
-Kaufland-Einstellungen speichern
+حفظ إعدادات Kaufland
 
 ### POST `/api/kaufland/test-connection`
-Verbindung zur Kaufland-API testen
+اختبار الاتصال بـ Kaufland API
 
 ### POST `/api/kaufland/products/sync-single`
-Ein einzelnes Produkt an Kaufland senden
+إرسال منتج واحد إلى Kaufland
 
 ### POST `/api/kaufland/products/sync`
-Mehrere Produkte an Kaufland senden
+إرسال عدة منتجات إلى Kaufland
 
 ### GET `/api/kaufland/products`
-Produkte von Kaufland abrufen
+الحصول على المنتجات من Kaufland
 
-## Produktanforderungen
+## متطلبات المنتج
 
-- **EAN**: Erforderlich (EAN/Barcode Nummer)
-- **Title**: Erforderlich (Produktname)
-- **Description**: Erforderlich (Produktbeschreibung)
-- **Price**: Erforderlich (Preis)
-- **Quantity**: Erforderlich (Verfügbare Menge)
-- **SKU**: Optional (SKU Nummer)
-- **Images**: Optional (Array von Bild-URLs)
-- **ShippingTime**: Optional (Versandzeit in Tagen)
+- **EAN**: مطلوب (رقم EAN/Barcode)
+- **Title**: مطلوب (اسم المنتج)
+- **Description**: مطلوب (وصف المنتج)
+- **Price**: مطلوب (السعر)
+- **Quantity**: مطلوب (الكمية المتاحة)
+- **SKU**: اختياري (رقم SKU)
+- **Images**: اختياري (مصفوفة من روابط الصور)
+- **ShippingTime**: اختياري (وقت الشحن بالأيام)
 
-## Wichtige Hinweise
+## ملاحظات مهمة
 
-1. **EAN erforderlich**: Jedes Produkt muss eine gültige EAN/Barcode haben
-2. **Bilder**: Müssen direkte Bild-URLs sein
-3. **Preis**: Muss in Euro (EUR) sein
-4. **Menge**: Muss eine ganze Zahl sein
+1. **EAN مطلوب**: كل منتج يجب أن يحتوي على EAN/Barcode صالح
+2. **الصور**: يجب أن تكون روابط مباشرة للصور (URLs)
+3. **السعر**: يجب أن يكون باليورو (EUR)
+4. **الكمية**: يجب أن تكون رقم صحيح
 
-## Fehlerbehebung
+## استكشاف الأخطاء
 
-### Fehler: "Client Key oder Secret Key fehlt"
-- Stellen Sie sicher, dass Client Key und Secret Key in den Einstellungen eingegeben sind
+### خطأ: "Client Key oder Secret Key fehlt"
+- تأكد من إدخال Client Key و Secret Key في الإعدادات
 
-### Fehler: "Verbindungsfehler"
-- Überprüfen Sie, ob die Schlüssel korrekt sind
-- Stellen Sie sicher, dass die API Basis-URL korrekt ist
-- Überprüfen Sie Ihre Internetverbindung
+### خطأ: "Verbindungsfehler"
+- تحقق من أن المفاتيح صحيحة
+- تأكد من أن API Base URL صحيح
+- تحقق من اتصال الإنترنت
 
-### Fehler: "Produkt benötigt eine EAN/Barcode"
-- Stellen Sie sicher, dass jedes Produkt eine gültige EAN hat
+### خطأ: "Produkt benötigt eine EAN/Barcode"
+- تأكد من أن كل منتج يحتوي على EAN صالح
 
-## Verwandte Dateien
+## الملفات ذات الصلة
 
-- `lib/kaufland-settings.ts` - Verwaltung der Kaufland-Einstellungen
-- `lib/kaufland-api.ts` - Kaufland API-Bibliothek
-- `app/api/kaufland/` - API Endpoints
-- `app/settings/kaufland/` - Einstellungsseite (Frontend)
+- `lib/kaufland-settings.ts` - إدارة إعدادات Kaufland
+- `lib/kaufland-api.ts` - مكتبة API لـ Kaufland
+- `app/api/kaufland/` - API endpoints
+- `app/settings/kaufland/` - صفحة إعدادات الواجهة
 

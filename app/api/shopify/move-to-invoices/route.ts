@@ -51,18 +51,18 @@ export async function POST(request: NextRequest) {
           shopifyOrderNumber: order.name,
           source: 'shopify'
         }
-
+        
         console.log('📤 Creating invoice with request body:', JSON.stringify(requestBody, null, 2))
-
+        
         // Create invoice via existing invoices API (use correct port)
         // Forward authentication headers from the original request
         const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
-
+        
         // Copy all authentication-related headers from the original request
         const authHeader = request.headers.get('authorization')
         const cookieHeader = request.headers.get('cookie')
         const userInfoHeader = request.headers.get('x-user-info')
-
+        
         if (authHeader) {
           authHeaders['authorization'] = authHeader
         }
@@ -72,13 +72,13 @@ export async function POST(request: NextRequest) {
         if (userInfoHeader) {
           authHeaders['x-user-info'] = userInfoHeader
         }
-
+        
         const resp = await fetch(`http://127.0.0.1:3000/api/invoices`, {
           method: 'POST',
           headers: authHeaders,
           body: JSON.stringify(requestBody)
         })
-
+        
         console.log('📥 Invoice API response status:', resp.status, resp.statusText)
 
         if (!resp.ok) {

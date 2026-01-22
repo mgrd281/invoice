@@ -18,4 +18,3 @@ export function log(message: string, data?: any) {
 export function getLogs() {
     return [...runtimeLogs].reverse()
 }
-

@@ -13,4 +13,3 @@ export default async function EditProfilePage({ params }: { params: { id: string
 
     return <ProfileForm initialData={profile} isEdit />
 }
-

@@ -7,12 +7,12 @@ export default function TestInvoiceTypesPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
           Test Rechnungstypen
         </h1>
-
+        
         <div className="bg-white rounded-lg shadow-lg p-8">
           <p className="text-gray-600 mb-8 text-center">
             Testen Sie die verschiedenen Rechnungstypen mit demselben Design aber unterschiedlichen Wasserzeichen.
           </p>
-
+          
           <div className="grid md:grid-cols-3 gap-6">
             {/* Normal Invoice */}
             <div className="text-center">
@@ -23,7 +23,7 @@ export default function TestInvoiceTypesPage() {
                 <p className="text-blue-600 text-sm mb-4">
                   Standard Rechnung ohne Wasserzeichen
                 </p>
-                <a
+                <a 
                   href="/api/test-invoice-types?type=normal"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -48,7 +48,7 @@ export default function TestInvoiceTypesPage() {
                 <p className="text-red-600 text-sm mb-4">
                   Stornierung mit rotem "STORNIERT" Wasserzeichen
                 </p>
-                <a
+                <a 
                   href="/api/test-invoice-types?type=storno"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -75,7 +75,7 @@ export default function TestInvoiceTypesPage() {
                 <p className="text-blue-600 text-sm mb-4">
                   Rückerstattung mit blauem "ERSTATTUNG" Stempel + Wasserzeichen
                 </p>
-                <a
+                <a 
                   href="/api/test-invoice-types?type=gutschrift"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -122,7 +122,7 @@ export default function TestInvoiceTypesPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <a
+            <a 
               href="/invoices"
               className="inline-block bg-gray-600 text-white px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors"
             >

@@ -88,4 +88,3 @@ export async function getCurrentUserId(): Promise<number | null> {
   const auth = await getServerAuth()
   return auth.isAuthenticated ? auth.user?.id || null : null
 }
-

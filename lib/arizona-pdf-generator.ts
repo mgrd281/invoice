@@ -777,4 +777,3 @@ export async function saveArizonaPDF(invoice: InvoiceData): Promise<void> {
   doc.save(filename)
 }
 
-

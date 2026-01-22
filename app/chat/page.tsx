@@ -387,4 +387,3 @@ Wählen Sie eine der Schnellaktionen unten oder stellen Sie einfach Ihre Frage!`
         </div>
     )
 }
-

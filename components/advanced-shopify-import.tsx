@@ -11,11 +11,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import {
-  Play,
-  Pause,
-  Square,
-  RefreshCw,
+import { 
+  Play, 
+  Pause, 
+  Square, 
+  RefreshCw, 
   Download,
   Calendar,
   Filter,
@@ -168,7 +168,7 @@ export default function AdvancedShopifyImport() {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
       }
-
+      
       pollingIntervalRef.current = setInterval(() => {
         pollJobStatus(result.jobId)
       }, 2000) // Alle 2 Sekunden
@@ -180,7 +180,7 @@ export default function AdvancedShopifyImport() {
       console.error('❌ Import failed:', error)
       setErrors([error.message])
       setIsImporting(false)
-
+      
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
         abortControllerRef.current = null
@@ -235,7 +235,7 @@ export default function AdvancedShopifyImport() {
       if (response.ok) {
         console.log('🛑 Import cancelled')
         setIsImporting(false)
-
+        
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
           pollingIntervalRef.current = null
@@ -270,12 +270,12 @@ export default function AdvancedShopifyImport() {
       if (response.ok) {
         console.log('▶️ Import resumed')
         setIsImporting(true)
-
+        
         // Polling neu starten
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
         }
-
+        
         pollingIntervalRef.current = setInterval(() => {
           pollJobStatus(currentJob.id)
         }, 2000)
@@ -318,10 +318,10 @@ export default function AdvancedShopifyImport() {
   // Verbleibende Zeit formatieren
   const formatTimeRemaining = (seconds?: number) => {
     if (!seconds) return 'Unbekannt'
-
+    
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
-
+    
     if (minutes > 0) {
       return `${minutes}m ${remainingSeconds}s`
     }
@@ -348,7 +348,7 @@ export default function AdvancedShopifyImport() {
           <h2 className="text-2xl font-bold">Erweiterte Shopify Import</h2>
           <p className="text-gray-600">Unbegrenzter Import mit Fortschrittsverfolgung und vollständiger Kontrolle</p>
         </div>
-        <Button
+        <Button 
           onClick={loadRecentJobs}
           variant="outline"
           size="sm"
@@ -456,8 +456,8 @@ export default function AdvancedShopifyImport() {
 
                 <div className="space-y-2">
                   <Label>Datumsbereich</Label>
-                  <Select
-                    value={filters.dateRange}
+                  <Select 
+                    value={filters.dateRange} 
                     onValueChange={(value) => setFilters(prev => ({ ...prev, dateRange: value as any }))}
                   >
                     <SelectTrigger>
@@ -501,8 +501,8 @@ export default function AdvancedShopifyImport() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Zahlungsstatus</Label>
-                  <Select
-                    value={filters.financialStatus || 'all'}
+                  <Select 
+                    value={filters.financialStatus || 'all'} 
                     onValueChange={(value) => setFilters(prev => ({ ...prev, financialStatus: value === 'all' ? '' : value }))}
                   >
                     <SelectTrigger>
@@ -521,8 +521,8 @@ export default function AdvancedShopifyImport() {
 
                 <div className="space-y-2">
                   <Label>Bestellstatus</Label>
-                  <Select
-                    value={filters.orderStatus || 'all'}
+                  <Select 
+                    value={filters.orderStatus || 'all'} 
                     onValueChange={(value) => setFilters(prev => ({ ...prev, orderStatus: value === 'all' ? '' : value }))}
                   >
                     <SelectTrigger>
@@ -643,7 +643,7 @@ export default function AdvancedShopifyImport() {
                   <div>
                     <p className="text-gray-600">Erfolgsrate</p>
                     <p className="font-medium">
-                      {currentJob.progress.total > 0
+                      {currentJob.progress.total > 0 
                         ? ((currentJob.results.imported / currentJob.progress.total) * 100).toFixed(1)
                         : 0
                       }%
@@ -709,7 +709,7 @@ export default function AdvancedShopifyImport() {
                           🚀 Erweiterte Shopify Import System
                         </div>
                         <div className="text-sm text-gray-600 max-w-2xl mx-auto">
-                          Unbegrenzter Import von Bestellungen mit Background Jobs, Cursor-based Pagination
+                          Unbegrenzter Import von Bestellungen mit Background Jobs, Cursor-based Pagination 
                           und intelligentem Rate Limiting. Unterstützt Pause/Resume mit Echtzeit-Fortschritt.
                         </div>
                       </div>

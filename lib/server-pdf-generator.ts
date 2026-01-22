@@ -35,4 +35,3 @@ export async function generateArizonaPDFBuffer(invoiceId: string): Promise<Buffe
         return null
     }
 }
-

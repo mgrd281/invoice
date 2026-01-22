@@ -526,4 +526,3 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
         </div>
     )
 }
-

@@ -22,4 +22,3 @@ export async function logInvoiceEvent(invoiceId: string, type: InvoiceEventType,
         console.error('Failed to log invoice event:', error)
     }
 }
-

@@ -138,4 +138,3 @@ function mapPrismaStatusToFrontend(status: string): InvoiceStatus {
   }
   return map[status] || 'offen'
 }
-

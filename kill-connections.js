@@ -8,9 +8,9 @@ async function main() {
         // This query attempts to terminate all other connections to the same database
         // It requires high privileges, so it might fail on Xata/Neon free tiers.
         const result = await prisma.$queryRawUnsafe(`
-      SELECT pg_terminate_backend(pid)
-      FROM pg_stat_activity
-      WHERE pid <> pg_backend_pid()
+      SELECT pg_terminate_backend(pid) 
+      FROM pg_stat_activity 
+      WHERE pid <> pg_backend_pid() 
       AND datname = current_database()
       AND state = 'idle';
     `)

@@ -33,4 +33,3 @@ async function checkShopify() {
 }
 
 checkShopify()
-

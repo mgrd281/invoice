@@ -31,4 +31,3 @@ export function getBusinessDaysDiff(startDate: Date, endDate: Date): number {
 
     return count;
 }
-

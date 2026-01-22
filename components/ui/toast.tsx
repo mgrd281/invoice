@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, X, Info, AlertTriangle } from 'lucide-react'
 
-interface ToastProps {
+export interface ToastProps {
   message: string
   type: 'success' | 'error' | 'info' | 'warning'
   onClose: () => void
@@ -98,4 +98,3 @@ export function useToast() {
     ToastContainer
   }
 }
-

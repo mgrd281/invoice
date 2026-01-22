@@ -544,4 +544,3 @@ export async function downloadInvoicePDF(invoiceId: string, invoiceNumber: strin
     throw new Error('PDF generation completely failed. Please try again or contact support.')
   }
 }
-

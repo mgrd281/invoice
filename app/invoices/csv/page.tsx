@@ -22,11 +22,11 @@ export default function CsvInvoicesPage() {
       console.log('Fetching CSV data...')
       const response = await fetch('/api/invoices/csv')
       const data = await response.json()
-
+      
       console.log('CSV API Response:', data)
       console.log('Invoices received:', data.invoices?.length || 0)
       console.log('Customers received:', data.customers?.length || 0)
-
+      
       setInvoices(data.invoices || [])
       setCustomers(data.customers || [])
     } catch (error) {
@@ -106,7 +106,7 @@ export default function CsvInvoicesPage() {
               <div className="text-2xl font-bold text-blue-600">{invoices.length}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -117,7 +117,7 @@ export default function CsvInvoicesPage() {
               <div className="text-2xl font-bold text-green-600">{customers.length}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -179,8 +179,8 @@ export default function CsvInvoicesPage() {
                               Anzeigen
                             </Button>
                           </Link>
-                          <Button
-                            variant="outline"
+                          <Button 
+                            variant="outline" 
                             size="sm"
                             onClick={() => handleDownloadPdf(invoice.id, invoice.number)}
                           >

@@ -72,4 +72,3 @@ export function InvoiceTimeline({ history }: { history: InvoiceHistoryItem[] }) 
         </div>
     )
 }
-

@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
             data: { organizationId: targetOrgId }
         })
 
-        // Also update the 'default-org' settings if it exists to match this org,
+        // Also update the 'default-org' settings if it exists to match this org, 
         // or ensure this org is the one used for settings
 
         return NextResponse.json({

@@ -227,4 +227,3 @@ if (typeof setInterval !== 'undefined') {
     IdempotencyManager.cleanup()
   }, 60 * 60 * 1000) // Jede Stunde
 }
-

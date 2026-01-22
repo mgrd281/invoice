@@ -51,4 +51,3 @@ To show stars on collection pages (product cards):
 1.  Click **Save** in the top right corner.
 2.  Visit a product page on your store.
 3.  If you have imported reviews for that product in the app, you should now see the star rating!
-

@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
             if (review.customer_email) {
                 const customer = await prisma.customer.upsert({
                     where: {
-                        // We need a unique constraint for upsert.
-                        // Since we don't have email unique globally (it's per org usually),
+                        // We need a unique constraint for upsert. 
+                        // Since we don't have email unique globally (it's per org usually), 
                         // we might just findFirst and then create if not found.
                         // For simplicity in this specific schema which might not have email unique:
                         id: 'temp-id-to-fail' // This won't work for upsert without unique.

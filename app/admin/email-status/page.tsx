@@ -27,7 +27,7 @@ export default function EmailStatusPage() {
         emailFrom: process.env.EMAIL_FROM || 'Not set',
         timestamp: new Date().toISOString()
       }
-
+      
       setEmailConfig(config)
     } catch (error) {
       console.error('Error checking email config:', error)
@@ -134,7 +134,7 @@ export default function EmailStatusPage() {
                         {getStatusBadge(!emailConfig.isDevelopment, 'PROD', 'DEV')}
                       </div>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">E-Mail Dev Mode:</span>
                       <div className="flex items-center">
@@ -142,7 +142,7 @@ export default function EmailStatusPage() {
                         {getStatusBadge(!emailConfig.emailDevMode, 'REAL', 'SIM')}
                       </div>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">SMTP User:</span>
                       <div className="flex items-center">
@@ -150,7 +150,7 @@ export default function EmailStatusPage() {
                         {getStatusBadge(emailConfig.hasSmtpUser, 'OK', 'FEHLT')}
                       </div>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">SMTP Password:</span>
                       <div className="flex items-center">
@@ -159,23 +159,23 @@ export default function EmailStatusPage() {
                       </div>
                     </div>
                   </div>
-
+                  
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">SMTP Host:</span>
                       <span className="text-sm text-gray-600">{emailConfig.smtpHost}</span>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">SMTP Port:</span>
                       <span className="text-sm text-gray-600">{emailConfig.smtpPort}</span>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">From Email:</span>
                       <span className="text-sm text-gray-600">{emailConfig.emailFrom}</span>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="font-medium">Letzte Prüfung:</span>
                       <span className="text-sm text-gray-600">
@@ -193,7 +193,7 @@ export default function EmailStatusPage() {
                       <div>
                         <strong>Simulation Mode aktiv</strong>
                         <p className="text-sm mt-1">
-                          E-Mails werden nur simuliert, nicht wirklich gesendet.
+                          E-Mails werden nur simuliert, nicht wirklich gesendet. 
                           Setzen Sie EMAIL_DEV_MODE="false" in .env.local für echte E-Mails.
                         </p>
                       </div>
@@ -265,7 +265,7 @@ export default function EmailStatusPage() {
 
             {testResult && (
               <div className={`p-4 rounded-lg border ${
-                testResult.success
+                testResult.success 
                   ? 'bg-green-50 border-green-200 text-green-700'
                   : 'bg-red-50 border-red-200 text-red-700'
               }`}>

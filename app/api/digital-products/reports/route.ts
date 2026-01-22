@@ -68,9 +68,9 @@ export async function GET(req: Request) {
 
                 productStats[prodId].count += 1
 
-                // Add revenue if we found the order.
+                // Add revenue if we found the order. 
                 // CAUTION: If an order has multiple keys, this adds the full order value multiple times.
-                // We should ideally split it, but we don't know the split.
+                // We should ideally split it, but we don't know the split. 
                 // For now, let's just use the order value if it's the first time we see this order for this product?
                 // Or simpler: Just sum up counts. Revenue is tricky.
                 // Let's try to be slightly smarter: If we have the order, add it.

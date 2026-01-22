@@ -140,7 +140,7 @@ Betreff: Freundliche Erinnerung - Rechnung {{invoice_number}}
 
 Sehr geehrte/r {{customer_name}},
 
-wir möchten Sie freundlich daran erinnern, dass die Rechnung
+wir möchten Sie freundlich daran erinnern, dass die Rechnung 
 {{invoice_number}} vom {{invoice_date}} am {{due_date}} fällig wird.
 
 Rechnungsdetails:
@@ -176,13 +176,13 @@ const triggerDate = new Date(dueDate)
 triggerDate.setDate(triggerDate.getDate() + schedule.triggerDays)
 
 // Negative Werte = vor Fälligkeit
-// 0 = am Fälligkeitstag
+// 0 = am Fälligkeitstag  
 // Positive Werte = nach Fälligkeit
 ```
 
 ### **24-Stunden-Regel**
 ```typescript
-const hoursSinceLastReminder =
+const hoursSinceLastReminder = 
   (now.getTime() - lastReminderDate.getTime()) / (1000 * 60 * 60)
 
 if (hoursSinceLastReminder < 24) {
@@ -243,7 +243,7 @@ curl -X POST http://localhost:3000/api/reminders/send-manual \
 
 ### **Implementierungsstand**
 - ✅ **Grundsystem**: 100% abgeschlossen
-- ✅ **Einstellungen**: 100% abgeschlossen
+- ✅ **Einstellungen**: 100% abgeschlossen  
 - ✅ **Automatisierung**: 100% abgeschlossen
 - ✅ **Manuelle Erinnerungen**: 100% abgeschlossen
 - ✅ **Schutzregeln**: 100% abgeschlossen
@@ -259,13 +259,13 @@ curl -X POST http://localhost:3000/api/reminders/send-manual \
 
 Das Rechnungserinnerungssystem ist **vollständig funktionsfähig** und erfüllt alle Hauptanforderungen:
 
-✅ **Globaler Toggle** für automatische Erinnerungen
-✅ **Anpassbarer Zeitplan** mit Mahnungstufen
-✅ **Manueller Button** in Rechnungsdetails
-✅ **Vorlagen mit Variablen** für personalisierte E-Mails
-✅ **PDF-Anhang** automatisch
-✅ **Schutzregeln** gegen Spam
-✅ **Nur Deutsch** als Sprache
-✅ **Zahlungslink** und IBAN-Integration
+✅ **Globaler Toggle** für automatische Erinnerungen  
+✅ **Anpassbarer Zeitplan** mit Mahnungstufen  
+✅ **Manueller Button** in Rechnungsdetails  
+✅ **Vorlagen mit Variablen** für personalisierte E-Mails  
+✅ **PDF-Anhang** automatisch  
+✅ **Schutzregeln** gegen Spam  
+✅ **Nur Deutsch** als Sprache  
+✅ **Zahlungslink** und IBAN-Integration  
 
 Das System ist **produktionsreif** und kann sofort verwendet werden!

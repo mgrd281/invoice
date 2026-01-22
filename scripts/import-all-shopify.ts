@@ -1,6 +1,13 @@
+<<<<<<< HEAD
 import { ShopifyAPI, convertShopifyOrderToInvoice } from '../lib/shopify-api'
 import { getShopifySettings } from '../lib/shopify-settings'
 import { saveInvoicesToDisk, loadInvoicesFromDisk } from '../lib/server-storage'
+=======
+
+import { ShopifyAPI, convertShopifyOrderToInvoice } from './lib/shopify-api'
+import { getShopifySettings } from './lib/shopify-settings'
+import { saveInvoicesToDisk, loadInvoicesFromDisk } from './lib/server-storage'
+>>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -99,4 +106,3 @@ async function run() {
 }
 
 run()
-

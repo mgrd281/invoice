@@ -30,7 +30,7 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProvide
     console.log('ThemeProvider: Setting theme to', newTheme)
     setThemeState(newTheme)
     applyTheme(newTheme)
-
+    
     // Save to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('theme', newTheme)

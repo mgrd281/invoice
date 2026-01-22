@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         })
 
         // 2. Get Distribution by Year for Additional Income (since that's the issue)
-        // We use raw query or just group by in application code if dataset is small enough,
+        // We use raw query or just group by in application code if dataset is small enough, 
         // but for 2500+ items, let's just fetch dates and aggregate in memory to be safe across DB types
         const allIncomeDates = await prisma.additionalIncome.findMany({
             where: { organizationId: organization.id },

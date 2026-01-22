@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     for (const field of requiredFields) {
       if (!body[field] || body[field].trim() === '') {
         return NextResponse.json(
-          {
+          { 
             error: 'Validation failed',
             message: `Field '${field}' is required`,
             field: field
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating organization:', error)
     return NextResponse.json(
-      {
+      { 
         error: 'Failed to create organization',
         message: 'Ein Fehler ist beim Erstellen der Organisation aufgetreten'
       },

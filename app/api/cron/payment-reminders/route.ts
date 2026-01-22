@@ -136,7 +136,7 @@ export async function GET(req: Request) {
 
                         // Send Cancellation Email? User didn't explicitly ask for email ON cancellation,
                         // but "Warning BEFORE cancellation".
-                        // "3) Automatische Stornierung ... Benachrichtigung an Kunden senden." -> Ja, Benachrichtigung senden.
+                        // "3) إلغاء الطلب تلقائيًا ... إرسال إشعار للعميل بإلغاء الطلب." -> Yes, send notification.
 
                         await sendEmail({
                             to: customerEmail,
@@ -212,4 +212,3 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: (error as Error).message }, { status: 500 })
     }
 }
-

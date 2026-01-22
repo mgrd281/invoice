@@ -50,17 +50,17 @@
         <input type="password" id="password" placeholder="Password" value="Mkarina321@" required>
         <button type="submit">Login</button>
     </form>
-
+    
     <div id="result"></div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-
+            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const resultDiv = document.getElementById('result');
-
+            
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -69,9 +69,9 @@
                     },
                     body: JSON.stringify({ email, password })
                 });
-
+                
                 const data = await response.json();
-
+                
                 if (data.success) {
                     resultDiv.className = 'result success';
                     resultDiv.innerHTML = `

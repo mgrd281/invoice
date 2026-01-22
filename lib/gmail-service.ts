@@ -89,4 +89,3 @@ export async function syncGmailMessages() {
         console.error('Error syncing Gmail:', error);
     }
 }
-
