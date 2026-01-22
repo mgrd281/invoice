@@ -23,7 +23,8 @@ import {
     Zap,
     Store,
     ShieldAlert,
-    UserX
+    UserX,
+    Terminal
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
