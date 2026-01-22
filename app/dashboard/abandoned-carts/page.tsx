@@ -312,11 +312,12 @@ export default function AbandonedCartsPage() {
                                                         <>
                                                             {(expandedCarts.has(cart.id) ? cart.lineItems : cart.lineItems.slice(0, 3)).map((item: any, idx: number) => (
                                                                 <div key={idx} className="flex items-center gap-2 group">
-                                                                    <div className="w-6 h-6 bg-gray-100 rounded border border-gray-100 flex-shrink-0 overflow-hidden">
+                                                                    <div className="w-8 h-8 bg-gray-50 rounded-md border border-gray-100 flex-shrink-0 overflow-hidden shadow-sm group-hover:scale-110 transition-transform duration-200">
                                                                         <img
-                                                                            src={item.image?.src || 'https://via.placeholder.com/24?text=P'}
+                                                                            src={item.image?.src || 'https://via.placeholder.com/32?text='}
                                                                             alt=""
                                                                             className="w-full h-full object-cover"
+                                                                            loading="lazy"
                                                                         />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
