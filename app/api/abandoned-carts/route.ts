@@ -100,23 +100,40 @@ export async function GET(req: Request) {
                         // Note: v.image_id is not always present in simple fields, but p.images should contain it
                     })
 
+                    // Track if we made any changes that need persisting
+                    let hasNewImages = false
+
                     // Map images back to carts
-                    carts.forEach(cart => {
+                    for (const cart of carts) {
+                        let cartModified = false
                         if (Array.isArray(cart.lineItems)) {
                             (cart.lineItems as any[]).forEach(item => {
                                 if (item.product_id && !item.image?.src) {
                                     const imgSrc = productImageMap[item.product_id.toString()]
                                     if (imgSrc) {
                                         item.image = { src: imgSrc }
+                                        cartModified = true
+                                        hasNewImages = true
                                     }
                                 }
                             })
+
+                            // Persist to DB if modified
+                            if (cartModified) {
+                                try {
+                                    await prisma.abandonedCart.update({
+                                        where: { id: cart.id },
+                                        data: { lineItems: cart.lineItems as any }
+                                    })
+                                } catch (dbErr) {
+                                    console.error(`[AbandonedCarts] Failed to persist images for cart ${cart.id}:`, dbErr)
+                                }
+                            }
                         }
-                    })
+                    }
                 }
             } catch (enrichError) {
                 console.error('[AbandonedCarts] Image enrichment failed:', enrichError)
-                // Continue with missing images if Shopify API fails
             }
         }
 
