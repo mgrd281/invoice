@@ -155,71 +155,13 @@ export function EmailComposer({ isOpen, onClose, cart, onSent }: EmailComposerPr
                                 <div className="mb-4 pb-2 border-b">
                                     <span className="text-gray-400">Betreff:</span> <span className="font-medium text-gray-800">{preview.subject}</span>
                                 </div>
-
-                                {templateId === 'professional-marketing' ? (
-                                    <div className="space-y-4">
-                                        <div className="text-gray-600 leading-relaxed">
-                                            {preview.body.split('[CartItemsHTML]')[0]}
-                                        </div>
-
-                                        {/* Rich Product Cards Preview */}
-                                        <div className="space-y-3">
-                                            {(cart.lineItems as any[] || []).slice(0, 3).map((item, idx) => {
-                                                const originalPrice = parseFloat(item.price) || 0;
-                                                const discountedPrice = originalPrice * ((100 - discountValue) / 100);
-                                                return (
-                                                    <div key={idx} className="flex gap-4 p-3 border rounded-lg bg-gray-50/50">
-                                                        <div className="w-16 h-16 bg-white border rounded overflow-hidden flex-shrink-0">
-                                                            <img
-                                                                src={item.image?.src || 'https://via.placeholder.com/64?text=Product'}
-                                                                alt={item.title}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-bold text-gray-900 truncate">{item.title}</div>
-                                                            <div className="text-xs text-gray-500">Menge: {item.quantity}</div>
-                                                            <div className="mt-1 flex items-center gap-2">
-                                                                <span className="text-xs text-gray-400 line-through">{originalPrice.toFixed(2)} {cart.currency}</span>
-                                                                <span className="text-sm font-bold text-emerald-600">{discountedPrice.toFixed(2)} {cart.currency}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                            {(cart.lineItems?.length > 3) && (
-                                                <p className="text-center text-xs text-gray-400">+{cart.lineItems.length - 3} weitere Artikel</p>
-                                            )}
-                                        </div>
-
-                                        <div className="text-gray-600 leading-relaxed">
-                                            {preview.body.split('[CartItemsHTML]')[1]}
-                                        </div>
-
-                                        {/* Discount Section Preview */}
-                                        <div className="bg-emerald-50 border-2 border-dashed border-emerald-200 p-4 rounded-lg text-center">
-                                            <div className="text-[10px] text-emerald-800 uppercase font-bold tracking-wider mb-1">Ihr Rabatt: {discountValue}%</div>
-                                            <div className="text-2xl font-black text-emerald-600">RECOVERY-CODE</div>
-                                            <div className="text-[10px] text-emerald-700 mt-1 opacity-70">Gültig für {expiryHours} Stunden</div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="whitespace-pre-wrap text-gray-600 leading-relaxed">
-                                        {preview.body}
-                                    </div>
-                                )}
-
-                                <div className="mt-6 flex flex-col items-center gap-2">
-                                    <Button variant="secondary" className="bg-emerald-600 text-white hover:bg-emerald-700 w-full max-w-xs h-12 text-base font-bold shadow-lg">
+                                <div className="whitespace-pre-wrap text-gray-600 leading-relaxed">
+                                    {preview.body}
+                                </div>
+                                <div className="mt-6 flex justify-center">
+                                    <Button variant="secondary" className="bg-emerald-600 text-white hover:bg-emerald-700 w-full max-w-xs">
                                         {preview.cta}
                                     </Button>
-                                    {templateId === 'professional-marketing' && (
-                                        <div className="text-[10px] text-gray-400 flex gap-3 mt-2">
-                                            <span>✓ 14 Tage Rückgabe</span>
-                                            <span>✓ Sicher bezahlen</span>
-                                            <span>✓ Support</span>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         )}
