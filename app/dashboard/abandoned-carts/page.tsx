@@ -24,14 +24,6 @@ interface AbandonedCart {
     recoverySentAt: string | null
     createdAt: string
     updatedAt: string
-    emailLogs?: {
-        id: string
-        templateId: string | null
-        discountCode: string | null
-        sentAt: string
-        status: string
-        error: string | null
-    }[]
 }
 
 export default function AbandonedCartsPage() {
@@ -329,23 +321,9 @@ export default function AbandonedCartsPage() {
                                                         </span>
                                                     )}
                                                     {cart.recoverySent && (
-                                                        <div className="flex flex-col items-center gap-1">
-                                                            <span className="text-[10px] text-blue-600 flex items-center gap-1">
-                                                                <Mail className="w-3 h-3" /> E-Mail gesendet
-                                                            </span>
-                                                            {cart.emailLogs && cart.emailLogs.length > 0 && (
-                                                                <div className="mt-1 flex flex-col items-center gap-0.5 border-t border-blue-50 pt-1">
-                                                                    <span className="text-[9px] text-gray-400">
-                                                                        ID: {cart.emailLogs[0].templateId || 'Standard'}
-                                                                    </span>
-                                                                    {cart.emailLogs[0].discountCode && (
-                                                                        <span className="text-[9px] font-bold text-emerald-600">
-                                                                            Code: {cart.emailLogs[0].discountCode}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        <span className="text-[10px] text-blue-600 flex items-center gap-1">
+                                                            <Mail className="w-3 h-3" /> E-Mail gesendet
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
