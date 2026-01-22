@@ -165,7 +165,7 @@ export const DEFAULT_FEATURES = [
     {
         id: 'logs',
         href: '/dashboard/logs',
-        title: 'System Logs',
+        title: 'System Logs (Aktiv)',
         description: 'Echtzeit-Status und Fehlerdiagnose',
         icon: Terminal,
         iconBg: 'bg-black',
