@@ -162,35 +162,25 @@ export const DEFAULT_FEATURES = [
         iconBg: 'bg-gradient-to-r from-red-600 to-red-700',
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
-    {
-        id: 'logos',
-        href: '/dashboard/logos',
-        title: 'Logos & Branding',
-        description: 'Marken-Logos und Assets verwalten',
-        icon: Star,
-        iconBg: 'bg-gradient-to-r from-blue-400 to-blue-500',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
-        badge: 'NEU',
-        badgeClass: 'bg-blue-100 text-blue-700'
     },
-    {
-        id: 'logs',
+{
+    id: 'logs',
         href: '/dashboard/logs',
-        title: 'System Logs',
-        description: 'Echtzeit-Status und Fehlerdiagnose',
-        icon: Terminal,
-        iconBg: 'bg-black',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
-        badge: 'NEW',
-        badgeClass: 'bg-gray-100 text-gray-700'
-    },
-    {
-        id: 'settings',
+            title: 'System Logs',
+                description: 'Echtzeit-Status und Fehlerdiagnose',
+                    icon: Terminal,
+                        iconBg: 'bg-black',
+                            cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
+                                badge: 'NEW',
+                                    badgeClass: 'bg-gray-100 text-gray-700'
+},
+{
+    id: 'settings',
         href: '/settings',
-        title: 'Einstellungen',
-        description: 'Konto und Firma konfigurieren',
-        icon: Settings,
-        iconBg: 'bg-gradient-to-r from-gray-500 to-gray-600',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
-    }
+            title: 'Einstellungen',
+                description: 'Konto und Firma konfigurieren',
+                    icon: Settings,
+                        iconBg: 'bg-gradient-to-r from-gray-500 to-gray-600',
+                            cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
+}
 ]
