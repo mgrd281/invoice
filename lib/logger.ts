@@ -1,17 +1,30 @@
-// Simple in-memory logger for debugging Vercel deployments
-export const runtimeLogs: string[] = []
+export type LogLevel = 'info' | 'warn' | 'error' | 'success'
 
-export function log(message: string, data?: any) {
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, 8)
-    const logMessage = `[${timestamp}] ${message} ${data ? JSON.stringify(data, null, 2) : ''}`
+export interface StructuredLog {
+    timestamp: string
+    level: LogLevel
+    message: string
+    data?: any
+}
 
-    console.log(logMessage)
+export const runtimeLogs: StructuredLog[] = []
+
+export function log(message: string, level: LogLevel = 'info', data?: any) {
+    const timestamp = new Date().toISOString()
+    const logEntry: StructuredLog = {
+        timestamp,
+        level,
+        message,
+        data
+    }
+
+    console.log(`[${level.toUpperCase()}] ${message}`, data || '')
 
     // Keep only last 100 logs
     if (runtimeLogs.length > 100) {
         runtimeLogs.shift()
     }
-    runtimeLogs.push(logMessage)
+    runtimeLogs.push(logEntry)
 }
 
 // Helper to get logs

@@ -21,37 +21,22 @@ export default function LogsPage() {
 
     const fetchLogs = async () => {
         setLoading(true)
-        // In a real app, this would fetch from a database or a file
-        // For now, we simulate recent activity
-        setTimeout(() => {
-            setLogs([
-                {
-                    id: '1',
-                    timestamp: new Date().toISOString(),
-                    level: 'success' as const,
-                    message: 'System initialisiert und bereit.'
-                },
-                {
-                    id: '2',
-                    timestamp: new Date(Date.now() - 5000).toISOString(),
-                    level: 'info' as const,
-                    message: 'Shopify-Verbindung überprüft: Aktiv.'
-                },
-                {
-                    id: '3',
-                    timestamp: new Date(Date.now() - 15000).toISOString(),
-                    level: 'info' as const,
-                    message: 'Warenkorb-Fingerprinting-Script geladen.'
-                },
-                {
-                    id: '4',
-                    timestamp: new Date(Date.now() - 60000).toISOString(),
-                    level: 'warn' as const,
-                    message: 'API Throttling aktiv: 15 Minuten Abkühlphase für 12 Produkte.'
-                }
-            ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) as LogEntry[])
+        try {
+            const res = await fetch('/api/system-logs')
+            const data = await res.json()
+            if (data.logs) {
+                setLogs(data.logs.map((l: any, i: number) => ({
+                    id: String(i),
+                    timestamp: l.timestamp,
+                    level: l.level,
+                    message: l.message
+                })))
+            }
+        } catch (err) {
+            console.error('Failed to fetch real logs:', err)
+        } finally {
             setLoading(false)
-        }, 500)
+        }
     }
 
     useEffect(() => {

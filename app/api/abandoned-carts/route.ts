@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { DEFAULT_SHOPIFY_SETTINGS } from '@/lib/shopify-settings'
 import { getServerSession } from 'next-auth'
@@ -60,40 +61,85 @@ export async function GET(req: Request) {
         const enrichmentCooloff = 15 * 60 * 1000 // 15 minutes
         const now = Date.now()
 
+        // Internal Image Cache (pre-fetch from what we already have in the DB)
+        const productImageMap: Record<string, string> = {}
+
         carts.forEach(cart => {
-            const lastAttempt = cart.lastEnrichmentAttempt ? new Date(cart.lastEnrichmentAttempt).getTime() : 0
+            const castCart = cart as any
+            const allItems = [...(Array.isArray(castCart.lineItems) ? castCart.lineItems : []), ...(Array.isArray(castCart.removedItems) ? castCart.removedItems : [])]
+            allItems.forEach(item => {
+                if (item.product_id && item.image?.src) {
+                    productImageMap[item.product_id.toString()] = item.image.src
+                }
+            })
+
+            const lastAttempt = castCart.lastEnrichmentAttempt ? new Date(castCart.lastEnrichmentAttempt).getTime() : 0
             const isCoolingOff = (now - lastAttempt) < enrichmentCooloff
 
             if (isCoolingOff) return
 
-            if (Array.isArray(cart.lineItems)) {
-                (cart.lineItems as any[]).forEach(item => {
-                    if (item.product_id && !item.image?.src) {
+            allItems.forEach(item => {
+                if (item.product_id && !item.image?.src) {
+                    if (!productImageMap[item.product_id.toString()]) {
                         productIds.add(item.product_id.toString())
                     }
-                })
-            }
-            if (Array.isArray(cart.removedItems)) {
-                (cart.removedItems as any[]).forEach(item => {
-                    if (item.product_id && !item.image?.src) {
-                        productIds.add(item.product_id.toString())
-                    }
-                })
-            }
+                }
+            })
         })
 
-        // Limit the number of products fetched to 20 per request (reduced from 50)
-        const productIdsArray = Array.from(productIds).slice(0, 20)
+        // FIRST PASS: Enrich using local cache (no API needed)
+        let totalLocalUpdates = 0
+        for (const cart of carts) {
+            const castCart = cart as any
+            let cartModified = false
 
-        if (productIdsArray.length > 0 && carts.length > 0) {
+            const processItems = (items: any[]) => {
+                items.forEach(item => {
+                    if (item.product_id && !item.image?.src) {
+                        const cached = productImageMap[item.product_id.toString()]
+                        if (cached) {
+                            item.image = { src: cached }
+                            cartModified = true
+                        }
+                    }
+                })
+            }
+
+            if (Array.isArray(castCart.lineItems)) processItems(castCart.lineItems as any[])
+            if (Array.isArray(castCart.removedItems)) processItems(castCart.removedItems as any[])
+
+            if (cartModified) {
+                totalLocalUpdates++
+                await prisma.abandonedCart.update({
+                    where: { id: cart.id },
+                    data: {
+                        lineItems: castCart.lineItems,
+                        removedItems: castCart.removedItems
+                    } as any
+                })
+            }
+        }
+
+        if (totalLocalUpdates > 0) {
+            log(`Bild-Enrichment (Lokal): ${totalLocalUpdates} Warenkörbe aus Datenbank-Cache aktualisiert.`, 'success')
+        }
+
+        // SECOND PASS: Fetch remaining from Shopify
+        const remainingToFetch = Array.from(productIds).filter(id => !productImageMap[id])
+        const productIdsArray = remainingToFetch.slice(0, 20)
+
+        if (productIdsArray.length > 0) {
+            log(`Bild-Enrichment (Shopify): Suche Bilder für ${productIdsArray.length} neue Produkte...`, 'info')
             try {
-                const org = carts[0].organization
+                const org = (carts[0] as any).organization
                 const shopifyConn = org.shopifyConnection
 
                 if (shopifyConn) {
                     const shopDomain = shopifyConn.shopName.includes('.')
                         ? shopifyConn.shopName
                         : `${shopifyConn.shopName}.myshopify.com`
+
+                    log(`🔗 Bild-Enrichment gestartet für Shop: ${shopDomain}`, 'info')
 
                     const shopify = new ShopifyAPI({
                         ...DEFAULT_SHOPIFY_SETTINGS,
@@ -107,24 +153,26 @@ export async function GET(req: Request) {
                         fields: 'id,images'
                     })
 
-                    // Create image map
-                    const productImageMap: Record<string, string> = {}
+                    log(`✅ ${products.length} Produkte von Shopify abgerufen.`, 'success')
+
+                    // Create image map from Shopify results
+                    const shopifyImageMap: Record<string, string> = {}
                     products.forEach(p => {
                         const firstImage = p.images?.[0]?.src
                         if (firstImage) {
-                            productImageMap[p.id.toString()] = firstImage
+                            shopifyImageMap[p.id.toString()] = firstImage
                         }
                     })
 
                     // Map images back to carts
                     for (const cart of carts) {
+                        const castCart = cart as any
                         let cartModified = false
 
-                        // Current Items
-                        if (Array.isArray(cart.lineItems)) {
-                            (cart.lineItems as any[]).forEach(item => {
+                        const processItemsWithMap = (items: any[]) => {
+                            items.forEach(item => {
                                 if (item.product_id && !item.image?.src) {
-                                    const imgSrc = productImageMap[item.product_id.toString()]
+                                    const imgSrc = shopifyImageMap[item.product_id.toString()]
                                     if (imgSrc) {
                                         item.image = { src: imgSrc }
                                         cartModified = true
@@ -133,41 +181,30 @@ export async function GET(req: Request) {
                             })
                         }
 
-                        // Removed Items
-                        if (Array.isArray(cart.removedItems)) {
-                            (cart.removedItems as any[]).forEach(item => {
-                                if (item.product_id && !item.image?.src) {
-                                    const imgSrc = productImageMap[item.product_id.toString()]
-                                    if (imgSrc) {
-                                        item.image = { src: imgSrc }
-                                        cartModified = true
-                                    }
-                                }
-                            })
-                        }
+                        if (Array.isArray(castCart.lineItems)) processItemsWithMap(castCart.lineItems as any[])
+                        if (Array.isArray(castCart.removedItems)) processItemsWithMap(castCart.removedItems as any[])
 
-                        // Persist to DB if modified
                         if (cartModified) {
                             try {
                                 await prisma.abandonedCart.update({
                                     where: { id: cart.id },
                                     data: {
-                                        lineItems: cart.lineItems as any,
-                                        removedItems: cart.removedItems as any,
+                                        lineItems: castCart.lineItems,
+                                        removedItems: castCart.removedItems,
                                         lastEnrichmentAttempt: new Date()
-                                    }
+                                    } as any
                                 })
                             } catch (dbErr) {
                                 console.error(`[AbandonedCarts] Failed to persist images for cart ${cart.id}:`, dbErr)
                             }
                         } else {
-                            // If we tried but didn't find any images of interest, still mark attempt to avoid spamming
-                            const hasIncompleteItems = (cart.lineItems as any[])?.some(i => i.product_id && !i.image?.src)
+                            // Even if no images found, mark attempt to respect cooldown if there are still missing images
+                            const hasIncompleteItems = (castCart.lineItems as any[])?.some(i => i.product_id && !i.image?.src)
                             if (hasIncompleteItems) {
                                 try {
                                     await prisma.abandonedCart.update({
                                         where: { id: cart.id },
-                                        data: { lastEnrichmentAttempt: new Date() }
+                                        data: { lastEnrichmentAttempt: new Date() } as any
                                     })
                                 } catch (e) { }
                             }
@@ -175,6 +212,7 @@ export async function GET(req: Request) {
                     }
                 }
             } catch (enrichError) {
+                log(`Bild-Enrichment fehlgeschlagen: ${enrichError instanceof Error ? enrichError.message : String(enrichError)}`, 'error')
                 console.error('[AbandonedCarts] Image enrichment failed:', enrichError)
             }
         }
