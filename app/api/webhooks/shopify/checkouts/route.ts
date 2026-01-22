@@ -165,14 +165,19 @@ export async function POST(req: Request) {
         const totalPricePeak = Math.max(currentTotalPricePeak, newTotalPrice)
 
         // Parse User Agent for Device/OS Detection (Fallback logic)
-        const userAgent = data.user_agent || ''
+        // Shopify often puts this in client_details
+        const userAgent = data.user_agent || data.client_details?.user_agent || ''
         console.log(`[Webhook] Raw User Agent from Shopify: "${userAgent}"`)
+        if (data.client_details) {
+            console.log(`[Webhook] Client Details:`, JSON.stringify(data.client_details))
+        }
+
         const existingDeviceInfo = existingCart?.deviceInfo as any
 
         // ONLY parse if we don't have high confidence data from the client yet
         let deviceInfo = existingDeviceInfo?.detection_confidence === 'high'
             ? existingDeviceInfo
-            : { ...parseUserAgent(userAgent), detection_confidence: 'low' }
+            : { ...parseUserAgent(userAgent, data.source_name), detection_confidence: 'low' }
 
         await prisma.abandonedCart.upsert({
             where: {
@@ -221,12 +226,18 @@ export async function POST(req: Request) {
 /**
  * Simple User Agent Parser for Dashboard Visibility
  */
-function parseUserAgent(ua: string) {
+function parseUserAgent(ua: string, sourceName?: string) {
     const info = {
-        device: 'Desktop',
-        os: 'Unknown',
-        browser: 'Unknown',
+        device: 'Unbekannt',
+        os: 'Unbekannt',
+        browser: 'Unbekannt',
         ua: ua
+    }
+
+    // Shopify source_name detection
+    if (sourceName === 'shopify_draft_order' || sourceName === 'shopify_mobile') {
+        info.device = 'Mobile'
+        info.os = 'Shopify App'
     }
 
     if (!ua || ua.trim() === '') return info
@@ -234,11 +245,12 @@ function parseUserAgent(ua: string) {
     const lowerUA = ua.toLowerCase()
 
     // 1. Device Type
-    // Broaden mobile detection to include common mobile strings, tablet strings, and in-app browsers
     if (/mobile|android|iphone|ipad|ipod|phone|blackberry|iemobile|kindle|silk|opera mini|mobi|shopify|fbav|instagram/i.test(lowerUA)) {
         info.device = 'Mobile'
     } else if (/tablet|playbook/i.test(lowerUA)) {
         info.device = 'Tablet'
+    } else if (/windows|macintosh|linux|cros/i.test(lowerUA)) {
+        info.device = 'Desktop'
     }
 
     // 2. OS Detection
@@ -249,15 +261,12 @@ function parseUserAgent(ua: string) {
     } else if (lowerUA.includes('windows')) {
         info.os = 'Windows'
     } else if (lowerUA.includes('macintosh') || lowerUA.includes('mac os x')) {
-        // Special check for iPad Pro in "Desktop Mode"
         if (info.device === 'Mobile') info.os = 'iOS'
         else info.os = 'macOS'
     } else if (lowerUA.includes('linux')) {
         info.os = 'Linux'
     } else if (lowerUA.includes('cros')) {
         info.os = 'ChromeOS'
-    } else if (lowerUA.includes('shopify')) {
-        info.os = 'Mobile App'
     }
 
     // 3. Browser Detection
@@ -266,7 +275,6 @@ function parseUserAgent(ua: string) {
     else if (lowerUA.includes('safari') && !lowerUA.includes('chrome')) info.browser = 'Safari'
     else if (lowerUA.includes('firefox')) info.browser = 'Firefox'
     else if (lowerUA.includes('opera') || lowerUA.includes('opr/')) info.browser = 'Opera'
-    else if (lowerUA.includes('msie') || lowerUA.includes('trident')) info.browser = 'IE'
 
     return info
 }
