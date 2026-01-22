@@ -41,21 +41,15 @@ export function getKauflandSettings(): KauflandSettings {
   if (typeof window === 'undefined') {
     // Server-side: load from file or database
     const fileSettings = loadKauflandSettingsFromFile()
-<<<<<<< HEAD
     const hasEnvVars = !!(envSettings.clientKey && envSettings.secretKey)
     
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     return {
       ...fileSettings,
       // Override with env vars if present
       clientKey: envSettings.clientKey || fileSettings.clientKey,
       secretKey: envSettings.secretKey || fileSettings.secretKey,
-<<<<<<< HEAD
       // Auto-enable if environment variables are present
       enabled: hasEnvVars ? true : fileSettings.enabled,
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     }
   }
 
@@ -173,7 +167,6 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
     const credentials = Buffer.from(`${settings.clientKey}:${settings.secretKey}`).toString('base64')
     
     const apiUrl = settings.apiBaseUrl || 'https://sellerapi.kaufland.com'
-<<<<<<< HEAD
     
     // Try multiple endpoints to test connection
     const endpoints = [
@@ -222,28 +215,6 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
     return {
       success: false,
       message: `Verbindungsfehler: ${lastError || 'API nicht erreichbar. Bitte überprüfen Sie die API Base URL und Anmeldedaten.'}`
-=======
-    const response = await fetch(`${apiUrl}/units`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    })
-
-    if (response.ok) {
-      return {
-        success: true,
-        message: 'Verbindung erfolgreich! Kaufland API ist erreichbar.'
-      }
-    } else {
-      const errorText = await response.text()
-      return {
-        success: false,
-        message: `Verbindungsfehler: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}`
-      }
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     }
   } catch (error) {
     return {
@@ -252,4 +223,3 @@ export async function testKauflandConnection(settings: KauflandSettings): Promis
     }
   }
 }
-

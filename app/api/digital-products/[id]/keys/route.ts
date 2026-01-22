@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-<<<<<<< HEAD
 import { resendDigitalProductEmail } from '@/lib/digital-products'
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 
 export async function GET(
     request: NextRequest,
@@ -13,14 +10,11 @@ export async function GET(
         const { id } = await params
         const keys = await prisma.licenseKey.findMany({
             where: { digitalProductId: id },
-<<<<<<< HEAD
             include: {
                 customer: {
                     select: { email: true, name: true }
                 }
             },
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
             orderBy: { createdAt: 'desc' }
         })
         return NextResponse.json({ success: true, data: keys })
@@ -36,7 +30,6 @@ export async function POST(
     try {
         const { id } = await params
         const body = await request.json()
-<<<<<<< HEAD
 
         // HAMDLE RESEND ACTION
         if (body.action === 'resend' && body.keyId) {
@@ -44,8 +37,6 @@ export async function POST(
             return NextResponse.json({ success: true, message: 'Email resent' })
         }
 
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         const { keys, shopifyVariantId } = body
 
         if (!Array.isArray(keys)) {

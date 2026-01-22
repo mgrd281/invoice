@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-<<<<<<< HEAD
 import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send, Volume2, VolumeX, ShieldAlert, UserX } from 'lucide-react'
-=======
-import { Eye, Download, Trash2, Plus, Search, Filter, RefreshCw, MailCheck, AlertTriangle, CheckCircle, X, XCircle, DollarSign, FileText, ArrowLeft, Mail, Check, ArrowDown, Edit2, Edit, Save, Calculator, Bell, AlertOctagon, AlertCircle, Send } from 'lucide-react'
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 import { downloadInvoicePDF } from '@/lib/pdf-generator'
 import { useToast } from '@/components/ui/toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -81,17 +77,13 @@ function getGermanStatus(status: string) {
     case 'CANCELLED': return 'Storniert'
     case 'OPEN': return 'Offen'
     case 'PENDING': return 'Ausstehend'
-<<<<<<< HEAD
     case 'BLOCKED': return 'Gesperrt'
     case 'ON_HOLD': return 'In Prüfung'
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
     default: return status
   }
 }
 
 export default function InvoicesPage() {
-<<<<<<< HEAD
   // Persistent audio reference to bypass autoplay policies
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -148,8 +140,6 @@ export default function InvoicesPage() {
   }, [isSoundEnabled, isAudioBlessed])
 
 
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
 
@@ -464,13 +454,10 @@ export default function InvoicesPage() {
           if (data.synced > 0) {
             console.log(`✅ Auto-Sync found ${data.synced} new invoices! Refreshing...`)
             showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
-<<<<<<< HEAD
 
             // Play Notification Sound
             playNotificationSound()
 
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
             fetchInvoices(true) // Refresh the list in background
           }
         } catch (err) {
@@ -934,13 +921,10 @@ export default function InvoicesPage() {
       case 'Storniert': return 'bg-gray-100 text-gray-800'
       case 'Gutschrift': return 'bg-blue-100 text-blue-800'
       case 'Entwurf': return 'bg-gray-100 text-gray-600'
-<<<<<<< HEAD
       case 'Gesperrt':
       case 'BLOCKED': return 'bg-red-800 text-white'
       case 'In Prüfung':
       case 'ON_HOLD': return 'bg-orange-100 text-orange-800'
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
       default: return 'bg-gray-100 text-gray-600'
     }
   }
@@ -980,15 +964,12 @@ export default function InvoicesPage() {
               </h1>
             </div>
             <div className="flex space-x-2">
-<<<<<<< HEAD
               <Link href="/blocked-users">
                 <Button variant="outline" className="text-red-700 hover:text-red-800 hover:bg-red-50 hover:border-red-200">
                   <ShieldAlert className="h-4 w-4 mr-2" />
                   Blocklist
                 </Button>
               </Link>
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
               <Button
                 variant={showAnalytics ? "secondary" : "outline"}
                 onClick={() => setShowAnalytics(!showAnalytics)}
@@ -1043,7 +1024,6 @@ export default function InvoicesPage() {
 
               <Button
                 variant="outline"
-<<<<<<< HEAD
                 size="icon"
                 onClick={async () => {
                   const newState = !isSoundEnabled
@@ -1140,8 +1120,6 @@ export default function InvoicesPage() {
 
               <Button
                 variant="outline"
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                 onClick={async () => {
                   showToast('Synchronisiere mit Shopify...', 'info')
                   try {
@@ -1719,7 +1697,6 @@ export default function InvoicesPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-<<<<<<< HEAD
                         <div className="flex flex-col items-start gap-0.5">
                           <div className="flex items-center gap-2">
                             {/* Order Number (Bold) */}
@@ -1741,18 +1718,6 @@ export default function InvoicesPage() {
                           {invoice.originalInvoiceNumber && (
                             <span className="text-[10px] text-gray-400">
                               Ref: {invoice.originalInvoiceNumber}
-=======
-                        <div className="flex items-center">
-                          {invoice.orderNumber || invoice.order?.orderNumber || invoice.number}
-                          {duplicateNumbers.includes(invoice.number) && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                              Duplikat
-                            </span>
-                          )}
-                          {invoice.originalInvoiceNumber && (
-                            <span className="ml-2 text-xs text-gray-500">
-                              (Ref: {invoice.originalInvoiceNumber})
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
                             </span>
                           )}
                         </div>

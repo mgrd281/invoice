@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-<<<<<<< HEAD
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,29 +43,16 @@ interface ShopifyProduct {
 }
 
 interface DigitalProductData {
-=======
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Plus, Package, ShoppingBag, CheckCircle, XCircle, Trash2, BarChart, ArrowLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-
-interface DigitalProduct {
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
-    id: string
-    title: string
-    shopifyProductId: string
-    image?: string | null
-    _count: {
-<<<<<<< HEAD
-        keys: number
-=======
-        keys: number // This is actually the count of UNUSED keys based on my API query
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
-    }
+  id: string
+  title: string
+  shopifyProductId: string
+  image?: string | null
+  _count: {
+    keys: number
+  }
 }
 
 export default function DigitalProductsPage() {
-<<<<<<< HEAD
     const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [shopifyProducts, setShopifyProducts] = useState<ShopifyProduct[]>([])

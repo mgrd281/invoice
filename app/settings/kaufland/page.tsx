@@ -7,11 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-<<<<<<< HEAD
 import { ArrowLeft, Loader2, Save, CheckCircle2, XCircle, Store, TestTube, ShoppingBag } from 'lucide-react'
-=======
-import { ArrowLeft, Loader2, Save, CheckCircle2, XCircle, Store, TestTube } from 'lucide-react'
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
 import { useToast } from '@/components/ui/toast'
 
 interface KauflandSettings {
@@ -389,7 +385,6 @@ export default function KauflandSettingsPage() {
           </CardContent>
         </Card>
 
-<<<<<<< HEAD
         {/* Shopify Sync Card */}
         <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-green-200">
           <CardContent className="pt-6">
@@ -411,29 +406,6 @@ export default function KauflandSettingsPage() {
         </Card>
 
         {/* API Documentation Note */}
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-yellow-900">⚠️ Wichtiger Hinweis</h3>
-              <p className="text-sm text-yellow-800">
-                Falls der Verbindungstest fehlschlägt, überprüfen Sie bitte:
-              </p>
-              <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-                <li>Die API Base URL ist korrekt (Standard: https://sellerapi.kaufland.com)</li>
-                <li>Client Key und Secret Key sind korrekt eingegeben</li>
-                <li>Ihr Kaufland API-Konto ist aktiviert</li>
-                <li>Die API-Endpunkte entsprechen der aktuellen Kaufland API-Dokumentation</li>
-              </ul>
-              <p className="text-sm text-yellow-800 mt-2">
-                <strong>Hinweis:</strong> Die API-Endpunkte können sich je nach Kaufland API-Version unterscheiden. 
-                Bitte konsultieren Sie die offizielle Kaufland Seller API-Dokumentation für die korrekten Endpunkte.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-=======
->>>>>>> 8793b24276c73cd5f91877fa145e212ba99499b9
         <ToastContainer />
       </div>
     </div>
