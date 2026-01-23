@@ -16,6 +16,11 @@ export async function POST(req: NextRequest) {
             sessionId,
             organizationId,
             referrer,
+            utmSource,
+            utmMedium,
+            utmCampaign,
+            utmTerm,
+            utmContent,
             metadata
         } = body;
 
@@ -44,6 +49,37 @@ export async function POST(req: NextRequest) {
         const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
 
         const deviceInfo = parseDeviceInfo(ua);
+
+        // Traffic Source Classification Logic
+        const getTrafficSource = () => {
+            if (utmSource) {
+                let label = utmSource.charAt(0).toUpperCase() + utmSource.slice(1);
+                if (utmSource.toLowerCase() === 'google' && utmMedium?.toLowerCase() === 'cpc') {
+                    label = 'Google Ads';
+                }
+                return { label, medium: utmMedium || 'cpc' };
+            }
+
+            if (!referrer || referrer === '') {
+                return { label: 'Direct', medium: 'direct' };
+            }
+
+            try {
+                const refUrl = new URL(referrer);
+                const host = refUrl.hostname.toLowerCase();
+
+                if (host.includes('google.')) return { label: 'Google Organic', medium: 'organic' };
+                if (host.includes('facebook.') || host.includes('instagram.') || host.includes('t.co')) return { label: 'Social', medium: 'social' };
+                if (host.includes('idealo.')) return { label: 'Idealo', medium: 'referral' };
+                if (host.includes('bing.')) return { label: 'Bing Organic', medium: 'organic' };
+
+                return { label: host.replace('www.', ''), medium: 'referral' };
+            } catch (e) {
+                return { label: 'Referral', medium: 'referral' };
+            }
+        };
+
+        const source = getTrafficSource();
 
         // 1. Ensure Visitor exists
         const visitor = await prisma.visitor.upsert({
@@ -80,6 +116,13 @@ export async function POST(req: NextRequest) {
                 deviceType: deviceInfo.device.toLowerCase(),
                 os: deviceInfo.os,
                 browser: deviceInfo.browser,
+                sourceLabel: source.label,
+                sourceMedium: source.medium,
+                utmSource,
+                utmMedium,
+                utmCampaign,
+                utmTerm,
+                utmContent,
             }
         });
 

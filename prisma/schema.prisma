@@ -1033,6 +1033,15 @@ model VisitorSession {
   os         String?
   browser    String?
 
+  // Traffic Source Info
+  sourceLabel  String? // Google, Direct, Idealo, Facebook, etc.
+  sourceMedium String? // organic, ads, social, referral, direct
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmTerm      String?
+  utmContent   String?
+
   events SessionEvent[]
 
   createdAt DateTime @default(now())

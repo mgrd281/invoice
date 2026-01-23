@@ -24,7 +24,13 @@ import {
     CheckCircle2,
     Copy,
     ExternalLink,
-    Terminal as TerminalIcon
+    Terminal as TerminalIcon,
+    Link2,
+    Instagram,
+    Facebook,
+    Search as GoogleIcon,
+    Share2,
+    Zap
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -91,15 +97,20 @@ export default function LiveAnalyticsPage() {
     };
 
     const getEventIcon = (type: string) => {
-        switch (type) {
-            case 'page_view': return <Eye className="h-3 w-3 text-blue-500" />;
-            case 'view_product': return <Search className="h-3 w-3 text-purple-500" />;
-            case 'add_to_cart': return <ShoppingCart className="h-3 w-3 text-green-500" />;
-            case 'rage_click': return <AlertTriangle className="h-3 w-3 text-red-500" />;
-            case 'tracker_loaded': return <CheckCircle2 className="h-3 w-3 text-emerald-500" />;
-            case 'heartbeat': return <Activity className="h-3 w-3 text-slate-400" />;
-            default: return <MousePointer2 className="h-3 w-3 text-gray-500" />;
-        }
+        // ... (existing switch)
+    };
+
+    const getSourceIcon = (label: string, medium: string) => {
+        const l = label?.toLowerCase() || '';
+        const m = medium?.toLowerCase() || '';
+
+        if (l.includes('google')) return <GoogleIcon className="h-3 w-3 text-blue-500" />;
+        if (l.includes('facebook') || l.includes('instagram') || m === 'social') return <Instagram className="h-3 w-3 text-pink-500" />;
+        if (l.includes('idealo')) return <Zap className="h-3 w-3 text-orange-500" />;
+        if (m === 'direct') return <MousePointer2 className="h-3 w-3 text-slate-400" />;
+        if (m === 'referral') return <Link2 className="h-3 w-3 text-blue-400" />;
+
+        return <Share2 className="h-3 w-3 text-gray-400" />;
     };
 
     return (
@@ -244,6 +255,10 @@ export default function LiveAnalyticsPage() {
                                                         <span className="font-medium text-sm">
                                                             {session.visitor?.country || 'DE'}
                                                         </span>
+                                                        <div className="flex items-center gap-1.5 ml-2 bg-slate-100 px-2 py-0.5 rounded text-[10px] font-semibold text-slate-600">
+                                                            {getSourceIcon(session.sourceLabel, session.sourceMedium)}
+                                                            {session.sourceLabel || 'Direct'}
+                                                        </div>
                                                     </div>
                                                     <Badge variant="outline" className="text-[10px]">
                                                         {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
@@ -282,100 +297,136 @@ export default function LiveAnalyticsPage() {
                             <CardContent className="flex-1 overflow-hidden">
                                 {selectedSession ? (
                                     <ScrollArea className="h-full pr-4">
-                                        <div className="relative border-l-2 border-muted ml-3 pl-8 space-y-8 py-4">
-                                            {selectedSession.events?.map((event: any, i: number) => (
-                                                <div key={i} className="relative">
-                                                    <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
-                                                        {getEventIcon(event.type)}
+                                        {selectedSession.sourceLabel && (
+                                            <div className="bg-slate-50 border p-3 rounded-lg mb-4 space-y-2">
+                                                <div className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                    <Share2 className="h-3 w-3" /> Traffic Source
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <div className="text-[10px] text-muted-foreground">Quelle / Medium</div>
+                                                        <div className="text-sm font-medium flex items-center gap-2">
+                                                            {getSourceIcon(selectedSession.sourceLabel, selectedSession.sourceMedium)}
+                                                            {selectedSession.sourceLabel} ({selectedSession.sourceMedium})
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-sm uppercase tracking-wider text-muted-foreground/80">
-                                                                {event.type.replace('_', ' ')}
-                                                            </span>
-                                                            <span className="text-[10px] text-muted-foreground">
-                                                                {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                                            </span>
+                                                    <div>
+                                                        <div className="text-[10px] text-muted-foreground">Referrer URL</div>
+                                                        <div className="text-sm font-medium truncate max-w-[200px]" title={selectedSession.referrer}>
+                                                            {selectedSession.referrer || 'Kein Referrer'}
                                                         </div>
-                                                        <div className="text-sm font-medium mt-1">
-                                                            {event.path || event.url}
+                                                    </div>
+                                                </div>
+                                                {selectedSession.utmCampaign && (
+                                                    <div className="pt-2 border-t mt-2 flex gap-4">
+                                                        <div>
+                                                            <div className="text-[10px] text-muted-foreground">Kampagne</div>
+                                                            <div className="text-xs font-mono">{selectedSession.utmCampaign}</div>
                                                         </div>
-                                                        {event.metadata && Object.keys(event.metadata).length > 0 && (
-                                                            <div className="bg-muted/30 p-2 rounded mt-2 text-xs font-mono">
-                                                                {JSON.stringify(event.metadata, null, 2)}
+                                                        {selectedSession.utmContent && (
+                                                            <div>
+                                                                <div className="text-[10px] text-muted-foreground">Content</div>
+                                                                <div className="text-xs font-mono">{selectedSession.utmContent}</div>
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                            ))}
-                                            <div className="relative">
-                                                <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
-                                                    <Clock className="h-3 w-3 text-gray-400" />
-                                                </div>
-                                                <div className="text-xs text-muted-foreground italic">
-                                                    Session gestartet um {new Date(selectedSession.startTime).toLocaleTimeString()}
-                                                </div>
+                                                )}
                                             </div>
-                                        </div>
-                                    </ScrollArea>
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
-                                        <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
-                                            <History className="h-8 w-8 opacity-40" />
-                                        </div>
-                                        <p>Wähle einen Besucher aus der Liste aus, um den Verlauf zu sehen.</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </TabsContent>
+                                        )}
 
-                <TabsContent value="history" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Letzte Sessions</CardTitle>
-                            <CardDescription>Übersicht der Nutzerbewegungen der letzten Stunden/Tage.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="rounded-md border">
-                                <div className="grid grid-cols-5 p-4 border-b font-medium bg-muted/50 text-sm">
-                                    <div className="col-span-1">Besucher</div>
-                                    <div className="col-span-1">Gerät/OS</div>
-                                    <div className="col-span-1">Dauer</div>
-                                    <div className="col-span-1">Events</div>
-                                    <div className="col-span-1">Letzte Aktivität</div>
-                                </div>
-                                <div className="divide-y">
-                                    {sessions.map((session: any) => (
-                                        <div key={session.id} className="grid grid-cols-5 p-4 text-sm items-center hover:bg-muted/30">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{session.visitor?.country || 'DE'}</span>
-                                                <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 12)}...</span>
+                                        {selectedSession.events?.map((event: any, i: number) => (
+                                            <div key={i} className="relative">
+                                                <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
+                                                    {getEventIcon(event.type)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-sm uppercase tracking-wider text-muted-foreground/80">
+                                                            {event.type.replace('_', ' ')}
+                                                        </span>
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-sm font-medium mt-1">
+                                                        {event.path || event.url}
+                                                    </div>
+                                                    {event.metadata && Object.keys(event.metadata).length > 0 && (
+                                                        <div className="bg-muted/30 p-2 rounded mt-2 text-xs font-mono">
+                                                            {JSON.stringify(event.metadata, null, 2)}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                {getDeviceIcon(session.deviceType)}
-                                                <span className="text-xs">{session.os}</span>
+                                        ))}
+                                        <div className="relative">
+                                            <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
+                                                <Clock className="h-3 w-3 text-gray-400" />
                                             </div>
-                                            <div className="text-xs">
-                                                {Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Badge variant="secondary" className="px-1 text-[10px]">
-                                                    {session._count?.events || 0}
-                                                </Badge>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
+                                            <div className="text-xs text-muted-foreground italic">
+                                                Session gestartet um {new Date(selectedSession.startTime).toLocaleTimeString()}
                                             </div>
                                         </div>
-                                    ))}
+                                    </div>
+                                    </ScrollArea>
+                            ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
+                                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
+                                    <History className="h-8 w-8 opacity-40" />
                                 </div>
+                                <p>Wähle einen Besucher aus der Liste aus, um den Verlauf zu sehen.</p>
                             </div>
+                                )}
                         </CardContent>
                     </Card>
-                </TabsContent>
-            </Tabs>
+                </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Letzte Sessions</CardTitle>
+                        <CardDescription>Übersicht der Nutzerbewegungen der letzten Stunden/Tage.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <div className="grid grid-cols-5 p-4 border-b font-medium bg-muted/50 text-sm">
+                                <div className="col-span-1">Besucher</div>
+                                <div className="col-span-1">Gerät/OS</div>
+                                <div className="col-span-1">Dauer</div>
+                                <div className="col-span-1">Events</div>
+                                <div className="col-span-1">Letzte Aktivität</div>
+                            </div>
+                            <div className="divide-y">
+                                {sessions.map((session: any) => (
+                                    <div key={session.id} className="grid grid-cols-5 p-4 text-sm items-center hover:bg-muted/30">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{session.visitor?.country || 'DE'}</span>
+                                            <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 12)}...</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {getDeviceIcon(session.deviceType)}
+                                            <span className="text-xs">{session.os}</span>
+                                        </div>
+                                        <div className="text-xs">
+                                            {Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Badge variant="secondary" className="px-1 text-[10px]">
+                                                {session._count?.events || 0}
+                                            </Badge>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
         </div >
     );
 }

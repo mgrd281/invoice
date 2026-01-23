@@ -50,6 +50,21 @@
         try { sessionStorage.setItem('s_id', sessionId); } catch (e) { }
     }
 
+    const getUtms = () => {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                utmSource: urlParams.get('utm_source'),
+                utmMedium: urlParams.get('utm_medium'),
+                utmCampaign: urlParams.get('utm_campaign'),
+                utmTerm: urlParams.get('utm_term'),
+                utmContent: urlParams.get('utm_content')
+            };
+        } catch (e) {
+            return {};
+        }
+    };
+
     const track = async (event, metadata = {}) => {
         if (!organizationId) {
             // Robust check for Org ID (especially for async scripts)
@@ -87,6 +102,7 @@
                     sessionId,
                     organizationId,
                     referrer: document.referrer,
+                    ...getUtms(),
                     metadata
                 }),
                 keepalive: true
