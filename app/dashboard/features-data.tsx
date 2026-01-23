@@ -24,7 +24,8 @@ import {
     Store,
     ShieldAlert,
     UserX,
-    Terminal
+    Terminal,
+    Activity
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -152,6 +153,20 @@ export const DEFAULT_FEATURES = [
         icon: Key,
         iconBg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50'
+    },
+    {
+        id: 'live-analytics',
+        href: '/dashboard/live-analytics',
+        title: 'Live Besucher & Session Analytics',
+        description: 'Echtzeit-Überwachung des Kundenverhaltens',
+        icon: Activity,
+        iconBg: 'bg-gradient-to-r from-orange-500 to-red-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-orange-300 bg-gradient-to-br from-white to-orange-50',
+        badge: 'LIVE',
+        badgeClass: 'bg-orange-100 text-orange-700',
+        hasPing: true,
+        pingColor: 'bg-orange-400',
+        pingDotColor: 'bg-orange-500'
     },
     {
         id: 'blocked-users',
