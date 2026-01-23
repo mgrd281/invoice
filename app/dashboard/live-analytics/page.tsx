@@ -458,6 +458,38 @@ function LiveAnalyticsContent() {
                             <CardContent className="flex-1 overflow-hidden">
                                 {selectedSession ? (
                                     <ScrollArea className="h-full pr-4">
+                                        {/* Visitor Profile Header */}
+                                        <div className="flex items-center gap-4 mb-6 bg-white p-4 rounded-xl border shadow-sm">
+                                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-700 font-black text-xl border-2 border-white shadow-inner">
+                                                {selectedSession.visitor?.country || 'DE'}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-black text-xl tracking-tight text-slate-900">Besucher #{selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}</h3>
+                                                        {selectedSession.isReturning && (
+                                                            <Badge className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 py-0.5 px-2">
+                                                                <RotateCcw className="h-3 w-3" /> WIEDERKEHREND
+                                                            </Badge>
+                                                        )}
+                                                        {selectedSession.isVip && (
+                                                            <Badge className="bg-amber-500 text-white flex items-center gap-1 py-0.5 px-2">
+                                                                <Star className="h-3 w-3 fill-white" /> VIP
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                        ID: {selectedSession.visitor?.id?.substring(0, 8)}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                                                    <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.visitor?.country || 'Unbekannt'}</span>
+                                                    <span className="flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> {selectedSession.browser} / {selectedSession.os}</span>
+                                                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Erstmals: {new Date(selectedSession.visitor?.createdAt).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* enterprise Header: Smart Summary & Predictive Insights */}
                                         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <Card className="md:col-span-2 border-none shadow-sm bg-gradient-to-r from-slate-900 to-slate-800 text-white overflow-hidden relative">
