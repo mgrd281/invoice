@@ -38,7 +38,6 @@ export default function LiveAnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [selectedSession, setSelectedSession] = useState<any>(null);
     const [showDebug, setShowDebug] = useState(false);
-    const [activeTab, setActiveTab] = useState('live');
 
     const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const trackingSnippet = `<script 
@@ -113,7 +112,7 @@ export default function LiveAnalyticsPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => setShowDebug(!showDebug)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors \${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
                     >
                         <Bug className="h-3.5 w-3.5" /> Debug & Setup
                     </button>
@@ -189,7 +188,7 @@ export default function LiveAnalyticsPage() {
                                         {(liveData?.sessions || []).flatMap((s: any) => s.events).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 30).map((e: any, i: number) => (
                                             <div key={i} className="grid grid-cols-12 gap-2 hover:bg-slate-900/50 py-0.5 border-b border-slate-900 last:border-0">
                                                 <span className="col-span-2 text-slate-500">{new Date(e.timestamp).toLocaleTimeString()}</span>
-                                                <span className={`col-span-3 ${e.type === 'page_view' ? 'text-blue-400' : e.type === 'heartbeat' ? 'text-slate-500' : 'text-purple-400'}`}>
+                                                <span className={`col-span-3 \${e.type === 'page_view' ? 'text-blue-400' : e.type === 'heartbeat' ? 'text-slate-500' : 'text-purple-400'}`}>
                                                     [{e.type.toUpperCase()}]
                                                 </span>
                                                 <span className="col-span-7 text-slate-400 truncate">{e.path || e.url}</span>
@@ -205,6 +204,7 @@ export default function LiveAnalyticsPage() {
                                             </div>
                                         )}
                                     </div>
+                                </ScrollArea>
                             </div>
                         </CardContent>
                     </Card>
@@ -224,7 +224,6 @@ export default function LiveAnalyticsPage() {
 
     <TabsContent value="live" className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Live Visitor List */}
             <Card className="lg:col-span-1 h-[700px] flex flex-col">
                 <CardHeader>
                     <CardTitle className="text-lg">Aktuelle Besucher</CardTitle>
@@ -236,7 +235,7 @@ export default function LiveAnalyticsPage() {
                             {liveData?.sessions?.map((session: any) => (
                                 <div
                                     key={session.id}
-                                    className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${selectedSession?.id === session.id ? 'bg-muted' : ''}`}
+                                    className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors \${selectedSession?.id === session.id ? 'bg-muted' : ''}`}
                                     onClick={() => setSelectedSession(session)}
                                 >
                                     <div className="flex justify-between items-start mb-2">
@@ -273,12 +272,11 @@ export default function LiveAnalyticsPage() {
                 </CardContent>
             </Card>
 
-            {/* Session Details / Timeline */}
             <Card className="lg:col-span-2 h-[700px] flex flex-col">
                 <CardHeader>
                     <CardTitle className="text-lg">Session Timeline</CardTitle>
                     <CardDescription>
-                        {selectedSession ? `Details für Session ${selectedSession.sessionId.substring(0, 8)}...` : 'Wähle einen Besucher links aus'}
+                        {selectedSession ? `Details für Session \${selectedSession.sessionId.substring(0, 8)}...` : 'Wähle einen Besucher links aus'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden">
@@ -379,5 +377,5 @@ export default function LiveAnalyticsPage() {
     </TabsContent>
 </Tabs>
         </div >
-            );
+    );
 }
