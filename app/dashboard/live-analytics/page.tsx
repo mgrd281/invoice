@@ -207,13 +207,10 @@ export default function LiveAnalyticsPage() {
                                     </div>
                                 </ScrollArea>
                             </div>
-                        </CardContent>
-                    </Card>
                 </div>
-    )
-}
+            )}
 
-<Tabs defaultValue="live" className="w-full">
+            <Tabs defaultValue="live" className="w-full">
     <TabsList className="grid w-full max-w-[400px] grid-cols-2">
         <TabsTrigger value="live" className="flex items-center gap-2">
             <Users className="h-4 w-4" /> Live
@@ -350,7 +347,7 @@ export default function LiveAnalyticsPage() {
                         <div className="col-span-1">Letzte Aktivität</div>
                     </div>
                     <div className="divide-y">
-                        {sessions.map((session) => (
+                        {sessions.map((session: any) => (
                             <div key={session.id} className="grid grid-cols-5 p-4 text-sm items-center hover:bg-muted/30">
                                 <div className="flex flex-col">
                                     <span className="font-medium">{session.visitor?.country || 'DE'}</span>
@@ -380,5 +377,5 @@ export default function LiveAnalyticsPage() {
     </TabsContent>
 </Tabs>
         </div >
-    );
+            );
 }
