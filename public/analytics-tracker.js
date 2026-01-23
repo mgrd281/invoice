@@ -52,7 +52,20 @@
 
     const track = async (event, metadata = {}) => {
         if (!organizationId) {
-            organizationId = document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id');
+            // Robust check for Org ID (especially for async scripts)
+            if (document.currentScript) {
+                organizationId = document.currentScript.getAttribute('data-org-id');
+            }
+
+            if (!organizationId) {
+                const scriptTag = Array.from(document.getElementsByTagName('script')).find(s => s.src.includes('analytics-tracker.js'));
+                organizationId = scriptTag?.getAttribute('data-org-id');
+            }
+
+            if (!organizationId) {
+                organizationId = document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID;
+            }
+
             if (!organizationId) return;
         }
 

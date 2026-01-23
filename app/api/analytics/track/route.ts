@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
         const visitor = await prisma.visitor.upsert({
             where: { visitorToken },
             update: {
-                lastActiveAt: new Date(), // We might need to add this field or just use updatedAt
                 userAgent: ua,
                 ipHash,
             },
