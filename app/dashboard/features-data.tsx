@@ -168,6 +168,20 @@ export const DEFAULT_FEATURES = [
         pingColor: 'bg-orange-400',
         pingDotColor: 'bg-orange-500'
     },
+    {
+        id: 'extended-analytics',
+        href: '/dashboard/analytics',
+        title: 'Shop Analytics (Erweitert)',
+        description: 'Vollständige Analyse von Traffic, Geräten & Zeit',
+        icon: TrendingUp,
+        iconBg: 'bg-gradient-to-r from-blue-600 to-blue-700',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50',
+        badge: 'NEW',
+        badgeClass: 'bg-blue-100 text-blue-700',
+        hasPing: true,
+        pingColor: 'bg-blue-400',
+        pingDotColor: 'bg-blue-500'
+    },
 
     {
         id: 'logs',
