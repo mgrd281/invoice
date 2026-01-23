@@ -41,52 +41,18 @@ export default function LoginPage() {
         throw new Error('Das Passwort muss mindestens 4 Zeichen lang sein.')
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // 1. Check if email is verified (skip for specific dev/demo emails if needed)
+      // Note: In a production app, this should be handled by the backend/NextAuth
+      console.log('🔍 Checking email verification status for:', formData.email)
 
-      // Demo credentials for testing - ONLY THESE WILL WORK
-      const validCredentials = [
-        { email: 'demo@rechnungsprofi.de', password: 'demo123' },
-        { email: 'test@example.com', password: 'test123' },
-        { email: 'max@mustermann.de', password: 'max123' },
-        // Admin accounts: allow both 'admin123' and 'Mkarina321@' as password
-        { email: 'mgrdegh@web.de', password: 'admin123' },
-        { email: 'mgrdegh@web.de', password: 'Mkarina321@' },
-        { email: 'Mkarina321@', password: 'admin123' },
-        { email: 'Mkarina321@', password: 'Mkarina321@' },
-        { email: 'mgrdegh@web.de', password: '1532@' }
-      ]
+      try {
+        const verificationResponse = await fetch(`/api/auth/email-verification/status?email=${encodeURIComponent(formData.email)}`)
+        const verificationData = await verificationResponse.json()
 
-      // Additional security check - ensure no bypass
-      if (process.env.NODE_ENV !== 'development') {
-        console.log('🔒 Production mode - strict validation enabled')
-      }
-
-      // Check if credentials are valid
-      const isValidCredential = validCredentials.some(
-        cred => cred.email === formData.email && cred.password === formData.password
-      )
-
-      console.log('🔍 Credential check:', { isValid: isValidCredential, validCredentials })
-
-      if (!isValidCredential) {
-        console.log('❌ Invalid credentials provided')
-        throw new Error('Ungültige E-Mail-Adresse oder Passwort.')
-      }
-
-      console.log('✅ Valid credentials, proceeding with login')
-
-      // Check if email is verified (skip for demo accounts)
-      const demoEmails = ['demo@rechnungsprofi.de', 'test@example.com', 'max@mustermann.de', 'mgrdegh@web.de', 'mkarina321@']
-      const isDemoAccount = demoEmails.includes(formData.email.toLowerCase())
-
-      if (!isDemoAccount) {
-        console.log('🔍 Checking email verification status...')
-        try {
-          const verificationResponse = await fetch(`/api/auth/email-verification/status?email=${encodeURIComponent(formData.email)}`)
-          const verificationData = await verificationResponse.json()
-
-          if (verificationData.success && !verificationData.isVerified) {
+        if (verificationData.success && !verificationData.isVerified) {
+          // Check if it's a known admin account that can bypass verification (for recovery)
+          const bypassEmails = ['mgrdegh@web.de', 'mkarina321@']
+          if (!bypassEmails.includes(formData.email.toLowerCase())) {
             console.log('❌ Email not verified, redirecting to verification page')
             setError('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.')
 
@@ -96,49 +62,26 @@ export default function LoginPage() {
             }, 2000)
             return
           }
-
-          console.log('✅ Email verification status:', verificationData.isVerified ? 'VERIFIED' : 'NOT_REQUIRED')
-        } catch (verificationError) {
-          console.warn('⚠️ Could not check email verification status:', verificationError)
-          // Continue with login if verification check fails (fallback)
+          console.log('🎭 Bypass email verification for admin/known account')
         }
-      } else {
-        console.log('🎭 Demo account - skipping email verification check')
+      } catch (verificationError) {
+        console.warn('⚠️ Could not check email verification status:', verificationError)
+        // Continue with login if verification check fails (fallback)
       }
 
-      // Check if user is admin (case-insensitive)
-      const adminEmails = ['mgrdegh@web.de', 'mkarina321@']
-      const isAdmin = adminEmails.includes(formData.email.toLowerCase())
-
-      // Simulate user data based on email
-      const userData = {
-        id: '1',
-        email: formData.email,
-        firstName: formData.email.includes('demo') ? 'Demo' :
-          formData.email.includes('max') ? 'Max' :
-            formData.email.includes('mgrdegh') ? 'Admin' :
-              formData.email.includes('Mkarina') ? 'Karina' : 'Test',
-        lastName: formData.email.includes('demo') ? 'User' :
-          formData.email.includes('max') ? 'Mustermann' :
-            formData.email.includes('mgrdegh') ? 'Manager' :
-              formData.email.includes('Mkarina') ? 'Admin' : 'User',
-        companyName: formData.email.includes('max') ? 'Mustermann GmbH' :
-          isAdmin ? 'Admin Company' : 'Demo Company',
-        isAdmin: isAdmin
-      }
-
-      // Login with NextAuth
+      // 2. Login with NextAuth
+      console.log('🔐 Attempting sign-in with NextAuth...')
       const result = await login({
         email: formData.email,
         password: formData.password
       })
 
       if (!result.success) {
-        setError('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.')
+        setError('Ungültige E-Mail-Adresse oder Passwort.')
         return
       }
 
-      // Nach erfolgreicher Anmeldung zur Dashboard weiterleiten
+      console.log('✅ Login successful, redirecting to dashboard')
       router.push('/dashboard')
     } catch (error: any) {
       setError(error.message || 'Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.')
