@@ -400,6 +400,15 @@ function LiveAnalyticsContent() {
                                                             {session.visitor?.country || 'DE'}
                                                             {session.city && <span className="text-slate-400 font-normal">({session.city})</span>}
                                                         </span>
+                                                        <Badge variant="outline" className="text-[10px] font-mono bg-slate-50">
+                                                            #{session.visitor?.id?.substring(0, 4).toUpperCase() || '????'}
+                                                        </Badge>
+                                                        {session.isReturning && (
+                                                            <div className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">
+                                                                <RotateCcw className="h-2.5 w-2.5" />
+                                                                RETURN
+                                                            </div>
+                                                        )}
                                                         {session.isVip && <Star className="h-3 w-3 text-amber-500 fill-amber-500 ml-1" />}
                                                         <div className="flex items-center gap-1.5 ml-2 bg-slate-100 px-2 py-0.5 rounded text-[10px] font-semibold text-slate-600">
                                                             {getSourceIcon(session.sourceLabel, session.sourceMedium)}
