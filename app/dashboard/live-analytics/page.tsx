@@ -459,6 +459,7 @@ export default function LiveAnalyticsPage() {
                                                 </div>
                                             )}
 
+                                            {/* All Events Timeline */}
                                             {selectedSession.events?.map((event: any, i: number) => (
                                                 <div key={i} className="relative">
                                                     <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
@@ -474,7 +475,7 @@ export default function LiveAnalyticsPage() {
                                                                 {new Date(event.timestamp).toLocaleTimeString()}
                                                             </span>
                                                         </div>
-                                                        <div className="text-sm font-medium mt-1 truncate max-w-[400px]">
+                                                        <div className="text-sm font-medium mt-1 break-all">
                                                             {event.path || event.url}
                                                         </div>
 
@@ -509,6 +510,43 @@ export default function LiveAnalyticsPage() {
                                                     </div>
                                                 </div>
                                             ))}
+
+                                            {/* Referrer & Entry Section at the Bottom */}
+                                            <div className="relative pt-4 border-t border-dashed mt-8">
+                                                <div className="absolute -left-[41px] top-5 bg-background p-1 rounded-full border-2 border-muted">
+                                                    <Globe className="h-3 w-3 text-blue-600" />
+                                                </div>
+                                                <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge className="bg-blue-600 text-white hover:bg-blue-700">ANKUNFT DETAILS</Badge>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                                <Link2 className="h-3 w-3" /> Source URL (Referrer)
+                                                            </p>
+                                                            <p className="text-xs font-medium break-all text-blue-800">
+                                                                {selectedSession.referrer || 'Direct / None'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                                <ArrowRight className="h-3 w-3" /> Landing Page (Entry URL)
+                                                            </p>
+                                                            <p className="text-xs font-medium break-all text-blue-800">
+                                                                {selectedSession.entryUrl || 'Unknown'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {(selectedSession.utmSource || selectedSession.utmMedium || selectedSession.utmCampaign) && (
+                                                        <div className="pt-2 border-t border-blue-100 flex flex-wrap gap-2">
+                                                            {selectedSession.utmSource && <Badge variant="outline" className="text-[9px] bg-white">src: {selectedSession.utmSource}</Badge>}
+                                                            {selectedSession.utmMedium && <Badge variant="outline" className="text-[9px] bg-white">med: {selectedSession.utmMedium}</Badge>}
+                                                            {selectedSession.utmCampaign && <Badge variant="outline" className="text-[9px] bg-white">cmp: {selectedSession.utmCampaign}</Badge>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </ScrollArea>
                                 ) : (

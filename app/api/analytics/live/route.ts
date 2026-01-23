@@ -54,9 +54,8 @@ export async function GET(request: NextRequest) {
                 visitor: true,
                 events: {
                     orderBy: {
-                        timestamp: 'desc'
-                    },
-                    take: 5
+                        timestamp: 'asc'
+                    }
                 }
             },
             orderBy: {
@@ -77,12 +76,12 @@ export async function GET(request: NextRequest) {
             low: 0
         };
 
-        liveSessions.forEach(s => {
+        liveSessions.forEach((s: any) => {
             if (s.intentLabel === 'High') intentStats.high++;
             else if (s.intentLabel === 'Medium') intentStats.medium++;
             else intentStats.low++;
 
-            const eventTypes = new Set(s.events.map(e => e.type));
+            const eventTypes = new Set(s.events.map((e: any) => e.type));
             if (eventTypes.has('start_checkout')) funnel.checkout++;
             if (eventTypes.has('add_to_cart')) funnel.cart++;
             if (eventTypes.has('view_product')) funnel.products++;
