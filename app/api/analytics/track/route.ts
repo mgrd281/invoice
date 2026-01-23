@@ -72,19 +72,36 @@ export async function POST(req: NextRequest) {
         });
 
         // 3. Log Event
-        await prisma.sessionEvent.create({
-            data: {
-                sessionId: session.id,
-                type: event,
-                url,
-                path,
-                metadata: metadata || {},
-            }
-        });
+        if (event !== 'heartbeat') {
+            await prisma.sessionEvent.create({
+                data: {
+                    sessionId: session.id,
+                    type: event,
+                    url,
+                    path,
+                    metadata: metadata || {},
+                }
+            });
+        }
 
-        return NextResponse.json({ success: true });
+        const response = NextResponse.json({ success: true });
+
+        // Add CORS Headers
+        response.headers.set('Access-Control-Allow-Origin', '*');
+        response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+
+        return response;
     } catch (error: any) {
         console.error('[Analytics Tracker] Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
+}
+
+export async function OPTIONS() {
+    const response = new NextResponse(null, { status: 204 });
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    return response;
 }

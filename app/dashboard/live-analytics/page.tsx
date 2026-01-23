@@ -18,7 +18,10 @@ import {
     ShoppingCart,
     AlertTriangle,
     Search,
-    History
+    History,
+    Bug,
+    Activity,
+    CheckCircle2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -28,6 +31,7 @@ export default function LiveAnalyticsPage() {
     const [sessions, setSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSession, setSelectedSession] = useState<any>(null);
+    const [showDebug, setShowDebug] = useState(false);
 
     const fetchLiveData = async () => {
         try {
@@ -74,6 +78,8 @@ export default function LiveAnalyticsPage() {
             case 'view_product': return <Search className="h-3 w-3 text-purple-500" />;
             case 'add_to_cart': return <ShoppingCart className="h-3 w-3 text-green-500" />;
             case 'rage_click': return <AlertTriangle className="h-3 w-3 text-red-500" />;
+            case 'tracker_loaded': return <CheckCircle2 className="h-3 w-3 text-emerald-500" />;
+            case 'heartbeat': return <Activity className="h-3 w-3 text-slate-400" />;
             default: return <MousePointer2 className="h-3 w-3 text-gray-500" />;
         }
     };
@@ -85,11 +91,68 @@ export default function LiveAnalyticsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Live Besucher & Session Analytics</h1>
                     <p className="text-muted-foreground">Echtzeit-Überwachung des Kundenverhaltens im Shop.</p>
                 </div>
-                <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    {liveData?.count || 0} Aktive Besucher
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setShowDebug(!showDebug)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
+                    >
+                        <Bug className="h-3.5 w-3.5" /> Debug Mode
+                    </button>
+                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        {liveData?.count || 0} Aktive Besucher
+                    </div>
                 </div>
             </div>
+
+            {showDebug && (
+                <Card className="border-orange-200 bg-orange-50/30">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                            <Bug className="h-4 w-4 text-orange-600" /> Tracking Health Check
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white p-3 rounded-lg border shadow-sm">
+                                <div className="text-xs text-muted-foreground mb-1 font-medium">Auto-Refresh</div>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Aktiv (alle 5s)
+                                </div>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg border shadow-sm">
+                                <div className="text-xs text-muted-foreground mb-1 font-medium">Tracking Script</div>
+                                <div className="text-sm font-mono truncate">/analytics-tracker.js</div>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg border shadow-sm">
+                                <div className="text-xs text-muted-foreground mb-1 font-medium">Server Endpoint</div>
+                                <div className="text-sm font-mono truncate">/api/analytics/track</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-950 rounded-lg p-4 font-mono text-xs text-slate-300 overflow-hidden">
+                            <div className="text-slate-500 mb-2 border-b border-slate-800 pb-1 flex justify-between">
+                                <span>Recent Tracking Events (Raw)</span>
+                                <span>Total Sessions: {liveData?.count || 0}</span>
+                            </div>
+                            <ScrollArea className="h-[150px]">
+                                <div className="space-y-1">
+                                    {(liveData?.sessions || []).flatMap((s: any) => s.events).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 15).map((e: any, i: number) => (
+                                        <div key={i} className="grid grid-cols-12 gap-2 hover:bg-slate-900/50">
+                                            <span className="col-span-2 text-slate-500">{new Date(e.timestamp).toLocaleTimeString()}</span>
+                                            <span className="col-span-3 text-blue-400">[{e.type.toUpperCase()}]</span>
+                                            <span className="col-span-7 text-slate-400 truncate">{e.path || e.url}</span>
+                                        </div>
+                                    ))}
+                                    {(!liveData?.sessions?.length) && (
+                                        <div className="text-slate-600 italic py-4 text-center">Waiting for incoming events...</div>
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <Tabs defaultValue="live" className="w-full">
                 <TabsList className="grid w-full max-w-[400px] grid-cols-2">
@@ -122,7 +185,7 @@ export default function LiveAnalyticsPage() {
                                                     <div className="flex items-center gap-2">
                                                         {getDeviceIcon(session.deviceType)}
                                                         <span className="font-medium text-sm">
-                                                            {session.visitor?.country || 'Unbekannt'}
+                                                            {session.visitor?.country || 'DE'}
                                                         </span>
                                                     </div>
                                                     <Badge variant="outline" className="text-[10px]">
@@ -133,7 +196,7 @@ export default function LiveAnalyticsPage() {
                                                     {session.exitUrl || session.entryUrl}
                                                 </div>
                                                 <div className="flex gap-1">
-                                                    {session.events?.slice(0, 5).map((event: any, i: number) => (
+                                                    {session.events?.filter((e: any) => e.type !== 'heartbeat').slice(0, 5).map((event: any, i: number) => (
                                                         <div key={i} title={event.type}>
                                                             {getEventIcon(event.type)}
                                                         </div>
@@ -179,7 +242,7 @@ export default function LiveAnalyticsPage() {
                                                             </span>
                                                         </div>
                                                         <div className="text-sm font-medium mt-1">
-                                                            {event.path}
+                                                            {event.path || event.url}
                                                         </div>
                                                         {event.metadata && Object.keys(event.metadata).length > 0 && (
                                                             <div className="bg-muted/30 p-2 rounded mt-2 text-xs font-mono">

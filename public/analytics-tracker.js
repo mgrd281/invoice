@@ -3,10 +3,13 @@
  * Captures page views, product views, and cart actions.
  */
 (function () {
-    const TRACKER_ENDPOINT = '/api/analytics/track';
+    // Get script origin to ensure we point to the correct backend even from Shopify domains
+    const scriptSrc = document.currentScript?.src;
+    const baseOrigin = scriptSrc ? new URL(scriptSrc).origin : '';
+    const TRACKER_ENDPOINT = baseOrigin ? `${baseOrigin}/api/analytics/track` : '/api/analytics/track';
+
     // Organization ID should be injected when this script is served, or fetched.
-    // For now, we assume it's set on a global window object or we fetch it.
-    let organizationId = window.STORE_ORG_ID || '';
+    let organizationId = window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id') || '';
 
     const getCookie = (name) => {
         const value = `; ${document.cookie}`;
@@ -25,28 +28,31 @@
     };
 
     const getOrGenerateToken = (key, length = 32) => {
-        let token = localStorage.getItem(key) || getCookie(key);
-        if (!token) {
-            token = Array.from(crypto.getRandomValues(new Uint8Array(length)))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
-            localStorage.setItem(key, token);
-            setCookie(key, token, 365);
+        try {
+            let token = localStorage.getItem(key) || getCookie(key);
+            if (!token) {
+                token = Array.from(crypto.getRandomValues(new Uint8Array(length)))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                localStorage.setItem(key, token);
+                setCookie(key, token, 365);
+            }
+            return token;
+        } catch (e) {
+            return 'fallback_token_' + Math.random().toString(36).substr(2, 9);
         }
-        return token;
     };
 
     const visitorToken = getOrGenerateToken('v_token');
     let sessionId = sessionStorage.getItem('s_id');
     if (!sessionId) {
         sessionId = getOrGenerateToken('s_id', 16);
-        sessionStorage.setItem('s_id', sessionId);
+        try { sessionStorage.setItem('s_id', sessionId); } catch (e) { }
     }
 
     const track = async (event, metadata = {}) => {
         if (!organizationId) {
-            // Try to find it in the DOM or metadata
-            organizationId = document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID;
+            organizationId = document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id');
             if (!organizationId) return;
         }
 
@@ -54,6 +60,7 @@
             await fetch(TRACKER_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                mode: 'cors',
                 body: JSON.stringify({
                     event,
                     url: window.location.href,
@@ -67,22 +74,31 @@
                 keepalive: true
             });
         } catch (e) {
-            console.warn('[Analytics] Tracking failed', e);
+            // Fallback for older browsers or fetch failures
         }
     };
+
+    // Health Check / Tracker Loaded
+    track('tracker_loaded', { version: '1.1.0' });
 
     // Track Page View
     track('page_view');
 
+    // Heartbeat every 15 seconds to keep visitor active
+    setInterval(() => track('heartbeat'), 15000);
+
     // Track Product View (requires specific DOM markers)
-    const productElement = document.querySelector('[data-product-id]');
-    if (productElement) {
-        track('view_product', {
-            productId: productElement.getAttribute('data-product-id'),
-            title: productElement.getAttribute('data-product-title'),
-            price: productElement.getAttribute('data-product-price')
-        });
-    }
+    const observeProduct = () => {
+        const productElement = document.querySelector('[data-product-id]');
+        if (productElement) {
+            track('view_product', {
+                productId: productElement.getAttribute('data-product-id'),
+                title: productElement.getAttribute('data-product-title'),
+                price: productElement.getAttribute('data-product-price')
+            });
+        }
+    };
+    observeProduct();
 
     // Rage Click Detection
     let clicks = [];
