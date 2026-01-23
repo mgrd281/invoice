@@ -48,7 +48,9 @@ import {
     Mail,
     Ticket,
     ChevronRight,
-    BrainCircuit
+    BrainCircuit,
+    Lock,
+    Unlock
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
