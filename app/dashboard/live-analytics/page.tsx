@@ -167,20 +167,20 @@ export default function LiveAnalyticsPage() {
 
     const getBehaviorIcons = (session: any) => {
         const icons = [];
-        if (session.isReturning) icons.push(<RotateCcw key="ret" className="h-3 w-3 text-blue-500" title="Wiederkehrender Besucher" />);
+        if (session.isReturning) icons.push(<RotateCcw key="ret" className="h-3 w-3 text-blue-500" />);
 
         const eventTypes = session.events?.map((e: any) => e.type) || [];
-        if (eventTypes.includes('rage_click')) icons.push(<AlertTriangle key="rage" className="h-3 w-3 text-red-500" title="Frustriertes Klicken" />);
+        if (eventTypes.has('rage_click')) icons.push(<AlertTriangle key="rage" className="h-3 w-3 text-red-500" />);
 
         const pageViews = session.events?.filter((e: any) => e.type === 'page_view').length || 0;
-        if (pageViews > 3) icons.push(<Zap key="fast" className="h-3 w-3 text-amber-500" title="Schnelle Navigation" />);
+        if (pageViews > 3) icons.push(<Zap key="fast" className="h-3 w-3 text-amber-500" />);
 
         if (session.events?.some((e: any) => e.type === 'scroll_depth' && e.metadata?.depth === 100)) {
-            icons.push(<FileText key="read" className="h-3 w-3 text-indigo-500" title="Tiefes Interesse / Gelesen" />);
+            icons.push(<FileText key="read" className="h-3 w-3 text-indigo-500" />);
         }
 
         if (pageViews === 1 && session.events?.length < 3) {
-            icons.push(<XOctagon key="bounce" className="h-3 w-3 text-slate-400" title="Bounce Risiko" />);
+            icons.push(<XOctagon key="bounce" className="h-3 w-3 text-slate-400" />);
         }
 
         return icons;
