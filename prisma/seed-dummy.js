@@ -37,13 +37,25 @@ async function main() {
 
     console.log('Created customer:', customer.id)
 
-    // 3. Create Invoice
+    // 3. Create Template
+    let template = await prisma.invoiceTemplate.findFirst({ where: { organizationId: org.id } })
+    if (!template) {
+        template = await prisma.invoiceTemplate.create({
+            data: {
+                organizationId: org.id,
+                name: 'Default Template',
+                htmlContent: '<html><body>Invoice</body></html>',
+                cssContent: 'body { font-family: sans-serif; }'
+            }
+        })
+    }
+
+    // 4. Create Invoice
     const invoice = await prisma.invoice.create({
         data: {
             organizationId: org.id,
             customerId: customer.id,
-            templateId: (await prisma.invoiceTemplate.findFirst())?.id || 'default', // Assuming a template exists or this might fail if relation required. Let's hope for optional or existing.
-            // Actually templateId is required. Let's create one if needed.
+            templateId: template.id,
             invoiceNumber: 'RE-2025-001',
             issueDate: new Date(),
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

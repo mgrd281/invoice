@@ -1288,7 +1288,7 @@ function ReviewsPageContent() {
                                     </div>
                                     <div className="mt-4 flex items-center text-sm text-purple-600">
                                         <ImageIcon className="h-4 w-4 mr-1" />
-                                        <span>{loadingStats ? '...' : Math.round((stats.photoReviews / stats.totalReviews) * 100)}% aller Reviews</span>
+                                        <span>{loadingStats ? '...' : (stats.totalReviews > 0 ? Math.round((stats.photoReviews / stats.totalReviews) * 100) : 0)}% aller Reviews</span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -1403,18 +1403,18 @@ function ReviewsPageContent() {
                                     <CardContent>
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="text-sm text-gray-500">Negative Reviews (30 Tage)</span>
-                                            <span className={`text-sm font-bold ${stats.analysis.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                                {stats.analysis.trend > 0 ? '+' : ''}{stats.analysis.trend}
+                                            <span className={`text-sm font-bold ${(stats.analysis?.trend || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                {(stats.analysis?.trend || 0) > 0 ? '+' : ''}{stats.analysis?.trend || 0}
                                             </span>
                                         </div>
                                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                             <div
-                                                className={`h-full ${stats.analysis.trendDirection === 'increasing' ? 'bg-red-500' : 'bg-green-500'}`}
+                                                className={`h-full ${stats.analysis?.trendDirection === 'increasing' ? 'bg-red-500' : 'bg-green-500'}`}
                                                 style={{ width: '60%' }}
                                             ></div>
                                         </div>
                                         <p className="text-xs text-gray-400 mt-2">
-                                            {stats.analysis.trendDirection === 'increasing'
+                                            {stats.analysis?.trendDirection === 'increasing'
                                                 ? 'Die Anzahl negativer Bewertungen steigt.'
                                                 : 'Die Anzahl negativer Bewertungen ist stabil oder sinkt.'}
                                         </p>
@@ -1428,7 +1428,7 @@ function ReviewsPageContent() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
-                                            {stats.analysis.negativeReasons.map((reason: any, index: number) => (
+                                            {(stats.analysis?.negativeReasons || []).map((reason: any, index: number) => (
                                                 <div key={index}>
                                                     <div className="flex justify-between text-sm mb-1">
                                                         <span className="font-medium text-gray-700">{reason.reason}</span>
