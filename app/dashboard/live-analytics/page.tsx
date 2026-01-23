@@ -1010,6 +1010,52 @@ function LiveAnalyticsContent() {
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {/* Visitor Experience History (Organized Records) */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                                            <History className="h-3.5 w-3.5" />
+                                                        </div>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-800">Besucher-Historie ({visitorHistory.length})</h4>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {loadingHistory ? (
+                                                        <div className="py-4 flex items-center justify-center text-slate-400 text-xs gap-2">
+                                                            <RefreshCw className="h-3 w-3 animate-spin" /> Lade Historie...
+                                                        </div>
+                                                    ) : visitorHistory.filter(s => s.id !== selectedSession.id).length > 0 ? (
+                                                        visitorHistory.filter(s => s.id !== selectedSession.id).map((hSession: any) => (
+                                                            <div
+                                                                key={hSession.id}
+                                                                className="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group"
+                                                                onClick={() => setSelectedSession(hSession)}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${hSession.recordingStatus === 'AVAILABLE' ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-400'}`}>
+                                                                        {hSession.recordingStatus === 'AVAILABLE' ? <PlayCircle className="h-5 w-5" /> : <Video className="h-4 w-4" />}
+                                                                    </div>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[10px] font-black text-slate-900">{new Date(hSession.startTime).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: '2-digit' })} • {hSession.id.substring(0, 4).toUpperCase()}</span>
+                                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">{hSession.deviceType} • {hSession._count?.events || 0} Events</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    {hSession.purchaseStatus === 'PAID' && <Badge className="bg-emerald-500 text-white border-none text-[8px] h-4">BESTELLT</Badge>}
+                                                                    <ChevronRight className="h-3 w-3 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="py-6 text-center text-[10px] text-slate-400 font-bold italic bg-slate-50/50 rounded-xl border border-dashed">
+                                                            Keine weiteren Sessions gefunden
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </ScrollArea>
                                 ) : (
@@ -1025,61 +1071,116 @@ function LiveAnalyticsContent() {
                     </div>
                 </TabsContent>
 
-                <TabsContent value="history" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Letzte Sessions</CardTitle>
-                            <CardDescription>Übersicht der Nutzerbewegungen der letzten Stunden/Tage.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="rounded-md border">
-                                <div className="grid grid-cols-6 p-4 border-b font-medium bg-muted/50 text-sm">
-                                    <div className="col-span-1">Besucher</div>
-                                    <div className="col-span-1 text-center">Gerät/OS</div>
-                                    <div className="col-span-1 text-center">Dauer</div>
-                                    <div className="col-span-1 text-center">Aktivität</div>
-                                    <div className="col-span-1 text-center">Status</div>
-                                    <div className="col-span-1 text-right">Zuletzt</div>
-                                </div>
-                                <div className="divide-y">
-                                    {sessions.map((session: any) => (
-                                        <div
-                                            key={session.id}
-                                            className={`grid grid-cols-6 p-4 text-sm items-center hover:bg-muted/30 cursor-pointer transition-colors ${selectedSession?.id === session.id ? 'bg-blue-50/50' : ''}`}
-                                            onClick={() => {
-                                                setSelectedSession(session);
-                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                            }}
-                                        >
-                                            <div className="col-span-1 flex flex-col">
-                                                <span className="font-medium">{session.visitor?.country || 'DE'}</span>
-                                                <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 8)}...</span>
+                <TabsContent value="history" className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold tracking-tight">Session-Archiv</h2>
+                            <p className="text-sm text-muted-foreground">Historische Aufzeichnungen und Nutzerverhalten.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="h-8 px-3 border-slate-200 bg-white">
+                                {sessions.length} Aufzeichnungen
+                            </Badge>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sessions.map((session: any) => (
+                            <Card
+                                key={session.id}
+                                className={`group overflow-hidden border-slate-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative ${selectedSession?.id === session.id ? 'ring-2 ring-blue-500 border-transparent' : ''}`}
+                                onClick={() => {
+                                    setSelectedSession(session);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            >
+                                {/* Thumbnail / Replay Indicator */}
+                                <div className="aspect-video w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                                    {session.recordingStatus === 'AVAILABLE' ? (
+                                        <>
+                                            {session.thumbnailUrl ? (
+                                                <img src={session.thumbnailUrl} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
+                                            ) : (
+                                                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
+                                            )}
+                                            <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-100">
+                                                <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 group-hover:bg-red-600 group-hover:border-red-500 transition-all">
+                                                    <Play className="h-6 w-6 fill-current ml-1" />
+                                                </div>
                                             </div>
-                                            <div className="col-span-1 flex items-center gap-2 justify-center">
-                                                {getDeviceIcon(session.deviceType)}
-                                                <span className="text-[10px]">{session.os}</span>
-                                            </div>
-                                            <div className="col-span-1 text-xs text-center">
-                                                {Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.
-                                            </div>
-                                            <div className="col-span-1 flex flex-col items-center gap-1">
-                                                <Badge variant="secondary" className="px-1 text-[10px]">
-                                                    {session._count?.events || session.events?.length || 0} Events
-                                                </Badge>
-                                                {session.intentLabel && getIntentBadge(session.intentLabel)}
-                                            </div>
-                                            <div className="col-span-1 flex justify-center">
-                                                {getStatusBadge(session)}
-                                            </div>
-                                            <div className="col-span-1 text-xs text-muted-foreground text-right font-medium">
-                                                {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
-                                            </div>
+                                            <Badge className="absolute top-3 right-3 bg-red-600 text-white border-none font-bold text-[10px]">VIDEO</Badge>
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2 text-slate-300">
+                                            <Video className="h-10 w-10 opacity-20" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Kein Video</span>
                                         </div>
-                                    ))}
+                                    )}
+
+                                    {/* Overlay Info */}
+                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                        <div className="flex justify-between items-end">
+                                            <div className="flex items-center gap-2 text-white">
+                                                {getDeviceIcon(session.deviceType)}
+                                                <span className="text-[10px] font-bold">{session.browser}</span>
+                                            </div>
+                                            <span className="text-[10px] text-white/80 font-mono">{formatDistanceToNow(new Date(session.startTime), { addSuffix: true, locale: de })}</span>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <CardContent className="p-4">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-black text-sm text-slate-900">
+                                                    {session.visitor?.country || 'DE'} {session.city ? `(${session.city})` : ''}
+                                                </span>
+                                                {session.isVip && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 font-mono">#{session.visitor?.id.substring(0, 8).toUpperCase()}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            {getIntentBadge(session.intentLabel)}
+                                            {session.purchaseStatus === 'PAID' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[9px] font-bold">BEZAHLT</Badge>}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-xs border-t pt-3 mt-1">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Aktivität</span>
+                                            <span className="font-black">{session._count?.events || session.events?.length || 0} Events</span>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Dauer</span>
+                                            <span className="font-black">{Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 flex gap-1.5 flex-wrap">
+                                        {session.sourceLabel && (
+                                            <div className="flex items-center gap-1 bg-slate-50 border px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500">
+                                                {getSourceIcon(session.sourceLabel, session.sourceMedium)}
+                                                {session.sourceLabel}
+                                            </div>
+                                        )}
+                                        {session.totalValue > 0 && (
+                                            <div className="bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded text-[9px] font-black">
+                                                {session.totalValue.toFixed(2)} € WK
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+
+                        {sessions.length === 0 && (
+                            <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 italic bg-white rounded-2xl border border-dashed">
+                                <History className="h-12 w-12 opacity-10 mb-4" />
+                                <p>Keine Sessions im Archiv gefunden</p>
                             </div>
-                        </CardContent>
-                    </Card>
+                        )}
+                    </div>
                 </TabsContent>
             </Tabs>
 

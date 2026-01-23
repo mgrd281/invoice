@@ -59,28 +59,27 @@
     };
 
     const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes of inactivity
-    const visitorToken = getUrlParam('v_token') || getOrGenerateToken('v_token');
-
-    let sessionId = getUrlParam('s_id');
-    const storedSessionId = sessionStorage.getItem('s_id');
-    const lastActive = localStorage.getItem('s_last_active');
-    const now = Date.now();
-
-    // Logic: New session if:
-    // 1. Explicitly provided in URL (domain cross-over)
-    // 2. No session in sessionStorage
-    // 3. Last activity was more than 30 minutes ago
-    const isExpired = lastActive && (now - parseInt(lastActive) > SESSION_TIMEOUT);
-
-    if (!sessionId) {
-        if (!storedSessionId || isExpired) {
-            sessionId = getOrGenerateToken('s_id', 16);
-            sessionStorage.setItem('s_id', sessionId);
-            // If it was expired, we mark as not returning for this specific session context
-            if (isExpired) isReturning = true;
-        } else {
-            sessionId = storedSessionId;
+    const getSessionId = () => {
+        try {
+            let sId = sessionStorage.getItem('s_id');
+            if (!sId) {
+                // Generate a fresh ID for this window/tab Session
+                sId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                sessionStorage.setItem('s_id', sId);
+            }
+            return sId;
+        } catch (e) {
+            return 's_fallback_' + Math.random().toString(36).substr(2, 9);
         }
+    };
+
+    const visitorToken = getUrlParam('v_token') || getOrGenerateToken('v_token');
+    let sessionId = getUrlParam('s_id') || getSessionId();
+
+    if (getUrlParam('s_id')) {
+        sessionStorage.setItem('s_id', sessionId);
     }
 
     // Always update last active on script load
