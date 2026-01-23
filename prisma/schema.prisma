@@ -995,7 +995,7 @@ model RealEstateSeenListing {
 model Visitor {
   id             String       @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation("OrganizationToVisitors", fields: [organizationId], references: [id])
   visitorToken   String       @unique // Unique token stored in visitor's cookie/localStorage
   ipHash         String? // Hashed IP for privacy
   userAgent      String?
@@ -1018,7 +1018,7 @@ model VisitorSession {
   visitorId      String
   visitor        Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation("OrganizationToVisitorSessions", fields: [organizationId], references: [id])
   sessionId      String       @unique // Unique session identifier
 
   startTime    DateTime  @default(now())
