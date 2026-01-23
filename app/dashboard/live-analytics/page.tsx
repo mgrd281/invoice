@@ -65,6 +65,31 @@ function LiveAnalyticsContent() {
     const [loading, setLoading] = useState(true);
     const [selectedSession, setSelectedSession] = useState<any>(null);
     const [showDebug, setShowDebug] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const handleAction = async (type: 'vip' | 'coupon' | 'email', data: any = {}) => {
+        if (!selectedSession) return;
+        setActionLoading(type);
+        try {
+            const res = await fetch(`/api/analytics/sessions/${selectedSession.id}/${type}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const json = await res.json();
+            if (json.success) {
+                toast.success(json.message || 'Aktion erfolgreich');
+                // Refresh data
+                fetchLiveData();
+            } else {
+                toast.error(json.error || 'Fehler bei der Aktion');
+            }
+        } catch (err) {
+            toast.error('Netzwerkfehler');
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const trackingSnippet = `<script 
@@ -359,9 +384,11 @@ function LiveAnalyticsContent() {
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
                                                         {getDeviceIcon(session.deviceType)}
-                                                        <span className="font-medium text-sm">
+                                                        <span className="font-medium text-sm flex items-center gap-1">
                                                             {session.visitor?.country || 'DE'}
+                                                            {session.city && <span className="text-slate-400 font-normal">({session.city})</span>}
                                                         </span>
+                                                        {session.isVip && <Star className="h-3 w-3 text-amber-500 fill-amber-500 ml-1" />}
                                                         <div className="flex items-center gap-1.5 ml-2 bg-slate-100 px-2 py-0.5 rounded text-[10px] font-semibold text-slate-600">
                                                             {getSourceIcon(session.sourceLabel, session.sourceMedium)}
                                                             {session.sourceLabel || 'Direct'}
@@ -500,14 +527,29 @@ function LiveAnalyticsContent() {
 
                                         {/* Admin Quick Actions */}
                                         <div className="mb-6 flex flex-wrap gap-3">
-                                            <Button variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-blue-50 border-slate-200" onClick={() => toast.info('E-Mail Entwurf vorbereitet')}>
-                                                <Mail className="h-3.5 w-3.5 text-blue-600" /> E-Mail schreiben
+                                            <Button
+                                                variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-blue-50 border-slate-200"
+                                                disabled={!!actionLoading}
+                                                onClick={() => handleAction('email', { templateId: 'default' })}
+                                            >
+                                                {actionLoading === 'email' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5 text-blue-600" />}
+                                                E-Mail schreiben
                                             </Button>
-                                            <Button variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-emerald-50 border-slate-200" onClick={() => toast.success('Rabattcode wird versendet')}>
-                                                <Ticket className="h-3.5 w-3.5 text-emerald-600" /> Gutschein anbieten
+                                            <Button
+                                                variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-emerald-50 border-slate-200"
+                                                disabled={!!actionLoading}
+                                                onClick={() => handleAction('coupon', { discountValue: 10, discountType: 'percentage' })}
+                                            >
+                                                {actionLoading === 'coupon' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Ticket className="h-3.5 w-3.5 text-emerald-600" />}
+                                                Gutschein anbieten
                                             </Button>
-                                            <Button variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-amber-50 border-slate-200" onClick={() => toast.info('Besucher als VIP markiert')}>
-                                                <Star className="h-3.5 w-3.5 text-amber-500" /> VIP Markieren
+                                            <Button
+                                                variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-amber-50 border-slate-200"
+                                                disabled={!!actionLoading}
+                                                onClick={() => handleAction('vip', { isVip: !selectedSession.isVip })}
+                                            >
+                                                {actionLoading === 'vip' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Star className={`h-3.5 w-3.5 ${selectedSession.isVip ? 'text-amber-500 fill-amber-500' : 'text-amber-500'}`} />}
+                                                {selectedSession.isVip ? 'Als Gast markieren' : 'VIP Markieren'}
                                             </Button>
                                         </div>
 
@@ -566,13 +608,26 @@ function LiveAnalyticsContent() {
                                                         </div>
                                                     )}
 
-                                                    <div className="grid grid-cols-2 gap-4 border-t pt-3 mt-3">
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-3 mt-3">
                                                         <div>
-                                                            <div className="text-[10px] text-muted-foreground">Referrer</div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Referrer</div>
                                                             <div className="text-xs truncate" title={selectedSession.referrer}>{selectedSession.referrer || 'Direct'}</div>
                                                         </div>
                                                         <div>
-                                                            <div className="text-[10px] text-muted-foreground">Dauer</div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Stadt / IP</div>
+                                                            <div className="text-xs font-semibold flex flex-col">
+                                                                <span>{selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
+                                                                <span className="text-[10px] text-slate-400 font-normal">{selectedSession.ipMasked || '***.***.***.0'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Kunden ID</div>
+                                                            <div className="text-xs font-black text-blue-600">
+                                                                {selectedSession.customerId ? `#${selectedSession.customerId}` : 'Gastsitzung'}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Dauer</div>
                                                             <div className="text-xs font-semibold">
                                                                 {Math.max(1, Math.round((new Date(selectedSession.lastActiveAt).getTime() - new Date(selectedSession.startTime).getTime()) / 60000))} Min.
                                                             </div>

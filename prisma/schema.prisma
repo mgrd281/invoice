@@ -924,6 +924,12 @@ model VisitorSession {
   itemsCount     Int?           @default(0)
   peakCartValue  Float?         @default(0)
   status         String         @default("ACTIVE")
+  city           String?
+  region         String?
+  ipMasked       String?
+  customerId     String?
+  isVip          Boolean        @default(false)
+  adminNotes     String?
   events         SessionEvent[]
   organization   Organization   @relation("OrganizationToVisitorSessions", fields: [organizationId], references: [id])
   visitor        Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
