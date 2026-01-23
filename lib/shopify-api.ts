@@ -385,10 +385,15 @@ export class ShopifyAPI {
 
     parts.forEach(part => {
       const section = part.split(';')
-      if (section.length !== 2) return
+      if (section.length < 2) return
 
-      const url = section[0].replace(/<(.*)>/, '$1').trim()
-      const rel = section[1].replace(/rel="(.*)"/, '$1').trim()
+      const urlMatch = section[0].match(/<(.*)>/)
+      if (!urlMatch) return
+      const url = urlMatch[1].trim()
+
+      const relMatch = section[1].match(/rel="?([^"]*)"?/)
+      if (!relMatch) return
+      const rel = relMatch[1].trim()
 
       // Extract page_info from URL
       const pageInfoMatch = url.match(/page_info=([^&]+)/)
@@ -565,12 +570,17 @@ export class ShopifyAPI {
 
           // Parse Link header
           const linkHeader = response.headers.get('Link')
+          console.log(`🔗 Page ${pageCount + 1} Link Header:`, linkHeader)
           pageInfo = this.parseLinkHeader(linkHeader)
+          console.log(`🔗 Page ${pageCount + 1} Parsed Link:`, JSON.stringify(pageInfo))
 
           allProducts.push(...products)
           pageCount++
 
+          console.log(`📦 Page ${pageCount}: Received ${products.length} products, total so far: ${allProducts.length}`)
+
           if (products.length === 0 || !pageInfo?.next) {
+            console.log('🏁 No more pages of products available')
             hasMorePages = false
           }
 

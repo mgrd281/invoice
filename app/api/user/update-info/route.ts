@@ -1,15 +1,15 @@
-
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth-middleware'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
     try {
-        const auth = requireAuth(request)
-        if ('error' in auth) {
-            return auth.error
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-        const { user } = auth
+        const { user } = session as any
 
         // Get IP and Country from headers
         const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
