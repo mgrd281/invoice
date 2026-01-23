@@ -144,6 +144,17 @@
             const cartData = await fetchCart();
             if (cartData) {
                 metadata.cart = cartData;
+                // Proactively record snapshot to the specialized endpoint
+                try {
+                    fetch(`${baseOrigin}/api/analytics/sessions/${sessionId}/cart`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            ...cartData,
+                            action: event.toUpperCase()
+                        }),
+                        keepalive: true
+                    });
+                } catch (e) { }
             }
         }
 

@@ -931,8 +931,11 @@ model VisitorSession {
   customerId     String?
   isVip          Boolean        @default(false)
   adminNotes     String?
+  recordingStatus String?       @default("NONE") // NONE, PROCESSING, AVAILABLE
+  thumbnailUrl   String?
   events         SessionEvent[]
   recordings     SessionRecording[]
+  cartSnapshots  CartSnapshot[]
   organization   Organization   @relation("OrganizationToVisitorSessions", fields: [organizationId], references: [id])
   visitor        Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
@@ -940,6 +943,19 @@ model VisitorSession {
   @@index([visitorId])
   @@index([sessionId])
   @@index([lastActiveAt])
+}
+
+model CartSnapshot {
+  id             String         @id @default(uuid())
+  sessionId      String
+  timestamp      DateTime       @default(now())
+  items          Json           // List of products with title, qty, price, image
+  totalValue     Float
+  itemsCount     Int
+  action         String?        // e.g., 'ADD', 'REMOVE', 'INITIAL'
+  session        VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model SessionEvent {

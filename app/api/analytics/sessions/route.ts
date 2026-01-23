@@ -44,6 +44,11 @@ export async function GET(request: NextRequest) {
                             timestamp: 'asc'
                         }
                     },
+                    cartSnapshots: {
+                        orderBy: {
+                            timestamp: 'asc'
+                        }
+                    },
                     _count: {
                         select: { events: true }
                     }
