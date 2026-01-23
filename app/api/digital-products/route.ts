@@ -13,10 +13,22 @@ export async function GET() {
             return new NextResponse('Unauthorized', { status: 401 })
         }
 
-        const user = await prisma.user.findUnique({
+        let user = await prisma.user.findUnique({
             where: { email: session.user.email },
             include: { organization: true }
         })
+
+        // AUTO-LINK: If user has no organization but one exists, link them (helpful for recovery)
+        if (user && !user.organizationId) {
+            const firstOrg = await prisma.organization.findFirst()
+            if (firstOrg) {
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: { organizationId: firstOrg.id },
+                    include: { organization: true }
+                })
+            }
+        }
 
         if (!user?.organizationId) {
             return NextResponse.json({ success: true, data: [] })
@@ -76,10 +88,22 @@ export async function POST(req: Request) {
         const body = await req.json()
 
         // 1. Get current user with organization
-        const currentUser = await prisma.user.findUnique({
+        let currentUser = await prisma.user.findUnique({
             where: { email: session.user.email },
             include: { organization: true }
         })
+
+        // AUTO-LINK: If user has no organization but one exists, link them (helpful for recovery)
+        if (currentUser && !currentUser.organizationId) {
+            const firstOrg = await prisma.organization.findFirst()
+            if (firstOrg) {
+                currentUser = await prisma.user.update({
+                    where: { id: currentUser.id },
+                    data: { organizationId: firstOrg.id },
+                    include: { organization: true }
+                })
+            }
+        }
 
         if (!currentUser?.organization) {
             return NextResponse.json(
