@@ -168,15 +168,7 @@ export const DEFAULT_FEATURES = [
         pingColor: 'bg-orange-400',
         pingDotColor: 'bg-orange-500'
     },
-    {
-        id: 'blocked-users',
-        href: '/blocked-users',
-        title: 'Gesperrte Nutzer',
-        description: 'Zugriff für bestimmte Nutzer verweigern',
-        icon: ShieldAlert,
-        iconBg: 'bg-gradient-to-r from-red-600 to-red-700',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
-    },
+
     {
         id: 'logs',
         href: '/dashboard/logs',
