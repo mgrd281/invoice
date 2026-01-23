@@ -222,6 +222,32 @@ export async function POST(req: Request) {
             }
         } as any)
 
+        // --- NEW: Session Heartbeat & Linking ---
+        const noteAttributes = data.note_attributes || []
+        const sessionAttr = noteAttributes.find((attr: any) => attr.name === '_visitor_session_id')
+        const visitorAttr = noteAttributes.find((attr: any) => attr.name === '_visitor_token')
+
+        if (sessionAttr?.value) {
+            console.log(`[Webhook] Heartbeat: Updating session ${sessionAttr.value} for checkout ${checkoutId}`)
+            try {
+                await prisma.visitorSession.updateMany({
+                    where: {
+                        sessionId: sessionAttr.value,
+                        organizationId: connection.organizationId
+                    },
+                    data: {
+                        lastActiveAt: new Date(),
+                        status: 'ACTIVE',
+                        checkoutToken: data.token,
+                        cartToken: data.cart_token,
+                        purchaseStatus: 'CHECKOUT'
+                    }
+                })
+            } catch (err) {
+                console.error('[Webhook] Failed to update session heartbeat:', err)
+            }
+        }
+
         console.log(`[Webhook] Saved abandoned cart for ${customerEmail} (Device: ${deviceInfo.os} ${deviceInfo.device})`)
 
         return NextResponse.json({ success: true })
