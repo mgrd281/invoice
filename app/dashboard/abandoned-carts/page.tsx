@@ -17,8 +17,11 @@ interface AbandonedCart {
     email: string
     cartUrl: string
     lineItems: any
+    removedItems?: any
     totalPrice: string
     currency: string
+    deviceInfo?: any
+    totalPricePeak?: number | string
     isRecovered: boolean
     recoverySent: boolean
     recoverySentAt: string | null
@@ -153,7 +156,7 @@ export default function AbandonedCartsPage() {
             fetchCarts()
             const interval = setInterval(() => {
                 if (!document.hidden) fetchCarts()
-            }, 5000)
+            }, 3000)
             return () => clearInterval(interval)
         }
     }, [mounted, fetchCarts])
@@ -366,9 +369,20 @@ export default function AbandonedCartsPage() {
                                                                 )}
                                                             </>
                                                         ) : (
-                                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100 w-fit">
-                                                                <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                                                                <span className="text-[11px] font-black text-red-600 uppercase tracking-tight">Warenkorb geleert</span>
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100 w-fit">
+                                                                    <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                                                                    <span className="text-[11px] font-black text-red-600 uppercase tracking-tight">Warenkorb geleert</span>
+                                                                </div>
+
+                                                                {Array.isArray((cart as any).removedItems) && ((cart as any).removedItems as any[]).length > 0 && (
+                                                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50/50 border border-red-100/50 rounded-full w-fit">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                                                                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-tight">
+                                                                            {((cart as any).removedItems as any[]).length} Artikel entfernt
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -434,20 +448,20 @@ export default function AbandonedCartsPage() {
                                                     {/* Device info */}
                                                     {(cart as any).deviceInfo && (
                                                         <div
-                                                            className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium w-fit px-1.5 py-0.5 rounded border transition-colors ${((cart as any).deviceInfo as any).detection_confidence === 'high'
-                                                                ? 'text-green-600 bg-green-50 border-green-100'
-                                                                : 'text-gray-400/80 bg-gray-50/50 border-gray-100/50'
+                                                            className={`flex items-center gap-1.5 mt-2 text-[10px] font-bold w-fit px-2 py-0.5 rounded-md border transition-all ${((cart as any).deviceInfo as any).detection_confidence === 'high'
+                                                                ? 'text-indigo-600 bg-indigo-50 border-indigo-200 shadow-sm'
+                                                                : 'text-gray-500 bg-gray-50 border-gray-200'
                                                                 }`}
-                                                            title={`Gerät: ${((cart as any).deviceInfo as any).device} | System: ${((cart as any).deviceInfo as any).os} | Browser: ${((cart as any).deviceInfo as any).browser} | Erkennung: ${((cart as any).deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'} | Raw UA: ${((cart as any).deviceInfo as any).ua || 'Leer'}`}
+                                                            title={`Gerät: ${((cart as any).deviceInfo as any).device} | System: ${((cart as any).deviceInfo as any).os} | Browser: ${((cart as any).deviceInfo as any).browser} | Auflösung: ${((cart as any).deviceInfo as any).viewportWidth || ((cart as any).deviceInfo as any).screenWidth || '?'}px | Erkennung: ${((cart as any).deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'} | UA: ${((cart as any).deviceInfo as any).ua}`}
                                                         >
                                                             {((cart as any).deviceInfo as any).device === 'Mobile' ? (
-                                                                <Smartphone className="w-2.5 h-2.5" />
+                                                                <Smartphone className="w-3 h-3" />
                                                             ) : (
-                                                                <Monitor className="w-2.5 h-2.5" />
+                                                                <Monitor className="w-3 h-3" />
                                                             )}
-                                                            <span>{((cart as any).deviceInfo as any).device} · {((cart as any).deviceInfo as any).os}</span>
+                                                            <span className="uppercase tracking-tight">{((cart as any).deviceInfo as any).device} · {((cart as any).deviceInfo as any).os}</span>
                                                             {((cart as any).deviceInfo as any).detection_confidence === 'high' && (
-                                                                <CheckCircle className="w-2 h-2" />
+                                                                <Zap className="w-2.5 h-2.5 fill-indigo-600 animate-pulse" />
                                                             )}
                                                         </div>
                                                     )}

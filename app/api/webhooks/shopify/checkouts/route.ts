@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
+import { parseDeviceInfo } from '@/lib/device-detection'
 
 // This webhook handles 'checkouts/create' and 'checkouts/update' topics
 export async function POST(req: Request) {
@@ -121,15 +122,14 @@ export async function POST(req: Request) {
 
             // Identify removed items (items that were in the cart but aren't anymore)
             oldItems.forEach(oldItem => {
-                const stillExists = newItems.some(newItem =>
+                const STILL_EXISTS = newItems.find(newItem =>
                     (newItem.variant_id && newItem.variant_id === oldItem.variant_id) ||
                     (newItem.product_id === oldItem.product_id && newItem.title === oldItem.title)
                 )
 
-                if (!stillExists) {
-                    console.log(`[Webhook] Item removed detected: ${oldItem.title}`)
-                    // Check if already in removed list to avoid duplicates
-                    const alreadyRemoved = removedItems.some(rm =>
+                if (!STILL_EXISTS) {
+                    // Check if already in removed list
+                    const alreadyRemoved = removedItems.find(rm =>
                         (rm.variant_id && rm.variant_id === oldItem.variant_id) ||
                         (rm.product_id === oldItem.product_id && rm.title === oldItem.title)
                     )
@@ -141,25 +141,30 @@ export async function POST(req: Request) {
                             isRemoved: true
                         })
                     }
-                }
-
-                // Also check if quantity decreased
-                const newItem = newItems.find(ni =>
-                    (ni.variant_id && ni.variant_id === oldItem.variant_id) ||
-                    (ni.product_id === oldItem.product_id && ni.title === oldItem.title)
-                )
-
-                if (newItem && newItem.quantity < oldItem.quantity) {
-                    console.log(`[Webhook] Quantity decreased for: ${oldItem.title}`)
+                } else if (STILL_EXISTS.quantity < oldItem.quantity) {
                     removedItems.push({
                         ...oldItem,
-                        quantity: oldItem.quantity - newItem.quantity,
+                        quantity: oldItem.quantity - STILL_EXISTS.quantity,
                         removedAt: new Date().toISOString(),
                         isPartialRemoval: true
                     })
                 }
             })
         }
+
+        // Merge enriched images from existing cart back into new lineItems
+        const mergedLineItems = (lineItems as any[]).map(newItem => {
+            const oldItem = (existingCart?.lineItems as any[])?.find(oi =>
+                (oi.variant_id && oi.variant_id === newItem.variant_id) ||
+                (oi.product_id === newItem.product_id && oi.title === newItem.title)
+            )
+
+            // Keep the image if old one had it and new one doesn't
+            if (oldItem?.image && !newItem.image) {
+                return { ...newItem, image: oldItem.image }
+            }
+            return newItem
+        })
 
         // Update Price Peak
         const totalPricePeak = Math.max(currentTotalPricePeak, newTotalPrice)
@@ -180,7 +185,7 @@ export async function POST(req: Request) {
 
         let deviceInfo = (existingCart as any)?.deviceInfo?.detection_confidence === 'high'
             ? (existingCart as any).deviceInfo
-            : { ...parseUserAgent(userAgent, sourceName), detection_confidence: 'low' }
+            : { ...parseDeviceInfo(userAgent, sourceName), detection_confidence: 'low' }
 
         await prisma.abandonedCart.upsert({
             where: {
@@ -198,7 +203,7 @@ export async function POST(req: Request) {
                 totalPrice: totalPrice,
                 totalPricePeak: totalPricePeak,
                 currency: currency,
-                lineItems: lineItems,
+                lineItems: mergedLineItems,
                 removedItems: removedItems,
                 deviceInfo: deviceInfo,
                 isRecovered: false,
@@ -210,7 +215,7 @@ export async function POST(req: Request) {
                 cartUrl: cartUrl,
                 totalPrice: totalPrice,
                 totalPricePeak: totalPricePeak,
-                lineItems: lineItems,
+                lineItems: mergedLineItems,
                 removedItems: removedItems,
                 deviceInfo: deviceInfo,
                 updatedAt: new Date()
@@ -226,62 +231,3 @@ export async function POST(req: Request) {
     }
 }
 
-/**
- * Simple User Agent Parser for Dashboard Visibility
- */
-function parseUserAgent(ua: string, sourceName?: string) {
-    const info = {
-        device: 'Unbekannt',
-        os: 'Unbekannt',
-        browser: 'Unbekannt',
-        ua: ua
-    }
-
-    // Shopify source_name detection
-    if (sourceName === 'shopify_draft_order' || sourceName === 'shopify_mobile') {
-        info.device = 'Mobile'
-        info.os = 'Shopify App'
-    }
-
-    if (!ua || ua.trim() === '') return info
-
-    const lowerUA = ua.toLowerCase()
-
-    // 1. Device Type
-    if (/mobile|android|iphone|ipad|ipod|phone|blackberry|iemobile|kindle|silk|opera mini|mobi|shopify|fbav|instagram/i.test(lowerUA)) {
-        info.device = 'Mobile'
-    } else if (/tablet|playbook/i.test(lowerUA)) {
-        info.device = 'Tablet'
-    } else if (/windows|macintosh|linux|cros/i.test(lowerUA)) {
-        info.device = 'Desktop'
-    } else if (sourceName === 'web') {
-        info.device = 'Desktop' // Default for web if UA is mystery
-    } else if (sourceName === 'shopify_draft_order' || sourceName === 'shopify_mobile' || sourceName === 'pos') {
-        info.device = 'Mobile'
-    }
-
-    // 2. OS Detection
-    if (lowerUA.includes('iphone') || lowerUA.includes('ipad') || lowerUA.includes('ipod')) {
-        info.os = 'iOS'
-    } else if (lowerUA.includes('android')) {
-        info.os = 'Android'
-    } else if (lowerUA.includes('windows')) {
-        info.os = 'Windows'
-    } else if (lowerUA.includes('macintosh') || lowerUA.includes('mac os x')) {
-        if (info.device === 'Mobile') info.os = 'iOS'
-        else info.os = 'macOS'
-    } else if (lowerUA.includes('linux')) {
-        info.os = 'Linux'
-    } else if (lowerUA.includes('cros')) {
-        info.os = 'ChromeOS'
-    }
-
-    // 3. Browser Detection
-    if (lowerUA.includes('edg/')) info.browser = 'Edge'
-    else if (lowerUA.includes('chrome')) info.browser = 'Chrome'
-    else if (lowerUA.includes('safari') && !lowerUA.includes('chrome')) info.browser = 'Safari'
-    else if (lowerUA.includes('firefox')) info.browser = 'Firefox'
-    else if (lowerUA.includes('opera') || lowerUA.includes('opr/')) info.browser = 'Opera'
-
-    return info
-}

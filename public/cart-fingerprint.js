@@ -47,11 +47,10 @@
             device = 'Mobile';
         }
 
-        // 3. Browser Detection
-        if (/Edg/i.test(ua)) browser = 'Edge';
-        else if (/Chrome/i.test(ua)) browser = 'Chrome';
-        else if (/Firefox/i.test(ua)) browser = 'Firefox';
-        else if (/Safari/i.test(ua)) browser = 'Safari';
+        // Final sanity check for Mobile
+        if (device === 'Desktop' && (isTouch || hasCoarsePointer) && window.screen.width < 1024) {
+            device = 'Mobile';
+        }
 
         return {
             device,
@@ -59,7 +58,10 @@
             browser,
             screenWidth: window.screen.width,
             screenHeight: window.screen.height,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
             isTouch: isTouch,
+            maxTouchPoints: navigator.maxTouchPoints || 0,
             ua: ua // Send raw UA for debugging
         };
     }
