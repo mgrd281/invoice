@@ -6,14 +6,16 @@ import { authOptions } from '@/lib/auth-options';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+    let organizationId: string | null = null;
+    let isAdmin = false;
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        let organizationId = (session.user as any).organizationId;
-        const isAdmin = (session.user as any).isAdmin;
+        organizationId = (session.user as any).organizationId;
+        isAdmin = (session.user as any).isAdmin;
 
         if (!organizationId && !isAdmin) {
             const user = await prisma.user.findUnique({
@@ -102,7 +104,12 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('[Live Analytics] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[Live Analytics] FATAL ERROR:', {
+            message: error.message,
+            stack: error.stack,
+            organizationId: organizationId,
+            isAdmin: isAdmin
+        });
+        return NextResponse.json({ error: error.message, detail: error.stack }, { status: 500 });
     }
 }

@@ -6,6 +6,10 @@ import { authOptions } from '@/lib/auth-options';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+    let limit = 50;
+    let offset = 0;
+    let deviceType: string | null = null;
+    let sessionId: string | null = null;
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
@@ -13,10 +17,10 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const limit = parseInt(searchParams.get('limit') || '50');
-        const offset = parseInt(searchParams.get('offset') || '0');
-        const deviceType = searchParams.get('deviceType');
-        const sessionId = searchParams.get('sessionId');
+        limit = parseInt(searchParams.get('limit') || '50');
+        offset = parseInt(searchParams.get('offset') || '0');
+        deviceType = searchParams.get('deviceType');
+        sessionId = searchParams.get('sessionId');
 
         const user = await prisma.user.findUnique({
             where: { email: session.user.email! },
@@ -124,7 +128,11 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('[Session History] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[Session History] FATAL ERROR:', {
+            message: error.message,
+            stack: error.stack,
+            query: { limit, offset, deviceType, sessionId }
+        });
+        return NextResponse.json({ error: error.message, detail: error.stack }, { status: 500 });
     }
 }

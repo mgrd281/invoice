@@ -7,6 +7,9 @@ import { authOptions } from '@/lib/auth-options'
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+    let range = '7d';
+    let fromStr: string | null = null;
+    let toStr: string | null = null;
     try {
         const sessionAuth = await getServerSession(authOptions);
         if (!sessionAuth?.user) {
@@ -31,9 +34,9 @@ export async function GET(request: NextRequest) {
             organizationId = user?.organizationId;
         }
         const searchParams = request.nextUrl.searchParams
-        const fromStr = searchParams.get('from')
-        const toStr = searchParams.get('to')
-        const range = searchParams.get('range') || '7d'
+        fromStr = searchParams.get('from')
+        toStr = searchParams.get('to')
+        range = searchParams.get('range') || '7d'
 
         let startDate: Date
         let endDate: Date = endOfDay(new Date())
@@ -207,8 +210,16 @@ export async function GET(request: NextRequest) {
             topPages
         })
 
-    } catch (error) {
-        console.error('Analytics API Error:', error)
-        return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 })
+    } catch (error: any) {
+        console.error('[Analytics Overview] FATAL ERROR:', {
+            message: error.message,
+            stack: error.stack,
+            params: { range, fromStr, toStr }
+        });
+        return NextResponse.json({
+            success: false,
+            message: error.message,
+            detail: error.stack
+        }, { status: 500 });
     }
 }
