@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth-options';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -13,7 +13,7 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const sessionId = params.id;
+        const { id: sessionId } = await props.params;
         console.log('[Recording Fetch] Fetching events for session:', sessionId);
 
         // Fetch all recording chunks for this session
