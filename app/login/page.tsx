@@ -17,7 +17,7 @@ function LoginForm() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-    const redirect = searchParams.get('redirect') || '/invoices'
+    const redirect = searchParams.get('redirect') || '/dashboard'
     const sessionExpired = searchParams.get('session') === 'expired'
     const invalidToken = searchParams.get('error') === 'invalid-token'
 

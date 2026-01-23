@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
           lastLogin: loginTime
         },
         token,
-        redirectTo: user.role === 'ADMIN' ? '/' : '/'
+        redirectTo: '/dashboard'
       },
       { status: 200 }
     )
