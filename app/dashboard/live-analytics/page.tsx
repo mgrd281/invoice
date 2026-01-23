@@ -861,48 +861,59 @@ function LiveAnalyticsContent() {
 
                                             {/* All Events Timeline */}
                                             {selectedSession.events?.map((event: any, i: number) => (
-                                                <div key={i} className="relative">
-                                                    <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
+                                                <div key={i} className="relative group pl-2 transition-all hover:pl-4">
+                                                    <div className="absolute -left-[41px] top-1 bg-white p-1 rounded-full border-2 border-blue-100 shadow-sm group-hover:border-blue-500 group-hover:scale-125 transition-all z-10">
                                                         {getEventIcon(event.type)}
                                                     </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-sm uppercase text-muted-foreground/80">
-                                                                {event.type.replace('_', ' ')}
-                                                                {event.type === 'scroll_depth' && ` (${event.metadata?.depth}%)`}
-                                                            </span>
-                                                            <span className="text-[10px] text-muted-foreground">
+                                                    <div className="flex flex-col bg-slate-50/50 group-hover:bg-white p-3 rounded-xl border border-transparent group-hover:border-slate-100 group-hover:shadow-md transition-all">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-black text-xs uppercase tracking-tighter text-slate-800">
+                                                                    {event.type.replace('_', ' ')}
+                                                                    {event.type === 'scroll_depth' && ` (${event.metadata?.depth}%)`}
+                                                                </span>
+                                                                {event.type === 'rage_click' && <Badge variant="destructive" className="h-4 text-[8px] animate-pulse">RAGE</Badge>}
+                                                            </div>
+                                                            <span className="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-100">
                                                                 {new Date(event.timestamp).toLocaleTimeString()}
                                                             </span>
                                                         </div>
-                                                        <div className="text-sm font-medium mt-1 break-all">
+                                                        <div className="text-xs font-medium text-slate-600 break-all opacity-80 group-hover:opacity-100">
                                                             {event.path || event.url}
                                                         </div>
 
                                                         {event.type === 'view_product' && event.metadata?.title && (
-                                                            <div className="flex items-center gap-3 mt-2 bg-slate-50 p-2 rounded border border-slate-100">
-                                                                <div className="h-10 w-10 flex-shrink-0 bg-white rounded border overflow-hidden p-0.5">
+                                                            <div className="flex items-center gap-3 mt-3 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                                <div className="h-12 w-12 flex-shrink-0 bg-slate-50 rounded-lg border overflow-hidden p-0.5">
                                                                     {event.metadata.image ? (
-                                                                        <img src={event.metadata.image} className="h-full w-full object-cover rounded-sm" />
+                                                                        <img src={event.metadata.image} className="h-full w-full object-cover rounded-md" />
                                                                     ) : (
                                                                         <div className="h-full w-full bg-slate-100 animate-pulse rounded" />
                                                                     )}
                                                                 </div>
-                                                                <div>
-                                                                    <div className="text-xs font-bold truncate max-w-[200px]">{event.metadata.title}</div>
-                                                                    <div className="text-[10px] text-muted-foreground">{event.metadata.price ? `${event.metadata.price.toFixed(2)} €` : ''}</div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-[11px] font-black truncate text-slate-900">{event.metadata.title}</div>
+                                                                    <div className="text-[10px] text-blue-600 font-bold">{event.metadata.price ? `${event.metadata.price.toFixed(2)} €` : ''}</div>
                                                                 </div>
+                                                                <ArrowUpRight className="h-3 w-3 text-slate-300 group-hover:text-blue-500" />
                                                             </div>
                                                         )}
 
                                                         {(event.type?.includes('cart') || event.type === 'start_checkout') && event.metadata?.cart && (
-                                                            <div className="mt-2 bg-slate-50 border p-2 rounded flex flex-wrap gap-1 items-center">
-                                                                {event.metadata.cart.items?.slice(0, 5).map((item: any, idx: number) => (
-                                                                    <div key={idx} className="h-6 w-6 rounded border bg-white overflow-hidden shadow-sm">
-                                                                        <img src={item.image} className="h-full w-full object-cover" />
-                                                                    </div>
-                                                                ))}
-                                                                <div className="text-[10px] font-bold ml-1">
+                                                            <div className="mt-3 bg-blue-50/30 border border-blue-100 p-2 rounded-lg flex flex-wrap gap-2 items-center">
+                                                                <div className="flex -space-x-2">
+                                                                    {event.metadata.cart.items?.slice(0, 4).map((item: any, idx: number) => (
+                                                                        <div key={idx} className="h-7 w-7 rounded-full border-2 border-white bg-white overflow-hidden shadow-sm">
+                                                                            <img src={item.image} className="h-full w-full object-cover" />
+                                                                        </div>
+                                                                    ))}
+                                                                    {event.metadata.cart.items?.length > 4 && (
+                                                                        <div className="h-7 w-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500 shadow-sm">
+                                                                            +{event.metadata.cart.items.length - 4}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-[10px] font-black text-blue-700 ml-1">
                                                                     {event.metadata.cart.totalValue?.toFixed(2)} €
                                                                 </div>
                                                             </div>

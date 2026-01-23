@@ -22,7 +22,7 @@ export async function GET(
         });
 
         // Flatten all events into a single array
-        const allEvents = recordings.flatMap(r => r.data as any[]);
+        const allEvents = recordings.flatMap((r: any) => r.data as any[]);
 
         return NextResponse.json({
             success: true,
