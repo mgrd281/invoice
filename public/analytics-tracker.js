@@ -169,8 +169,9 @@
             window.rrweb.record({
                 emit(event) {
                     rrwebEvents.push(event);
-                    if (rrwebEvents.length >= 50) {
-                        console.log('[Analytics] Auto-flushing 50 events');
+                    // Force flush if it's a FullSnapshot (type 2) to ensure we have the base DOM ASAP
+                    if (event.type === 2 || rrwebEvents.length >= 50) {
+                        console.log(`[Analytics] Flushing ${rrwebEvents.length} events (Target found: ${event.type === 2 ? 'Snapshot' : 'Threshold'})`);
                         flushEvents();
                     }
                 },
@@ -180,13 +181,13 @@
         }
     };
 
-    const flushEvents = async () => {
+    const flushEvents = async (isUnloading = false) => {
         if (rrwebEvents.length === 0) return;
         const eventsToSend = [...rrwebEvents];
         rrwebEvents = [];
-        console.log(`[Analytics] Flushing ${eventsToSend.length} events to ${RECORD_ENDPOINT}`);
+        console.log(`[Analytics] Flushing ${eventsToSend.length} events to ${RECORD_ENDPOINT} (isUnloading: ${isUnloading})`);
         try {
-            const resp = await fetch(RECORD_ENDPOINT, {
+            const fetchOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
@@ -194,9 +195,15 @@
                     sessionId,
                     organizationId,
                     events: eventsToSend
-                }),
-                keepalive: true
-            });
+                })
+            };
+
+            // Only use keepalive for unload events as it has strict 64KB limits
+            if (isUnloading) {
+                fetchOptions.keepalive = true;
+            }
+
+            const resp = await fetch(RECORD_ENDPOINT, fetchOptions);
             if (!resp.ok) console.warn('[Analytics] Flush failed with status:', resp.status);
         } catch (e) {
             console.error('[Analytics] Flush error:', e);
@@ -226,7 +233,7 @@
     // Proactive Exit Tracking
     window.addEventListener('beforeunload', () => {
         track('session_ended', { reason: 'tab_closed' });
-        flushEvents();
+        flushEvents(true);
     });
 
     // Track Product View (Enhanced for Shopify)
