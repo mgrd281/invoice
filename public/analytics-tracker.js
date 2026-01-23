@@ -58,15 +58,40 @@
         } catch (e) { return null; }
     };
 
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes of inactivity
     const visitorToken = getUrlParam('v_token') || getOrGenerateToken('v_token');
-    let sessionId = getUrlParam('s_id') || sessionStorage.getItem('s_id');
+
+    let sessionId = getUrlParam('s_id');
+    const storedSessionId = sessionStorage.getItem('s_id');
+    const lastActive = localStorage.getItem('s_last_active');
+    const now = Date.now();
+
+    // Logic: New session if:
+    // 1. Explicitly provided in URL (domain cross-over)
+    // 2. No session in sessionStorage
+    // 3. Last activity was more than 30 minutes ago
+    const isExpired = lastActive && (now - parseInt(lastActive) > SESSION_TIMEOUT);
+
     if (!sessionId) {
-        sessionId = getOrGenerateToken('s_id', 16);
-        try { sessionStorage.setItem('s_id', sessionId); } catch (e) { }
+        if (!storedSessionId || isExpired) {
+            sessionId = getOrGenerateToken('s_id', 16);
+            sessionStorage.setItem('s_id', sessionId);
+            // If it was expired, we mark as not returning for this specific session context
+            if (isExpired) isReturning = true;
+        } else {
+            sessionId = storedSessionId;
+        }
     }
-    // Ensure tokens are synced to storage if they came from URL
-    if (getUrlParam('v_token')) setCookie('v_token', visitorToken, 365);
-    if (getUrlParam('s_id')) try { sessionStorage.setItem('s_id', sessionId); } catch (e) { }
+
+    // Always update last active on script load
+    localStorage.setItem('s_last_active', now.toString());
+
+    // Ensure tokens are synced to storage
+    if (getUrlParam('v_token')) {
+        setCookie('v_token', visitorToken, 365);
+        localStorage.setItem('v_token', visitorToken);
+    }
+    sessionStorage.setItem('s_id', sessionId);
 
     const getUtms = () => {
         try {

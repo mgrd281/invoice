@@ -136,47 +136,43 @@ function LiveAnalyticsContent() {
 
     const handleWatchReplay = async () => {
         if (!selectedSession?.id) return;
-        console.log('[Replay] Starting replay for session:', selectedSession.id);
+        console.log('[Replay] Starting chunked replay for session:', selectedSession.id);
         setLoadingReplay(true);
         setIsReplayOpen(true);
         try {
-            const res = await fetch(`/api/analytics/sessions/${selectedSession.id}/recording`);
+            // Step 1: Fetch chunk 0 immediately for rapid start
+            const res = await fetch(`/api/analytics/sessions/${selectedSession.id}/recording?chunk=0`);
             const data = await res.json();
-            console.log('[Replay] Received data:', data);
 
-            if (data.success && data.events && data.events.length > 0) {
+            if (data.success && data.events?.length > 0) {
                 setReplayEvents(data.events);
-                // Initialize rrweb-player after events are loaded
+
+                // Initialize player with first chunk
                 setTimeout(() => {
                     const container = document.getElementById('replay-player');
-                    console.log('[Replay] Container element:', container);
-                    console.log('[Replay] Global rrwebPlayer:', (window as any).rrwebPlayer);
-
                     if (container && (window as any).rrwebPlayer) {
                         try {
                             container.innerHTML = '';
-                            new (window as any).rrwebPlayer({
+                            const player = new (window as any).rrwebPlayer({
                                 target: container,
                                 props: {
                                     events: data.events,
                                     autoPlay: true,
                                 },
                             });
-                            console.log('[Replay] Player initialized successfully');
+
+                            // Background loading of remaining chunks
+                            if (data.hasMore) {
+                                loadRemainingChunks(selectedSession.id, player);
+                            }
                         } catch (playerErr) {
                             console.error('[Replay] Player init error:', playerErr);
-                            toast.error('Fehler beim Initialisieren του Player');
+                            toast.error('Fehler beim Initialisieren');
                         }
-                    } else if (!container) {
-                        console.error('[Replay] Container #replay-player not found in DOM');
-                    } else {
-                        console.error('[Replay] rrwebPlayer not found on window');
-                        toast.error('Video-Player Bibliothek nicht geladen. Bitte Seite neu laden.');
                     }
-                }, 1000);
+                }, 500);
             } else {
-                console.warn('[Replay] No events found in response');
-                toast.error('Keine Video-Daten für diese Sitzung gefunden');
+                toast.error('Keine Video-Daten gefunden');
                 setIsReplayOpen(false);
             }
         } catch (err) {
@@ -186,6 +182,33 @@ function LiveAnalyticsContent() {
         } finally {
             setLoadingReplay(false);
         }
+    };
+
+    const loadRemainingChunks = async (sessionId: string, player: any) => {
+        let currentChunk = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+            try {
+                const res = await fetch(`/api/analytics/sessions/${sessionId}/recording?chunk=${currentChunk}`);
+                const data = await res.json();
+                if (data.success && data.events?.length > 0) {
+                    console.log(`[Replay] Appending chunk ${currentChunk} with ${data.events.length} events`);
+                    // Use addEvent to append to the live player
+                    if (player.addEvent) {
+                        data.events.forEach((event: any) => player.addEvent(event));
+                    }
+                    hasMore = data.hasMore;
+                    currentChunk++;
+                } else {
+                    hasMore = false;
+                }
+            } catch (err) {
+                console.warn('[Replay] Background load failed:', err);
+                hasMore = false;
+            }
+        }
+        console.log('[Replay] All chunks loaded successfully');
     };
 
     const handleAction = async (type: 'vip' | 'coupon' | 'email', data: any = {}) => {
@@ -927,10 +950,12 @@ function LiveAnalyticsContent() {
                                                             <div
                                                                 key={h.id}
                                                                 onClick={() => {
-                                                                    // If they click a past session that isn't currently displayed, we could potentially switch to it
-                                                                    // For now just show info
+                                                                    if (h.id !== selectedSession.id) {
+                                                                        setSelectedSession(h);
+                                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                    }
                                                                 }}
-                                                                className={`p-3 rounded-xl border transition-all cursor-default ${h.id === selectedSession.id ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-100' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                                                                className={`p-3 rounded-xl border transition-all cursor-pointer ${h.id === selectedSession.id ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-100' : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm'}`}
                                                             >
                                                                 <div className="flex items-center justify-between mb-1">
                                                                     <span className="text-[10px] font-bold text-slate-700">{new Date(h.startTime).toLocaleDateString()}</span>
@@ -940,9 +965,11 @@ function LiveAnalyticsContent() {
                                                                     <div className="text-[10px] text-slate-500 flex items-center gap-1">
                                                                         <Clock className="h-2.5 w-2.5" />
                                                                         {new Date(h.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        <span className="mx-1">•</span>
+                                                                        {Math.max(1, Math.round((new Date(h.lastActiveAt).getTime() - new Date(h.startTime).getTime()) / 60000))} Min.
                                                                     </div>
-                                                                    <div className="text-[10px] font-mono text-slate-400">
-                                                                        {h._count?.events || 0} Events
+                                                                    <div className="text-[10px] font-semibold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                                                                        {h.sourceLabel || 'Direct'}
                                                                     </div>
                                                                 </div>
                                                                 <div className="mt-2 flex items-center justify-between">

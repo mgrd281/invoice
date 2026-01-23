@@ -14,25 +14,43 @@ export async function GET(
         }
 
         const { id: sessionId } = await props.params;
-        console.log('[Recording Fetch] Fetching events for session:', sessionId);
+        const { searchParams } = new URL(req.url);
+        const chunkIndex = searchParams.get('chunk');
 
-        // Fetch all recording chunks for this session
+        console.log(`[Recording Fetch] Session: ${sessionId}, Mode: ${chunkIndex !== null ? 'Chunked' : 'Full'}`);
+
+        if (searchParams.has('index')) {
+            const count = await prisma.sessionRecording.count({ where: { sessionId } });
+            return NextResponse.json({ success: true, totalChunks: count });
+        }
+
+        // Fetch recording chunks
         const recordings = await prisma.sessionRecording.findMany({
             where: { sessionId },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'asc' },
+            ...(chunkIndex !== null && {
+                skip: parseInt(chunkIndex),
+                take: 1
+            })
         });
 
         console.log(`[Recording Fetch] Found ${recordings.length} chunks for session: ${sessionId}`);
 
-        // Flatten all events into a single array
+        // Flatten events
         const allEvents = recordings.flatMap((r: any) => r.data as any[]);
 
-        console.log(`[Recording Fetch] Total events flattened: ${allEvents.length}`);
-
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
-            events: allEvents
+            events: allEvents,
+            hasMore: chunkIndex !== null ? (await prisma.sessionRecording.count({ where: { sessionId } })) > (parseInt(chunkIndex) + 1) : false
         });
+
+        // Add Cache-Control for chunked data to allow browser/CDN caching
+        if (chunkIndex !== null) {
+            response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+        }
+
+        return response;
     } catch (error: any) {
         console.error('[Recording Fetch] Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
