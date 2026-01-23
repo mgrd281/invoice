@@ -991,6 +991,9 @@ model RealEstateSeenListing {
   externalId     String
   seenAt         DateTime                @default(now())
   
+  @@unique([profileId, externalId])
+}
+
 model Visitor {
   id              String           @id @default(uuid())
   organizationId  String
