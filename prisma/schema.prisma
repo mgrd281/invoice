@@ -868,10 +868,11 @@ model RealEstateSeenListing {
 }
 
 model Visitor {
-  id             String           @id @default(uuid())
-  organizationId String
-  visitorToken   String           @unique
-  ipHash         String?
+  id               String           @id @default(uuid())
+  organizationId   String
+  visitorToken     String           @unique
+  customIdentifier String?
+  ipHash           String?
   userAgent      String?
   deviceType     String?
   os             String?
