@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -55,7 +55,7 @@ import { de } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth-compat';
 import { toast } from 'sonner';
 
-export default function LiveAnalyticsPage() {
+function LiveAnalyticsContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const filterType = searchParams.get('filter');
@@ -767,6 +767,21 @@ export default function LiveAnalyticsPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    );
+}
+
+export default function LiveAnalyticsPage() {
+    return (
+        <Suspense fallback={
+            <div className="p-8 flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4 text-muted-foreground animate-pulse">
+                    <Activity className="h-10 w-10 text-blue-500" />
+                    <p>Live-Daten werden geladen...</p>
+                </div>
+            </div>
+        }>
+            <LiveAnalyticsContent />
+        </Suspense>
     );
 }
 
