@@ -243,9 +243,15 @@ function LiveAnalyticsContent() {
             // Auto-select session if nothing selected or refresh selected one
             if (filteredSessions.length > 0 && !selectedSession) {
                 setSelectedSession(filteredSessions[0]);
-            } else if (filteredSessions.length > 0 && selectedSession) {
-                const updated = filteredSessions.find((s: any) => s.id === selectedSession.id);
-                if (updated) setSelectedSession(updated);
+            } else if (selectedSession) {
+                const isStillInList = filteredSessions.some((s: any) => s.id === selectedSession.id);
+                if (isStillInList) {
+                    const updated = filteredSessions.find((s: any) => s.id === selectedSession.id);
+                    if (updated) setSelectedSession(updated);
+                } else if (filterType === 'live') {
+                    // Critical: If the visitor is gone and we are in Live filter, clear the right-side profile
+                    setSelectedSession(null);
+                }
             }
         } catch (err) {
             console.error('Failed to fetch live data', err);
