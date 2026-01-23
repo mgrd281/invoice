@@ -28,17 +28,26 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
+                    console.log('🔐 [NextAuth] Login failed: Missing credentials')
                     return null
                 }
 
+                // Ensure email is lowercased for consistent lookup
+                const email = credentials.email.toLowerCase()
+                console.log(`🔐 [NextAuth] Login attempt for: ${email}`)
+
                 const user = await prisma.user.findUnique({
-                    where: {
-                        email: credentials.email
-                    }
+                    where: { email }
                 })
 
                 // Check password hash
-                if (!user || !user.passwordHash) {
+                if (!user) {
+                    console.log(`🔐 [NextAuth] Login failed: User not found (${email})`)
+                    return null
+                }
+
+                if (!user.passwordHash) {
+                    console.log(`🔐 [NextAuth] Login failed: User has no password hash (${email})`)
                     return null
                 }
 
@@ -48,8 +57,11 @@ export const authOptions: NextAuthOptions = {
                 )
 
                 if (!isPasswordValid) {
+                    console.log(`🔐 [NextAuth] Login failed: Password mismatch for ${email}`)
                     return null
                 }
+
+                console.log(`✅ [NextAuth] Login successful for: ${email} (Role: ${user.role})`)
 
                 return {
                     id: user.id,

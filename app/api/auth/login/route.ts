@@ -129,10 +129,11 @@ export async function POST(request: NextRequest) {
 
     // 5️⃣ Passwortüberprüfung
     if (!isPasswordValid) {
+      console.log(`🔐 [API] Login failed: Password mismatch for ${email}`)
       return NextResponse.json(
         {
           success: false,
-          message: 'Anmeldedaten sind falsch. Bitte überprüfen Sie Ihr Passwort',
+          message: 'Das eingegebene Passwort ist falsch. Bitte versuchen Sie es erneut.',
           field: 'password'
         },
         { status: 401 }
