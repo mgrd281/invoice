@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth-options';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -13,7 +13,7 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const visitorId = params.id;
+        const { id: visitorId } = await props.params;
         const { customIdentifier } = await req.json();
 
         const updatedVisitor = await prisma.visitor.update({
