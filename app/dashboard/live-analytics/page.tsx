@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -193,12 +193,12 @@ export default function LiveAnalyticsPage() {
         <div className="p-6 space-y-6">
             <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
-                    <Link href="/dashboard">
+                    <NextLink href="/dashboard">
                         <Button variant="ghost" size="sm" className="gap-2">
                             <ArrowLeft className="h-4 w-4" />
                             Zurück
                         </Button>
-                    </Link>
+                    </NextLink>
                 </div>
                 <div className="flex justify-between items-center">
                     <div>
