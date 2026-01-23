@@ -556,32 +556,43 @@ function LiveAnalyticsContent() {
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        ID: {selectedSession.visitor?.id?.substring(0, 8)}
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                            ID: {selectedSession.visitor?.id?.substring(0, 8)}
+                                                        </div>
+                                                        <Button
+                                                            variant="outline" size="sm"
+                                                            className="h-8 bg-blue-600 border-blue-600 text-white hover:bg-blue-700 gap-2 shadow-sm ml-2 transition-all hover:scale-105 active:scale-95"
+                                                            onClick={handleWatchReplay}
+                                                        >
+                                                            <Video className="h-3.5 w-3.5" /> VIDEO REPLAY
+                                                        </Button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
-                                                    <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />
+                                                <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-slate-500 font-medium p-1 mt-1 bg-slate-50/50 rounded-lg border border-transparent hover:border-slate-100 transition-colors">
+                                                    <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-blue-500" />
                                                         <b>{selectedSession.city || 'Unbekannt'}</b>, {selectedSession.region && `${selectedSession.region}, `}{selectedSession.visitor?.country || 'DE'}
                                                     </span>
                                                     <a
                                                         href={`https://www.google.com/maps/search/${encodeURIComponent(`${selectedSession.city || ''} ${selectedSession.visitor?.country || ''}`)}`}
                                                         target="_blank" rel="noopener noreferrer"
-                                                        className="flex items-center gap-1 text-blue-600 hover:underline"
+                                                        className="flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-2 py-0.5 rounded-full transition-colors font-bold"
                                                     >
                                                         <MapPin className="h-3 w-3" /> Karte
                                                     </a>
-                                                    <span className="text-slate-300">|</span>
-                                                    <span className="flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> {selectedSession.browser} / {selectedSession.os}</span>
-                                                    <span className="text-slate-300">|</span>
+                                                    <span className="text-slate-300 hidden md:inline">|</span>
+                                                    <span className="flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5 text-slate-400" /> {selectedSession.browser} / {selectedSession.os}</span>
+                                                    <span className="text-slate-300 hidden md:inline">|</span>
                                                     <span className="flex items-center gap-1.5" title="Ankunftszeit">
-                                                        <Clock className="h-3.5 w-3.5" /> {new Date(selectedSession.startTime || selectedSession.lastActiveAt).toLocaleTimeString()}
+                                                        <Clock className="h-3.5 w-3.5 text-slate-400" /> {new Date(selectedSession.startTime || selectedSession.lastActiveAt).toLocaleTimeString()}
                                                     </span>
                                                 </div>
-                                                <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center gap-2">
-                                                    <Activity className="h-2.5 w-2.5" />
-                                                    IP: <span className="text-slate-600">{privacyMode ? (selectedSession.ipMasked || '***.***.***.0') : (selectedSession.visitor?.ipHash || 'Hidden')}</span>
-                                                    {privacyMode && <Badge variant="outline" className="text-[8px] py-0 px-1 border-slate-200">MASKIERT</Badge>}
+                                                <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center gap-3">
+                                                    <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                        <Activity className="h-2.5 w-2.5" />
+                                                        IP: <span className="text-slate-600">{privacyMode ? (selectedSession.ipMasked || '***.***.***.0') : (selectedSession.visitor?.ipHash || 'Hidden')}</span>
+                                                    </div>
+                                                    {privacyMode && <Badge variant="outline" className="text-[8px] py-0 px-1 border-slate-200 bg-white text-slate-500 font-bold uppercase tracking-tighter">Privacy Mode EN</Badge>}
                                                 </div>
                                             </div>
                                         </div>
