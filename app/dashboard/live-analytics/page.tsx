@@ -66,6 +66,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth-compat';
 import { toast } from 'sonner';
+import Script from 'next/script';
 
 function LiveAnalyticsContent() {
     const { user } = useAuth();
@@ -983,6 +984,35 @@ function LiveAnalyticsContent() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <Dialog open={isReplayOpen} onOpenChange={setIsReplayOpen}>
+                <DialogContent className="max-w-5xl h-[85vh] p-0 overflow-hidden bg-slate-900 border-slate-800">
+                    <DialogHeader className="p-4 border-b border-white/10 bg-slate-900 text-white flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+                                <Video className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-sm font-bold">Session Replay</DialogTitle>
+                                <p className="text-[10px] text-slate-400">ID: {selectedSession?.sessionId}</p>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden h-[calc(85vh-60px)]">
+                        {loadingReplay ? (
+                            <div className="flex flex-col items-center gap-4 text-white">
+                                <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+                                <p className="text-sm font-medium">Lade Video-Daten...</p>
+                            </div>
+                        ) : (
+                            <div id="replay-player" className="w-full h-full flex items-center justify-center" />
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/style.css" />
+            <Script src="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/index.js" strategy="lazyOnload" />
         </div>
     );
 }
