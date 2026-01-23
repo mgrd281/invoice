@@ -108,6 +108,8 @@ export default function LiveAnalyticsPage() {
             case 'page_view': return <Eye className="h-3 w-3 text-blue-500" />;
             case 'view_product': return <Search className="h-3 w-3 text-purple-500" />;
             case 'add_to_cart': return <ShoppingCart className="h-3 w-3 text-green-500" />;
+            case 'start_checkout': return <Briefcase className="h-3 w-3 text-emerald-500" />;
+            case 'scroll_depth': return <TrendingUp className="h-3 w-3 text-blue-400" />;
             case 'rage_click': return <AlertTriangle className="h-3 w-3 text-red-500" />;
             case 'tracker_loaded': return <CheckCircle2 className="h-3 w-3 text-emerald-500" />;
             case 'heartbeat': return <Activity className="h-3 w-3 text-slate-400" />;
@@ -449,6 +451,7 @@ export default function LiveAnalyticsPage() {
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-bold text-sm uppercase tracking-wider text-muted-foreground/80">
                                                                 {event.type.replace('_', ' ')}
+                                                                {event.type === 'scroll_depth' && ` (\${event.metadata?.depth}%)`}
                                                             </span>
                                                             <span className="text-[10px] text-muted-foreground">
                                                                 {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
