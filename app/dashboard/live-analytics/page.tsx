@@ -205,12 +205,14 @@ export default function LiveAnalyticsPage() {
                                             </div>
                                         )}
                                     </div>
-                                </ScrollArea>
                             </div>
+                        </CardContent>
+                    </Card>
                 </div>
-            )}
+    )
+}
 
-            <Tabs defaultValue="live" className="w-full">
+<Tabs defaultValue="live" className="w-full">
     <TabsList className="grid w-full max-w-[400px] grid-cols-2">
         <TabsTrigger value="live" className="flex items-center gap-2">
             <Users className="h-4 w-4" /> Live
