@@ -127,6 +127,9 @@ export default function LiveAnalyticsPage() {
                 <div className="space-y-4 animate-in slide-in-from-top duration-300">
                     <Card className="border-blue-200 bg-blue-50/30">
                         <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-blue-600" /> Schritt 1: Integration im Shop
+                            </CardTitle>
                             <CardDescription>Kopiere dieses Skript und füge es in deinen Shopify-Store ein (z.B. in der `theme.liquid` vor dem schließenden {"</head>"} Tag).</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
