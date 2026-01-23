@@ -549,9 +549,27 @@ function LiveAnalyticsContent() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
-                                                    <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.visitor?.country || 'Unbekannt'}</span>
+                                                    <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />
+                                                        <b>{selectedSession.city || 'Unbekannt'}</b>, {selectedSession.region && `${selectedSession.region}, `}{selectedSession.visitor?.country || 'DE'}
+                                                    </span>
+                                                    <a
+                                                        href={`https://www.google.com/maps/search/${encodeURIComponent(`${selectedSession.city || ''} ${selectedSession.visitor?.country || ''}`)}`}
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        className="flex items-center gap-1 text-blue-600 hover:underline"
+                                                    >
+                                                        <MapPin className="h-3 w-3" /> Karte
+                                                    </a>
+                                                    <span className="text-slate-300">|</span>
                                                     <span className="flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> {selectedSession.browser} / {selectedSession.os}</span>
-                                                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Erstmals: {new Date(selectedSession.visitor?.createdAt).toLocaleDateString()}</span>
+                                                    <span className="text-slate-300">|</span>
+                                                    <span className="flex items-center gap-1.5" title="Ankunftszeit">
+                                                        <Clock className="h-3.5 w-3.5" /> {new Date(selectedSession.startTime || selectedSession.lastActiveAt).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                                                    <Activity className="h-2.5 w-2.5" />
+                                                    IP: <span className="text-slate-600">{privacyMode ? (selectedSession.ipMasked || '***.***.***.0') : (selectedSession.visitor?.ipHash || 'Hidden')}</span>
+                                                    {privacyMode && <Badge variant="outline" className="text-[8px] py-0 px-1 border-slate-200">MASKIERT</Badge>}
                                                 </div>
                                             </div>
                                         </div>
