@@ -69,6 +69,32 @@ function LiveAnalyticsContent() {
     const [showDebug, setShowDebug] = useState(false);
     const [privacyMode, setPrivacyMode] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [isEditingId, setIsEditingId] = useState(false);
+    const [customIdValue, setCustomIdValue] = useState('');
+
+    const handleUpdateVisitorId = async () => {
+        if (!selectedSession?.visitor?.id) return;
+        setActionLoading('update-id');
+        try {
+            const res = await fetch(`/api/analytics/visitors/${selectedSession.visitor.id}/identifier`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customIdentifier: customIdValue })
+            });
+            const json = await res.json();
+            if (json.success) {
+                toast.success(json.message);
+                setIsEditingId(false);
+                fetchLiveData();
+            } else {
+                toast.error(json.error);
+            }
+        } catch (err) {
+            toast.error('Fehler beim Aktualisieren');
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     const handleAction = async (type: 'vip' | 'coupon' | 'email', data: any = {}) => {
         if (!selectedSession) return;
@@ -400,8 +426,8 @@ function LiveAnalyticsContent() {
                                                             {session.visitor?.country || 'DE'}
                                                             {session.city && <span className="text-slate-400 font-normal">({session.city})</span>}
                                                         </span>
-                                                        <Badge variant="outline" className="text-[10px] font-mono bg-slate-50">
-                                                            #{session.visitor?.id?.substring(0, 4).toUpperCase() || '????'}
+                                                        <Badge variant="outline" className="text-[10px] font-mono bg-slate-50 max-w-[80px] truncate">
+                                                            #{session.visitor?.customIdentifier || session.visitor?.id?.substring(0, 4).toUpperCase() || '????'}
                                                         </Badge>
                                                         {session.isReturning && (
                                                             <div className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">
@@ -466,7 +492,38 @@ function LiveAnalyticsContent() {
                                             <div className="flex-1">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <div className="flex items-center gap-2">
-                                                        <h3 className="font-black text-xl tracking-tight text-slate-900">Besucher #{selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}</h3>
+                                                        {isEditingId ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm font-bold w-40 outline-blue-500"
+                                                                    value={customIdValue}
+                                                                    onChange={(e) => setCustomIdValue(e.target.value)}
+                                                                    autoFocus
+                                                                />
+                                                                <Button size="xs" variant="ghost" className="h-7 w-7 p-0 text-emerald-600" onClick={handleUpdateVisitorId}>
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button size="xs" variant="ghost" className="h-7 w-7 p-0 text-red-600" onClick={() => setIsEditingId(false)}>
+                                                                    <XOctagon className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <h3 className="font-black text-xl tracking-tight text-slate-900">
+                                                                    {selectedSession.visitor?.customIdentifier ? selectedSession.visitor.customIdentifier : `Besucher #${selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}`}
+                                                                </h3>
+                                                                <Button
+                                                                    variant="ghost" size="xs" className="h-6 w-6 p-0 text-slate-400 hover:text-blue-600"
+                                                                    onClick={() => {
+                                                                        setCustomIdValue(selectedSession.visitor?.customIdentifier || '');
+                                                                        setIsEditingId(true);
+                                                                    }}
+                                                                >
+                                                                    <Edit2 className="h-3 w-3" />
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                         {selectedSession.isReturning && (
                                                             <Badge className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 py-0.5 px-2">
                                                                 <RotateCcw className="h-3 w-3" /> WIEDERKEHREND
