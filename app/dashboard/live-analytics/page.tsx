@@ -942,7 +942,7 @@ function LiveAnalyticsContent() {
                     </Card>
                 </TabsContent>
             </Tabs>
-        </div >
+        </div>
     );
 }
 
