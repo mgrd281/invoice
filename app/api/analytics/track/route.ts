@@ -20,8 +20,16 @@ export async function POST(req: NextRequest) {
         } = body;
 
         if (!organizationId || !visitorToken || !sessionId || !event) {
+            console.warn('[Analytics Tracker] Missing fields:', {
+                hasOrg: !!organizationId,
+                hasVisitor: !!visitorToken,
+                hasSession: !!sessionId,
+                event
+            });
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
+
+        console.log(`[Analytics Tracker] Incoming: ${event} for Org: ${organizationId} (Session: ${sessionId.substring(0, 8)})`);
 
         const ua = req.headers.get('user-agent') || '';
         const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
