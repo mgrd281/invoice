@@ -113,15 +113,7 @@ export async function POST(request: NextRequest) {
 
     // Passwort ist bereits verschlüsselt gespeichert
 
-    console.log('Login-Versuch:', {
-      email: email,
-      userFound: !!user,
-      isSuspended: user.isSuspended,
-      passwordLength: password.length
-    })
-
     // 3️⃣ Passwortüberprüfung
-    // Note: user.passwordHash is the field in schema
     if (!user.passwordHash) {
       return NextResponse.json(
         {
@@ -134,12 +126,6 @@ export async function POST(request: NextRequest) {
     }
 
     const isPasswordValid = await verifyPassword(password, user.passwordHash)
-
-    console.log('Passwortüberprüfungsergebnis:', {
-      isPasswordValid,
-      inputPassword: password,
-      hashedPassword: user.passwordHash ? user.passwordHash.substring(0, 20) + '...' : 'undefined'
-    })
 
     // 5️⃣ Passwortüberprüfung
     if (!isPasswordValid) {
@@ -215,8 +201,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Hilfsfunktion zur Passwort-Verschlüsselung (für Entwicklung)
-export async function GET() {
-  const hashedPassword = await hashPassword('Mkarina321@')
-  return NextResponse.json({ hashedPassword })
-}
