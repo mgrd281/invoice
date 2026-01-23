@@ -188,21 +188,31 @@ export default function LiveAnalyticsPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Live Besucher & Session Analytics</h1>
-                    <p className="text-muted-foreground">Echtzeit-Überwachung des Kundenverhaltens im Shop.</p>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                    <Link href="/dashboard">
+                        <Button variant="ghost" size="sm" className="gap-2">
+                            <ArrowLeft className="h-4 w-4" />
+                            Zurück
+                        </Button>
+                    </Link>
                 </div>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setShowDebug(!showDebug)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
-                    >
-                        <Bug className="h-3.5 w-3.5" /> Debug & Setup
-                    </button>
-                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        {liveData?.count || 0} Aktive Besucher
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Live Besucher & Session Analytics</h1>
+                        <p className="text-muted-foreground">Echtzeit-Überwachung des Kundenverhaltens im Shop.</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setShowDebug(!showDebug)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
+                        >
+                            <Bug className="h-3.5 w-3.5" /> Debug & Setup
+                        </button>
+                        <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                            <div className="h-2 w-2 rounded-full bg-green-500" />
+                            {liveData?.count || 0} Aktive Besucher
+                        </div>
                     </div>
                 </div>
             </div>
