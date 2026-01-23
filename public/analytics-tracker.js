@@ -1,6 +1,7 @@
 /**
  * Storefront Analytics Tracker
  * Captures page views, product views, and cart actions.
+ * Version: 2.1.0
  */
 (function () {
     // Get script origin to ensure we point to the correct backend even from Shopify domains
@@ -73,25 +74,42 @@
         }
     };
 
+    // Proactive Cart Fetch (Shopify API)
+    const fetchCart = async () => {
+        try {
+            const resp = await fetch('/cart.js');
+            const cart = await resp.json();
+            return {
+                itemsCount: cart.item_count,
+                totalValue: cart.total_price / 100,
+                currency: cart.currency,
+                items: cart.items.map(item => ({
+                    id: item.variant_id || item.id,
+                    title: item.product_title,
+                    price: item.price / 100,
+                    qty: item.quantity,
+                    image: item.image,
+                    url: item.url
+                }))
+            };
+        } catch (e) {
+            return null;
+        }
+    };
+
     const track = async (event, metadata = {}) => {
         if (!organizationId) {
-            // Robust check for Org ID (especially for async scripts)
-            if (document.currentScript) {
-                organizationId = document.currentScript.getAttribute('data-org-id');
-            }
+            // Robust check for Org ID
+            const scriptTag = document.currentScript || Array.from(document.getElementsByTagName('script')).find(s => s.src.includes('analytics-tracker.js'));
+            organizationId = scriptTag?.getAttribute('data-org-id') || document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID;
+            if (!organizationId) return;
+        }
 
-            if (!organizationId) {
-                const scriptTag = Array.from(document.getElementsByTagName('script')).find(s => s.src.includes('analytics-tracker.js'));
-                organizationId = scriptTag?.getAttribute('data-org-id');
-            }
-
-            if (!organizationId) {
-                organizationId = document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID;
-            }
-
-            if (!organizationId) {
-                console.warn('[Analytics] Organization ID missing. Tracking paused.');
-                return;
+        // Auto-enrich with cart snapshot for relevant events
+        if (['add_to_cart', 'remove_from_cart', 'update_cart', 'view_cart', 'start_checkout'].includes(event)) {
+            const cartData = await fetchCart();
+            if (cartData) {
+                metadata.cart = cartData;
             }
         }
 
@@ -111,76 +129,47 @@
                     organizationId,
                     isReturning,
                     cartToken: getCartToken(),
-                    checkoutToken: window.Shopify?.Checkout?.token || window.Shopify?.checkout?.token,
+                    checkoutToken: window.Shopify?.Checkout?.token || window.Shopify?.checkout?.token || window.ShopifyAnalytics?.lib?.user()?.traits()?.checkoutToken,
                     referrer: document.referrer,
                     ...getUtms(),
                     metadata
                 }),
                 keepalive: true
             });
-
-            if (!response.ok) {
-                console.error('[Analytics] Send failed with status:', response.status);
-            }
-        } catch (e) {
-            console.error('[Analytics] Network error:', e.message);
-        }
+        } catch (e) { }
     };
 
-    // Health Check / Tracker Loaded
-    track('tracker_loaded', { version: '2.0.0' });
-
-    // Scroll Depth Tracking
-    let reachedThresholds = new Set();
-    window.addEventListener('scroll', () => {
-        const winHeight = window.innerHeight;
-        const docHeight = document.documentElement.scrollHeight - winHeight;
-        if (docHeight <= 0) return;
-        const scrollTop = window.scrollY;
-        const scrollPercent = Math.round((scrollTop / docHeight) * 100);
-
-        [25, 50, 75, 100].forEach(threshold => {
-            if (scrollPercent >= threshold && !reachedThresholds.has(threshold)) {
-                reachedThresholds.add(threshold);
-                track('scroll_depth', { depth: threshold });
-            }
-        });
-    });
-
-    // Track Page View
+    // Initial Tracking
+    track('tracker_loaded', { version: '2.1.0' });
     track('page_view');
 
-    // Heartbeat every 5 seconds to keep visitor active (Better Real-time)
-    setInterval(() => track('heartbeat'), 5000);
+    // Heartbeat every 15 seconds
+    setInterval(() => track('heartbeat'), 15000);
+
+    // Visibility / Activity Tracking
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            track('session_idle');
+        } else {
+            track('session_active');
+        }
+    });
 
     // Track Product View (Enhanced for Shopify)
     const observeProduct = () => {
-        // 1. Try Shopify Meta Data (Most reliable)
         if (window.ShopifyAnalytics?.meta?.product) {
             const p = window.ShopifyAnalytics.meta.product;
             track('view_product', {
                 productId: p.id,
-                title: p.gid || p.id,
-                price: p.variants?.[0]?.price || 0,
+                title: p.product_title || p.gid || p.id,
+                price: p.variants?.[0]?.price ? p.variants[0].price / 100 : 0,
                 vendor: p.vendor,
-                type: p.type
-            });
-            return;
-        }
-
-        // 2. Fallback to DOM markers
-        const productElement = document.querySelector('[data-product-id]');
-        if (productElement) {
-            track('view_product', {
-                productId: productElement.getAttribute('data-product-id'),
-                title: productElement.getAttribute('data-product-title'),
-                price: productElement.getAttribute('data-product-price')
+                type: p.type,
+                image: document.querySelector('meta[property="og:image"]')?.content
             });
         }
     };
-
-    // Wait a bit for Shopify meta to be ready
-    setTimeout(observeProduct, 1000);
+    setTimeout(observeProduct, 1500);
 
     // Rage Click Detection
     let clicks = [];
@@ -188,55 +177,56 @@
         const now = Date.now();
         clicks.push({ t: now, x: e.clientX, y: e.clientY });
         clicks = clicks.filter(c => now - c.t < 1000);
-
         if (clicks.length >= 5) {
-            const dist = Math.sqrt(
-                Math.pow(clicks[0].x - clicks[4].x, 2) +
-                Math.pow(clicks[0].y - clicks[4].y, 2)
-            );
-            if (dist < 30) {
-                track('rage_click', { count: clicks.length });
-                clicks = []; // Reset after trigger
-            }
+            track('rage_click', { count: clicks.length });
+            clicks = [];
         }
     });
 
-    // Smart Cart Interception (Ajax / Fetch)
+    // Smart Cart & Checkout Interception
     const interceptCart = () => {
         const originalFetch = window.fetch;
         window.fetch = function () {
             const arg = arguments[0];
             const url = typeof arg === 'string' ? arg : arg?.url || '';
 
-            if (url.includes('/cart/add')) {
-                track('add_to_cart', { url });
-            }
-            if (url.includes('/cart/change') || url.includes('/cart/update')) {
-                track('update_cart', { url });
-            }
+            if (url.includes('/cart/add')) track('add_to_cart');
+            if (url.includes('/cart/change') || url.includes('/cart/update') || url.includes('/cart/add')) track('update_cart');
+            if (url.includes('/checkout')) track('start_checkout');
 
             return originalFetch.apply(this, arguments);
         };
 
-        // Also track standard form submits for cart
-        document.addEventListener('submit', (e) => {
-            const action = e.target.getAttribute('action');
-            if (action?.includes('/cart/add')) {
-                track('add_to_cart', { method: 'form_submit' });
+        // Track Checkout Buttons
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('a, button');
+            if (!target) return;
+
+            const isCheckout =
+                target.name === 'checkout' ||
+                target.getAttribute('href')?.includes('/checkout') ||
+                target.textContent?.toLowerCase().includes('checkout') ||
+                target.textContent?.toLowerCase().includes('kasse');
+
+            if (isCheckout) {
+                track('start_checkout', { method: 'click', label: target.textContent?.trim() });
             }
         });
     }
     interceptCart();
 
-    // Custom Event Listeners (Compat)
-    window.addEventListener('cart-add', (e) => track('add_to_cart', e.detail));
-    window.addEventListener('cart-remove', (e) => track('remove_from_cart', e.detail));
+    // Scroll tracking
+    let reachedThresholds = new Set();
+    window.addEventListener('scroll', () => {
+        const h = document.documentElement, b = document.body, st = 'scrollTop', sh = 'scrollHeight';
+        const scrollPercent = Math.round((h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight) * 100);
+        [50, 90].forEach(t => {
+            if (scrollPercent >= t && !reachedThresholds.has(t)) {
+                reachedThresholds.add(t);
+                track('scroll_depth', { depth: t });
+            }
+        });
+    });
 
-    // Checkout Listeners
-    if (window.location.pathname.includes('checkout')) {
-        track('start_checkout');
-    }
-
-    // Expose for manual triggers
     window.Analytics = { track };
 })();

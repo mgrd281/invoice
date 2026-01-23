@@ -119,19 +119,30 @@ export async function POST(req: NextRequest) {
         });
 
         // 2. Ensure Session exists
+        const cartMetadata = metadata?.cart;
+
         const session = await prisma.visitorSession.upsert({
             where: { sessionId },
             update: {
                 lastActiveAt: new Date(),
                 exitUrl: url,
+                status: 'ACTIVE',
                 intentScore: { increment: scoreBoost },
                 cartToken: cartToken || undefined,
                 checkoutToken: checkoutToken || undefined,
+                // Update cart snapshot if provided
+                ...(cartMetadata && {
+                    cartSnapshot: cartMetadata.items || undefined,
+                    itemsCount: cartMetadata.itemsCount || 0,
+                    totalValue: cartMetadata.totalValue || 0,
+                    currency: cartMetadata.currency || 'EUR',
+                })
             },
             create: {
                 sessionId,
                 visitorId: visitor.id,
                 organizationId,
+                status: 'ACTIVE',
                 referrer,
                 entryUrl: url,
                 deviceType: deviceInfo.device.toLowerCase(),
@@ -148,8 +159,23 @@ export async function POST(req: NextRequest) {
                 intentScore: scoreBoost + (isReturning ? 15 : 0),
                 cartToken,
                 checkoutToken,
+                ...(cartMetadata && {
+                    cartSnapshot: cartMetadata.items,
+                    itemsCount: cartMetadata.itemsCount,
+                    totalValue: cartMetadata.totalValue,
+                    currency: cartMetadata.currency || 'EUR',
+                    peakCartValue: cartMetadata.totalValue
+                })
             }
         });
+
+        // Update Peak Value if current is higher
+        if (cartMetadata?.totalValue > (session.peakCartValue || 0)) {
+            await prisma.visitorSession.update({
+                where: { id: session.id },
+                data: { peakCartValue: cartMetadata.totalValue }
+            });
+        }
 
         // Update Intent Label based on new score
         const updatedScore = session.intentScore;

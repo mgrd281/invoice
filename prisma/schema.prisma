@@ -1050,11 +1050,15 @@ model VisitorSession {
   // Customer Journey Fields
   cartToken      String?
   checkoutToken  String?
-  purchaseStatus String?  @default("OPEN") // OPEN, PAID, ABORTED
+  status         String   @default("ACTIVE") // ACTIVE, ENDED, PAID, ABORTED
+  purchaseStatus String?  @default("OPEN")   // OPEN, PAID, ABORTED
   orderId        String?
   orderNumber    String?
   totalValue     Float?   @default(0)
+  peakCartValue  Float?   @default(0)
+  itemsCount     Int?     @default(0)
   currency       String?  @default("EUR")
+  cartSnapshot   Json?    // Snapshot of items: [{id, title, price, qty, image, url}]
 
   events SessionEvent[]
 
