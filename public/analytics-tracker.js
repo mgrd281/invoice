@@ -92,16 +92,30 @@
     };
 
     // Health Check / Tracker Loaded
-    track('tracker_loaded', { version: '1.1.0' });
+    track('tracker_loaded', { version: '1.2.0' });
 
     // Track Page View
     track('page_view');
 
-    // Heartbeat every 15 seconds to keep visitor active
-    setInterval(() => track('heartbeat'), 15000);
+    // Heartbeat every 5 seconds to keep visitor active (Better Real-time)
+    setInterval(() => track('heartbeat'), 5000);
 
-    // Track Product View (requires specific DOM markers)
+    // Track Product View (Enhanced for Shopify)
     const observeProduct = () => {
+        // 1. Try Shopify Meta Data (Most reliable)
+        if (window.ShopifyAnalytics?.meta?.product) {
+            const p = window.ShopifyAnalytics.meta.product;
+            track('view_product', {
+                productId: p.id,
+                title: p.gid || p.id,
+                price: p.variants?.[0]?.price || 0,
+                vendor: p.vendor,
+                type: p.type
+            });
+            return;
+        }
+
+        // 2. Fallback to DOM markers
         const productElement = document.querySelector('[data-product-id]');
         if (productElement) {
             track('view_product', {
@@ -111,7 +125,9 @@
             });
         }
     };
-    observeProduct();
+
+    // Wait a bit for Shopify meta to be ready
+    setTimeout(observeProduct, 1000);
 
     // Rage Click Detection
     let clicks = [];
@@ -132,7 +148,34 @@
         }
     });
 
-    // Cart Listeners
+    // Smart Cart Interception (Ajax / Fetch)
+    const interceptCart = () => {
+        const originalFetch = window.fetch;
+        window.fetch = function () {
+            const arg = arguments[0];
+            const url = typeof arg === 'string' ? arg : arg?.url || '';
+
+            if (url.includes('/cart/add')) {
+                track('add_to_cart', { url });
+            }
+            if (url.includes('/cart/change') || url.includes('/cart/update')) {
+                track('update_cart', { url });
+            }
+
+            return originalFetch.apply(this, arguments);
+        };
+
+        // Also track standard form submits for cart
+        document.addEventListener('submit', (e) => {
+            const action = e.target.getAttribute('action');
+            if (action?.includes('/cart/add')) {
+                track('add_to_cart', { method: 'form_submit' });
+            }
+        });
+    }
+    interceptCart();
+
+    // Custom Event Listeners (Compat)
     window.addEventListener('cart-add', (e) => track('add_to_cart', e.detail));
     window.addEventListener('cart-remove', (e) => track('remove_from_cart', e.detail));
 

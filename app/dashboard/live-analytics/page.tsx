@@ -74,7 +74,7 @@ export default function LiveAnalyticsPage() {
     useEffect(() => {
         fetchLiveData();
         fetchSessions();
-        const interval = setInterval(fetchLiveData, 5000); // Polling every 5s
+        const interval = setInterval(fetchLiveData, 3000); // Polling every 3s
         return () => clearInterval(interval);
     }, []);
 

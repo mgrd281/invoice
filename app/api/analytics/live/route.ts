@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
 
         const organizationId = user?.organizationId;
 
-        // Consider a visitor "live" if active in the last 60 seconds
-        const liveThreshold = new Date(Date.now() - 60 * 1000);
+        // Consider a visitor "live" if active in the last 3 minutes (180 seconds)
+        const liveThreshold = new Date(Date.now() - 180 * 1000);
 
         const liveSessions = await prisma.visitorSession.findMany({
             where: {
