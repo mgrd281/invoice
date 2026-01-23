@@ -50,7 +50,8 @@ import {
     ChevronRight,
     BrainCircuit,
     Lock,
-    Unlock
+    Unlock,
+    Edit2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -491,456 +492,455 @@ function LiveAnalyticsContent() {
                             <CardContent className="flex-1 overflow-hidden">
                                 {selectedSession ? (
                                     <ScrollArea className="h-full pr-4">
-                                        {/* Visitor Profile Header */}
-                                        <div className="flex items-center gap-4 mb-6 bg-white p-4 rounded-xl border shadow-sm">
-                                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-700 font-black text-xl border-2 border-white shadow-inner">
-                                                {selectedSession.visitor?.country || 'DE'}
+                                        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-black text-xl border-2 border-white shadow-inner">
+                                            {selectedSession.city?.substring(0, 2).toUpperCase() || selectedSession.visitor?.country || 'DE'}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    {isEditingId ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="text"
+                                                                className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm font-bold w-40 outline-blue-500"
+                                                                value={customIdValue}
+                                                                onChange={(e) => setCustomIdValue(e.target.value)}
+                                                                autoFocus
+                                                            />
+                                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-emerald-600" onClick={handleUpdateVisitorId}>
+                                                                <CheckCircle2 className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-600" onClick={() => setIsEditingId(false)}>
+                                                                <XOctagon className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <h3 className="font-black text-xl tracking-tight text-slate-900">
+                                                                {selectedSession.city ? `${selectedSession.city}, ` : ''}
+                                                                {selectedSession.visitor?.customIdentifier ? selectedSession.visitor.customIdentifier : `Besucher #${selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}`}
+                                                            </h3>
+                                                            <Button
+                                                                variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-blue-600"
+                                                                onClick={() => {
+                                                                    setCustomIdValue(selectedSession.visitor?.customIdentifier || '');
+                                                                    setIsEditingId(true);
+                                                                }}
+                                                            >
+                                                                <Edit2 className="h-3 w-3" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                    {selectedSession.isReturning && (
+                                                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 py-0.5 px-2">
+                                                            <RotateCcw className="h-3 w-3" /> WIEDERKEHREND
+                                                        </Badge>
+                                                    )}
+                                                    {selectedSession.isVip && (
+                                                        <Badge className="bg-amber-500 text-white flex items-center gap-1 py-0.5 px-2">
+                                                            <Star className="h-3 w-3 fill-white" /> VIP
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    ID: {selectedSession.visitor?.id?.substring(0, 8)}
+                                                </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <div className="flex items-center gap-2">
-                                                        {isEditingId ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <input
-                                                                    type="text"
-                                                                    className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm font-bold w-40 outline-blue-500"
-                                                                    value={customIdValue}
-                                                                    onChange={(e) => setCustomIdValue(e.target.value)}
-                                                                    autoFocus
-                                                                />
-                                                                <Button size="xs" variant="ghost" className="h-7 w-7 p-0 text-emerald-600" onClick={handleUpdateVisitorId}>
-                                                                    <CheckCircle2 className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button size="xs" variant="ghost" className="h-7 w-7 p-0 text-red-600" onClick={() => setIsEditingId(false)}>
-                                                                    <XOctagon className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <h3 className="font-black text-xl tracking-tight text-slate-900">
-                                                                    {selectedSession.visitor?.customIdentifier ? selectedSession.visitor.customIdentifier : `Besucher #${selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}`}
-                                                                </h3>
-                                                                <Button
-                                                                    variant="ghost" size="xs" className="h-6 w-6 p-0 text-slate-400 hover:text-blue-600"
-                                                                    onClick={() => {
-                                                                        setCustomIdValue(selectedSession.visitor?.customIdentifier || '');
-                                                                        setIsEditingId(true);
-                                                                    }}
-                                                                >
-                                                                    <Edit2 className="h-3 w-3" />
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                        {selectedSession.isReturning && (
-                                                            <Badge className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 py-0.5 px-2">
-                                                                <RotateCcw className="h-3 w-3" /> WIEDERKEHREND
-                                                            </Badge>
-                                                        )}
-                                                        {selectedSession.isVip && (
-                                                            <Badge className="bg-amber-500 text-white flex items-center gap-1 py-0.5 px-2">
-                                                                <Star className="h-3 w-3 fill-white" /> VIP
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        ID: {selectedSession.visitor?.id?.substring(0, 8)}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
-                                                    <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.visitor?.country || 'Unbekannt'}</span>
-                                                    <span className="flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> {selectedSession.browser} / {selectedSession.os}</span>
-                                                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Erstmals: {new Date(selectedSession.visitor?.createdAt).toLocaleDateString()}</span>
-                                                </div>
+                                            <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                                                <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.visitor?.country || 'Unbekannt'}</span>
+                                                <span className="flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> {selectedSession.browser} / {selectedSession.os}</span>
+                                                <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Erstmals: {new Date(selectedSession.visitor?.createdAt).toLocaleDateString()}</span>
                                             </div>
                                         </div>
+                                    </div>
 
                                         {/* enterprise Header: Smart Summary & Predictive Insights */}
-                                        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <Card className="md:col-span-2 border-none shadow-sm bg-gradient-to-r from-slate-900 to-slate-800 text-white overflow-hidden relative">
-                                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                                    <BrainCircuit className="h-20 w-20" />
-                                                </div>
-                                                <CardContent className="p-5 relative z-10">
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <Badge className="bg-blue-500 text-white border-none">Session Intelligence</Badge>
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Smart Summary</span>
-                                                    </div>
-                                                    <p className="text-lg font-medium leading-relaxed">
-                                                        {selectedSession.enterprise?.summary || "Analysiere Besucher-Verhalten..."}
-                                                    </p>
-                                                    <div className="mt-4 flex items-center gap-4">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-                                                            <span className="text-xs text-slate-300">Empfohlene Aktion: <b className="text-white">{selectedSession.enterprise?.recommendedAction}</b></span>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-
-                                            <Card className="border-none shadow-sm bg-white overflow-hidden flex flex-col justify-center items-center p-5 text-center">
-                                                <div className="relative mb-2">
-                                                    <svg className="w-20 h-20 transform -rotate-90">
-                                                        <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100" />
-                                                        <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent"
-                                                            strokeDasharray={2 * Math.PI * 35}
-                                                            strokeDashoffset={2 * Math.PI * 35 * (1 - (selectedSession.enterprise?.score || 0) / 100)}
-                                                            className={`${(selectedSession.enterprise?.score || 0) > 70 ? 'text-emerald-500' : (selectedSession.enterprise?.score || 0) > 30 ? 'text-blue-500' : 'text-slate-400'} transition-all duration-1000 ease-out`}
-                                                            strokeLinecap="round"
-                                                        />
-                                                    </svg>
-                                                    <div className="absolute inset-0 flex items-center justify-center flex-col">
-                                                        <span className="text-xl font-black">{selectedSession.enterprise?.score || 0}%</span>
-                                                    </div>
-                                                </div>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kauf-Wahrscheinlichkeit</p>
-                                            </Card>
+                                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <Card className="md:col-span-2 border-none shadow-sm bg-gradient-to-r from-slate-900 to-slate-800 text-white overflow-hidden relative">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <BrainCircuit className="h-20 w-20" />
                                         </div>
-
-                                        {/* Customer Journey Map */}
-                                        <Card className="mb-6 border-none shadow-sm bg-white overflow-hidden">
-                                            <CardHeader className="py-3 px-5 bg-slate-50/50 border-b">
-                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4 text-blue-600" /> Customer Journey Map
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="p-6">
-                                                <div className="flex items-center justify-between relative">
-                                                    {/* Background Line */}
-                                                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2" />
-
-                                                    <JourneyStep
-                                                        icon={<Globe className="h-4 w-4" />}
-                                                        label="Landing"
-                                                        active={true}
-                                                        completed={selectedSession.events?.length > 0}
-                                                    />
-                                                    <JourneyStep
-                                                        icon={<Search className="h-4 w-4" />}
-                                                        label="Browsing"
-                                                        active={selectedSession.events?.some((e: any) => e.type === 'view_product')}
-                                                        completed={selectedSession.events?.some((e: any) => e.type === 'add_to_cart')}
-                                                    />
-                                                    <JourneyStep
-                                                        icon={<ShoppingCart className="h-4 w-4" />}
-                                                        label="Cart"
-                                                        active={selectedSession.events?.some((e: any) => e.type === 'add_to_cart')}
-                                                        completed={selectedSession.events?.some((e: any) => e.type === 'start_checkout')}
-                                                    />
-                                                    <JourneyStep
-                                                        icon={<Briefcase className="h-4 w-4" />}
-                                                        label="Checkout"
-                                                        active={selectedSession.events?.some((e: any) => e.type === 'start_checkout')}
-                                                        completed={selectedSession.purchaseStatus === 'PAID'}
-                                                    />
-                                                    <JourneyStep
-                                                        icon={<CheckCircle2 className="h-4 w-4" />}
-                                                        label="Purchase"
-                                                        active={selectedSession.purchaseStatus === 'PAID'}
-                                                        completed={selectedSession.purchaseStatus === 'PAID'}
-                                                    />
+                                        <CardContent className="p-5 relative z-10">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Badge className="bg-blue-500 text-white border-none">Session Intelligence</Badge>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Smart Summary</span>
+                                            </div>
+                                            <p className="text-lg font-medium leading-relaxed">
+                                                {selectedSession.enterprise?.summary || "Analysiere Besucher-Verhalten..."}
+                                            </p>
+                                            <div className="mt-4 flex items-center gap-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                                    <span className="text-xs text-slate-300">Empfohlene Aktion: <b className="text-white">{selectedSession.enterprise?.recommendedAction}</b></span>
                                                 </div>
-                                            </CardContent>
-                                        </Card>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
 
-                                        {/* Admin Quick Actions */}
-                                        <div className="mb-6 flex flex-wrap gap-3">
-                                            <Button
-                                                variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-blue-50 border-slate-200"
-                                                disabled={!!actionLoading}
-                                                onClick={() => handleAction('email', { templateId: 'default' })}
-                                            >
-                                                {actionLoading === 'email' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5 text-blue-600" />}
-                                                E-Mail schreiben
-                                            </Button>
-                                            <Button
-                                                variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-emerald-50 border-slate-200"
-                                                disabled={!!actionLoading}
-                                                onClick={() => handleAction('coupon', { discountValue: 10, discountType: 'percentage' })}
-                                            >
-                                                {actionLoading === 'coupon' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Ticket className="h-3.5 w-3.5 text-emerald-600" />}
-                                                Gutschein anbieten
-                                            </Button>
-                                            <Button
-                                                variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-amber-50 border-slate-200"
-                                                disabled={!!actionLoading}
-                                                onClick={() => handleAction('vip', { isVip: !selectedSession.isVip })}
-                                            >
-                                                {actionLoading === 'vip' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Star className={`h-3.5 w-3.5 ${selectedSession.isVip ? 'text-amber-500 fill-amber-500' : 'text-amber-500'}`} />}
-                                                {selectedSession.isVip ? 'Als Gast markieren' : 'VIP Markieren'}
-                                            </Button>
+                                    <Card className="border-none shadow-sm bg-white overflow-hidden flex flex-col justify-center items-center p-5 text-center">
+                                        <div className="relative mb-2">
+                                            <svg className="w-20 h-20 transform -rotate-90">
+                                                <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100" />
+                                                <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent"
+                                                    strokeDasharray={2 * Math.PI * 35}
+                                                    strokeDashoffset={2 * Math.PI * 35 * (1 - (selectedSession.enterprise?.score || 0) / 100)}
+                                                    className={`${(selectedSession.enterprise?.score || 0) > 70 ? 'text-emerald-500' : (selectedSession.enterprise?.score || 0) > 30 ? 'text-blue-500' : 'text-slate-400'} transition-all duration-1000 ease-out`}
+                                                    strokeLinecap="round"
+                                                />
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                                <span className="text-xl font-black">{selectedSession.enterprise?.score || 0}%</span>
+                                            </div>
                                         </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kauf-Wahrscheinlichkeit</p>
+                                    </Card>
+                                </div>
 
-                                        <div className="relative border-l-2 border-muted ml-3 pl-8 space-y-8 py-4">
-                                            {selectedSession.sourceLabel && (
-                                                <div className="bg-slate-50 border p-3 rounded-lg mb-4 space-y-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="space-y-1">
-                                                            <div className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                                                                <Share2 className="h-3 w-3" /> Traffic Source
-                                                            </div>
-                                                            <div className="text-sm font-medium flex items-center gap-2">
-                                                                {getSourceIcon(selectedSession.sourceLabel, selectedSession.sourceMedium)}
-                                                                {selectedSession.sourceLabel} ({selectedSession.sourceMedium})
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Status</div>
-                                                            {getStatusBadge(selectedSession)}
-                                                        </div>
+                                {/* Customer Journey Map */}
+                                <Card className="mb-6 border-none shadow-sm bg-white overflow-hidden">
+                                    <CardHeader className="py-3 px-5 bg-slate-50/50 border-b">
+                                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-blue-600" /> Customer Journey Map
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6">
+                                        <div className="flex items-center justify-between relative">
+                                            {/* Background Line */}
+                                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2" />
+
+                                            <JourneyStep
+                                                icon={<Globe className="h-4 w-4" />}
+                                                label="Landing"
+                                                active={true}
+                                                completed={selectedSession.events?.length > 0}
+                                            />
+                                            <JourneyStep
+                                                icon={<Search className="h-4 w-4" />}
+                                                label="Browsing"
+                                                active={selectedSession.events?.some((e: any) => e.type === 'view_product')}
+                                                completed={selectedSession.events?.some((e: any) => e.type === 'add_to_cart')}
+                                            />
+                                            <JourneyStep
+                                                icon={<ShoppingCart className="h-4 w-4" />}
+                                                label="Cart"
+                                                active={selectedSession.events?.some((e: any) => e.type === 'add_to_cart')}
+                                                completed={selectedSession.events?.some((e: any) => e.type === 'start_checkout')}
+                                            />
+                                            <JourneyStep
+                                                icon={<Briefcase className="h-4 w-4" />}
+                                                label="Checkout"
+                                                active={selectedSession.events?.some((e: any) => e.type === 'start_checkout')}
+                                                completed={selectedSession.purchaseStatus === 'PAID'}
+                                            />
+                                            <JourneyStep
+                                                icon={<CheckCircle2 className="h-4 w-4" />}
+                                                label="Purchase"
+                                                active={selectedSession.purchaseStatus === 'PAID'}
+                                                completed={selectedSession.purchaseStatus === 'PAID'}
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Admin Quick Actions */}
+                                <div className="mb-6 flex flex-wrap gap-3">
+                                    <Button
+                                        variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-blue-50 border-slate-200"
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('email', { templateId: 'default' })}
+                                    >
+                                        {actionLoading === 'email' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5 text-blue-600" />}
+                                        E-Mail schreiben
+                                    </Button>
+                                    <Button
+                                        variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-emerald-50 border-slate-200"
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('coupon', { discountValue: 10, discountType: 'percentage' })}
+                                    >
+                                        {actionLoading === 'coupon' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Ticket className="h-3.5 w-3.5 text-emerald-600" />}
+                                        Gutschein anbieten
+                                    </Button>
+                                    <Button
+                                        variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-amber-50 border-slate-200"
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('vip', { isVip: !selectedSession.isVip })}
+                                    >
+                                        {actionLoading === 'vip' ? <Activity className="h-3.5 w-3.5 animate-spin" /> : <Star className={`h-3.5 w-3.5 ${selectedSession.isVip ? 'text-amber-500 fill-amber-500' : 'text-amber-500'}`} />}
+                                        {selectedSession.isVip ? 'Als Gast markieren' : 'VIP Markieren'}
+                                    </Button>
+                                </div>
+
+                                <div className="relative border-l-2 border-muted ml-3 pl-8 space-y-8 py-4">
+                                    {selectedSession.sourceLabel && (
+                                        <div className="bg-slate-50 border p-3 rounded-lg mb-4 space-y-4">
+                                            <div className="flex justify-between items-start">
+                                                <div className="space-y-1">
+                                                    <div className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                        <Share2 className="h-3 w-3" /> Traffic Source
                                                     </div>
-
-                                                    {/* Cart Snapshot Summary */}
-                                                    {selectedSession.cartSnapshot && selectedSession.cartSnapshot.length > 0 && (
-                                                        <div className="mt-4 border-t pt-3">
-                                                            <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2 mb-2">
-                                                                <ShoppingCart className="h-3 w-3" /> Warenkorb
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                {(selectedSession.cartSnapshot as any[]).map((item, idx) => (
-                                                                    <div key={idx} className="flex items-center gap-3 bg-white p-2 rounded border shadow-sm">
-                                                                        <div className="h-10 w-10 flex-shrink-0 bg-slate-50 rounded border overflow-hidden">
-                                                                            {item.image ? (
-                                                                                <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-                                                                            ) : (
-                                                                                <div className="h-full w-full flex items-center justify-center bg-slate-100 italic text-[8px] text-slate-400">No Img</div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <div className="text-xs font-bold truncate">{item.title}</div>
-                                                                            <div className="text-[10px] text-muted-foreground">{item.qty} × {item.price?.toFixed(2)} €</div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                            <div className="mt-2 flex justify-between items-center text-xs px-1">
-                                                                <span className="text-muted-foreground">Gesamtwert:</span>
-                                                                <span className="font-bold">{selectedSession.totalValue?.toFixed(2)} €</span>
-                                                            </div>
-                                                            {selectedSession.peakCartValue > (selectedSession.totalValue || 0) && (
-                                                                <div className="mt-0.5 flex justify-between items-center text-[10px] px-1 italic text-slate-400">
-                                                                    <span>Peak-Wert:</span>
-                                                                    <span>{selectedSession.peakCartValue?.toFixed(2)} €</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-3 mt-3">
-                                                        <div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Referrer</div>
-                                                            <div className="text-xs truncate" title={selectedSession.referrer}>{selectedSession.referrer || 'Direct'}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Stadt / IP</div>
-                                                            <div className="text-xs font-semibold flex flex-col">
-                                                                <span>{selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
-                                                                <span className="text-[10px] text-slate-400 font-normal">
-                                                                    {privacyMode ? (selectedSession.ipMasked || '***.***.***.0') : (selectedSession.visitor?.ipHash ? 'IP Protected' : 'Unknown')}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Kunden ID</div>
-                                                            <div className="text-xs font-black text-blue-600">
-                                                                {selectedSession.customerId ? `#${selectedSession.customerId}` : 'Gastsitzung'}
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Dauer</div>
-                                                            <div className="text-xs font-semibold">
-                                                                {Math.max(1, Math.round((new Date(selectedSession.lastActiveAt).getTime() - new Date(selectedSession.startTime).getTime()) / 60000))} Min.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {selectedSession.intentScore > 0 && (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                                    <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg">
-                                                        <div className="text-[10px] font-bold text-blue-700 uppercase flex items-center gap-1">
-                                                            <TrendingUp className="h-3 w-3" /> Intent
-                                                        </div>
-                                                        <div className="mt-1">
-                                                            {getIntentBadge(selectedSession.intentLabel)}
-                                                            <p className="text-[10px] text-blue-600 mt-1 italic">
-                                                                {selectedSession.intentScore > 70 ? 'Sehr hohe Kaufbereitschaft.' :
-                                                                    selectedSession.intentScore > 30 ? 'Aktives Interesse.' : 'Stöber-Modus.'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="bg-slate-50/80 border border-slate-200 p-3 rounded-lg">
-                                                        <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                                            <XOctagon className="h-3 w-3" /> Predictions
-                                                        </div>
-                                                        <p className="text-[10px] text-slate-600 mt-1">
-                                                            {selectedSession.status === 'ENDED' ? 'Sitzung beendet.' : 'Besucher ist noch aktiv.'}
-                                                        </p>
+                                                    <div className="text-sm font-medium flex items-center gap-2">
+                                                        {getSourceIcon(selectedSession.sourceLabel, selectedSession.sourceMedium)}
+                                                        {selectedSession.sourceLabel} ({selectedSession.sourceMedium})
                                                     </div>
                                                 </div>
-                                            )}
+                                                <div className="text-right">
+                                                    <div className="text-[10px] text-muted-foreground uppercase font-bold">Status</div>
+                                                    {getStatusBadge(selectedSession)}
+                                                </div>
+                                            </div>
 
-                                            {/* All Events Timeline */}
-                                            {selectedSession.events?.map((event: any, i: number) => (
-                                                <div key={i} className="relative">
-                                                    <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
-                                                        {getEventIcon(event.type)}
+                                            {/* Cart Snapshot Summary */}
+                                            {selectedSession.cartSnapshot && selectedSession.cartSnapshot.length > 0 && (
+                                                <div className="mt-4 border-t pt-3">
+                                                    <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2 mb-2">
+                                                        <ShoppingCart className="h-3 w-3" /> Warenkorb
                                                     </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-sm uppercase text-muted-foreground/80">
-                                                                {event.type.replace('_', ' ')}
-                                                                {event.type === 'scroll_depth' && ` (${event.metadata?.depth}%)`}
-                                                            </span>
-                                                            <span className="text-[10px] text-muted-foreground">
-                                                                {new Date(event.timestamp).toLocaleTimeString()}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-sm font-medium mt-1 break-all">
-                                                            {event.path || event.url}
-                                                        </div>
-
-                                                        {event.type === 'view_product' && event.metadata?.title && (
-                                                            <div className="flex items-center gap-3 mt-2 bg-slate-50 p-2 rounded border border-slate-100">
-                                                                <div className="h-10 w-10 flex-shrink-0 bg-white rounded border overflow-hidden p-0.5">
-                                                                    {event.metadata.image ? (
-                                                                        <img src={event.metadata.image} className="h-full w-full object-cover rounded-sm" />
+                                                    <div className="space-y-2">
+                                                        {(selectedSession.cartSnapshot as any[]).map((item, idx) => (
+                                                            <div key={idx} className="flex items-center gap-3 bg-white p-2 rounded border shadow-sm">
+                                                                <div className="h-10 w-10 flex-shrink-0 bg-slate-50 rounded border overflow-hidden">
+                                                                    {item.image ? (
+                                                                        <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                                                                     ) : (
-                                                                        <div className="h-full w-full bg-slate-100 animate-pulse rounded" />
+                                                                        <div className="h-full w-full flex items-center justify-center bg-slate-100 italic text-[8px] text-slate-400">No Img</div>
                                                                     )}
                                                                 </div>
-                                                                <div>
-                                                                    <div className="text-xs font-bold truncate max-w-[200px]">{event.metadata.title}</div>
-                                                                    <div className="text-[10px] text-muted-foreground">{event.metadata.price ? `${event.metadata.price.toFixed(2)} €` : ''}</div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-xs font-bold truncate">{item.title}</div>
+                                                                    <div className="text-[10px] text-muted-foreground">{item.qty} × {item.price?.toFixed(2)} €</div>
                                                                 </div>
                                                             </div>
-                                                        )}
-
-                                                        {(event.type?.includes('cart') || event.type === 'start_checkout') && event.metadata?.cart && (
-                                                            <div className="mt-2 bg-slate-50 border p-2 rounded flex flex-wrap gap-1 items-center">
-                                                                {event.metadata.cart.items?.slice(0, 5).map((item: any, idx: number) => (
-                                                                    <div key={idx} className="h-6 w-6 rounded border bg-white overflow-hidden shadow-sm">
-                                                                        <img src={item.image} className="h-full w-full object-cover" />
-                                                                    </div>
-                                                                ))}
-                                                                <div className="text-[10px] font-bold ml-1">
-                                                                    {event.metadata.cart.totalValue?.toFixed(2)} €
-                                                                </div>
-                                                            </div>
-                                                        )}
+                                                        ))}
                                                     </div>
-                                                </div>
-                                            ))}
-
-                                            {/* Referrer & Entry Section at the Bottom */}
-                                            <div className="relative pt-4 border-t border-dashed mt-8">
-                                                <div className="absolute -left-[41px] top-5 bg-background p-1 rounded-full border-2 border-muted">
-                                                    <Globe className="h-3 w-3 text-blue-600" />
-                                                </div>
-                                                <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Badge className="bg-blue-600 text-white hover:bg-blue-700">ANKUNFT DETAILS</Badge>
+                                                    <div className="mt-2 flex justify-between items-center text-xs px-1">
+                                                        <span className="text-muted-foreground">Gesamtwert:</span>
+                                                        <span className="font-bold">{selectedSession.totalValue?.toFixed(2)} €</span>
                                                     </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="space-y-1">
-                                                            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                                                <Link2 className="h-3 w-3" /> Source URL (Referrer)
-                                                            </p>
-                                                            <p className="text-xs font-medium break-all text-blue-800">
-                                                                {selectedSession.referrer || 'Direct / None'}
-                                                            </p>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                                                <ArrowRight className="h-3 w-3" /> Landing Page (Entry URL)
-                                                            </p>
-                                                            <p className="text-xs font-medium break-all text-blue-800">
-                                                                {selectedSession.entryUrl || 'Unknown'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    {(selectedSession.utmSource || selectedSession.utmMedium || selectedSession.utmCampaign) && (
-                                                        <div className="pt-2 border-t border-blue-100 flex flex-wrap gap-2">
-                                                            {selectedSession.utmSource && <Badge variant="outline" className="text-[9px] bg-white">src: {selectedSession.utmSource}</Badge>}
-                                                            {selectedSession.utmMedium && <Badge variant="outline" className="text-[9px] bg-white">med: {selectedSession.utmMedium}</Badge>}
-                                                            {selectedSession.utmCampaign && <Badge variant="outline" className="text-[9px] bg-white">cmp: {selectedSession.utmCampaign}</Badge>}
+                                                    {selectedSession.peakCartValue > (selectedSession.totalValue || 0) && (
+                                                        <div className="mt-0.5 flex justify-between items-center text-[10px] px-1 italic text-slate-400">
+                                                            <span>Peak-Wert:</span>
+                                                            <span>{selectedSession.peakCartValue?.toFixed(2)} €</span>
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </ScrollArea>
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
-                                        <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
-                                            <History className="h-8 w-8 opacity-40" />
-                                        </div>
-                                        <p>Wähle einen Besucher aus der Liste aus.</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </TabsContent>
+                                            )}
 
-                <TabsContent value="history" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Letzte Sessions</CardTitle>
-                            <CardDescription>Übersicht der Nutzerbewegungen der letzten Stunden/Tage.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="rounded-md border">
-                                <div className="grid grid-cols-6 p-4 border-b font-medium bg-muted/50 text-sm">
-                                    <div className="col-span-1">Besucher</div>
-                                    <div className="col-span-1 text-center">Gerät/OS</div>
-                                    <div className="col-span-1 text-center">Dauer</div>
-                                    <div className="col-span-1 text-center">Aktivität</div>
-                                    <div className="col-span-1 text-center">Status</div>
-                                    <div className="col-span-1 text-right">Zuletzt</div>
-                                </div>
-                                <div className="divide-y">
-                                    {sessions.map((session: any) => (
-                                        <div
-                                            key={session.id}
-                                            className={`grid grid-cols-6 p-4 text-sm items-center hover:bg-muted/30 cursor-pointer transition-colors ${selectedSession?.id === session.id ? 'bg-blue-50/50' : ''}`}
-                                            onClick={() => {
-                                                setSelectedSession(session);
-                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                            }}
-                                        >
-                                            <div className="col-span-1 flex flex-col">
-                                                <span className="font-medium">{session.visitor?.country || 'DE'}</span>
-                                                <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 8)}...</span>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-3 mt-3">
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase font-bold">Referrer</div>
+                                                    <div className="text-xs truncate" title={selectedSession.referrer}>{selectedSession.referrer || 'Direct'}</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase font-bold">Stadt / IP</div>
+                                                    <div className="text-xs font-semibold flex flex-col">
+                                                        <span>{selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
+                                                        <span className="text-[10px] text-slate-400 font-normal">
+                                                            {privacyMode ? (selectedSession.ipMasked || '***.***.***.0') : (selectedSession.visitor?.ipHash ? 'IP Protected' : 'Unknown')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase font-bold">Kunden ID</div>
+                                                    <div className="text-xs font-black text-blue-600">
+                                                        {selectedSession.customerId ? `#${selectedSession.customerId}` : 'Gastsitzung'}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase font-bold">Dauer</div>
+                                                    <div className="text-xs font-semibold">
+                                                        {Math.max(1, Math.round((new Date(selectedSession.lastActiveAt).getTime() - new Date(selectedSession.startTime).getTime()) / 60000))} Min.
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="col-span-1 flex items-center gap-2 justify-center">
-                                                {getDeviceIcon(session.deviceType)}
-                                                <span className="text-[10px]">{session.os}</span>
+                                        </div>
+                                    )}
+
+                                    {selectedSession.intentScore > 0 && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                            <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg">
+                                                <div className="text-[10px] font-bold text-blue-700 uppercase flex items-center gap-1">
+                                                    <TrendingUp className="h-3 w-3" /> Intent
+                                                </div>
+                                                <div className="mt-1">
+                                                    {getIntentBadge(selectedSession.intentLabel)}
+                                                    <p className="text-[10px] text-blue-600 mt-1 italic">
+                                                        {selectedSession.intentScore > 70 ? 'Sehr hohe Kaufbereitschaft.' :
+                                                            selectedSession.intentScore > 30 ? 'Aktives Interesse.' : 'Stöber-Modus.'}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="col-span-1 text-xs text-center">
-                                                {Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.
+                                            <div className="bg-slate-50/80 border border-slate-200 p-3 rounded-lg">
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                    <XOctagon className="h-3 w-3" /> Predictions
+                                                </div>
+                                                <p className="text-[10px] text-slate-600 mt-1">
+                                                    {selectedSession.status === 'ENDED' ? 'Sitzung beendet.' : 'Besucher ist noch aktiv.'}
+                                                </p>
                                             </div>
-                                            <div className="col-span-1 flex flex-col items-center gap-1">
-                                                <Badge variant="secondary" className="px-1 text-[10px]">
-                                                    {session._count?.events || session.events?.length || 0} Events
-                                                </Badge>
-                                                {session.intentLabel && getIntentBadge(session.intentLabel)}
+                                        </div>
+                                    )}
+
+                                    {/* All Events Timeline */}
+                                    {selectedSession.events?.map((event: any, i: number) => (
+                                        <div key={i} className="relative">
+                                            <div className="absolute -left-[41px] top-1 bg-background p-1 rounded-full border-2 border-muted">
+                                                {getEventIcon(event.type)}
                                             </div>
-                                            <div className="col-span-1 flex justify-center">
-                                                {getStatusBadge(session.status, session.purchaseStatus)}
-                                            </div>
-                                            <div className="col-span-1 text-xs text-muted-foreground text-right font-medium">
-                                                {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-sm uppercase text-muted-foreground/80">
+                                                        {event.type.replace('_', ' ')}
+                                                        {event.type === 'scroll_depth' && ` (${event.metadata?.depth}%)`}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground">
+                                                        {new Date(event.timestamp).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+                                                <div className="text-sm font-medium mt-1 break-all">
+                                                    {event.path || event.url}
+                                                </div>
+
+                                                {event.type === 'view_product' && event.metadata?.title && (
+                                                    <div className="flex items-center gap-3 mt-2 bg-slate-50 p-2 rounded border border-slate-100">
+                                                        <div className="h-10 w-10 flex-shrink-0 bg-white rounded border overflow-hidden p-0.5">
+                                                            {event.metadata.image ? (
+                                                                <img src={event.metadata.image} className="h-full w-full object-cover rounded-sm" />
+                                                            ) : (
+                                                                <div className="h-full w-full bg-slate-100 animate-pulse rounded" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-bold truncate max-w-[200px]">{event.metadata.title}</div>
+                                                            <div className="text-[10px] text-muted-foreground">{event.metadata.price ? `${event.metadata.price.toFixed(2)} €` : ''}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {(event.type?.includes('cart') || event.type === 'start_checkout') && event.metadata?.cart && (
+                                                    <div className="mt-2 bg-slate-50 border p-2 rounded flex flex-wrap gap-1 items-center">
+                                                        {event.metadata.cart.items?.slice(0, 5).map((item: any, idx: number) => (
+                                                            <div key={idx} className="h-6 w-6 rounded border bg-white overflow-hidden shadow-sm">
+                                                                <img src={item.image} className="h-full w-full object-cover" />
+                                                            </div>
+                                                        ))}
+                                                        <div className="text-[10px] font-bold ml-1">
+                                                            {event.metadata.cart.totalValue?.toFixed(2)} €
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
+
+                                    {/* Referrer & Entry Section at the Bottom */}
+                                    <div className="relative pt-4 border-t border-dashed mt-8">
+                                        <div className="absolute -left-[41px] top-5 bg-background p-1 rounded-full border-2 border-muted">
+                                            <Globe className="h-3 w-3 text-blue-600" />
+                                        </div>
+                                        <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge className="bg-blue-600 text-white hover:bg-blue-700">ANKUNFT DETAILS</Badge>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                        <Link2 className="h-3 w-3" /> Source URL (Referrer)
+                                                    </p>
+                                                    <p className="text-xs font-medium break-all text-blue-800">
+                                                        {selectedSession.referrer || 'Direct / None'}
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                        <ArrowRight className="h-3 w-3" /> Landing Page (Entry URL)
+                                                    </p>
+                                                    <p className="text-xs font-medium break-all text-blue-800">
+                                                        {selectedSession.entryUrl || 'Unknown'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {(selectedSession.utmSource || selectedSession.utmMedium || selectedSession.utmCampaign) && (
+                                                <div className="pt-2 border-t border-blue-100 flex flex-wrap gap-2">
+                                                    {selectedSession.utmSource && <Badge variant="outline" className="text-[9px] bg-white">src: {selectedSession.utmSource}</Badge>}
+                                                    {selectedSession.utmMedium && <Badge variant="outline" className="text-[9px] bg-white">med: {selectedSession.utmMedium}</Badge>}
+                                                    {selectedSession.utmCampaign && <Badge variant="outline" className="text-[9px] bg-white">cmp: {selectedSession.utmCampaign}</Badge>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
+                            </ScrollArea>
+                            ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
+                                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
+                                    <History className="h-8 w-8 opacity-40" />
+                                </div>
+                                <p>Wähle einen Besucher aus der Liste aus.</p>
                             </div>
+                                )}
                         </CardContent>
                     </Card>
-                </TabsContent>
-            </Tabs>
-        </div>
+                </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Letzte Sessions</CardTitle>
+                        <CardDescription>Übersicht der Nutzerbewegungen der letzten Stunden/Tage.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <div className="grid grid-cols-6 p-4 border-b font-medium bg-muted/50 text-sm">
+                                <div className="col-span-1">Besucher</div>
+                                <div className="col-span-1 text-center">Gerät/OS</div>
+                                <div className="col-span-1 text-center">Dauer</div>
+                                <div className="col-span-1 text-center">Aktivität</div>
+                                <div className="col-span-1 text-center">Status</div>
+                                <div className="col-span-1 text-right">Zuletzt</div>
+                            </div>
+                            <div className="divide-y">
+                                {sessions.map((session: any) => (
+                                    <div
+                                        key={session.id}
+                                        className={`grid grid-cols-6 p-4 text-sm items-center hover:bg-muted/30 cursor-pointer transition-colors ${selectedSession?.id === session.id ? 'bg-blue-50/50' : ''}`}
+                                        onClick={() => {
+                                            setSelectedSession(session);
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }}
+                                    >
+                                        <div className="col-span-1 flex flex-col">
+                                            <span className="font-medium">{session.visitor?.country || 'DE'}</span>
+                                            <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 8)}...</span>
+                                        </div>
+                                        <div className="col-span-1 flex items-center gap-2 justify-center">
+                                            {getDeviceIcon(session.deviceType)}
+                                            <span className="text-[10px]">{session.os}</span>
+                                        </div>
+                                        <div className="col-span-1 text-xs text-center">
+                                            {Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.
+                                        </div>
+                                        <div className="col-span-1 flex flex-col items-center gap-1">
+                                            <Badge variant="secondary" className="px-1 text-[10px]">
+                                                {session._count?.events || session.events?.length || 0} Events
+                                            </Badge>
+                                            {session.intentLabel && getIntentBadge(session.intentLabel)}
+                                        </div>
+                                        <div className="col-span-1 flex justify-center">
+                                            {getStatusBadge(session.status, session.purchaseStatus)}
+                                        </div>
+                                        <div className="col-span-1 text-xs text-muted-foreground text-right font-medium">
+                                            {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
+        </div >
     );
 }
 
