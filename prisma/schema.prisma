@@ -124,6 +124,8 @@ model Organization {
   apiKeys           ApiKey[]
   blockedUsers      BlockedUser[]
   blockedUserAttempts BlockedUserAttempt[]
+  visitors          Visitor[]
+  visitorSessions   VisitorSession[]
 }
 
 model WidgetSettings {
@@ -989,5 +991,72 @@ model RealEstateSeenListing {
   externalId     String
   seenAt         DateTime                @default(now())
   
-  @@unique([profileId, externalId])
+model Visitor {
+  id              String           @id @default(uuid())
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  visitorToken    String           @unique // Unique token stored in visitor's cookie/localStorage
+  ipHash          String?          // Hashed IP for privacy
+  userAgent       String?
+  deviceType      String?          // mobile, desktop, tablet
+  os              String?
+  browser         String?
+  country         String?
+  language        String?
+  
+  sessions        VisitorSession[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([organizationId])
+  @@index([visitorToken])
+}
+
+model VisitorSession {
+  id              String         @id @default(uuid())
+  visitorId       String
+  visitor         Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  organizationId  String
+  sessionId       String         @unique // Unique session identifier
+  
+  startTime       DateTime       @default(now())
+  endTime         DateTime?
+  lastActiveAt    DateTime       @default(now())
+  
+  referrer        String?
+  entryUrl        String?
+  exitUrl         String?
+  
+  deviceType      String?
+  os              String?
+  browser         String?
+  
+  events          SessionEvent[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([organizationId])
+  @@index([visitorId])
+  @@index([sessionId])
+  @@index([lastActiveAt])
+}
+
+model SessionEvent {
+  id              String         @id @default(uuid())
+  sessionId       String
+  session         VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  type            String         // page_view, view_product, add_to_cart, remove_from_cart, start_checkout, purchase, rage_click
+  url             String
+  path            String
+  timestamp       DateTime       @default(now())
+  
+  metadata        Json?          // event specific data (product_id, cart_value, etc.)
+  
+  createdAt       DateTime       @default(now())
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([timestamp])
 }

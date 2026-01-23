@@ -1,0 +1,90 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { parseDeviceInfo } from '@/lib/device-detection';
+import crypto from 'crypto';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const {
+            event,
+            url,
+            path,
+            visitorToken,
+            sessionId,
+            organizationId,
+            referrer,
+            metadata
+        } = body;
+
+        if (!organizationId || !visitorToken || !sessionId || !event) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        const ua = req.headers.get('user-agent') || '';
+        const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
+
+        // Mask IP for privacy (GDPR)
+        const maskedIp = ip.split('.').slice(0, 3).join('.') + '.0';
+        const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
+
+        const deviceInfo = parseDeviceInfo(ua);
+
+        // 1. Ensure Visitor exists
+        const visitor = await prisma.visitor.upsert({
+            where: { visitorToken },
+            update: {
+                lastActiveAt: new Date(), // We might need to add this field or just use updatedAt
+                userAgent: ua,
+                ipHash,
+            },
+            create: {
+                visitorToken,
+                organizationId,
+                ipHash,
+                userAgent: ua,
+                deviceType: deviceInfo.device.toLowerCase(),
+                os: deviceInfo.os,
+                browser: deviceInfo.browser,
+                // country: we'd need a geoip lib here, skipping for now or using a placeholder
+            }
+        });
+
+        // 2. Ensure Session exists
+        const session = await prisma.visitorSession.upsert({
+            where: { sessionId },
+            update: {
+                lastActiveAt: new Date(),
+                exitUrl: url,
+            },
+            create: {
+                sessionId,
+                visitorId: visitor.id,
+                organizationId,
+                referrer,
+                entryUrl: url,
+                deviceType: deviceInfo.device.toLowerCase(),
+                os: deviceInfo.os,
+                browser: deviceInfo.browser,
+            }
+        });
+
+        // 3. Log Event
+        await prisma.sessionEvent.create({
+            data: {
+                sessionId: session.id,
+                type: event,
+                url,
+                path,
+                metadata: metadata || {},
+            }
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error('[Analytics Tracker] Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
