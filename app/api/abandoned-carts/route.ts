@@ -131,11 +131,11 @@ export async function GET(req: Request) {
         const remainingToFetch = Array.from(productIds).filter(id => !productImageMap[id])
         const productIdsArray = remainingToFetch.slice(0, 20)
 
-        if (productIdsArray.length > 0) {
+        if (productIdsArray.length > 0 && carts.length > 0) {
             log(`Bild-Enrichment (Shopify): Suche Bilder für ${productIdsArray.length} neue Produkte...`, 'info')
             try {
                 const org = (carts[0] as any).organization
-                const shopifyConn = org.shopifyConnection
+                const shopifyConn = org?.shopifyConnection
 
                 if (shopifyConn) {
                     const shopDomain = shopifyConn.shopName.includes('.')
