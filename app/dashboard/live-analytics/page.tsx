@@ -65,6 +65,7 @@ function LiveAnalyticsContent() {
     const [loading, setLoading] = useState(true);
     const [selectedSession, setSelectedSession] = useState<any>(null);
     const [showDebug, setShowDebug] = useState(false);
+    const [privacyMode, setPrivacyMode] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     const handleAction = async (type: 'vip' | 'coupon' | 'email', data: any = {}) => {
@@ -264,6 +265,15 @@ function LiveAnalyticsContent() {
                         <p className="text-muted-foreground">Echtzeit-Überwachung des Kundenverhaltens im Shop.</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className={`gap-2 h-9 ${privacyMode ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-500'}`}
+                            onClick={() => setPrivacyMode(!privacyMode)}
+                        >
+                            {privacyMode ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                            Privacy: {privacyMode ? 'AN' : 'AUS'}
+                        </Button>
                         <button
                             onClick={() => setShowDebug(!showDebug)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
@@ -617,7 +627,9 @@ function LiveAnalyticsContent() {
                                                             <div className="text-[10px] text-muted-foreground uppercase font-bold">Stadt / IP</div>
                                                             <div className="text-xs font-semibold flex flex-col">
                                                                 <span>{selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
-                                                                <span className="text-[10px] text-slate-400 font-normal">{selectedSession.ipMasked || '***.***.***.0'}</span>
+                                                                <span className="text-[10px] text-slate-400 font-normal">
+                                                                    {privacyMode ? (selectedSession.ipMasked || '***.***.***.0') : (selectedSession.visitor?.ipHash ? 'IP Protected' : 'Unknown')}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                         <div>
