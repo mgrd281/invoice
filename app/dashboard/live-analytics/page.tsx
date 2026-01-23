@@ -110,6 +110,41 @@ function LiveAnalyticsContent() {
         }
     };
 
+    const handleWatchReplay = async () => {
+        if (!selectedSession?.id) return;
+        setLoadingReplay(true);
+        setIsReplayOpen(true);
+        try {
+            const res = await fetch(`/api/analytics/sessions/${selectedSession.id}/recording`);
+            const data = await res.json();
+            if (data.success && data.events.length > 0) {
+                setReplayEvents(data.events);
+                // Initialize rrweb-player after events are loaded
+                setTimeout(() => {
+                    const container = document.getElementById('replay-player');
+                    if (container && (window as any).rrwebPlayer) {
+                        container.innerHTML = '';
+                        new (window as any).rrwebPlayer({
+                            target: container,
+                            props: {
+                                events: data.events,
+                                autoPlay: true,
+                            },
+                        });
+                    }
+                }, 500);
+            } else {
+                toast.error('Keine Video-Daten für diese Sitzung gefunden');
+                setIsReplayOpen(false);
+            }
+        } catch (err) {
+            toast.error('Fehler beim Laden');
+            setIsReplayOpen(false);
+        } finally {
+            setLoadingReplay(false);
+        }
+    };
+
     const handleAction = async (type: 'vip' | 'coupon' | 'email', data: any = {}) => {
         if (!selectedSession) return;
         setActionLoading(type);
