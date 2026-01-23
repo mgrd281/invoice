@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const organizationId = (sessionAuth.user as any).organizationId;
+        let organizationId = (sessionAuth.user as any).organizationId;
         const isAdmin = (sessionAuth.user as any).isAdmin;
 
         if (!organizationId && !isAdmin) {
