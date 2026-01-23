@@ -1042,6 +1042,11 @@ model VisitorSession {
   utmTerm      String?
   utmContent   String?
 
+  // Enterprise Expansion
+  intentScore  Int      @default(0)
+  intentLabel  String?  // High, Medium, Low
+  isReturning  Boolean  @default(false)
+
   events SessionEvent[]
 
   createdAt DateTime @default(now())

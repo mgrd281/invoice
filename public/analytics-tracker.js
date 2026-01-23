@@ -10,6 +10,7 @@
 
     // Organization ID should be injected when this script is served, or fetched.
     let organizationId = window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id') || '';
+    let isReturning = false;
 
     const getCookie = (name) => {
         const value = `; ${document.cookie}`;
@@ -36,6 +37,9 @@
                     .join('');
                 localStorage.setItem(key, token);
                 setCookie(key, token, 365);
+                isReturning = false;
+            } else {
+                isReturning = true;
             }
             return token;
         } catch (e) {
@@ -101,6 +105,7 @@
                     visitorToken,
                     sessionId,
                     organizationId,
+                    isReturning,
                     referrer: document.referrer,
                     ...getUtms(),
                     metadata
@@ -117,7 +122,24 @@
     };
 
     // Health Check / Tracker Loaded
-    track('tracker_loaded', { version: '1.2.0' });
+    track('tracker_loaded', { version: '2.0.0' });
+
+    // Scroll Depth Tracking
+    let reachedThresholds = new Set();
+    window.addEventListener('scroll', () => {
+        const winHeight = window.innerHeight;
+        const docHeight = document.documentElement.scrollHeight - winHeight;
+        if (docHeight <= 0) return;
+        const scrollTop = window.scrollY;
+        const scrollPercent = Math.round((scrollTop / docHeight) * 100);
+
+        [25, 50, 75, 100].forEach(threshold => {
+            if (scrollPercent >= threshold && !reachedThresholds.has(threshold)) {
+                reachedThresholds.add(threshold);
+                track('scroll_depth', { depth: threshold });
+            }
+        });
+    });
 
     // Track Page View
     track('page_view');

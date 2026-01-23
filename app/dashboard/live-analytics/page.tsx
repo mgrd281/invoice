@@ -30,7 +30,14 @@ import {
     Facebook,
     Search as GoogleIcon,
     Share2,
-    Zap
+    Zap,
+    TrendingUp,
+    Briefcase,
+    RotateCcw,
+    FileText,
+    XOctagon,
+    MousePointerClick,
+    Layout
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -121,6 +128,38 @@ export default function LiveAnalyticsPage() {
         return <Share2 className="h-3 w-3 text-gray-400" />;
     };
 
+    const getIntentBadge = (label: string) => {
+        switch (label) {
+            case 'High': return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-[10px] h-4">High Intent</Badge>;
+            case 'Medium': return <Badge className="bg-amber-500 hover:bg-amber-600 text-[10px] h-4">Medium</Badge>;
+            default: return <Badge variant="secondary" className="text-[10px] h-4 opacity-70">Low</Badge>;
+        }
+    };
+
+    const getBehaviorIcons = (session: any) => {
+        const icons = [];
+        if (session.isReturning) icons.push(<RotateCcw key="ret" className="h-3 w-3 text-blue-500" title="Wiederkehrender Besucher" />);
+
+        const eventTypes = session.events?.map((e: any) => e.type) || [];
+        if (eventTypes.includes('rage_click')) icons.push(<AlertTriangle key="rage" className="h-3 w-3 text-red-500" title="Frustriertes Klicken" />);
+
+        // Fast Nav: many page views in short time
+        const pageViews = session.events?.filter((e: any) => e.type === 'page_view').length || 0;
+        if (pageViews > 3) icons.push(<Zap key="fast" className="h-3 w-3 text-amber-500" title="Schnelle Navigation" />);
+
+        // Long Read: scroll 100%
+        if (session.events?.some((e: any) => e.type === 'scroll_depth' && e.metadata?.depth === 100)) {
+            icons.push(<FileText key="read" className="h-3 w-3 text-indigo-500" title="Tiefes Interesse / Gelesen" />);
+        }
+
+        // Bounce risk: 1 page view + quick time
+        if (pageViews === 1 && session.events?.length < 3) {
+            icons.push(<XOctagon key="bounce" className="h-3 w-3 text-slate-400" title="Bounce Risiko" />);
+        }
+
+        return icons;
+    };
+
     return (
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
@@ -131,7 +170,7 @@ export default function LiveAnalyticsPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => setShowDebug(!showDebug)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors \${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showDebug ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent'}`}
                     >
                         <Bug className="h-3.5 w-3.5" /> Debug & Setup
                     </button>
@@ -142,93 +181,145 @@ export default function LiveAnalyticsPage() {
                 </div>
             </div>
 
-            {showDebug && (
-                <div className="space-y-4 animate-in slide-in-from-top duration-300">
-                    <Card className="border-blue-200 bg-blue-50/30">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center gap-2">
-                                <Globe className="h-4 w-4 text-blue-600" /> Schritt 1: Integration im Shop
-                            </CardTitle>
-                            <CardDescription>Kopiere dieses Skript und füge es in deinen Shopify-Store ein (z.B. in der `theme.liquid` vor dem schließenden {"</head>"} Tag).</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="relative group">
-                                <pre className="bg-slate-950 p-4 rounded-lg text-slate-300 text-xs font-mono overflow-auto border border-slate-800">
-                                    {trackingSnippet}
-                                </pre>
-                                <button
-                                    onClick={copyToClipboard}
-                                    className="absolute top-2 right-2 p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-slate-400 transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Kopieren"
-                                >
-                                    <Copy className="h-4 w-4" />
-                                </button>
+            {/* Enterprise Dashboard Top Stats / Funnel */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="bg-white/50 backdrop-blur-sm border-slate-200 shadow-sm">
+                    <CardContent className="pt-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-50 rounded-lg"><Users className="h-5 w-5 text-blue-600" /></div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Live Besucher</p>
+                                <p className="text-2xl font-bold">{liveData?.count || 0}</p>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-blue-700 font-medium">
-                                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                Tipp: Ohne die `data-org-id` werden keine Daten empfangen.
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white/50 backdrop-blur-sm border-slate-200 shadow-sm">
+                    <CardContent className="pt-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-50 rounded-lg"><Eye className="h-5 w-5 text-purple-600" /></div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Produkte (Funnel)</p>
+                                <p className="text-2xl font-bold">{liveData?.funnel?.products || 0}</p>
                             </div>
-                        </CardContent>
-                    </Card>
+                            <ArrowRight className="h-4 w-4 text-slate-300 ml-auto" />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white/50 backdrop-blur-sm border-slate-200 shadow-sm">
+                    <CardContent className="pt-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-50 rounded-lg"><ShoppingCart className="h-5 w-5 text-amber-600" /></div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Warenkorb (Funnel)</p>
+                                <p className="text-2xl font-bold">{liveData?.funnel?.cart || 0}</p>
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-slate-300 ml-auto" />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white/50 backdrop-blur-sm border-slate-200 shadow-sm">
+                    <CardContent className="pt-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-emerald-50 rounded-lg"><Briefcase className="h-5 w-5 text-emerald-600" /></div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Checkout (Funnel)</p>
+                                <p className="text-2xl font-bold">{liveData?.funnel?.checkout || 0}</p>
+                            </div>
+                            <TrendingUp className="h-4 w-4 text-emerald-500 ml-auto" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
-                    <Card className="border-orange-200 bg-orange-50/30">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center gap-2">
-                                <Bug className="h-4 w-4 text-orange-600" /> Schritt 2: Tracking Health Check
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-white p-3 rounded-lg border shadow-sm">
-                                    <div className="text-xs text-muted-foreground mb-1 font-medium">Auto-Refresh</div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Aktiv (alle 5s)
+            {
+                showDebug && (
+                    <div className="space-y-4 animate-in slide-in-from-top duration-300">
+                        <Card className="border-blue-200 bg-blue-50/30">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm flex items-center gap-2">
+                                    <Globe className="h-4 w-4 text-blue-600" /> Schritt 1: Integration im Shop
+                                </CardTitle>
+                                <CardDescription>Kopiere dieses Skript und füge es in deinen Shopify-Store ein (z.B. in der `theme.liquid` vor dem schließenden {"</head>"} Tag).</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="relative group">
+                                    <pre className="bg-slate-950 p-4 rounded-lg text-slate-300 text-xs font-mono overflow-auto border border-slate-800">
+                                        {trackingSnippet}
+                                    </pre>
+                                    <button
+                                        onClick={copyToClipboard}
+                                        className="absolute top-2 right-2 p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-slate-400 transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Kopieren"
+                                    >
+                                        <Copy className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-blue-700 font-medium">
+                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                    Tipp: Ohne die `data-org-id` werden keine Daten empfangen.
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-orange-200 bg-orange-50/30">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm flex items-center gap-2">
+                                    <Bug className="h-4 w-4 text-orange-600" /> Schritt 2: Tracking Health Check
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-white p-3 rounded-lg border shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1 font-medium">Auto-Refresh</div>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Aktiv (alle 5s)
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg border shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1 font-medium">Tracking Script</div>
+                                        <a href="/analytics-tracker.js" target="_blank" className="text-sm font-mono truncate text-blue-600 flex items-center gap-1 hover:underline">
+                                            /analytics-tracker.js <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg border shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1 font-medium">Server Endpoint</div>
+                                        <div className="text-sm font-mono truncate">/api/analytics/track</div>
                                     </div>
                                 </div>
-                                <div className="bg-white p-3 rounded-lg border shadow-sm">
-                                    <div className="text-xs text-muted-foreground mb-1 font-medium">Tracking Script</div>
-                                    <a href="/analytics-tracker.js" target="_blank" className="text-sm font-mono truncate text-blue-600 flex items-center gap-1 hover:underline">
-                                        /analytics-tracker.js <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                </div>
-                                <div className="bg-white p-3 rounded-lg border shadow-sm">
-                                    <div className="text-xs text-muted-foreground mb-1 font-medium">Server Endpoint</div>
-                                    <div className="text-sm font-mono truncate">/api/analytics/track</div>
-                                </div>
-                            </div>
 
-                            <div className="bg-slate-950 rounded-lg p-4 font-mono text-xs text-slate-300 overflow-hidden">
-                                <div className="text-slate-500 mb-2 border-b border-slate-800 pb-1 flex justify-between">
-                                    <span className="flex items-center gap-2"><TerminalIcon className="h-3 w-3" /> Recent Tracking Events (Raw)</span>
-                                    <span>Total Sessions: {liveData?.count || 0}</span>
-                                </div>
-                                <ScrollArea className="h-[200px]">
-                                    <div className="space-y-1">
-                                        {(liveData?.sessions || []).flatMap((s: any) => s.events).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 30).map((e: any, i: number) => (
-                                            <div key={i} className="grid grid-cols-12 gap-2 hover:bg-slate-900/50 py-0.5 border-b border-slate-900 last:border-0">
-                                                <span className="col-span-2 text-slate-500">{new Date(e.timestamp).toLocaleTimeString()}</span>
-                                                <span className={`col-span-3 \${e.type === 'page_view' ? 'text-blue-400' : e.type === 'heartbeat' ? 'text-slate-500' : 'text-purple-400'}`}>
-                                                    [{e.type.toUpperCase()}]
-                                                </span>
-                                                <span className="col-span-7 text-slate-400 truncate">{e.path || e.url}</span>
-                                            </div>
-                                        ))}
-                                        {(!liveData?.sessions?.length) && (
-                                            <div className="text-slate-600 italic py-8 text-center flex flex-col items-center gap-2">
-                                                <Activity className="h-8 w-8 opacity-20 animate-pulse" />
-                                                Warte auf eingehende Events...
-                                                <p className="text-[10px] not-italic text-slate-700 max-w-[200px] mx-auto mt-2">
-                                                    Falls keine Events erscheinen, prüfe ob das Skript im Shop korrekt geladen wird.
-                                                </p>
-                                            </div>
-                                        )}
+                                <div className="bg-slate-950 rounded-lg p-4 font-mono text-xs text-slate-300 overflow-hidden">
+                                    <div className="text-slate-500 mb-2 border-b border-slate-800 pb-1 flex justify-between">
+                                        <span className="flex items-center gap-2"><TerminalIcon className="h-3 w-3" /> Recent Tracking Events (Raw)</span>
+                                        <span>Total Sessions: {liveData?.count || 0}</span>
                                     </div>
-                                </ScrollArea>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )
+                                    <ScrollArea className="h-[200px]">
+                                        <div className="space-y-1">
+                                            {(liveData?.sessions || []).flatMap((s: any) => s.events).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 30).map((e: any, i: number) => (
+                                                <div key={i} className="grid grid-cols-12 gap-2 hover:bg-slate-900/50 py-0.5 border-b border-slate-900 last:border-0">
+                                                    <span className="col-span-2 text-slate-500">{new Date(e.timestamp).toLocaleTimeString()}</span>
+                                                    <span className={`col-span-3 \${e.type === 'page_view' ? 'text-blue-400' : e.type === 'heartbeat' ? 'text-slate-500' : 'text-purple-400'}`}>
+                                                        [{e.type.toUpperCase()}]
+                                                    </span>
+                                                    <span className="col-span-7 text-slate-400 truncate">{e.path || e.url}</span>
+                                                </div>
+                                            ))}
+                                            {(!liveData?.sessions?.length) && (
+                                                <div className="text-slate-600 italic py-8 text-center flex flex-col items-center gap-2">
+                                                    <Activity className="h-8 w-8 opacity-20 animate-pulse" />
+                                                    Warte auf eingehende Events...
+                                                    <p className="text-[10px] not-italic text-slate-700 max-w-[200px] mx-auto mt-2">
+                                                        Falls keine Events erscheinen, prüfe ob das Skript im Shop korrekt geladen wird.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )
             }
 
             <Tabs defaultValue="live" className="w-full">
@@ -267,10 +358,16 @@ export default function LiveAnalyticsPage() {
                                                             {getSourceIcon(session.sourceLabel, session.sourceMedium)}
                                                             {session.sourceLabel || 'Direct'}
                                                         </div>
+                                                        <div className="flex gap-1 items-center ml-2 border-l pl-2">
+                                                            {getBehaviorIcons(session)}
+                                                        </div>
                                                     </div>
-                                                    <Badge variant="outline" className="text-[10px]">
-                                                        {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
-                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        {getIntentBadge(session.intentLabel)}
+                                                        <Badge variant="outline" className="text-[10px]">
+                                                            {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
+                                                        </Badge>
+                                                    </div>
                                                 </div>
                                                 <div className="text-xs text-muted-foreground truncate mb-1">
                                                     {session.exitUrl || session.entryUrl}
@@ -436,6 +533,6 @@ export default function LiveAnalyticsPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
-        </div>
+        </div >
     );
 }

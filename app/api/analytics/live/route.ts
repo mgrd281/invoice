@@ -48,9 +48,35 @@ export async function GET(request: NextRequest) {
             }
         });
 
+        // Aggregate Funnel Data
+        const funnel = {
+            products: 0,
+            cart: 0,
+            checkout: 0
+        };
+
+        const intentStats = {
+            high: 0,
+            medium: 0,
+            low: 0
+        };
+
+        liveSessions.forEach(s => {
+            if (s.intentLabel === 'High') intentStats.high++;
+            else if (s.intentLabel === 'Medium') intentStats.medium++;
+            else intentStats.low++;
+
+            const eventTypes = new Set(s.events.map(e => e.type));
+            if (eventTypes.has('start_checkout')) funnel.checkout++;
+            if (eventTypes.has('add_to_cart')) funnel.cart++;
+            if (eventTypes.has('view_product')) funnel.products++;
+        });
+
         return NextResponse.json({
             count: liveSessions.length,
-            sessions: liveSessions
+            sessions: liveSessions,
+            funnel,
+            intentStats
         });
 
     } catch (error: any) {

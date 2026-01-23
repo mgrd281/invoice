@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
             utmCampaign,
             utmTerm,
             utmContent,
+            isReturning,
             metadata
         } = body;
 
@@ -81,6 +82,21 @@ export async function POST(req: NextRequest) {
 
         const source = getTrafficSource();
 
+        // 0. Intent Scoring Logic
+        const getScoreBoost = () => {
+            switch (event) {
+                case 'view_product': return 20;
+                case 'add_to_cart': return 35;
+                case 'start_checkout': return 50;
+                case 'page_view': return 5;
+                case 'scroll_depth': return metadata?.depth === 100 ? 15 : 5;
+                case 'rage_click': return -10; // Negative intent
+                default: return 0;
+            }
+        };
+
+        const scoreBoost = getScoreBoost();
+
         // 1. Ensure Visitor exists
         const visitor = await prisma.visitor.upsert({
             where: { visitorToken },
@@ -106,6 +122,7 @@ export async function POST(req: NextRequest) {
             update: {
                 lastActiveAt: new Date(),
                 exitUrl: url,
+                intentScore: { increment: scoreBoost },
             },
             create: {
                 sessionId,
@@ -123,8 +140,23 @@ export async function POST(req: NextRequest) {
                 utmCampaign,
                 utmTerm,
                 utmContent,
+                isReturning: !!isReturning,
+                intentScore: scoreBoost + (isReturning ? 15 : 0),
             }
         });
+
+        // Update Intent Label based on new score
+        const updatedScore = session.intentScore;
+        let intentLabel = 'Low';
+        if (updatedScore > 70) intentLabel = 'High';
+        else if (updatedScore > 30) intentLabel = 'Medium';
+
+        if (intentLabel !== session.intentLabel) {
+            await prisma.visitorSession.update({
+                where: { id: session.id },
+                data: { intentLabel }
+            });
+        }
 
         // 3. Log Event
         if (event !== 'heartbeat') {
