@@ -18,6 +18,10 @@
         if (parts.length === 2) return parts.pop().split(';').shift();
     };
 
+    const getCartToken = () => {
+        return getCookie('cart') || window.ShopifyAnalytics?.lib?.user()?.traits()?.cartToken;
+    };
+
     const setCookie = (name, value, days) => {
         let expires = "";
         if (days) {
@@ -106,6 +110,8 @@
                     sessionId,
                     organizationId,
                     isReturning,
+                    cartToken: getCartToken(),
+                    checkoutToken: window.Shopify?.Checkout?.token || window.Shopify?.checkout?.token,
                     referrer: document.referrer,
                     ...getUtms(),
                     metadata

@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
             utmTerm,
             utmContent,
             isReturning,
+            cartToken,
+            checkoutToken,
             metadata
         } = body;
 
@@ -123,6 +125,8 @@ export async function POST(req: NextRequest) {
                 lastActiveAt: new Date(),
                 exitUrl: url,
                 intentScore: { increment: scoreBoost },
+                cartToken: cartToken || undefined,
+                checkoutToken: checkoutToken || undefined,
             },
             create: {
                 sessionId,
@@ -142,6 +146,8 @@ export async function POST(req: NextRequest) {
                 utmContent,
                 isReturning: !!isReturning,
                 intentScore: scoreBoost + (isReturning ? 15 : 0),
+                cartToken,
+                checkoutToken,
             }
         });
 

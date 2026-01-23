@@ -138,6 +138,14 @@ export default function LiveAnalyticsPage() {
         }
     };
 
+    const getPurchaseStatusBadge = (status: string) => {
+        switch (status) {
+            case 'PAID': return <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] flex items-center gap-1"><CheckCircle2 className="h-2.5 w-2.5" /> BEZAHLT</Badge>;
+            case 'ABORTED': return <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">ABGEBROCHEN</Badge>;
+            default: return <Badge variant="outline" className="text-[10px] opacity-60 font-normal">OFFEN</Badge>;
+        }
+    };
+
     const getBehaviorIcons = (session: any) => {
         const icons = [];
         if (session.isReturning) icons.push(<RotateCcw key="ret" className="h-3 w-3 text-blue-500" title="Wiederkehrender Besucher" />);
@@ -406,39 +414,80 @@ export default function LiveAnalyticsPage() {
                                     <ScrollArea className="h-full pr-4">
                                         <div className="relative border-l-2 border-muted ml-3 pl-8 space-y-8 py-4">
                                             {selectedSession.sourceLabel && (
-                                                <div className="bg-slate-50 border p-3 rounded-lg mb-4 space-y-2">
-                                                    <div className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                                                        <Share2 className="h-3 w-3" /> Traffic Source
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <div className="text-[10px] text-muted-foreground">Quelle / Medium</div>
+                                                <div className="bg-slate-50 border p-3 rounded-lg mb-4 space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="space-y-1">
+                                                            <div className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                                <Share2 className="h-3 w-3" /> Traffic Source
+                                                            </div>
                                                             <div className="text-sm font-medium flex items-center gap-2">
                                                                 {getSourceIcon(selectedSession.sourceLabel, selectedSession.sourceMedium)}
                                                                 {selectedSession.sourceLabel} ({selectedSession.sourceMedium})
                                                             </div>
                                                         </div>
+                                                        <div className="text-right">
+                                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Status</div>
+                                                            {getPurchaseStatusBadge(selectedSession.purchaseStatus)}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4 border-t pt-3">
                                                         <div>
                                                             <div className="text-[10px] text-muted-foreground">Referrer URL</div>
-                                                            <div className="text-sm font-medium truncate max-w-[200px]" title={selectedSession.referrer}>
+                                                            <div className="text-xs truncate max-w-[180px]" title={selectedSession.referrer}>
                                                                 {selectedSession.referrer || 'Kein Referrer'}
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    {selectedSession.utmCampaign && (
-                                                        <div className="pt-2 border-t mt-2 flex gap-4">
-                                                            <div>
-                                                                <div className="text-[10px] text-muted-foreground">Kampagne</div>
-                                                                <div className="text-xs font-mono">{selectedSession.utmCampaign}</div>
+                                                        <div>
+                                                            <div className="text-[10px] text-muted-foreground">Dauer / Seiten</div>
+                                                            <div className="text-xs font-semibold">
+                                                                {Math.max(1, Math.round((new Date(selectedSession.lastActiveAt).getTime() - new Date(selectedSession.startTime).getTime()) / 60000))} Min. / {selectedSession.events?.filter((e: any) => e.type === 'page_view').length || 1} Seiten
                                                             </div>
-                                                            {selectedSession.utmContent && (
-                                                                <div>
-                                                                    <div className="text-[10px] text-muted-foreground">Content</div>
-                                                                    <div className="text-xs font-mono">{selectedSession.utmContent}</div>
-                                                                </div>
-                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {selectedSession.orderNumber && (
+                                                        <div className="bg-green-50/50 border border-green-100 p-2 rounded flex justify-between items-center">
+                                                            <div>
+                                                                <div className="text-[10px] text-green-700 font-bold uppercase tracking-tight">Bestellung</div>
+                                                                <div className="text-sm font-bold text-green-800">{selectedSession.orderNumber}</div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-[10px] text-green-700 font-bold uppercase tracking-tight">Wert</div>
+                                                                <div className="text-sm font-bold text-green-800">{selectedSession.totalValue?.toFixed(2)} {selectedSession.currency || 'EUR'}</div>
+                                                            </div>
                                                         </div>
                                                     )}
+                                                </div>
+                                            )}
+
+                                            {/* Smart Behavioral Analysis Group */}
+                                            {selectedSession.intentScore > 0 && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                                    <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg">
+                                                        <div className="text-[10px] font-bold text-blue-700 uppercase flex items-center gap-1">
+                                                            <TrendingUp className="h-3 w-3" /> Intent & Verhalten
+                                                        </div>
+                                                        <div className="mt-1">
+                                                            {getIntentBadge(selectedSession.intentLabel)}
+                                                            <p className="text-[10px] text-blue-600 mt-1 italic">
+                                                                {selectedSession.intentScore > 70 ? 'Sehr hohe Kaufbereitschaft - Reagiert auf Upsells.' :
+                                                                    selectedSession.intentScore > 30 ? 'Interessiert - Sucht nach Bestätigung.' :
+                                                                        'Stöbernd - Eventuell Preisvergleich.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-slate-50/80 border border-slate-200 p-3 rounded-lg">
+                                                        <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                            <XOctagon className="h-3 w-3" /> Exit Prediction
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-600 mt-1">
+                                                            {selectedSession.purchaseStatus === 'PAID' ? 'Kauf erfolgreich abgeschlossen.' :
+                                                                selectedSession.events?.some((e: any) => e.type === 'rage_click') ? 'Nutzer frustriert (Rage Click).' :
+                                                                    selectedSession.events?.some((e: any) => e.type === 'add_to_cart') ? 'Zögert bei Versandkosten / Preis.' :
+                                                                        'Keine ausreichende Bindung zum Produkt.'}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -460,8 +509,21 @@ export default function LiveAnalyticsPage() {
                                                         <div className="text-sm font-medium mt-1">
                                                             {event.path || event.url}
                                                         </div>
-                                                        {event.metadata && Object.keys(event.metadata).length > 0 && (
-                                                            <div className="bg-muted/30 p-2 rounded mt-2 text-xs font-mono">
+
+                                                        {event.type === 'view_product' && event.metadata?.title && (
+                                                            <div className="flex items-center gap-3 mt-2 bg-slate-50 p-2 rounded border border-slate-100">
+                                                                <div className="h-10 w-10 bg-white rounded border flex items-center justify-center p-1">
+                                                                    <div className="h-full w-full bg-slate-100 animate-pulse rounded" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs font-bold truncate max-w-[200px]">{event.metadata.title}</div>
+                                                                    <div className="text-[10px] text-muted-foreground">{event.metadata.price ? `\${event.metadata.price} EUR` : 'Preis laden...'}</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {event.metadata && Object.keys(event.metadata).length > 0 && !(['view_product', 'scroll_depth'].includes(event.type)) && (
+                                                            <div className="bg-muted/30 p-2 rounded mt-2 text-xs font-mono max-h-[100px] overflow-auto">
                                                                 {JSON.stringify(event.metadata, null, 2)}
                                                             </div>
                                                         )}
@@ -499,33 +561,45 @@ export default function LiveAnalyticsPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="rounded-md border">
-                                <div className="grid grid-cols-5 p-4 border-b font-medium bg-muted/50 text-sm">
+                                <div className="grid grid-cols-6 p-4 border-b font-medium bg-muted/50 text-sm">
                                     <div className="col-span-1">Besucher</div>
-                                    <div className="col-span-1">Gerät/OS</div>
-                                    <div className="col-span-1">Dauer</div>
-                                    <div className="col-span-1">Events</div>
-                                    <div className="col-span-1">Letzte Aktivität</div>
+                                    <div className="col-span-1 text-center">Gerät/OS</div>
+                                    <div className="col-span-1 text-center">Dauer</div>
+                                    <div className="col-span-1 text-center">Aktivität</div>
+                                    <div className="col-span-1 text-center">Kaufstatus</div>
+                                    <div className="col-span-1 text-right">Zuletzt</div>
                                 </div>
                                 <div className="divide-y">
                                     {sessions.map((session: any) => (
-                                        <div key={session.id} className="grid grid-cols-5 p-4 text-sm items-center hover:bg-muted/30">
-                                            <div className="flex flex-col">
+                                        <div
+                                            key={session.id}
+                                            className={`grid grid-cols-6 p-4 text-sm items-center hover:bg-muted/30 cursor-pointer transition-colors \${selectedSession?.id === session.id ? 'bg-blue-50/50' : ''}`}
+                                            onClick={() => {
+                                                setSelectedSession(session);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                        >
+                                            <div className="col-span-1 flex flex-col">
                                                 <span className="font-medium">{session.visitor?.country || 'DE'}</span>
-                                                <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 12)}...</span>
+                                                <span className="text-[10px] text-muted-foreground truncate">{session.sessionId.substring(0, 8)}...</span>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="col-span-1 flex items-center gap-2">
                                                 {getDeviceIcon(session.deviceType)}
-                                                <span className="text-xs">{session.os}</span>
+                                                <span className="text-center text-[10px] w-full">{session.os}</span>
                                             </div>
-                                            <div className="text-xs">
+                                            <div className="col-span-1 text-xs text-center">
                                                 {Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.
                                             </div>
-                                            <div className="flex items-center gap-1">
+                                            <div className="col-span-1 flex flex-col items-center gap-1">
                                                 <Badge variant="secondary" className="px-1 text-[10px]">
-                                                    {session._count?.events || 0}
+                                                    {session._count?.events || session.events?.length || 0} Events
                                                 </Badge>
+                                                {session.intentLabel && getIntentBadge(session.intentLabel)}
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
+                                            <div className="col-span-1 flex justify-center">
+                                                {getPurchaseStatusBadge(session.purchaseStatus)}
+                                            </div>
+                                            <div className="col-span-1 text-xs text-muted-foreground text-right font-medium">
                                                 {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
                                             </div>
                                         </div>

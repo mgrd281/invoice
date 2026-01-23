@@ -1047,6 +1047,15 @@ model VisitorSession {
   intentLabel  String?  // High, Medium, Low
   isReturning  Boolean  @default(false)
 
+  // Customer Journey Fields
+  cartToken      String?
+  checkoutToken  String?
+  purchaseStatus String?  @default("OPEN") // OPEN, PAID, ABORTED
+  orderId        String?
+  orderNumber    String?
+  totalValue     Float?   @default(0)
+  currency       String?  @default("EUR")
+
   events SessionEvent[]
 
   createdAt DateTime @default(now())

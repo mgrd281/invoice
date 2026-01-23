@@ -530,10 +530,48 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         })
         log(`✅ Additional Income created for order ${order.name}`)
     } catch (err) {
-        log(`⚠️ Failed to create Additional Income for order ${order.name}: ${err}`)
+        log(`⚠️ Failed to create Additional Income or Link Session for order ${order.name}: ${err}`)
     }
 
-    log(`✅ Invoice created in DB: ${newInvoice.invoiceNumber}`)
+    // 6. Link to Analytics Session (moved outside to ensure it runs even if income fails)
+    try {
+        const cartToken = order.cart_token;
+        const checkoutToken = order.checkout_token;
+
+        if (cartToken || checkoutToken) {
+            log(`🔍 Attempting to link order ${order.name} to analytics session... (Cart: ${cartToken}, Checkout: ${checkoutToken})`)
+
+            const sessionMatch = await prisma.visitorSession.findFirst({
+                where: {
+                    organizationId: organization.id,
+                    OR: [
+                        { cartToken: cartToken || undefined },
+                        { checkoutToken: checkoutToken || undefined }
+                    ]
+                },
+                orderBy: { lastActiveAt: 'desc' }
+            });
+
+            if (sessionMatch) {
+                log(`✅ Found matching session ${sessionMatch.sessionId} for order ${order.name}. Marking as PAID.`)
+                await prisma.visitorSession.update({
+                    where: { id: sessionMatch.id },
+                    data: {
+                        purchaseStatus: 'PAID',
+                        orderId: String(order.id),
+                        orderNumber: order.name,
+                        totalValue: totalGross,
+                        intentScore: { increment: 100 },
+                        intentLabel: 'High'
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        log(`⚠️ Failed to link order to analytics session: ${err}`)
+    }
+
+    log(`✅ Invoice processing completed for: ${newInvoice.invoiceNumber}`)
     return { ...mapPrismaInvoiceToData(newInvoice), isNew: true }
 }
 
