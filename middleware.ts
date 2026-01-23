@@ -191,6 +191,6 @@ export const config = {
          * - public folder
          * - sounds (public sounds)
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|wav)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|wav|js)$).*)',
     ],
 }
