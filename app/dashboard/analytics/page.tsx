@@ -20,7 +20,8 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Zap,
-    Download
+    Download,
+    Activity
 } from 'lucide-react';
 import {
     Card,
@@ -142,7 +143,12 @@ export default function AnalyticsDashboard() {
                     <div className="flex items-center gap-2 mb-2">
                         <NextLink href="/dashboard">
                             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-slate-900">
-                                <ArrowLeft className="h-4 w-4" /> Zurich zum Dashboard
+                                <ArrowLeft className="h-4 w-4" /> Zurück zum Dashboard
+                            </Button>
+                        </NextLink>
+                        <NextLink href="/dashboard/live-analytics">
+                            <Button variant="ghost" size="sm" className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                <Activity className="h-4 w-4" /> Live Monitor
                             </Button>
                         </NextLink>
                     </div>
@@ -179,6 +185,7 @@ export default function AnalyticsDashboard() {
                     icon={<Users className="h-5 w-5" />}
                     color="blue"
                     description="Einzigartige Nutzer"
+                    href="/dashboard/live-analytics"
                 />
                 <KPICard
                     title="Live Besucher"
@@ -186,6 +193,7 @@ export default function AnalyticsDashboard() {
                     icon={<div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />}
                     color="green"
                     description="Gerade aktiv"
+                    href="/dashboard/live-analytics?filter=live"
                 />
                 <KPICard
                     title="Sitzungen"
@@ -193,6 +201,7 @@ export default function AnalyticsDashboard() {
                     icon={<MousePointer2 className="h-5 w-5" />}
                     color="purple"
                     description="Besuchsvorgänge"
+                    href="/dashboard/live-analytics"
                 />
                 <KPICard
                     title="Conversion Rate"
@@ -200,6 +209,7 @@ export default function AnalyticsDashboard() {
                     icon={<Zap className="h-5 w-5" />}
                     color="amber"
                     description="Bestellabschluss"
+                    href="/dashboard/live-analytics?filter=purchase"
                 />
             </div>
 
@@ -219,7 +229,10 @@ export default function AnalyticsDashboard() {
                         <Monitor className="h-3 w-3" /> Browsing Tiefe
                     </div>
                 </div>
-                <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-2 flex flex-col justify-center">
+                <div
+                    className="bg-white p-6 rounded-2xl border shadow-sm space-y-2 flex flex-col justify-center cursor-pointer hover:border-red-200 transition-colors"
+                    onClick={() => window.location.href = '/dashboard/live-analytics?filter=bounce'}
+                >
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Absprungrate (Bounce)</p>
                     <div className="flex items-end gap-2">
                         <p className="text-2xl font-bold">{data?.kpis.bounceRate}%</p>
@@ -382,12 +395,12 @@ export default function AnalyticsDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {smartInsights.length > 0 ? smartInsights.map((insight: any, i: number) => (
                             <div key={i} className={`p-4 rounded-2xl border flex gap-4 ${insight.type === 'warning' ? 'bg-red-500/10 border-red-500/30' :
-                                    insight.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                                        'bg-blue-500/10 border-blue-500/30'
+                                insight.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30' :
+                                    'bg-blue-500/10 border-blue-500/30'
                                 }`}>
                                 <div className={`p-3 rounded-xl h-fit ${insight.type === 'warning' ? 'bg-red-500/20 text-red-300' :
-                                        insight.type === 'success' ? 'bg-emerald-500/20 text-emerald-300' :
-                                            'bg-blue-500/20 text-blue-300'
+                                    insight.type === 'success' ? 'bg-emerald-500/20 text-emerald-300' :
+                                        'bg-blue-500/20 text-blue-300'
                                     }`}>
                                     {insight.type === 'warning' ? <AlertCircle className="h-5 w-5" /> :
                                         insight.type === 'success' ? <TrendingUp className="h-5 w-5" /> :
@@ -410,7 +423,7 @@ export default function AnalyticsDashboard() {
     );
 }
 
-function KPICard({ title, value, icon, color, description }: any) {
+function KPICard({ title, value, icon, color, description, href }: any) {
     const colorClasses: any = {
         blue: "bg-blue-50 text-blue-600 border-blue-100",
         green: "bg-green-50 text-green-600 border-green-100",
@@ -418,8 +431,8 @@ function KPICard({ title, value, icon, color, description }: any) {
         amber: "bg-amber-50 text-amber-600 border-amber-100",
     };
 
-    return (
-        <Card className="border-none shadow-md group hover:shadow-lg transition-all duration-300 bg-white">
+    const content = (
+        <Card className={`border-none shadow-md group hover:shadow-lg transition-all duration-300 bg-white ${href ? 'cursor-pointer' : ''}`}>
             <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
@@ -437,4 +450,10 @@ function KPICard({ title, value, icon, color, description }: any) {
             </CardContent>
         </Card>
     );
+
+    if (href) {
+        return <NextLink href={href}>{content}</NextLink>;
+    }
+
+    return content;
 }

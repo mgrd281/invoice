@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import NextLink from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,14 @@ import {
     FileText,
     XOctagon,
     MousePointerClick,
-    Layout
+    Layout,
+    MapPin,
+    ArrowUpRight,
+    Star,
+    Mail,
+    Ticket,
+    ChevronRight,
+    BrainCircuit
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -49,6 +57,9 @@ import { toast } from 'sonner';
 
 export default function LiveAnalyticsPage() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const filterType = searchParams.get('filter');
+
     const [liveData, setLiveData] = useState<any>(null);
     const [sessions, setSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -71,11 +82,23 @@ export default function LiveAnalyticsPage() {
         try {
             const res = await fetch('/api/analytics/live');
             const data = await res.json();
-            setLiveData(data);
+
+            let filteredSessions = data.sessions || [];
+            if (filterType === 'live') {
+                filteredSessions = filteredSessions.filter((s: any) => s.status === 'ACTIVE');
+            } else if (filterType === 'purchase') {
+                filteredSessions = filteredSessions.filter((s: any) => s.purchaseStatus === 'PAID');
+            } else if (filterType === 'bounce') {
+                filteredSessions = filteredSessions.filter((s: any) => (s._count?.events || s.events?.length) <= 2);
+            }
+
+            setLiveData({ ...data, sessions: filteredSessions });
 
             // Auto-select session if nothing selected or refresh selected one
-            if (data.sessions?.length > 0 && selectedSession) {
-                const updated = data.sessions.find((s: any) => s.id === selectedSession.id);
+            if (filteredSessions.length > 0 && !selectedSession) {
+                setSelectedSession(filteredSessions[0]);
+            } else if (filteredSessions.length > 0 && selectedSession) {
+                const updated = filteredSessions.find((s: any) => s.id === selectedSession.id);
                 if (updated) setSelectedSession(updated);
             }
         } catch (err) {
@@ -85,9 +108,14 @@ export default function LiveAnalyticsPage() {
 
     const fetchSessions = async () => {
         try {
-            const res = await fetch('/api/analytics/sessions?limit=20');
+            const res = await fetch('/api/analytics/sessions?limit=50');
             const data = await res.json();
-            setSessions(data.sessions || []);
+            let s = data.sessions || [];
+
+            if (filterType === 'purchase') s = s.filter((x: any) => x.purchaseStatus === 'PAID');
+            if (filterType === 'bounce') s = s.filter((x: any) => (x._count?.events || x.events?.length) <= 2);
+
+            setSessions(s);
         } catch (err) {
             console.error('Failed to fetch sessions', err);
         }
@@ -100,8 +128,13 @@ export default function LiveAnalyticsPage() {
             fetchLiveData();
             fetchSessions();
         }, 5000);
+
+        if (filterType) {
+            toast.info(`Filter aktiv: ${filterType}`, { duration: 2000 });
+        }
+
         return () => clearInterval(interval);
-    }, []);
+    }, [filterType]);
 
     useEffect(() => {
         if (liveData) setLoading(false);
@@ -377,6 +410,107 @@ export default function LiveAnalyticsPage() {
                             <CardContent className="flex-1 overflow-hidden">
                                 {selectedSession ? (
                                     <ScrollArea className="h-full pr-4">
+                                        {/* enterprise Header: Smart Summary & Predictive Insights */}
+                                        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <Card className="md:col-span-2 border-none shadow-sm bg-gradient-to-r from-slate-900 to-slate-800 text-white overflow-hidden relative">
+                                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                    <BrainCircuit className="h-20 w-20" />
+                                                </div>
+                                                <CardContent className="p-5 relative z-10">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <Badge className="bg-blue-500 text-white border-none">Session Intelligence</Badge>
+                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Smart Summary</span>
+                                                    </div>
+                                                    <p className="text-lg font-medium leading-relaxed">
+                                                        {selectedSession.enterprise?.summary || "Analysiere Besucher-Verhalten..."}
+                                                    </p>
+                                                    <div className="mt-4 flex items-center gap-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                                            <span className="text-xs text-slate-300">Empfohlene Aktion: <b className="text-white">{selectedSession.enterprise?.recommendedAction}</b></span>
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+
+                                            <Card className="border-none shadow-sm bg-white overflow-hidden flex flex-col justify-center items-center p-5 text-center">
+                                                <div className="relative mb-2">
+                                                    <svg className="w-20 h-20 transform -rotate-90">
+                                                        <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100" />
+                                                        <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent"
+                                                            strokeDasharray={2 * Math.PI * 35}
+                                                            strokeDashoffset={2 * Math.PI * 35 * (1 - (selectedSession.enterprise?.score || 0) / 100)}
+                                                            className={`${(selectedSession.enterprise?.score || 0) > 70 ? 'text-emerald-500' : (selectedSession.enterprise?.score || 0) > 30 ? 'text-blue-500' : 'text-slate-400'} transition-all duration-1000 ease-out`}
+                                                            strokeLinecap="round"
+                                                        />
+                                                    </svg>
+                                                    <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                                        <span className="text-xl font-black">{selectedSession.enterprise?.score || 0}%</span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kauf-Wahrscheinlichkeit</p>
+                                            </Card>
+                                        </div>
+
+                                        {/* Customer Journey Map */}
+                                        <Card className="mb-6 border-none shadow-sm bg-white overflow-hidden">
+                                            <CardHeader className="py-3 px-5 bg-slate-50/50 border-b">
+                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                    <MapPin className="h-4 w-4 text-blue-600" /> Customer Journey Map
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="p-6">
+                                                <div className="flex items-center justify-between relative">
+                                                    {/* Background Line */}
+                                                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2" />
+
+                                                    <JourneyStep
+                                                        icon={<Globe className="h-4 w-4" />}
+                                                        label="Landing"
+                                                        active={true}
+                                                        completed={selectedSession.events?.length > 0}
+                                                    />
+                                                    <JourneyStep
+                                                        icon={<Search className="h-4 w-4" />}
+                                                        label="Browsing"
+                                                        active={selectedSession.events?.some((e: any) => e.type === 'view_product')}
+                                                        completed={selectedSession.events?.some((e: any) => e.type === 'add_to_cart')}
+                                                    />
+                                                    <JourneyStep
+                                                        icon={<ShoppingCart className="h-4 w-4" />}
+                                                        label="Cart"
+                                                        active={selectedSession.events?.some((e: any) => e.type === 'add_to_cart')}
+                                                        completed={selectedSession.events?.some((e: any) => e.type === 'start_checkout')}
+                                                    />
+                                                    <JourneyStep
+                                                        icon={<Briefcase className="h-4 w-4" />}
+                                                        label="Checkout"
+                                                        active={selectedSession.events?.some((e: any) => e.type === 'start_checkout')}
+                                                        completed={selectedSession.purchaseStatus === 'PAID'}
+                                                    />
+                                                    <JourneyStep
+                                                        icon={<CheckCircle2 className="h-4 w-4" />}
+                                                        label="Purchase"
+                                                        active={selectedSession.purchaseStatus === 'PAID'}
+                                                        completed={selectedSession.purchaseStatus === 'PAID'}
+                                                    />
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Admin Quick Actions */}
+                                        <div className="mb-6 flex flex-wrap gap-3">
+                                            <Button variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-blue-50 border-slate-200" onClick={() => toast.info('E-Mail Entwurf vorbereitet')}>
+                                                <Mail className="h-3.5 w-3.5 text-blue-600" /> E-Mail schreiben
+                                            </Button>
+                                            <Button variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-emerald-50 border-slate-200" onClick={() => toast.success('Rabattcode wird versendet')}>
+                                                <Ticket className="h-3.5 w-3.5 text-emerald-600" /> Gutschein anbieten
+                                            </Button>
+                                            <Button variant="outline" size="sm" className="gap-2 bg-white text-xs h-9 hover:bg-amber-50 border-slate-200" onClick={() => toast.info('Besucher als VIP markiert')}>
+                                                <Star className="h-3.5 w-3.5 text-amber-500" /> VIP Markieren
+                                            </Button>
+                                        </div>
+
                                         <div className="relative border-l-2 border-muted ml-3 pl-8 space-y-8 py-4">
                                             {selectedSession.sourceLabel && (
                                                 <div className="bg-slate-50 border p-3 rounded-lg mb-4 space-y-4">
@@ -632,6 +766,29 @@ export default function LiveAnalyticsPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+        </div>
+    );
+}
+
+function JourneyStep({ icon, label, active, completed }: any) {
+    return (
+        <div className="relative z-10 flex flex-col items-center gap-2 group">
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${completed ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200' :
+                active ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' :
+                    'bg-white border-slate-200 text-slate-400'
+                }`}>
+                {completed ? <CheckCircle2 className="h-5 w-5" /> : icon}
+            </div>
+            <span className={`text-[10px] font-bold uppercase tracking-tighter ${active || completed ? 'text-slate-900' : 'text-slate-400'
+                }`}>
+                {label}
+            </span>
+            {active && !completed && (
+                <div className="absolute -top-1 -right-1 h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                </div>
+            )}
         </div>
     );
 }

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         if (deviceType) where.deviceType = deviceType;
         if (sessionId) where.sessionId = sessionId;
 
-        const [sessions, total] = await Promise.all([
+        const [sessionsRaw, total] = await Promise.all([
             prisma.visitorSession.findMany({
                 where,
                 include: {
@@ -56,6 +56,58 @@ export async function GET(request: NextRequest) {
             }),
             prisma.visitorSession.count({ where })
         ]);
+
+        // --- Enterprise Logic: Smart Summary & Predictive Insights ---
+        const sessions = sessionsRaw.map((s: any) => {
+            const eventTypes = new Set(s.events.map((e: any) => e.type));
+            const hasPurchase = s.purchaseStatus === 'PAID';
+            const hasCheckout = eventTypes.has('start_checkout');
+            const hasCart = eventTypes.has('add_to_cart');
+            const hasProduct = eventTypes.has('view_product');
+
+            // 1. Calculate Purchase Probability Score (%)
+            let score = 5; // Base
+            if (hasProduct) score += 15;
+            if (hasCart) score += 25;
+            if (hasCheckout) score += 40;
+            if (s.isReturning) score += 10;
+            if (s.intentScore > 50) score += 15;
+            if (hasPurchase) score = 100;
+            score = Math.min(score, 100);
+
+            // 2. Generate Smart Summary (German)
+            let summary = "";
+            const source = s.sourceLabel || "Direktzugriff";
+            const device = s.deviceType === 'mobile' ? 'Mobil' : 'Desktop';
+
+            if (hasPurchase) {
+                summary = `Kunde kam über ${source} (${device}) und hat erfolgreich bestellt.`;
+            } else if (hasCheckout) {
+                summary = `Besucher von ${source} erreichte den Checkout, hat aber noch nicht gekauft.`;
+            } else if (hasCart) {
+                summary = `Nutzer zeigt Interesse, Produkte im Warenkorb von ${source}.`;
+            } else if (hasProduct) {
+                summary = `Interessierter Besucher stöbert in Produkten via ${source}.`;
+            } else {
+                summary = `Neuer Besucher über ${source} (${device}) gelandet.`;
+            }
+
+            // 3. Recommended Action
+            let action = "Beobachten";
+            if (hasCheckout && !hasPurchase) action = "Rabattcode senden";
+            else if (hasCart && !hasCheckout) action = "Retargeting-E-Mail";
+            else if (score > 40) action = "VIP Markieren";
+
+            return {
+                ...s,
+                enterprise: {
+                    score,
+                    summary,
+                    recommendedAction: action,
+                    isHighPotential: score > 60 && !hasPurchase
+                }
+            };
+        });
 
         return NextResponse.json({
             sessions,

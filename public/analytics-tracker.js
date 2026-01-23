@@ -155,6 +155,11 @@
         }
     });
 
+    // Proactive Exit Tracking
+    window.addEventListener('beforeunload', () => {
+        track('session_ended', { reason: 'tab_closed' });
+    });
+
     // Track Product View (Enhanced for Shopify)
     const observeProduct = () => {
         if (window.ShopifyAnalytics?.meta?.product) {
