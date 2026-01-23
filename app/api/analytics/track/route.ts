@@ -53,6 +53,11 @@ export async function POST(req: NextRequest) {
 
         const deviceInfo = parseDeviceInfo(ua);
 
+        // Geo-IP Extraction (Best effort from headers)
+        const country = req.headers.get('cf-ipcountry') || req.headers.get('x-vercel-ip-country') || 'DE';
+        const city = req.headers.get('cf-ipcity') || req.headers.get('x-vercel-ip-city') || undefined;
+        const region = req.headers.get('cf-region') || req.headers.get('x-vercel-ip-region') || undefined;
+
         // Traffic Source Classification Logic
         const getTrafficSource = () => {
             if (utmSource) {
@@ -105,6 +110,7 @@ export async function POST(req: NextRequest) {
             update: {
                 userAgent: ua,
                 ipHash,
+                country: country || undefined,
             },
             create: {
                 visitorToken,
@@ -114,12 +120,13 @@ export async function POST(req: NextRequest) {
                 deviceType: deviceInfo.device.toLowerCase(),
                 os: deviceInfo.os,
                 browser: deviceInfo.browser,
-                // country: we'd need a geoip lib here, skipping for now or using a placeholder
+                country: country || undefined,
             }
         });
 
         // 2. Ensure Session exists
         const cartMetadata = metadata?.cart;
+        const shopifyCustomerId = metadata?.customerId || body.customerId;
 
         const session = await prisma.visitorSession.upsert({
             where: { sessionId },
@@ -130,6 +137,10 @@ export async function POST(req: NextRequest) {
                 intentScore: { increment: scoreBoost },
                 cartToken: cartToken || undefined,
                 checkoutToken: checkoutToken || undefined,
+                city: city || undefined,
+                region: region || undefined,
+                ipMasked: maskedIp,
+                customerId: shopifyCustomerId || undefined,
                 // Update cart snapshot if provided
                 ...(cartMetadata && {
                     cartSnapshot: cartMetadata.items || undefined,
@@ -159,6 +170,10 @@ export async function POST(req: NextRequest) {
                 intentScore: scoreBoost + (isReturning ? 15 : 0),
                 cartToken,
                 checkoutToken,
+                city: city || undefined,
+                region: region || undefined,
+                ipMasked: maskedIp,
+                customerId: shopifyCustomerId || undefined,
                 ...(cartMetadata && {
                     cartSnapshot: cartMetadata.items,
                     itemsCount: cartMetadata.itemsCount,
