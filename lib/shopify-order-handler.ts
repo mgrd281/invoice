@@ -37,6 +37,7 @@ export function mapPrismaInvoiceToData(invoice: any) {
         },
         items: invoice.items.map((item: any) => ({
             description: item.description,
+            ean: item.ean,
             quantity: Number(item.quantity),
             unitPrice: Number(item.unitPrice),
             total: Number(item.grossAmount)
@@ -349,6 +350,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         const tax = total - net
         return {
             description: item.title,
+            ean: item.sku || '',
             quantity,
             unitPrice: net / quantity, // Store Net Unit Price so UI adds tax correctly
             grossAmount: total,
@@ -499,6 +501,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             items: {
                 create: items.map((item: any) => ({
                     description: item.description,
+                    ean: item.ean,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
                     grossAmount: item.grossAmount,

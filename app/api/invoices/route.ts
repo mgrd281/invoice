@@ -277,6 +277,7 @@ export async function POST(req: Request) {
         items: {
           create: body.items.map((item: any) => ({
             description: item.description,
+            ean: item.ean || '',
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             grossAmount: item.total, // Mapped total to grossAmount

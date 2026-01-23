@@ -374,6 +374,7 @@ export default function NewInvoicePage() {
         },
         items: validItems.map(item => ({
           description: item.description,
+          ean: item.ean || '',
           quantity: item.quantity,
           unit: item.unit,
           unitPrice: item.unitPrice,
