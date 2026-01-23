@@ -7,6 +7,8 @@ Ein umfassendes System zur Verwaltung und Erstellung von Rechnungen auf Deutsch 
 
 ## ✨ Funktionen
 
+- 📊 **Shop Analytics (Erweitert)** mit KPIs & Charts
+- ⏱️ **Live Besucher Analytics** & Session-Tracking
 - 🧾 **Professionelle Rechnungserstellung** mit deutschem Standarddesign
 - 📊 **CSV-Import** von Shopify und anderen Systemen
 - 📧 **Automatischer E-Mail-Versand** mit PDF-Anhang
