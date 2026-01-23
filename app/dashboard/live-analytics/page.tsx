@@ -112,32 +112,51 @@ function LiveAnalyticsContent() {
 
     const handleWatchReplay = async () => {
         if (!selectedSession?.id) return;
+        console.log('[Replay] Starting replay for session:', selectedSession.id);
         setLoadingReplay(true);
         setIsReplayOpen(true);
         try {
             const res = await fetch(`/api/analytics/sessions/${selectedSession.id}/recording`);
             const data = await res.json();
-            if (data.success && data.events.length > 0) {
+            console.log('[Replay] Received data:', data);
+
+            if (data.success && data.events && data.events.length > 0) {
                 setReplayEvents(data.events);
                 // Initialize rrweb-player after events are loaded
                 setTimeout(() => {
                     const container = document.getElementById('replay-player');
+                    console.log('[Replay] Container element:', container);
+                    console.log('[Replay] Global rrwebPlayer:', (window as any).rrwebPlayer);
+
                     if (container && (window as any).rrwebPlayer) {
-                        container.innerHTML = '';
-                        new (window as any).rrwebPlayer({
-                            target: container,
-                            props: {
-                                events: data.events,
-                                autoPlay: true,
-                            },
-                        });
+                        try {
+                            container.innerHTML = '';
+                            new (window as any).rrwebPlayer({
+                                target: container,
+                                props: {
+                                    events: data.events,
+                                    autoPlay: true,
+                                },
+                            });
+                            console.log('[Replay] Player initialized successfully');
+                        } catch (playerErr) {
+                            console.error('[Replay] Player init error:', playerErr);
+                            toast.error('Fehler beim Initialisieren του Player');
+                        }
+                    } else if (!container) {
+                        console.error('[Replay] Container #replay-player not found in DOM');
+                    } else {
+                        console.error('[Replay] rrwebPlayer not found on window');
+                        toast.error('Video-Player Bibliothek nicht geladen. Bitte Seite neu laden.');
                     }
-                }, 500);
+                }, 1000);
             } else {
+                console.warn('[Replay] No events found in response');
                 toast.error('Keine Video-Daten für diese Sitzung gefunden');
                 setIsReplayOpen(false);
             }
         } catch (err) {
+            console.error('[Replay] Fetch error:', err);
             toast.error('Fehler beim Laden');
             setIsReplayOpen(false);
         } finally {

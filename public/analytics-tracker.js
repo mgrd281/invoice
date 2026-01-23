@@ -144,29 +144,49 @@
     let rrwebEvents = [];
 
     const loadRRWeb = () => {
-        if (window.rrweb) return startRecording();
+        if (window.rrweb) {
+            console.log('[Analytics] rrweb already loaded');
+            return startRecording();
+        }
+        console.log('[Analytics] Loading rrweb...');
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.js';
-        script.onload = startRecording;
+        script.onload = () => {
+            console.log('[Analytics] rrweb script loaded successfully');
+            startRecording();
+        };
+        script.onerror = (err) => console.error('[Analytics] Failed to load rrweb script', err);
         document.head.appendChild(script);
     };
 
     const startRecording = () => {
-        if (!window.rrweb) return;
-        window.rrweb.record({
-            emit(event) {
-                rrwebEvents.push(event);
-                if (rrwebEvents.length > 50) flushEvents();
-            },
-        });
+        if (!window.rrweb) {
+            console.error('[Analytics] rrweb global not found even after load');
+            return;
+        }
+        console.log('[Analytics] Starting rrweb recording session:', sessionId);
+        try {
+            window.rrweb.record({
+                emit(event) {
+                    rrwebEvents.push(event);
+                    if (rrwebEvents.length >= 50) {
+                        console.log('[Analytics] Auto-flushing 50 events');
+                        flushEvents();
+                    }
+                },
+            });
+        } catch (e) {
+            console.error('[Analytics] rrweb record error:', e);
+        }
     };
 
     const flushEvents = async () => {
         if (rrwebEvents.length === 0) return;
         const eventsToSend = [...rrwebEvents];
         rrwebEvents = [];
+        console.log(`[Analytics] Flushing ${eventsToSend.length} events to ${RECORD_ENDPOINT}`);
         try {
-            await fetch(RECORD_ENDPOINT, {
+            const resp = await fetch(RECORD_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
@@ -177,7 +197,10 @@
                 }),
                 keepalive: true
             });
-        } catch (e) { }
+            if (!resp.ok) console.warn('[Analytics] Flush failed with status:', resp.status);
+        } catch (e) {
+            console.error('[Analytics] Flush error:', e);
+        }
     };
 
     // Auto-flush every 10 seconds

@@ -14,6 +14,7 @@ export async function GET(
         }
 
         const sessionId = params.id;
+        console.log('[Recording Fetch] Fetching events for session:', sessionId);
 
         // Fetch all recording chunks for this session
         const recordings = await prisma.sessionRecording.findMany({
@@ -21,8 +22,12 @@ export async function GET(
             orderBy: { createdAt: 'asc' }
         });
 
+        console.log(`[Recording Fetch] Found ${recordings.length} chunks for session: ${sessionId}`);
+
         // Flatten all events into a single array
         const allEvents = recordings.flatMap((r: any) => r.data as any[]);
+
+        console.log(`[Recording Fetch] Total events flattened: ${allEvents.length}`);
 
         return NextResponse.json({
             success: true,

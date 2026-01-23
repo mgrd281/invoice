@@ -17,8 +17,11 @@ export async function POST(req: NextRequest) {
         });
 
         if (!session) {
+            console.error('[Recording API] Session not found for rawSessionId:', rawSessionId);
             return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
+
+        console.log(`[Recording API] Storing ${events.length} events for session: ${session.id}`);
 
         // Store Recording Chunk
         await prisma.sessionRecording.create({
