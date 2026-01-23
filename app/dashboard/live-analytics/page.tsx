@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +14,7 @@ import {
     Tablet,
     Globe,
     Clock,
+    ArrowLeft,
     ArrowRight,
     MousePointer2,
     Eye,
@@ -170,7 +173,7 @@ export default function LiveAnalyticsPage() {
         if (session.isReturning) icons.push(<RotateCcw key="ret" className="h-3 w-3 text-blue-500" />);
 
         const eventTypes = session.events?.map((e: any) => e.type) || [];
-        if (eventTypes.has('rage_click')) icons.push(<AlertTriangle key="rage" className="h-3 w-3 text-red-500" />);
+        if (eventTypes.includes('rage_click')) icons.push(<AlertTriangle key="rage" className="h-3 w-3 text-red-500" />);
 
         const pageViews = session.events?.filter((e: any) => e.type === 'page_view').length || 0;
         if (pageViews > 3) icons.push(<Zap key="fast" className="h-3 w-3 text-amber-500" />);
