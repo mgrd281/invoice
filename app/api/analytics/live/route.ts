@@ -87,8 +87,11 @@ export async function GET(request: NextRequest) {
             if (eventTypes.has('view_product')) funnel.products++;
         });
 
+        const uniqueVisitorIds = new Set(liveSessions.map((s: any) => s.visitorId));
+
         return NextResponse.json({
             count: liveSessions.length,
+            uniqueCount: uniqueVisitorIds.size,
             sessions: liveSessions,
             funnel,
             intentStats

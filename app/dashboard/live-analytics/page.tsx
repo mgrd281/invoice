@@ -85,6 +85,30 @@ function LiveAnalyticsContent() {
     const [isReplayOpen, setIsReplayOpen] = useState(false);
     const [replayEvents, setReplayEvents] = useState<any[]>([]);
     const [loadingReplay, setLoadingReplay] = useState(false);
+    const [visitorHistory, setVisitorHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const fetchVisitorHistory = async (visitorId: string) => {
+        if (!visitorId) return;
+        setLoadingHistory(true);
+        try {
+            const res = await fetch(`/api/analytics/visitors/${visitorId}/sessions`);
+            const data = await res.json();
+            setVisitorHistory(data.sessions || []);
+        } catch (err) {
+            console.error('Failed to fetch visitor history', err);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedSession?.visitorId) {
+            fetchVisitorHistory(selectedSession.visitorId);
+        } else {
+            setVisitorHistory([]);
+        }
+    }, [selectedSession?.visitorId]);
 
     const handleUpdateVisitorId = async () => {
         if (!selectedSession?.visitor?.id) return;
@@ -387,7 +411,7 @@ function LiveAnalyticsContent() {
                         </button>
                         <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
                             <div className="h-2 w-2 rounded-full bg-green-500" />
-                            {liveData?.count || 0} Aktive Besucher
+                            {liveData?.uniqueCount || 0} Aktive Besucher {(liveData?.count > liveData?.uniqueCount) && `(${liveData.count} Tabs)`}
                         </div>
                     </div>
                 </div>
@@ -400,7 +424,7 @@ function LiveAnalyticsContent() {
                             <div className="p-2 bg-blue-50 rounded-lg"><Users className="h-5 w-5 text-blue-600" /></div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase">Live Besucher</p>
-                                <p className="text-2xl font-bold">{liveData?.count || 0}</p>
+                                <p className="text-2xl font-bold">{liveData?.uniqueCount || 0}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -877,6 +901,55 @@ function LiveAnalyticsContent() {
                                                     </div>
                                                 </div>
                                             )}
+                                            {/* Visitor History */}
+                                            {visitorHistory.length > 1 && (
+                                                <div className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <History className="h-4 w-4 text-slate-400" />
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Besuchsverlauf ({visitorHistory.length})</h4>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        {visitorHistory.map((h: any) => (
+                                                            <div
+                                                                key={h.id}
+                                                                onClick={() => {
+                                                                    // If they click a past session that isn't currently displayed, we could potentially switch to it
+                                                                    // For now just show info
+                                                                }}
+                                                                className={`p-3 rounded-xl border transition-all cursor-default ${h.id === selectedSession.id ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-100' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                                                            >
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <span className="text-[10px] font-bold text-slate-700">{new Date(h.startTime).toLocaleDateString()}</span>
+                                                                    {h.id === selectedSession.id && <Badge className="text-[8px] h-3.5 bg-blue-600">AKTUELL</Badge>}
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                                                                        <Clock className="h-2.5 w-2.5" />
+                                                                        {new Date(h.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    </div>
+                                                                    <div className="text-[10px] font-mono text-slate-400">
+                                                                        {h._count?.events || 0} Events
+                                                                    </div>
+                                                                </div>
+                                                                <div className="mt-2 flex items-center justify-between">
+                                                                    {h.purchaseStatus === 'PAID' ? (
+                                                                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[8px] h-3.5 border-emerald-200">GEKAUFT</Badge>
+                                                                    ) : h.intentScore > 30 ? (
+                                                                        <Badge variant="outline" className="text-[8px] h-3.5 border-amber-200 text-amber-600 bg-amber-50">INTERESSE</Badge>
+                                                                    ) : (
+                                                                        <Badge variant="outline" className="text-[8px] h-3.5 border-slate-200 text-slate-400 font-normal">STÖBERN</Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2 mb-6">
+                                                <Activity className="h-4 w-4 text-blue-500" />
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Aktuelle Sitzung Timeline</h4>
+                                            </div>
 
                                             {/* All Events Timeline */}
                                             {selectedSession.events?.map((event: any, i: number) => (

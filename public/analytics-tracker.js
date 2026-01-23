@@ -52,12 +52,21 @@
         }
     };
 
-    const visitorToken = getOrGenerateToken('v_token');
-    let sessionId = sessionStorage.getItem('s_id');
+    const getUrlParam = (name) => {
+        try {
+            return new URLSearchParams(window.location.search).get(name);
+        } catch (e) { return null; }
+    };
+
+    const visitorToken = getUrlParam('v_token') || getOrGenerateToken('v_token');
+    let sessionId = getUrlParam('s_id') || sessionStorage.getItem('s_id');
     if (!sessionId) {
         sessionId = getOrGenerateToken('s_id', 16);
         try { sessionStorage.setItem('s_id', sessionId); } catch (e) { }
     }
+    // Ensure tokens are synced to storage if they came from URL
+    if (getUrlParam('v_token')) setCookie('v_token', visitorToken, 365);
+    if (getUrlParam('s_id')) try { sessionStorage.setItem('s_id', sessionId); } catch (e) { }
 
     const getUtms = () => {
         try {
@@ -309,6 +318,14 @@
 
             if (isCheckout) {
                 track('start_checkout', { method: 'click', label: target.textContent?.trim() });
+
+                // Cross-domain continuity: Append tokens to checkout URL if it's a link
+                if (target.tagName === 'A' && target.href && !target.href.includes('v_token=')) {
+                    const url = new URL(target.href, window.location.origin);
+                    url.searchParams.set('v_token', visitorToken);
+                    url.searchParams.set('s_id', sessionId);
+                    target.href = url.toString();
+                }
             }
         });
     }
