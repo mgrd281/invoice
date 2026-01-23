@@ -82,6 +82,7 @@
         sessionStorage.setItem('s_id', sessionId);
     }
 
+    const now = Date.now();
     // Always update last active on script load
     localStorage.setItem('s_last_active', now.toString());
 
