@@ -242,16 +242,24 @@ function LiveAnalyticsContent() {
 
             // Auto-select session if nothing selected or refresh selected one
             if (filteredSessions.length > 0 && !selectedSession) {
-                setSelectedSession(filteredSessions[0]);
+                // Only auto-select if we are in the Live view to provide a starting point
+                if (!filterType || filterType === 'live') {
+                    setSelectedSession(filteredSessions[0]);
+                }
             } else if (selectedSession) {
                 const isStillInList = filteredSessions.some((s: any) => s.id === selectedSession.id);
                 if (isStillInList) {
                     const updated = filteredSessions.find((s: any) => s.id === selectedSession.id);
                     if (updated) setSelectedSession(updated);
-                } else if (filterType === 'live') {
-                    // Critical: If the visitor is gone and we are in Live filter, clear the right-side profile
+                } else if (!filterType || filterType === 'live') {
+                    // Logic: If we are in the "Live" tab (default or explicit), 
+                    // and the session is no longer in the filtered list (which means it's not ACTIVE/Live anymore),
+                    // then we must clear the right panel to avoid "ghost" profiles.
                     setSelectedSession(null);
                 }
+            } else if (filteredSessions.length === 0 && (!filterType || filterType === 'live')) {
+                // If the list becomes empty and we are in Live view, ensure panel is cleared
+                setSelectedSession(null);
             }
         } catch (err) {
             console.error('Failed to fetch live data', err);
