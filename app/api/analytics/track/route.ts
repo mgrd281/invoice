@@ -35,7 +35,12 @@ export async function POST(req: NextRequest) {
         const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
 
         // Mask IP for privacy (GDPR)
-        const maskedIp = ip.split('.').slice(0, 3).join('.') + '.0';
+        let maskedIp = '0.0.0.0';
+        if (ip.includes('.')) {
+            maskedIp = ip.split('.').slice(0, 3).join('.') + '.0';
+        } else if (ip.includes(':')) {
+            maskedIp = ip.split(':').slice(0, 3).join(':') + '::0';
+        }
         const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
 
         const deviceInfo = parseDeviceInfo(ua);

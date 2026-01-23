@@ -66,11 +66,16 @@
                 organizationId = document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID;
             }
 
-            if (!organizationId) return;
+            if (!organizationId) {
+                console.warn('[Analytics] Organization ID missing. Tracking paused.');
+                return;
+            }
         }
 
+        console.log(`[Analytics] Event: ${event}`, metadata);
+
         try {
-            await fetch(TRACKER_ENDPOINT, {
+            const response = await fetch(TRACKER_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
@@ -86,8 +91,12 @@
                 }),
                 keepalive: true
             });
+
+            if (!response.ok) {
+                console.error('[Analytics] Send failed with status:', response.status);
+            }
         } catch (e) {
-            // Fallback for older browsers or fetch failures
+            console.error('[Analytics] Network error:', e.message);
         }
     };
 
