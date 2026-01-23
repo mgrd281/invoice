@@ -122,6 +122,11 @@
             }
         }
 
+        // Sync session to Shopify cart attributes if not already done in this page view
+        if (!window._sessionSynced) {
+            syncSessionToShopify();
+        }
+
         console.log(`[Analytics] Event: ${event}`, metadata);
 
         const payload = JSON.stringify({
@@ -345,4 +350,23 @@
     });
 
     window.Analytics = { track };
+    const syncSessionToShopify = async () => {
+        if (window._sessionSynced) return;
+        try {
+            await fetch('/cart/update.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    attributes: {
+                        '_visitor_session_id': sessionId,
+                        '_visitor_token': visitorToken
+                    }
+                })
+            });
+            window._sessionSynced = true;
+            console.log('[Analytics] Session synced to Shopify cart attributes');
+        } catch (e) {
+            console.error('[Analytics] Failed to sync session to Shopify', e);
+        }
+    };
 })();
