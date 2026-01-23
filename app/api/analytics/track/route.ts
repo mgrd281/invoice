@@ -54,9 +54,24 @@ export async function POST(req: NextRequest) {
         const deviceInfo = parseDeviceInfo(ua);
 
         // Geo-IP Extraction (Best effort from headers)
-        const country = req.headers.get('cf-ipcountry') || req.headers.get('x-vercel-ip-country') || 'DE';
-        const city = req.headers.get('cf-ipcity') || req.headers.get('x-vercel-ip-city') || undefined;
-        const region = req.headers.get('cf-region') || req.headers.get('x-vercel-ip-region') || undefined;
+        let country = req.headers.get('cf-ipcountry') || req.headers.get('x-vercel-ip-country') || 'DE';
+        let city = req.headers.get('cf-ipcity') || req.headers.get('x-vercel-ip-city') || undefined;
+        let region = req.headers.get('cf-region') || req.headers.get('x-vercel-ip-region') || undefined;
+
+        // Fallback Geo-IP for local/non-proxy development
+        if (!city && ip !== '0.0.0.0' && !ip.startsWith('127.') && !ip.startsWith('192.168.')) {
+            try {
+                const geoResp = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,countryCode,regionName,city`);
+                const geoData = await geoResp.json();
+                if (geoData.status === 'success') {
+                    city = geoData.city;
+                    region = geoData.regionName;
+                    country = geoData.countryCode;
+                }
+            } catch (e) {
+                console.error('[Geo Fallback] Failed:', e);
+            }
+        }
 
         // Traffic Source Classification Logic
         const getTrafficSource = () => {

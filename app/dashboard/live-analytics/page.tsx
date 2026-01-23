@@ -51,8 +51,17 @@ import {
     BrainCircuit,
     Lock,
     Unlock,
-    Edit2
+    Edit2,
+    Play,
+    Video,
+    RefreshCw
 } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth-compat';
@@ -72,6 +81,9 @@ function LiveAnalyticsContent() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [isEditingId, setIsEditingId] = useState(false);
     const [customIdValue, setCustomIdValue] = useState('');
+    const [isReplayOpen, setIsReplayOpen] = useState(false);
+    const [replayEvents, setReplayEvents] = useState<any[]>([]);
+    const [loadingReplay, setLoadingReplay] = useState(false);
 
     const handleUpdateVisitorId = async () => {
         if (!selectedSession?.visitor?.id) return;

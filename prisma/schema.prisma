@@ -932,6 +932,7 @@ model VisitorSession {
   isVip          Boolean        @default(false)
   adminNotes     String?
   events         SessionEvent[]
+  recordings     SessionRecording[]
   organization   Organization   @relation("OrganizationToVisitorSessions", fields: [organizationId], references: [id])
   visitor        Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
@@ -955,6 +956,16 @@ model SessionEvent {
   @@index([sessionId])
   @@index([type])
   @@index([timestamp])
+}
+
+model SessionRecording {
+  id        String         @id @default(uuid())
+  sessionId String
+  data      Json           // Array of rrweb events
+  createdAt DateTime       @default(now())
+  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 enum UserRole {

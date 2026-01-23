@@ -139,9 +139,54 @@
         } catch (e) { }
     };
 
+    // Session Recording Logic (rrweb Integration)
+    const RECORD_ENDPOINT = baseOrigin ? `${baseOrigin}/api/analytics/record` : '/api/analytics/record';
+    let rrwebEvents = [];
+
+    const loadRRWeb = () => {
+        if (window.rrweb) return startRecording();
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.js';
+        script.onload = startRecording;
+        document.head.appendChild(script);
+    };
+
+    const startRecording = () => {
+        if (!window.rrweb) return;
+        window.rrweb.record({
+            emit(event) {
+                rrwebEvents.push(event);
+                if (rrwebEvents.length > 50) flushEvents();
+            },
+        });
+    };
+
+    const flushEvents = async () => {
+        if (rrwebEvents.length === 0) return;
+        const eventsToSend = [...rrwebEvents];
+        rrwebEvents = [];
+        try {
+            await fetch(RECORD_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                mode: 'cors',
+                body: JSON.stringify({
+                    sessionId,
+                    organizationId,
+                    events: eventsToSend
+                }),
+                keepalive: true
+            });
+        } catch (e) { }
+    };
+
+    // Auto-flush every 10 seconds
+    setInterval(flushEvents, 10000);
+
     // Initial Tracking
-    track('tracker_loaded', { version: '2.1.0' });
+    track('tracker_loaded', { version: '2.2.0' });
     track('page_view');
+    loadRRWeb();
 
     // Heartbeat every 15 seconds
     setInterval(() => track('heartbeat'), 15000);
@@ -158,6 +203,7 @@
     // Proactive Exit Tracking
     window.addEventListener('beforeunload', () => {
         track('session_ended', { reason: 'tab_closed' });
+        flushEvents();
     });
 
     // Track Product View (Enhanced for Shopify)
