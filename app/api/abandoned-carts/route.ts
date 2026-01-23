@@ -3,14 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { log } from '@/lib/logger'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { DEFAULT_SHOPIFY_SETTINGS } from '@/lib/shopify-settings'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { auth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: Request) {
     try {
-        const session = await getServerSession(authOptions)
+        const session = await auth()
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }

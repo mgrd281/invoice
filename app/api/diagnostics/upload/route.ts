@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { writeFile } from 'fs/promises'
 import path from 'path'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { auth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
     try {
-        const session = await getServerSession(authOptions)
+        const session = await auth()
         if (!session) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
