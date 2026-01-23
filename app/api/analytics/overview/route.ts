@@ -13,16 +13,23 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: sessionAuth.user.email! },
-            select: { organizationId: true, role: true }
-        });
+        const organizationId = (sessionAuth.user as any).organizationId;
+        const isAdmin = (sessionAuth.user as any).isAdmin;
 
-        if (!user?.organizationId && user?.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+        if (!organizationId && !isAdmin) {
+            // Fallback for old sessions or missing info
+            const user = await prisma.user.findUnique({
+                where: { email: sessionAuth.user.email! },
+                select: { organizationId: true, role: true }
+            });
+
+            if (!user?.organizationId && user?.role !== 'ADMIN') {
+                return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+            }
+
+            // @ts-ignore
+            organizationId = user?.organizationId;
         }
-
-        const organizationId = user?.organizationId;
         const searchParams = request.nextUrl.searchParams
         const fromStr = searchParams.get('from')
         const toStr = searchParams.get('to')
@@ -56,7 +63,7 @@ export async function GET(request: NextRequest) {
         // 1. Fetch Sessions and Events within range
         const sessions = await prisma.visitorSession.findMany({
             where: {
-                organizationId: user?.role === 'ADMIN' ? undefined : (organizationId || undefined),
+                organizationId: isAdmin ? undefined : (organizationId || undefined),
                 createdAt: {
                     gte: startDate,
                     lte: endDate
@@ -74,7 +81,7 @@ export async function GET(request: NextRequest) {
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
         const activeVisitors = await prisma.visitorSession.count({
             where: {
-                organizationId: user?.role === 'ADMIN' ? undefined : (organizationId || undefined),
+                organizationId: isAdmin ? undefined : (organizationId || undefined),
                 lastActiveAt: { gte: thirtyMinutesAgo },
                 status: 'ACTIVE'
             }

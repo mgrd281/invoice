@@ -205,7 +205,7 @@ export default function AnalyticsDashboard() {
                 />
                 <KPICard
                     title="Conversion Rate"
-                    value={`${data?.kpis.conversionRate}%`}
+                    value={`${data?.kpis?.conversionRate ?? 0}%`}
                     icon={<Zap className="h-5 w-5" />}
                     color="amber"
                     description="Bestellabschluss"
@@ -217,14 +217,14 @@ export default function AnalyticsDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-2 flex flex-col justify-center">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ø Sitzungsdauer</p>
-                    <p className="text-2xl font-bold">{formatDuration(data?.kpis.avgSessionDuration)}</p>
+                    <p className="text-2xl font-bold">{formatDuration(data?.kpis?.avgSessionDuration ?? 0)}</p>
                     <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" /> Zeit pro Besuch
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-2 flex flex-col justify-center">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Seiten / Sitzung</p>
-                    <p className="text-2xl font-bold">{data?.kpis.pagesPerSession}</p>
+                    <p className="text-2xl font-bold">{data?.kpis?.pagesPerSession ?? 0}</p>
                     <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Monitor className="h-3 w-3" /> Browsing Tiefe
                     </div>
@@ -235,9 +235,9 @@ export default function AnalyticsDashboard() {
                 >
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Absprungrate (Bounce)</p>
                     <div className="flex items-end gap-2">
-                        <p className="text-2xl font-bold">{data?.kpis.bounceRate}%</p>
-                        <Badge variant={data?.kpis.bounceRate > 50 ? "destructive" : "secondary"} className="mb-1 text-[9px] h-4">
-                            {data?.kpis.bounceRate > 50 ? 'Kritisch' : 'Gut'}
+                        <p className="text-2xl font-bold">{data?.kpis?.bounceRate ?? 0}%</p>
+                        <Badge variant={(data?.kpis?.bounceRate ?? 0) > 50 ? "destructive" : "secondary"} className="mb-1 text-[9px] h-4">
+                            {(data?.kpis?.bounceRate ?? 0) > 50 ? 'Kritisch' : 'Gut'}
                         </Badge>
                     </div>
                     <div className="text-[10px] text-muted-foreground flex items-center gap-1">

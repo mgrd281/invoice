@@ -12,23 +12,27 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email! },
-            select: { organizationId: true, role: true }
-        });
+        let organizationId = (session.user as any).organizationId;
+        const isAdmin = (session.user as any).isAdmin;
 
-        if (!user?.organizationId && user?.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+        if (!organizationId && !isAdmin) {
+            const user = await prisma.user.findUnique({
+                where: { email: session.user.email! },
+                select: { organizationId: true, role: true }
+            });
+
+            if (!user?.organizationId && user?.role !== 'ADMIN') {
+                return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+            }
+            organizationId = user?.organizationId;
         }
-
-        const organizationId = user?.organizationId;
 
         // --- Smart Cleanup: End stale sessions ---
         // A session is considered "Ended/Abandoned" if no heartbeat for 90 seconds
         const cleanupThreshold = new Date(Date.now() - 90 * 1000);
         await prisma.visitorSession.updateMany({
             where: {
-                organizationId: user?.role === 'ADMIN' ? undefined : organizationId,
+                organizationId: isAdmin ? undefined : (organizationId || undefined),
                 status: 'ACTIVE',
                 lastActiveAt: {
                     lt: cleanupThreshold
@@ -44,7 +48,7 @@ export async function GET(request: NextRequest) {
 
         const liveSessions = await prisma.visitorSession.findMany({
             where: {
-                organizationId: user?.role === 'ADMIN' ? undefined : organizationId,
+                organizationId: isAdmin ? undefined : (organizationId || undefined),
                 status: 'ACTIVE',
                 lastActiveAt: {
                     gte: liveThreshold

@@ -23,6 +23,7 @@ import {
     AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -65,6 +66,7 @@ export default function DigitalProductsPage() {
     // Delete State
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'all', id?: string, shopifyId?: string } | null>(null)
+    const { data: session } = useSession()
     const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
@@ -111,7 +113,7 @@ export default function DigitalProductsPage() {
                 body: JSON.stringify({
                     title: product.title,
                     shopifyProductId: String(product.id),
-                    organizationId: 'default-org-id'
+                    organizationId: (session?.user as any)?.organizationId || 'default-org-id'
                 })
             })
 
