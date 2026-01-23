@@ -41,6 +41,7 @@ const publicRoutes = [
     '/api/auth/register',
     '/api/auth/gate', // Auth verification endpoint
     '/api/reviews/public', // Public reviews fetching
+    '/api/analytics/track', // Public analytics tracking
 ]
 
 export async function middleware(request: NextRequest) {
