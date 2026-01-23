@@ -31,6 +31,14 @@ export async function POST(req: NextRequest) {
             }
         });
 
+        // Update recording status on the session if it's not already AVAILABLE
+        if (session.recordingStatus !== 'AVAILABLE') {
+            await prisma.visitorSession.update({
+                where: { id: session.id },
+                data: { recordingStatus: 'AVAILABLE' }
+            });
+        }
+
         const response = NextResponse.json({ success: true });
         response.headers.set('Access-Control-Allow-Origin', '*');
         return response;
