@@ -115,25 +115,33 @@
 
         console.log(`[Analytics] Event: ${event}`, metadata);
 
+        const payload = JSON.stringify({
+            event,
+            url: window.location.href,
+            path: window.location.pathname,
+            visitorToken,
+            sessionId,
+            organizationId,
+            isReturning,
+            cartToken: getCartToken(),
+            checkoutToken: window.Shopify?.Checkout?.token || window.Shopify?.checkout?.token || window.ShopifyAnalytics?.lib?.user()?.traits()?.checkoutToken,
+            referrer: document.referrer,
+            ...getUtms(),
+            metadata
+        });
+
+        if (metadata?.isUnloading && navigator.sendBeacon) {
+            console.log(`[Analytics] Using sendBeacon for ${event}`);
+            navigator.sendBeacon(TRACKER_ENDPOINT, payload);
+            return;
+        }
+
         try {
-            const response = await fetch(TRACKER_ENDPOINT, {
+            await fetch(TRACKER_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
-                body: JSON.stringify({
-                    event,
-                    url: window.location.href,
-                    path: window.location.pathname,
-                    visitorToken,
-                    sessionId,
-                    organizationId,
-                    isReturning,
-                    cartToken: getCartToken(),
-                    checkoutToken: window.Shopify?.Checkout?.token || window.Shopify?.checkout?.token || window.ShopifyAnalytics?.lib?.user()?.traits()?.checkoutToken,
-                    referrer: document.referrer,
-                    ...getUtms(),
-                    metadata
-                }),
+                body: payload,
                 keepalive: true
             });
         } catch (e) { }
@@ -231,9 +239,19 @@
     });
 
     // Proactive Exit Tracking
-    window.addEventListener('beforeunload', () => {
-        track('session_ended', { reason: 'tab_closed' });
+    const handleExit = () => {
+        console.log('[Analytics] Exit detected, sending session_ended');
+        track('session_ended', { reason: 'exit', isUnloading: true });
         flushEvents(true);
+    };
+
+    window.addEventListener('pagehide', handleExit);
+    window.addEventListener('beforeunload', (e) => {
+        // Fallback for some browsers, but don't double-track if pagehide already fired
+        if (!window._exitTracked) {
+            window._exitTracked = true;
+            handleExit();
+        }
     });
 
     // Track Product View (Enhanced for Shopify)
