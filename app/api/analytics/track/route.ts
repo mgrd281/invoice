@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
             update: {
                 lastActiveAt: new Date(),
                 exitUrl: url,
-                status: 'ACTIVE',
+                status: event === 'session_ended' ? 'ENDED' : 'ACTIVE',
                 intentScore: { increment: scoreBoost },
                 cartToken: cartToken || undefined,
                 checkoutToken: checkoutToken || undefined,
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
                 sessionId,
                 visitorId: visitor.id,
                 organizationId,
-                status: 'ACTIVE',
+                status: event === 'session_ended' ? 'ENDED' : 'ACTIVE',
                 referrer,
                 entryUrl: url,
                 deviceType: deviceInfo.device.toLowerCase(),

@@ -237,13 +237,22 @@ function LiveAnalyticsContent() {
         }
     };
 
-    const getStatusBadge = (status: string, purchaseStatus: string) => {
-        if (purchaseStatus === 'PAID' || status === 'PAID') {
+    const getStatusBadge = (session: any) => {
+        const timeSinceActive = Date.now() - new Date(session.lastActiveAt).getTime();
+        const isEnded = session.status === 'ENDED';
+
+        if (session.purchaseStatus === 'PAID') {
             return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] flex items-center gap-1 font-bold"><CheckCircle2 className="h-2.5 w-2.5" /> BEZAHLT</Badge>;
         }
-        if (status === 'ENDED') {
+
+        if (isEnded) {
             return <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 text-[10px] font-bold">VERLASSEN</Badge>;
         }
+
+        if (timeSinceActive > 60000) {
+            return <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] font-bold">ABWESEND</Badge>;
+        }
+
         return <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] animate-pulse font-bold">LIVE</Badge>;
     };
 
@@ -422,9 +431,9 @@ function LiveAnalyticsContent() {
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
                                                         {getDeviceIcon(session.deviceType)}
-                                                        <span className="font-medium text-sm flex items-center gap-1">
+                                                        <span className="font-black text-sm flex items-center gap-1 text-slate-900 capitalize">
+                                                            {session.city ? `${session.city}, ` : ''}
                                                             {session.visitor?.country || 'DE'}
-                                                            {session.city && <span className="text-slate-400 font-normal">({session.city})</span>}
                                                         </span>
                                                         <Badge variant="outline" className="text-[10px] font-mono bg-slate-50 max-w-[80px] truncate">
                                                             #{session.visitor?.customIdentifier || session.visitor?.id?.substring(0, 4).toUpperCase() || '????'}
@@ -446,9 +455,7 @@ function LiveAnalyticsContent() {
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {getIntentBadge(session.intentLabel)}
-                                                        <Badge variant="outline" className="text-[10px]">
-                                                            {formatDistanceToNow(new Date(session.lastActiveAt), { addSuffix: true, locale: de })}
-                                                        </Badge>
+                                                        {getStatusBadge(session)}
                                                     </div>
                                                 </div>
                                                 <div className="text-xs text-muted-foreground truncate mb-1">
@@ -678,7 +685,7 @@ function LiveAnalyticsContent() {
                                                         </div>
                                                         <div className="text-right">
                                                             <div className="text-[10px] text-muted-foreground uppercase font-bold">Status</div>
-                                                            {getStatusBadge(selectedSession.status, selectedSession.purchaseStatus)}
+                                                            {getStatusBadge(selectedSession)}
                                                         </div>
                                                     </div>
 
