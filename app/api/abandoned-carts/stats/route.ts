@@ -34,26 +34,22 @@ export async function GET(req: NextRequest) {
         else if (range === '30d') startDate = subDays(new Date(), 30);
         else if (range === 'all') startDate = new Date(0);
 
-        // 3. Fetch cart-related events in the range
-        // We look for both 'add_to_cart' and 'update_cart' since many themes only trigger update
-        const events = await prisma.sessionEvent.findMany({
+        // 3. Fetch active AbandonedCarts in the range
+        // We use AbandonedCart.updatedAt and lineItems to get THE CURRENT state
+        const activeCarts = await prisma.abandonedCart.findMany({
             where: {
-                session: { organizationId: orgId },
-                type: { in: ['add_to_cart', 'update_cart'] },
-                timestamp: { gte: startDate }
+                organizationId: orgId,
+                updatedAt: { gte: startDate },
+                isRecovered: false // Generally only show non-recovered for "Abandoned" stats
             },
             select: {
-                sessionId: true,
-                metadata: true,
-                type: true,
-                timestamp: true
-            },
-            orderBy: { timestamp: 'asc' }
+                lineItems: true,
+                totalPrice: true
+            }
         });
 
-        // 4. Aggregate Stats with Deduplication
-        // Strategy: Track the "items ever seen" in each session to derive total additions
-        let totalItemsAdded = 0;
+        // 4. Aggregate Current Stats
+        let totalItemsInCarts = 0;
         const uniqueProductsGlobal = new Set<string>();
         const productStats: Record<string, {
             title: string;
@@ -62,59 +58,38 @@ export async function GET(req: NextRequest) {
             productId: string;
         }> = {};
 
-        // Track what we've already counted as "added" for each session to avoid double-counting snapshots
-        const sessionSeenItems = new Map<string, Set<string>>();
-
-        events.forEach(event => {
-            const meta = event.metadata as any;
-            if (!meta) return;
-
-            const cartData = meta.cart || meta;
-            const items = Array.isArray(cartData.items) ? cartData.items :
-                (cartData.product ? [cartData.product] : []);
-
-            if (!sessionSeenItems.has(event.sessionId)) {
-                sessionSeenItems.set(event.sessionId, new Set());
-            }
-            const seenInThisSession = sessionSeenItems.get(event.sessionId)!;
+        activeCarts.forEach(cart => {
+            const items = Array.isArray(cart.lineItems) ? cart.lineItems : [];
 
             items.forEach((item: any) => {
                 const productId = (item.product_id || item.id || 'unknown').toString();
-                const variantId = (item.variant_id || '').toString();
-                const key = `${productId}-${variantId}`;
+                const qty = parseInt(item.quantity || item.qty || 1);
+                const title = item.title || 'Produkt';
+                const image = item.image?.src || (typeof item.image === 'string' ? item.image : '');
 
-                // If we haven't seen this item in this session yet, or if its quantity increased
-                // (Simplification: we count unique product-variant occurrences as "additions" for global stats)
-                if (!seenInThisSession.has(key)) {
-                    const qty = parseInt(item.quantity || item.qty || 1);
-                    const title = item.title || 'Produkt';
-                    const image = item.image?.src || (typeof item.image === 'string' ? item.image : '');
+                totalItemsInCarts += qty;
+                uniqueProductsGlobal.add(productId);
 
-                    totalItemsAdded += qty;
-                    uniqueProductsGlobal.add(productId);
-
-                    if (!productStats[productId]) {
-                        productStats[productId] = {
-                            productId,
-                            title,
-                            image,
-                            count: 0
-                        };
-                    }
-                    productStats[productId].count += qty;
-                    seenInThisSession.add(key);
+                if (!productStats[productId]) {
+                    productStats[productId] = {
+                        productId,
+                        title,
+                        image,
+                        count: 0
+                    };
                 }
+                productStats[productId].count += qty;
             });
         });
 
-        // 5. Format Top Products (Expanded to 20)
+        // 5. Format Top Products (Sorted by current occupancy)
         const topProductsItems = Object.values(productStats)
             .sort((a, b) => b.count - a.count)
             .slice(0, 20);
 
         return NextResponse.json({
             stats: {
-                totalItemsAdded,
+                totalItemsAdded: totalItemsInCarts, // "Hinzugefügte Artikel" represents current state now
                 uniqueProductsCount: uniqueProductsGlobal.size,
                 topProducts: topProductsItems
             }
