@@ -1491,7 +1491,9 @@ function LiveAnalyticsContent() {
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Dauer</span>
-                                                <span className="font-black">{Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.</span>
+                                                <span className="font-black">
+                                                    {durationMin > 0 ? `${durationMin} Min.` : `${durationSec} Sek.`}
+                                                </span>
                                             </div>
                                         </div>
 
@@ -1510,7 +1512,8 @@ function LiveAnalyticsContent() {
                                         </div>
                                     </CardContent>
                                 </Card>
-                            ))}
+                            );
+                        })}
 
                         {sessions.length === 0 && (
                             <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 italic bg-white rounded-2xl border border-dashed">
