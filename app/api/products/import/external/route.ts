@@ -165,6 +165,12 @@ export async function POST(request: NextRequest) {
             data.metaDescription = $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content')
             data.canonicalUrl = $('link[rel="canonical"]').attr('href') || sourceUrl
 
+            // Meta Image Fallback
+            const metaImg = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content')
+            if (metaImg && !data.images.some((i: any) => i.src === metaImg)) {
+                data.images.push({ src: metaImg, alt: data.title })
+            }
+
             // C. Super Metadata Extraction (Tables & Details)
             const extractedMetadata: any = {}
             $('table tr, .specification-row, .p_details__row, .product-info-row').each((_: number, el: any) => {
@@ -231,11 +237,11 @@ export async function POST(request: NextRequest) {
             else if (vendor === 'Otto') {
                 data.title = data.title || $('h1[data-qa="product-title"]').text().trim() || $('.pdp_productName').text().trim()
                 // Principal Image
-                const mainImg = $('img[id^="pdp_mainProductImage"]').first().attr('src')
+                const mainImg = $('img[id^="pdp_mainProductImage"]').first().attr('src') || $('img[id^="mainProductImage"]').first().attr('src')
                 if (mainImg) data.images.push({ src: mainImg, alt: data.title })
 
                 // Gallery Images
-                $('img.carousel__image, .pdp_product-gallery__image img').each((_: number, el: any) => {
+                $('img.carousel__image, .pdp_product-gallery__image img, .carousel li img').each((_: number, el: any) => {
                     const src = $(el).attr('data-src') || $(el).attr('src')
                     const alt = $(el).attr('alt') || data.title
                     if (src && !data.images.some((i: any) => i.src === src)) {
@@ -261,17 +267,29 @@ export async function POST(request: NextRequest) {
                 $('img').each((_: number, el: any) => {
                     const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src')
                     const alt = $(el).attr('alt') || $(el).attr('title') || data.title
-                    const width = parseInt($(el).attr('width') || '0')
-                    const height = parseInt($(el).attr('height') || '0')
 
                     if (src && !src.includes('analytics') && !src.includes('tracking') && !src.includes('base64')) {
-                        if (width > 200 || height > 200 || (!width && !height)) {
+                        // Allow if it has a high-res indicator or is common format
+                        if (src.includes('i.otto.de') || src.includes('amazon-adsystem') === false) {
                             if (!data.images.some((i: any) => i.src === src)) {
                                 data.images.push({ src, alt: alt || data.title })
                             }
                         }
                     }
                 })
+            }
+
+            // E. Regex Deep Scan for Images (Last Resort)
+            if (data.images.length === 0) {
+                const imgRegex = /"(https:\/\/i\.otto\.de\/i\/otto\/[^"]+)"/g
+                let match;
+                const htmlString = $.html()
+                while ((match = imgRegex.exec(htmlString)) !== null) {
+                    const src = match[1]
+                    if (!data.images.some((i: any) => i.src === src)) {
+                        data.images.push({ src, alt: data.title })
+                    }
+                }
             }
 
             // D. Variant Detection (Advanced)
