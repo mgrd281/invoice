@@ -538,11 +538,25 @@ export default function DashboardPage() {
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-rose-100 bg-rose-50">
                     <CardHeader>
                       <div className="w-12 h-12 bg-gradient-to-r from-rose-600 to-red-700 rounded-xl flex items-center justify-center mb-4">
-                        <ShieldAlert className="h-6 w-6 text-white" />
+                        <UserX className="h-6 w-6 text-white" />
                       </div>
                       <CardTitle className="text-xl">Blockierte Benutzer</CardTitle>
                       <CardDescription>
                         Missbrauch verhindern und Blacklist verwalten
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+
+                <Link href="/dashboard/security">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-slate-200 bg-slate-50">
+                    <CardHeader>
+                      <div className="w-12 h-12 bg-gradient-to-r from-slate-600 to-slate-800 rounded-xl flex items-center justify-center mb-4">
+                        <Lock className="h-6 w-6 text-white" />
+                      </div>
+                      <CardTitle className="text-xl">IP-Sperren</CardTitle>
+                      <CardDescription>
+                        Store-Zugriff für bestimmte IP-Adressen blockieren
                       </CardDescription>
                     </CardHeader>
                   </Card>
