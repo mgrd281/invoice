@@ -191,8 +191,8 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
-                body: payload,
-                keepalive: true
+                body: payload
+                // REMOVED keepalive: true because it prevents reading the response body
             });
             const data = await res.json();
             if (data.actions && Array.isArray(data.actions)) {
@@ -213,6 +213,10 @@
     // Block Overlay
     const showBlockOverlay = (data) => {
         if (document.getElementById('security-block-overlay')) return;
+
+        // Persist block status for this session to avoid flickering on page changes
+        sessionStorage.setItem('is_blocked', 'true');
+        if (data.reason) sessionStorage.setItem('block_reason', data.reason);
 
         const overlay = document.createElement('div');
         overlay.id = 'security-block-overlay';
@@ -238,7 +242,7 @@
             <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 16px;">Zugriff Verweigert</h1>
             <p style="font-size: 18px; opacity: 0.7; max-width: 500px; line-height: 1.6; margin-bottom: 32px;">
                 Der Zugriff auf diesen Store wurde aus Sicherheitsgründen für Ihre IP-Adresse gesperrt.<br>
-                <span style="font-size: 14px; opacity: 0.5;">Grund: ${data.reason || 'Sicherheitsrichtlinie'}</span>
+                <span style="font-size: 14px; opacity: 0.5;">Grund: ${data.reason || sessionStorage.getItem('block_reason') || 'Sicherheitsrichtlinie'}</span>
             </p>
             <div style="height: 1px; width: 100px; background: rgba(255,255,255,0.1); margin-bottom: 32px;"></div>
             <p style="font-size: 12px; opacity: 0.4;">Security Protected by invoice Enterprise</p>
@@ -255,6 +259,11 @@
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';
     };
+
+    // Immediate local check on script load
+    if (sessionStorage.getItem('is_blocked') === 'true') {
+        setTimeout(() => showBlockOverlay({ reason: sessionStorage.getItem('block_reason') }), 0);
+    }
 
     // Modern Coupon Popup
     const showCouponPopup = (data) => {
