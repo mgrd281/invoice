@@ -76,7 +76,7 @@
 </head>
 <body>
     <div class="card">
-        <h1>📄 PDF Download Fix</h1>
+        <h1>PDF PDF Download Fix</h1>
         
         <div class="invoice-info">
             <strong>Rechnung:</strong> SH-3322<br>
@@ -85,7 +85,7 @@
         </div>
         
         <button class="btn" onclick="downloadPDF()" id="downloadBtn">
-            🚀 PDF HERUNTERLADEN
+            START PDF HERUNTERLADEN
         </button>
         
         <div class="progress" id="progress" style="display: none;">
@@ -130,7 +130,7 @@
             btn.disabled = true;
             btn.innerHTML = '⏳ Generiere PDF...';
             
-            updateStatus(`🔄 Versuch ${downloadAttempts}/${maxAttempts} - PDF wird generiert...`, 'loading');
+            updateStatus(`RETRY Versuch ${downloadAttempts}/${maxAttempts} - PDF wird generiert...`, 'loading');
             updateProgress(20);
 
             try {
@@ -177,12 +177,12 @@
                         // Clean up
                         setTimeout(() => window.URL.revokeObjectURL(url), 1000);
                         
-                        updateStatus(`✅ PDF erfolgreich heruntergeladen! (${blob.size} bytes)`, 'success');
+                        updateStatus(`PDF successfully downloaded! (${blob.size} bytes)`, 'success');
                         updateProgress(0);
                         
                         btn.innerHTML = '✅ Erfolgreich!';
                         setTimeout(() => {
-                            btn.innerHTML = '🚀 PDF HERUNTERLADEN';
+                            btn.innerHTML = 'START PDF HERUNTERLADEN';
                             btn.disabled = false;
                         }, 3000);
                         
@@ -203,7 +203,7 @@
                     
                     // Retry after delay
                     setTimeout(() => {
-                        btn.innerHTML = '🔄 Erneut versuchen';
+                        btn.innerHTML = 'RETRY Erneut versuchen';
                         btn.disabled = false;
                     }, 2000);
                 } else {
@@ -215,7 +215,7 @@
         }
 
         async function tryAlternativeMethod() {
-            updateStatus('🔄 Versuche alternative Download-Methode...', 'loading');
+            updateStatus('RETRY Versuche alternative Download-Methode...', 'loading');
             
             try {
                 // Method 2: Direct window.open
@@ -225,7 +225,7 @@
                 updateStatus('✅ Alternative Methode gestartet. Prüfen Sie Ihre Downloads!', 'success');
                 
                 const btn = document.getElementById('downloadBtn');
-                btn.innerHTML = '🚀 PDF HERUNTERLADEN';
+                btn.innerHTML = 'START PDF HERUNTERLADEN';
                 btn.disabled = false;
                 
             } catch (error) {
@@ -254,7 +254,7 @@
         // Auto-start download after page load
         window.addEventListener('load', () => {
             setTimeout(() => {
-                updateStatus('🎯 Automatischer Download startet in 3 Sekunden...', 'loading');
+                updateStatus('AUTO Automatischer Download startet in 3 Sekunden...', 'loading');
                 setTimeout(downloadPDF, 3000);
             }, 1000);
         });

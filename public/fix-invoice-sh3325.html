@@ -96,10 +96,10 @@
 </head>
 <body>
     <div class="fix-container">
-        <h1>🔧 PDF Fix für Rechnung SH-3325</h1>
+        <h1>FIX PDF Fix für Rechnung SH-3325</h1>
         
         <div class="invoice-header">
-            <h3>📄 Rechnung SH-3325</h3>
+            <h3>PDF Rechnung SH-3325</h3>
             <p><strong>Kunde:</strong> E-Commerce Kunde #3325</p>
             <p><strong>Betrag:</strong> €34.80</p>
             <p><strong>Datum:</strong> 10.10.2025</p>
@@ -107,7 +107,7 @@
         </div>
         
         <button class="big-download-btn" onclick="downloadPDF()" id="downloadBtn">
-            🚀 PDF JETZT HERUNTERLADEN
+            START PDF JETZT HERUNTERLADEN
         </button>
         
         <div class="progress-container" id="progressContainer" style="display: none;">
@@ -117,16 +117,16 @@
         <div id="status"></div>
         
         <div class="alternative-links">
-            <h4>🔗 Alternative Download-Links:</h4>
+            <h4>LINK Alternative Download-Links:</h4>
             <a href="/api/invoices/inv-1760129064902-7w5jonn44/download-pdf" 
                target="_blank" class="link-btn">
-               📄 Direkter API Link
+               PDF Direkter API Link
             </a>
             <a href="javascript:void(0)" onclick="openInNewTab()" class="link-btn">
-               🔄 Neuer Tab
+               RETRY Neuer Tab
             </a>
             <a href="/emergency-pdf.html" class="link-btn">
-               🚨 Notfall-Seite
+               ALERT Notfall-Seite
             </a>
         </div>
         
@@ -167,7 +167,7 @@
             btn.disabled = true;
             btn.innerHTML = '⏳ Generiere PDF...';
             
-            updateStatus('🔄 PDF wird generiert...', 'loading');
+            updateStatus('RETRY PDF wird generiert...', 'loading');
             updateProgress(10);
             
             try {
@@ -210,11 +210,11 @@
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
                         
-                        updateStatus(`✅ PDF erfolgreich heruntergeladen! (${blob.size} bytes)`, 'success');
+                        updateStatus(`PDF successfully downloaded! (${blob.size} bytes)`, 'success');
                         btn.innerHTML = '✅ Erfolgreich!';
                         
                         setTimeout(() => {
-                            btn.innerHTML = '🚀 PDF JETZT HERUNTERLADEN';
+                            btn.innerHTML = 'START PDF JETZT HERUNTERLADEN';
                             btn.disabled = false;
                             updateProgress(0);
                         }, 3000);
@@ -230,15 +230,15 @@
             } catch (error) {
                 console.error('Download error:', error);
                 updateProgress(0);
-                updateStatus(`❌ Fehler: ${error.message}`, 'error');
+                updateStatus(`Error: ${error.message}`, 'error');
                 
                 // Try alternative method
                 setTimeout(() => {
-                    updateStatus('🔄 Versuche alternative Methode...', 'loading');
+                    updateStatus('RETRY Versuche alternative Methode...', 'loading');
                     openInNewTab();
                 }, 2000);
                 
-                btn.innerHTML = '🔄 Erneut versuchen';
+                btn.innerHTML = 'RETRY Erneut versuchen';
                 btn.disabled = false;
             }
         }
@@ -246,13 +246,13 @@
         function openInNewTab() {
             const url = `/api/invoices/${invoiceId}/download-pdf`;
             window.open(url, '_blank');
-            updateStatus('📄 PDF wird in neuem Tab geöffnet...', 'success');
+            updateStatus('PDF PDF wird in neuem Tab geöffnet...', 'success');
         }
         
         // Auto-start download after 2 seconds
         window.addEventListener('load', () => {
             setTimeout(() => {
-                updateStatus('🎯 Automatischer Download startet in 2 Sekunden...', 'loading');
+                updateStatus('AUTO Automatischer Download startet in 2 Sekunden...', 'loading');
                 setTimeout(downloadPDF, 2000);
             }, 1000);
         });

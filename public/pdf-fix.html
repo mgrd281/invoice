@@ -39,7 +39,7 @@
     <script>
         async function downloadPDF() {
             const status = document.getElementById('status');
-            status.innerHTML = '⏳ PDF wird generiert...';
+            status.innerHTML = 'PDF is being generated...';
             
             try {
                 const response = await fetch('/api/invoices/inv-1760128245502-aqq4trk4p/download-pdf', {
@@ -62,12 +62,12 @@
                     a.click();
                     URL.revokeObjectURL(url);
                     
-                    status.innerHTML = '<div class="success">✅ PDF erfolgreich heruntergeladen!</div>';
+                    status.innerHTML = '<div class="success">PDF successfully downloaded!</div>';
                 } else {
-                    status.innerHTML = '<div class="error">❌ Fehler: ' + response.status + '</div>';
+                    status.innerHTML = '<div class="error">Error: ' + response.status + '</div>';
                 }
             } catch (error) {
-                status.innerHTML = '<div class="error">❌ Fehler: ' + error.message + '</div>';
+                status.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
             }
         }
         

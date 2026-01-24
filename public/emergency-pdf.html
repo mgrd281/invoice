@@ -73,11 +73,11 @@
 </head>
 <body>
     <div class="emergency-box">
-        <h1>🚨 EMERGENCY PDF DOWNLOAD</h1>
+        <h1>ALERT EMERGENCY PDF DOWNLOAD</h1>
         <p>Direkter PDF Download für alle Rechnungen</p>
         
         <button class="big-btn" onclick="loadAllInvoices()">
-            📄 ALLE RECHNUNGEN LADEN
+            PDF ALLE RECHNUNGEN LADEN
         </button>
         
         <div id="invoices" class="invoice-list"></div>
@@ -129,7 +129,7 @@
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
                         
-                        updateStatus(`✅ ${invoiceNumber} erfolgreich heruntergeladen! (${blob.size} bytes)`);
+                        updateStatus(`SUCCESS ${invoiceNumber} erfolgreich heruntergeladen! (${blob.size} bytes)`);
                         return true;
                     } else {
                         throw new Error(`PDF zu klein: ${blob.size} bytes`);
@@ -144,7 +144,7 @@
                 // Fallback: Direct link
                 const directUrl = `/api/invoices/${invoiceId}/download-pdf`;
                 window.open(directUrl, '_blank');
-                updateStatus(`🔄 ${invoiceNumber} wird in neuem Tab geöffnet...`);
+                updateStatus(`RETRY ${invoiceNumber} wird in neuem Tab geöffnet...`);
                 
                 return false;
             }
@@ -154,7 +154,7 @@
             const container = document.getElementById('invoices');
             container.innerHTML = '';
             
-            updateStatus('📋 Lade bekannte Rechnungen...');
+            updateStatus('LIST Lade bekannte Rechnungen...');
             
             // Display known invoices
             knownInvoices.forEach(invoice => {
@@ -166,7 +166,7 @@
                         <br><small>${invoice.id}</small>
                     </div>
                     <button class="download-btn" onclick="downloadPDFDirect('${invoice.id}', '${invoice.number}')">
-                        📄 DOWNLOAD
+                        PDF DOWNLOAD
                     </button>
                 `;
                 container.appendChild(div);
@@ -199,14 +199,14 @@
                                     <br><small>${invoice.id}</small>
                                 </div>
                                 <button class="download-btn" onclick="downloadPDFDirect('${invoice.id}', '${invoice.number}')">
-                                    📄 DOWNLOAD
+                                    PDF DOWNLOAD
                                 </button>
                             `;
                             container.appendChild(div);
                         }
                     });
                     
-                    updateStatus(`✅ ${apiInvoices.length} Rechnungen geladen`);
+                    updateStatus(`SUCCESS ${apiInvoices.length} Rechnungen geladen`);
                 } else {
                     updateStatus('⚠️ API nicht verfügbar, zeige bekannte Rechnungen');
                 }
@@ -216,14 +216,14 @@
         }
 
         async function downloadAllPDFs() {
-            updateStatus('🚀 Lade alle PDFs herunter...');
+            updateStatus('START Lade alle PDFs herunter...');
             
             for (const invoice of knownInvoices) {
                 await downloadPDFDirect(invoice.id, invoice.number);
                 await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
             }
             
-            updateStatus('✅ Alle Downloads abgeschlossen!');
+            updateStatus('SUCCESS Alle Downloads abgeschlossen!');
         }
 
         // Auto-load on page load
