@@ -678,106 +678,164 @@ export default function ProductImportPage() {
                         <div className="lg:col-span-5">
                             <div className="sticky top-6">
                                 {previewData ? (
-                                    <Card className="border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg overflow-hidden ring-2 ring-violet-200 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        {/* Product Image */}
-                                        <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden group">
-                                            <img
-                                                src={previewData.images?.[0] || '/placeholder.png'}
-                                                alt={previewData.title}
-                                                className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                            <div className="absolute top-4 right-4">
-                                                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 shadow-md">
-                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                    Validiert
-                                                </Badge>
-                                            </div>
-                                            {/* Source Domain */}
-                                            {previewData.sourceDomain && (
-                                                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-xl border border-gray-200 shadow-md">
-                                                    <img
-                                                        src={getFaviconUrl(previewData.sourceDomain)}
-                                                        alt=""
-                                                        className="h-4 w-4"
-                                                    />
-                                                    <span className="text-xs text-gray-700 font-medium">
-                                                        Imported from: {previewData.sourceDomain}
-                                                    </span>
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <Card className="border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg overflow-hidden ring-2 ring-violet-200">
+                                            {/* Media Gallery / Featured Image */}
+                                            <div className="relative aspect-square bg-white overflow-hidden group">
+                                                <img
+                                                    src={previewData.images?.[0] || '/placeholder.png'}
+                                                    alt={previewData.title}
+                                                    className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                                <div className="absolute top-4 right-4 flex gap-2">
+                                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 shadow-md">
+                                                        <CheckCircle2 className="h-3 w-3 mr-1" /> Validiert
+                                                    </Badge>
+                                                    <Badge className="bg-violet-100 text-violet-700 border-violet-300 shadow-md">
+                                                        {previewData.images?.length || 0} Media
+                                                    </Badge>
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
 
-                                        <CardContent className="p-6 space-y-4">
-                                            <div>
-                                                <h3 className="text-2xl font-bold text-gray-900 mb-2">{previewData.title}</h3>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-3xl font-bold text-violet-600">{previewData.price} €</span>
-                                                    {previewData.vendor && (
-                                                        <Badge variant="outline" className="text-gray-600 border-gray-300">
-                                                            {previewData.vendor}
-                                                        </Badge>
+                                            {/* Small Gallery Preview */}
+                                            {previewData.images && previewData.images.length > 1 && (
+                                                <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-2 overflow-x-auto scrollbar-hide">
+                                                    {previewData.images.slice(0, 8).map((img: string, i: number) => (
+                                                        <div key={i} className="h-16 w-16 min-w-[64px] rounded-lg border bg-white overflow-hidden flex-shrink-0">
+                                                            <img src={img} className="h-full w-full object-cover" />
+                                                        </div>
+                                                    ))}
+                                                    {previewData.images.length > 8 && (
+                                                        <div className="h-16 w-16 min-w-[64px] rounded-lg border bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">
+                                                            +{previewData.images.length - 8}
+                                                        </div>
                                                     )}
                                                 </div>
-                                            </div>
-
-                                            <Separator className="bg-gray-200" />
-
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-semibold text-gray-700">Beschreibung</Label>
-                                                <div
-                                                    className="text-sm text-gray-600 line-clamp-4 bg-gray-50 p-4 rounded-xl border border-gray-200"
-                                                    dangerouslySetInnerHTML={{ __html: previewData.description || 'Keine Beschreibung verfügbar' }}
-                                                />
-                                            </div>
-
-                                            <Button
-                                                size="lg"
-                                                className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 rounded-2xl h-12 transform hover:-translate-y-0.5 transition-all duration-200"
-                                                onClick={handleSaveProduct}
-                                                disabled={isSaving}
-                                            >
-                                                {isSaving ? (
-                                                    <>
-                                                        <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                                                        Speichere...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle2 className="h-5 w-5 mr-2" />
-                                                        Produkt speichern
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                ) : (
-                                    <Card className="border-2 border-dashed border-gray-300 bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-xl shadow-md">
-                                        <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                                            {isLoadingPreview ? (
-                                                <div className="space-y-4">
-                                                    <div className="h-16 w-16 rounded-full bg-violet-100 flex items-center justify-center animate-pulse">
-                                                        <RefreshCw className="h-8 w-8 text-violet-600 animate-spin" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <p className="text-lg font-semibold text-gray-900">Lade Produktdaten...</p>
-                                                        <p className="text-sm text-gray-600">Bitte warten Sie einen Moment</p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center mx-auto">
-                                                        <Package className="h-10 w-10 text-violet-600" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <p className="text-lg font-semibold text-gray-900">Bereit zum Import</p>
-                                                        <p className="text-sm text-gray-600 max-w-xs mx-auto text-center">
-                                                            Fügen Sie eine Produkt-URL hinzu, um die Vorschau hier zu sehen
-                                                        </p>
-                                                    </div>
-                                                </div>
                                             )}
-                                        </CardContent>
-                                    </Card>
+
+                                            <CardContent className="p-6 space-y-6">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-violet-600 border-violet-200">
+                                                            {previewData.product_type || 'General Product'}
+                                                        </Badge>
+                                                    </div>
+                                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{previewData.title}</h3>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-3xl font-bold text-emerald-600">{previewData.price} {previewData.currency || '€'}</span>
+                                                        {previewData.vendor && (
+                                                            <span className="text-sm font-medium text-gray-400">by {previewData.vendor}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <Separator className="opacity-50" />
+
+                                                {/* Variants Table */}
+                                                <div className="space-y-3">
+                                                    <Label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                                        <Package className="h-3.5 w-3.5" /> Variants ({previewData.variants?.length || 1})
+                                                    </Label>
+                                                    <div className="border rounded-2xl overflow-hidden bg-white shadow-sm">
+                                                        <table className="w-full text-xs text-left">
+                                                            <thead className="bg-gray-50 border-b">
+                                                                <tr>
+                                                                    <th className="px-3 py-2 font-bold text-gray-600">Variant</th>
+                                                                    <th className="px-3 py-2 font-bold text-gray-600">Price</th>
+                                                                    <th className="px-3 py-2 font-bold text-gray-600">SKU</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y">
+                                                                {previewData.variants?.slice(0, 5).map((v: any, i: number) => (
+                                                                    <tr key={i} className="hover:bg-gray-50/50">
+                                                                        <td className="px-3 py-2 text-gray-900 font-medium">{v.title}</td>
+                                                                        <td className="px-3 py-2 text-gray-600">{v.price} {previewData.currency || '€'}</td>
+                                                                        <td className="px-3 py-2 text-gray-400 font-mono truncate max-w-[80px]">{v.sku || '-'}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                        {previewData.variants?.length > 5 && (
+                                                            <div className="p-2 text-center text-[10px] text-gray-400 font-medium bg-gray-50/30">
+                                                                + {previewData.variants.length - 5} more variants
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* SEO Preview Card */}
+                                                <div className="space-y-3">
+                                                    <Label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                                        <Search className="h-3.5 w-3.5" /> Google Search Preview
+                                                    </Label>
+                                                    <div className="p-4 bg-white border rounded-2xl shadow-sm space-y-1">
+                                                        <div className="text-[11px] text-[#202124] flex items-center gap-1">
+                                                            <span className="truncate">{previewData.canonicalUrl?.substring(0, 40)}...</span>
+                                                        </div>
+                                                        <div className="text-[#1a0dab] text-lg hover:underline cursor-pointer truncate">
+                                                            {previewData.metaTitle || previewData.title}
+                                                        </div>
+                                                        <div className="text-[#4d5156] text-xs line-clamp-2">
+                                                            {previewData.metaDescription || previewData.description?.replace(/<[^>]*>/g, '').slice(0, 160)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <Button
+                                                    size="lg"
+                                                    className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-xl shadow-emerald-500/20 rounded-2xl h-14 transform hover:-translate-y-0.5 transition-all duration-300 font-bold"
+                                                    onClick={handleSaveProduct}
+                                                    disabled={isSaving}
+                                                >
+                                                    {isSaving ? (
+                                                        <>
+                                                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" /> Speichere Import...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle2 className="h-5 w-5 mr-2" /> FULL IMPORT STARTEN
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                ) : (
+                                    <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <Card className="border-2 border-dashed border-gray-300 bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-xl shadow-md">
+                                            <CardContent className="flex flex-col items-center justify-center py-24 px-6 text-center">
+                                                {isLoadingPreview ? (
+                                                    <div className="space-y-6">
+                                                        <div className="h-24 w-24 rounded-full bg-violet-100 flex items-center justify-center animate-pulse mx-auto shadow-inner">
+                                                            <RefreshCw className="h-10 w-10 text-violet-600 animate-spin" />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <p className="text-xl font-bold text-gray-900">Extrahierung läuft...</p>
+                                                            <div className="flex flex-col gap-1 text-sm text-gray-500">
+                                                                <span className="flex items-center justify-center gap-2"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Analysiere URL Struktur</span>
+                                                                <span className="flex items-center justify-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-400 animate-ping" /> Suche nach Varianten & JSON-LD</span>
+                                                                <span className="flex items-center justify-center gap-2 opacity-40">Extrahiere Medien/Galerie</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-6">
+                                                        <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center mx-auto rotate-3 shadow-lg group-hover:rotate-0 transition-transform">
+                                                            <Package className="h-12 w-12 text-violet-600" />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <p className="text-xl font-bold text-gray-900 uppercase tracking-tight">Full Extraction Ready</p>
+                                                            <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
+                                                                Fügen Sie eine URL ein, um das Produkt inklusive aller
+                                                                <span className="text-violet-600 font-bold"> Varianten, SEO-Meta </span>
+                                                                und <span className="text-violet-600 font-bold"> Medien </span> zu extrahieren.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -105,9 +105,55 @@ export async function POST(request: NextRequest) {
         console.log('Final variant metafields:', variantMetafields)
         console.log('Final product metafields:', productMetafields)
 
-        // Calculate Compare At Price (30% markup to show "Sale")
+        // Calculate Compare At Price (optional)
         const price = parseFloat(product.price)
-        const compareAtPrice = (price * 1.3).toFixed(2)
+        const compareAtPrice = product.compare_at_price || (price * 1.3).toFixed(2)
+
+        // Prepare variants and options
+        let options: string[] = [];
+        if (product.variants && product.variants.length > 0) {
+            // Attempt to detect option names if not provided
+            options = product.options?.map((o: any) => o.name) || ['Title'];
+        }
+
+        const shopifyVariants = product.variants && product.variants.length > 0
+            ? product.variants.map((v: any, idx: number) => {
+                const variantEntry: any = {
+                    price: v.price || product.price,
+                    compare_at_price: v.compare_at_price || (parseFloat(v.price || product.price) * 1.3).toFixed(2),
+                    sku: v.sku || (product.sku ? `${product.sku}-${idx}` : undefined),
+                    barcode: v.barcode || product.ean,
+                    inventory_management: 'shopify',
+                    inventory_quantity: 889,
+                    taxable: settings.chargeTax,
+                    requires_shipping: settings.isPhysical
+                };
+
+                // Map options (Shopify supports up to 3 options: option1, option2, option3)
+                if (v.options && Array.isArray(v.options)) {
+                    v.options.forEach((opt: string, i: number) => {
+                        if (i < 3) variantEntry[`option${i + 1}`] = opt;
+                    });
+                } else {
+                    variantEntry.option1 = v.title || `Variant ${idx + 1}`;
+                }
+
+                return variantEntry;
+            })
+            : [
+                {
+                    option1: 'Default Title',
+                    price: product.price,
+                    compare_at_price: compareAtPrice,
+                    sku: product.sku,
+                    barcode: product.ean,
+                    taxable: settings.chargeTax,
+                    inventory_management: 'shopify',
+                    inventory_quantity: 889,
+                    requires_shipping: settings.isPhysical,
+                    metafields: variantMetafields.length > 0 ? variantMetafields : undefined
+                }
+            ];
 
         // Prepare product data for Shopify
         const shopifyProduct: any = {
@@ -115,28 +161,30 @@ export async function POST(request: NextRequest) {
             body_html: product.fullDescription || product.description,
             vendor: product.vendor,
             product_type: product.product_type,
+            handle: product.handle,
             tags: product.tags ? `${product.tags}, Imported` : 'Imported',
             status: settings.isActive ? 'active' : 'draft',
+            options: options.length > 0 ? options.map(name => ({ name })) : undefined,
             images: product.images.map((src: string, index: number) => ({
                 src,
                 alt: index === 0 && product.image_alt_text ? product.image_alt_text : undefined
             })),
-            metafields: productMetafields.length > 0 ? productMetafields : undefined,
-            variants: [
+            metafields: [
+                ...(productMetafields || []),
                 {
-                    price: product.price,
-                    compare_at_price: compareAtPrice,
-                    sku: product.sku,
-                    barcode: product.ean,
-                    taxable: settings.chargeTax,
-                    inventory_management: 'shopify', // Always track inventory to set quantity
-                    inventory_quantity: 889, // Set default quantity to 889 as requested
-                    requires_shipping: settings.isPhysical,
-                    metafields: variantMetafields.length > 0 ? variantMetafields : undefined,
-                    weight: product.shipping?.weight || 0,
-                    weight_unit: 'kg'
+                    namespace: 'global',
+                    key: 'title_tag',
+                    value: product.metaTitle || product.title,
+                    type: 'single_line_text_field'
+                },
+                {
+                    namespace: 'global',
+                    key: 'description_tag',
+                    value: product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)),
+                    type: 'multi_line_text_field'
                 }
-            ]
+            ],
+            variants: shopifyVariants
         }
 
         // If original product had variants, we might want to try mapping them, 
