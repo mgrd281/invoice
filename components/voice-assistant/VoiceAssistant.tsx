@@ -106,6 +106,21 @@ export function VoiceAssistant() {
     }, [isOpen]);
 
 
+    // Safety: Reset processing if stuck
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (status === 'PROCESSING') {
+            timeout = setTimeout(() => {
+                if (status === 'PROCESSING') {
+                    console.warn("Safety Reset: Stuck in PROCESSING");
+                    setStatus('IDLE');
+                    setReply("Zeitüberschreitung.");
+                }
+            }, 10000);
+        }
+        return () => clearTimeout(timeout);
+    }, [status]);
+
     // --- MAIN COMMAND LOGIC ---
 
     const startListening = () => {
@@ -169,11 +184,16 @@ export function VoiceAssistant() {
 
         console.log("Sending command:", text);
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
             const res = await fetch('/api/assistant', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
+                body: JSON.stringify({ text }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             const data = await res.json();
             console.log("Received AI Response:", data);
