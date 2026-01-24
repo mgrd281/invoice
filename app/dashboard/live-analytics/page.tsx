@@ -271,6 +271,32 @@ function LiveAnalyticsContent() {
         }
     };
 
+    const handleBlockIp = async () => {
+        if (!selectedSession?.ipMasked) return;
+        setActionLoading('block-ip');
+        try {
+            const res = await fetch('/api/security/blocked-ips', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ipAddress: selectedSession.ipMasked,
+                    reason: `Blocked from Live Analytics (Visitor #${selectedSession.visitor?.customIdentifier || selectedSession.visitorId.substring(0, 6)})`
+                })
+            });
+            const json = await res.json();
+            if (res.ok) {
+                toast.success('IP-Adresse wurde gesperrt');
+                // No need to refresh live data as the visitor will be blocked on next heartbeat/event
+            } else {
+                toast.error(json.error || 'Fehler beim Sperren');
+            }
+        } catch (err) {
+            toast.error('Netzwerkfehler');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const trackingSnippet = `<script 
   src="${appUrl}/analytics-tracker.js" 
