@@ -414,8 +414,8 @@ export async function POST(req: NextRequest) {
                     }
                 } else {
                     // UPDATE EXISTING
-                    const existingRemoved = (cart.removedItems as any[]) || [];
-                    const existingTimeline = (cart.timeline as any[]) || [];
+                    const existingRemoved = ((cart as any).removedItems as any[]) || [];
+                    const existingTimeline = ((cart as any).timeline as any[]) || [];
 
                     // Merge new removed items
                     const newItems = finalRemovedItems ? finalRemovedItems.filter((newItem: any) =>

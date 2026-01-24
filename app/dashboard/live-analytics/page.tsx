@@ -844,32 +844,29 @@ function LiveAnalyticsContent() {
                                                             <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
                                                             <span className="h-1 w-1 rounded-full bg-slate-200" />
                                                             <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> {selectedSession.ipv4 || selectedSession.ipMasked || '***.***.***.0'}</span>
-                                                            {selectedSession.ipv6 && (
-                                                                <>
-                                                                    <span className="h-1 w-1 rounded-full bg-slate-200" />
-                                                                    <span className="flex items-center gap-1.5 font-mono text-[9px] opacity-70"><ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> {selectedSession.ipv6}</span>
-                                                                </>
-                                                            )}
+                                                            <span className="h-1 w-1 rounded-full bg-slate-200" />
+                                                            <Badge variant="outline" className={`text-[9px] font-black uppercase px-2 h-5 border-none ${selectedSession.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' :
+                                                                    selectedSession.status === 'ENDED' ? 'bg-slate-100 text-slate-500' :
+                                                                        'bg-blue-500/10 text-blue-600'
+                                                                }`}>
+                                                                {selectedSession.status === 'ENDED' ? 'Session Archiviert' : 'Live Aktiv'}
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex flex-col items-end gap-3 relative z-10">
                                                     <div className="flex items-center gap-2">
-                                                        {followedSessionId === selectedSession.id && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="destructive"
-                                                                className="h-8 px-3 font-black text-[10px] uppercase tracking-widest bg-red-600 shadow-lg shadow-red-100"
-                                                                onClick={() => setFollowedSessionId(null)}
-                                                            >
-                                                                Stop Follow
-                                                            </Button>
-                                                        )}
-                                                        <Badge variant="outline" className="bg-slate-50 text-[10px] font-mono border-slate-200 px-2 py-1">
-                                                            {selectedSession.sessionId.substring(0, 12)}
+                                                        <Badge variant="outline" className="bg-slate-50 text-[9px] font-mono border-slate-200 px-2 py-1 flex items-center gap-1">
+                                                            <TerminalIcon className="h-3 w-3 text-slate-400" /> {selectedSession.sessionId.substring(0, 14)}
                                                         </Badge>
-                                                        {getStatusBadge(selectedSession)}
+                                                        <Badge className={`${selectedSession.purchaseStatus === 'PAID' ? 'bg-emerald-600 shadow-emerald-100' :
+                                                                selectedSession.events?.some((e: any) => e.type === 'start_checkout') ? 'bg-blue-600 shadow-blue-100' :
+                                                                    'bg-slate-800 shadow-slate-100'
+                                                            } text-white font-black text-[9px] h-6 px-3 shadow-lg uppercase tracking-wider`}>
+                                                            {selectedSession.purchaseStatus === 'PAID' ? 'BEZAHLT' :
+                                                                selectedSession.events?.some((e: any) => e.type === 'start_checkout') ? 'CHECKOUT' : 'BROWSER'}
+                                                        </Badge>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {selectedSession.recordingStatus === 'AVAILABLE' ? (
@@ -963,44 +960,91 @@ function LiveAnalyticsContent() {
                                             </Card>
 
                                             {/* Intelligence & Score Section */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="md:col-span-2 bg-slate-900 rounded-2xl p-6 text-white relative overflow-hidden">
+                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                <div className="md:col-span-3 bg-slate-900 rounded-2xl p-6 text-white relative overflow-hidden ring-1 ring-white/10 shadow-2xl">
                                                     <div className="absolute top-0 right-0 p-6 opacity-5 rotate-12">
-                                                        <BrainCircuit className="h-32 w-32" />
+                                                        <BrainCircuit className="h-40 w-40" />
                                                     </div>
-                                                    <div className="flex items-center gap-2 mb-4">
-                                                        <div className="h-6 w-6 rounded-lg bg-blue-500 flex items-center justify-center">
-                                                            <Sparkles className="h-3.5 w-3.5 text-white" />
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <div className="h-8 w-8 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                                            <Sparkles className="h-4 w-4 text-white" />
                                                         </div>
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Akte Intelligence Summary</span>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Session Akte Intelligence</span>
+                                                            <span className="text-[9px] text-slate-500 font-bold uppercase">{selectedSession.status === 'ENDED' ? 'Archivierte Analyse' : 'Live Verhalten-Prognose'}</span>
+                                                        </div>
+                                                        <div className="ml-auto flex items-center gap-2">
+                                                            <Badge className={`${selectedSession.sourceMedium === 'organic' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'} border-none text-[9px] uppercase font-black`}>
+                                                                {selectedSession.sourceLabel || 'Direkt'}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-lg font-medium leading-relaxed italic pr-12">
-                                                        "{selectedSession.enterprise?.summary || "Analysiere Besucher-Pattern für Verhaltensprognose..."}"
-                                                    </p>
-                                                    <div className="mt-6 flex items-center gap-4">
-                                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-3 py-1">
-                                                            {selectedSession.enterprise?.recommendedAction}
-                                                        </Badge>
-                                                        <span className="text-[10px] text-slate-400 font-bold">Kaufbereitschaft: <b className="text-white">{selectedSession.enterprise?.score || 0}%</b></span>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <div className="space-y-4">
+                                                            <p className="text-xl font-medium leading-relaxed italic pr-4 text-slate-200">
+                                                                "{selectedSession.enterprise?.summary || "Analysiere Besucher-Pattern für Verhaltensprognose..."}"
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-3 py-1 text-[10px] font-bold">
+                                                                    {selectedSession.enterprise?.recommendedAction || 'Beobachten'}
+                                                                </Badge>
+                                                                {selectedSession.isReturning && <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-3 py-1 text-[10px] font-bold italic">Wiederkehrend</Badge>}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Visual Flow / Journey Mini Funnel */}
+                                                        <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col gap-3">
+                                                            <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Journey Progress</span>
+                                                            <div className="flex items-center justify-between px-2">
+                                                                {[
+                                                                    { id: 'entry', icon: Globe },
+                                                                    { id: 'view_product', icon: Search },
+                                                                    { id: 'add_to_cart', icon: ShoppingBag },
+                                                                    { id: 'start_checkout', icon: Briefcase },
+                                                                    { id: 'paid', icon: CheckCircle2 }
+                                                                ].map((step, i, arr) => {
+                                                                    const isCompleted = step.id === 'entry' || (
+                                                                        step.id === 'paid' ? selectedSession.purchaseStatus === 'PAID' :
+                                                                            selectedSession.events?.some((e: any) => e.type === step.id)
+                                                                    );
+                                                                    return (
+                                                                        <div key={step.id} className="flex items-center flex-1 last:flex-none">
+                                                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-all ${isCompleted ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-500/10' : 'bg-slate-800 text-slate-600'}`}>
+                                                                                <step.icon className="h-4 w-4" />
+                                                                            </div>
+                                                                            {i < arr.length - 1 && (
+                                                                                <div className={`h-0.5 flex-1 mx-1 ${isCompleted && (arr[i + 1].id === 'paid' ? selectedSession.purchaseStatus === 'PAID' : selectedSession.events?.some((e: any) => e.type === arr[i + 1].id)) ? 'bg-blue-600' : 'bg-slate-800'}`} />
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <div className="flex justify-between px-1">
+                                                                <span className="text-[7px] font-bold uppercase text-slate-400">Entry</span>
+                                                                <span className="text-[7px] font-bold uppercase text-slate-400">Paid</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-white rounded-2xl border p-6 flex flex-col items-center justify-center text-center shadow-sm">
-                                                    <div className="relative h-24 w-24 mb-4">
+                                                <div className="bg-white rounded-2xl border p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow ring-1 ring-slate-100 group">
+                                                    <div className="relative h-28 w-28 mb-4 group-hover:scale-105 transition-transform duration-500">
                                                         <svg className="w-full h-full transform -rotate-90">
-                                                            <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-50" />
-                                                            <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="8" fill="transparent"
-                                                                strokeDasharray={2 * Math.PI * 42}
-                                                                strokeDashoffset={2 * Math.PI * 42 * (1 - (selectedSession.enterprise?.score || 0) / 100)}
-                                                                className={`${(selectedSession.enterprise?.score || 0) > 70 ? 'text-emerald-500' : (selectedSession.enterprise?.score || 0) > 30 ? 'text-blue-500' : 'text-slate-300'} transition-all duration-1000 ease-out`}
+                                                            <circle cx="56" cy="56" r="50" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-50" />
+                                                            <circle cx="56" cy="56" r="50" stroke="currentColor" strokeWidth="8" fill="transparent"
+                                                                strokeDasharray={2 * Math.PI * 50}
+                                                                strokeDashoffset={2 * Math.PI * 50 * (1 - (selectedSession.enterprise?.score || 0) / 100)}
+                                                                className={`${(selectedSession.enterprise?.score || 0) > 70 ? 'text-emerald-500' : (selectedSession.enterprise?.score || 0) > 30 ? 'text-blue-500' : 'text-slate-200'} transition-all duration-1000 ease-out`}
                                                                 strokeLinecap="round"
                                                             />
                                                         </svg>
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <span className="text-2xl font-black">{selectedSession.enterprise?.score || 0}%</span>
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                            <span className="text-3xl font-black">{selectedSession.enterprise?.score || 0}%</span>
+                                                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Intent Score</span>
                                                         </div>
                                                     </div>
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Abschluss Score</span>
+                                                    <Badge className="bg-slate-100 text-slate-500 border-none text-[8px] px-2 h-4 italic">Kaufbereitschaft</Badge>
                                                 </div>
                                             </div>
 

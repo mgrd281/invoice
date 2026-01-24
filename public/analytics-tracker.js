@@ -124,6 +124,26 @@
         }
     };
 
+    const syncSessionToShopify = async () => {
+        if (window._sessionSynced) return;
+        try {
+            await fetch('/cart/update.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    attributes: {
+                        '_visitor_session_id': sessionId,
+                        '_visitor_token': visitorToken
+                    }
+                })
+            });
+            window._sessionSynced = true;
+            console.log('[Analytics] Session synced to Shopify cart attributes');
+        } catch (e) {
+            console.error('[Analytics] Failed to sync session to Shopify', e);
+        }
+    };
+
     const track = async (event, metadata = {}) => {
         if (!organizationId) {
             // Robust check for Org ID
@@ -869,23 +889,5 @@
     });
 
     window.Analytics = { track };
-    const syncSessionToShopify = async () => {
-        if (window._sessionSynced) return;
-        try {
-            await fetch('/cart/update.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    attributes: {
-                        '_visitor_session_id': sessionId,
-                        '_visitor_token': visitorToken
-                    }
-                })
-            });
-            window._sessionSynced = true;
-            console.log('[Analytics] Session synced to Shopify cart attributes');
-        } catch (e) {
-            console.error('[Analytics] Failed to sync session to Shopify', e);
-        }
-    };
-})();
+};
+}) ();

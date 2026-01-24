@@ -132,6 +132,38 @@ export async function POST(req: NextRequest) {
             results.push(result)
         }
 
+        // 5. RADICAL: Link to Session & Mark as PAID
+        const noteAttributes = body.note_attributes || [];
+        const sessionIdAttr = noteAttributes.find((attr: any) => attr.name === '_visitor_session_id');
+
+        if (sessionIdAttr?.value) {
+            console.log(`[Webhook] Linking Order ${body.name} to Session ${sessionIdAttr.value}`);
+            try {
+                // Update VisitorSession
+                await prisma.visitorSession.update({
+                    where: { sessionId: sessionIdAttr.value },
+                    data: {
+                        purchaseStatus: 'PAID',
+                        orderNumber: body.name,
+                        totalValue: parseFloat(body.total_price || '0')
+                    }
+                });
+
+                // Update AbandonedCart
+                await prisma.abandonedCart.updateMany({
+                    where: {
+                        OR: [
+                            { checkoutToken: body.checkout_token },
+                            { checkoutId: sessionIdAttr.value }
+                        ]
+                    },
+                    data: { isRecovered: true }
+                });
+            } catch (e) {
+                console.error('[Webhook] Failed to link session:', e);
+            }
+        }
+
         return NextResponse.json({
             success: true,
             message: 'Processed',
