@@ -272,7 +272,7 @@ export default function AbandonedCartsPage() {
                     fetchCarts()
                     fetchStats(timeRange)
                 }
-            }, 1000) // Increased frequency to 1s for "Live" feel
+            }, 5000) // Relaxed from 1s to 5s for better performance
             return () => clearInterval(interval)
         }
     }, [mounted, fetchCarts, fetchStats, timeRange])

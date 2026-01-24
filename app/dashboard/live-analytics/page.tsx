@@ -372,7 +372,7 @@ function LiveAnalyticsContent() {
         const interval = setInterval(() => {
             fetchLiveData();
             fetchSessions();
-        }, 2000);
+        }, 5000);
 
         if (filterType) {
             toast.info(`Filter aktiv: ${filterType}`, { duration: 2000 });
