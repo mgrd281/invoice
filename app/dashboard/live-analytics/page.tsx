@@ -223,29 +223,51 @@ function LiveAnalyticsContent() {
 
     const loadRemainingChunks = async (sessionId: string, player: any) => {
         let currentChunk = 1;
-        let hasMore = true;
+        let isLive = true;
+        let retryCount = 0;
+        const MAX_IDLE_RETRIES = 100; // Stop eventually if nothing happens for a long time
 
-        while (hasMore) {
+        console.log('[Live Stream] Tracking started for session:', sessionId);
+
+        while (isLive && retryCount < MAX_IDLE_RETRIES) {
+            // Check if player is still mounted or if user closed the dialog
+            if (!document.getElementById('replay-player')) {
+                console.log('[Live Stream] Player unmounted, stopping stream.');
+                isLive = false;
+                break;
+            }
+
             try {
                 const res = await fetch(`/api/analytics/sessions/${sessionId}/recording?chunk=${currentChunk}`);
                 const data = await res.json();
+
                 if (data.success && data.events?.length > 0) {
-                    console.log(`[Replay] Appending chunk ${currentChunk} with ${data.events.length} events`);
-                    // Use addEvent to append to the live player
+                    console.log(`[Live Stream] Appending chunk ${currentChunk} with ${data.events.length} events`);
+                    retryCount = 0; // Reset idle timer
+
                     if (player.addEvent) {
                         data.events.forEach((event: any) => player.addEvent(event));
                     }
-                    hasMore = data.hasMore;
+
                     currentChunk++;
+
+                    // If server says there's even more right now, get it immediately
+                    if (data.hasMore) {
+                        continue;
+                    }
                 } else {
-                    hasMore = false;
+                    // No new events found yet
+                    retryCount++;
                 }
             } catch (err) {
-                console.warn('[Replay] Background load failed:', err);
-                hasMore = false;
+                console.warn('[Live Stream] Poll failed:', err);
+                retryCount++;
             }
+
+            // Wait 3 seconds before checking for new activity
+            await new Promise(resolve => setTimeout(resolve, 3000));
         }
-        console.log('[Replay] All chunks loaded successfully');
+        console.log('[Live Stream] Stream concluded for session:', sessionId);
     };
 
     const handleAction = async (type: 'vip' | 'coupon' | 'email', data: any = {}) => {
