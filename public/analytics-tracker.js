@@ -593,12 +593,12 @@
     trackMobileErrors();
 
     // Initial Tracking
-    track('tracker_loaded', { version: '2.3.0' });
+    track('tracker_loaded', { version: '2.4.0' });
     track('page_view');
     loadRRWeb();
 
-    // Heartbeat every 15 seconds
-    setInterval(() => track('heartbeat'), 15000);
+    // Heartbeat every 10 seconds (optimized for Follow Mode)
+    setInterval(() => track('heartbeat'), 10000);
 
     // Visibility / Activity Tracking
     document.addEventListener('visibilitychange', () => {
