@@ -311,6 +311,7 @@ export function VoiceAssistant() {
                     } catch (e) {
                         console.error(e);
                         setReply("Fehler beim Abrufen der Daten.");
+                        speak("Es gab einen Fehler beim Abrufen der Daten.");
                     }
                 }
             }
