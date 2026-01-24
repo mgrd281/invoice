@@ -262,15 +262,35 @@ export async function POST(request: NextRequest) {
             else if (vendor === 'Otto') {
                 data.title = data.title || $('h1[data-qa="product-title"]').text().trim() || $('.pdp_productName').text().trim()
 
-                // Enhanced Description Extraction for Otto
-                data.description = $('.pdp_product-description__text').text().trim() ||
-                    $('#productDescription').text().trim() ||
-                    $('.pdp_details-accordion__content').first().text().trim() ||
-                    data.description
+                // Enhanced Description Extraction for Otto (Deep Scan)
+                const descSelectors = [
+                    '.pdp_product-description__text',
+                    '#productDescription',
+                    '.pdp_details-accordion__content',
+                    '.product-description',
+                    '[data-qa="product-description"]'
+                ];
+
+                for (const selector of descSelectors) {
+                    const text = $(selector).text().trim();
+                    if (text && text.length > (data.description?.length || 0)) {
+                        data.description = text;
+                    }
+                }
+
+                // Fallback: Find the longest paragraph in the main area
+                if (!data.description || data.description.length < 50) {
+                    $('p, .text-block').each((_: number, el: any) => {
+                        const t = $(el).text().trim();
+                        if (t.length > (data.description?.length || 0) && t.length > 100) {
+                            data.description = t;
+                        }
+                    });
+                }
 
                 // Technical Specs
-                $('.pdp_details-accordion__content tr').each((_: number, el: any) => {
-                    const key = $(el).find('td:first-child').text().trim()
+                $('.pdp_details-accordion__content tr, table tr').each((_: number, el: any) => {
+                    const key = $(el).find('td:first-child, th').text().trim()
                     const value = $(el).find('td:last-child').text().trim()
                     if (key && value) extractedMetadata[key] = value
                 })
@@ -305,30 +325,49 @@ export async function POST(request: NextRequest) {
             else if (sourceUrl.includes('christ.de')) {
                 data.vendor = 'Christ'
                 data.title = $('h1.product-name').text().trim() || $('.product-detail-name').text().trim() || data.title
-                data.price = $('.product-price .sales .value').attr('content') || $('.product-price').first().text().replace(/[^0-9,.]/g, '').replace(',', '.')
 
-                // Description from Tabs
+                // Advanced Price Extraction
+                const priceMeta = $('meta[itemprop="price"]').attr('content') ||
+                    $('meta[property="product:price:amount"]').attr('content') ||
+                    $('.product-price .sales .value').attr('content');
+
+                if (priceMeta) {
+                    data.price = priceMeta;
+                } else {
+                    const priceText = $('.product-price').first().text().replace(/[^0-9,.]/g, '') ||
+                        $('.price-sales').text().replace(/[^0-9,.]/g, '');
+                    if (priceText) data.price = priceText.replace(',', '.');
+                }
+
+                // Description from Tabs & Collapsibles
                 data.description = $('.product-description-text').text().trim() ||
                     $('#tab-description').text().trim() ||
-                    $('.description-text').text().trim()
+                    $('.description-text').text().trim() ||
+                    $('.collapsible-content').text().trim();
 
-                // Technical Specs from Tables (The user-requested feature)
-                $('.product-attributes tr, .attributes-table tr, .data-table tr').each((_: number, el: any) => {
-                    const key = $(el).find('th, td.label').text().trim().replace(':', '')
-                    const value = $(el).find('td, td.value').text().trim()
-                    if (key && value) extractedMetadata[key] = value
+                // Technical Specs from Tables (Robust Selector)
+                $('.product-attributes tr, .attributes-table tr, .data-table tr, .specification-table tr, .product-details tr').each((_: number, el: any) => {
+                    const key = $(el).find('th, td.label, td:first-child').text().trim().replace(':', '')
+                    const value = $(el).find('td, td.value, td:last-child').text().trim()
 
-                    // Map specific fields for Christ
-                    if (key.toLowerCase().includes('material')) data.tags += `, ${value}`
-                    if (key.toLowerCase().includes('geschlecht') || key.toLowerCase().includes('gender')) data.google_gender = value.toLowerCase().includes('damen') ? 'female' : 'male'
+                    if (key && value && value.length > 1) { // Filter empty values
+                        extractedMetadata[key] = value
+
+                        // Map specific fields for Christ
+                        if (key.toLowerCase().includes('material')) data.tags += `, ${value}`
+                        if (key.toLowerCase().includes('geschlecht') || key.toLowerCase().includes('gender')) data.google_gender = value.toLowerCase().includes('damen') ? 'female' : 'male'
+                    }
                 })
 
                 // Images
-                $('.product-gallery img, .s7-static-image').each((_: number, el: any) => {
-                    let src = $(el).attr('src') || $(el).attr('data-src')
+                $('.product-gallery img, .s7-static-image, .slick-slide img').each((_: number, el: any) => {
+                    let src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy');
                     if (src) {
                         if (src.includes('?')) src = src.split('?')[0] // Remove dimensions
-                        data.images.push({ src, alt: data.title })
+                        if (!src.startsWith('http')) src = 'https://www.christ.de' + src; // Ensure absolute URL
+                        if (!data.images.some((i: any) => i.src === src)) {
+                            data.images.push({ src, alt: data.title })
+                        }
                     }
                 })
             }
