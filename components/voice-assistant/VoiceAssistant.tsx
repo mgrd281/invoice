@@ -189,6 +189,12 @@ export function VoiceAssistant() {
                 return;
             }
 
+            // --- CHAT & Q_AND_A MODE ---
+            // If it's a CHAT or Q_AND_A, we want to KEEP the window open so user can hear the reply.
+            if (data.intent === 'CHAT' || data.intent === 'Q_AND_A') {
+                console.log("Chat/Q&A Mode - Keeping window open");
+            }
+
             if (data.reply) {
                 setReply(data.reply);
                 speak(data.reply, data.language);
