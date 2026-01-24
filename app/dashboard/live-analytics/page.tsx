@@ -846,8 +846,8 @@ function LiveAnalyticsContent() {
                                                             <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> {selectedSession.ipv4 || selectedSession.ipMasked || '***.***.***.0'}</span>
                                                             <span className="h-1 w-1 rounded-full bg-slate-200" />
                                                             <Badge variant="outline" className={`text-[9px] font-black uppercase px-2 h-5 border-none ${selectedSession.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' :
-                                                                    selectedSession.status === 'ENDED' ? 'bg-slate-100 text-slate-500' :
-                                                                        'bg-blue-500/10 text-blue-600'
+                                                                selectedSession.status === 'ENDED' ? 'bg-slate-100 text-slate-500' :
+                                                                    'bg-blue-500/10 text-blue-600'
                                                                 }`}>
                                                                 {selectedSession.status === 'ENDED' ? 'Session Archiviert' : 'Live Aktiv'}
                                                             </Badge>
@@ -861,8 +861,8 @@ function LiveAnalyticsContent() {
                                                             <TerminalIcon className="h-3 w-3 text-slate-400" /> {selectedSession.sessionId.substring(0, 14)}
                                                         </Badge>
                                                         <Badge className={`${selectedSession.purchaseStatus === 'PAID' ? 'bg-emerald-600 shadow-emerald-100' :
-                                                                selectedSession.events?.some((e: any) => e.type === 'start_checkout') ? 'bg-blue-600 shadow-blue-100' :
-                                                                    'bg-slate-800 shadow-slate-100'
+                                                            selectedSession.events?.some((e: any) => e.type === 'start_checkout') ? 'bg-blue-600 shadow-blue-100' :
+                                                                'bg-slate-800 shadow-slate-100'
                                                             } text-white font-black text-[9px] h-6 px-3 shadow-lg uppercase tracking-wider`}>
                                                             {selectedSession.purchaseStatus === 'PAID' ? 'BEZAHLT' :
                                                                 selectedSession.events?.some((e: any) => e.type === 'start_checkout') ? 'CHECKOUT' : 'BROWSER'}
@@ -1538,6 +1538,11 @@ function LiveAnalyticsContent() {
                                                 </div>
                                                 <Badge className="absolute top-3 right-3 bg-red-600 text-white border-none font-bold text-[10px] shadow-lg">VIDEO</Badge>
                                             </>
+                                        ) : session.recordingStatus === 'PROCESSING' ? (
+                                            <div className="flex flex-col items-center gap-3 text-blue-400">
+                                                <RefreshCw className="h-10 w-10 animate-spin opacity-40" />
+                                                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 font-black text-[9px] uppercase tracking-widest">Processing</Badge>
+                                            </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2 text-slate-300">
                                                 <Video className="h-10 w-10 opacity-20" />
