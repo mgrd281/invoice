@@ -762,6 +762,13 @@ model AbandonedCart {
   removedItems          Json?
   totalPricePeak        Decimal?                @db.Decimal(10, 2)
   deviceInfo            Json?
+  
+  // Enterprise Features
+  timeline              Json?                   // List of events: { type: 'add', item: ..., time: ... }
+  intentScore           Int                     @default(0) // 0-100
+  recommendation        Json?                   // { action: 'send_coupon', delay: 15, reason: 'High Value' }
+  lastActiveAt          DateTime?               @default(now())
+
   lastEnrichmentAttempt DateTime?
   organization          Organization            @relation(fields: [organizationId], references: [id])
   emailLogs             AbandonedCartEmailLog[]

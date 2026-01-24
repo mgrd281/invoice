@@ -4,13 +4,23 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor } from 'lucide-react'
+import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor, TrendingUp, History, Sparkles, MapPin, User } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { EmailComposer } from '@/components/abandoned-carts/EmailComposer'
 import { RecoverySettings } from '@/components/abandoned-carts/RecoverySettings'
 import { Zap, Settings } from 'lucide-react'
+
+interface TimelineEvent {
+    type: string
+    timestamp: string
+    details?: {
+        removedCount?: number
+        cartTotal?: number
+        itemsCount?: number
+    }
+}
 
 interface AbandonedCart {
     id: string
@@ -27,6 +37,15 @@ interface AbandonedCart {
     recoverySentAt: string | null
     createdAt: string
     updatedAt: string
+    // Enterprise Fields
+    timeline?: TimelineEvent[]
+    intentScore?: number
+    recommendation?: {
+        action: string
+        reason: string
+        delay: number
+    }
+    lastActiveAt?: string
 }
 
 export default function AbandonedCartsPage() {
@@ -121,6 +140,82 @@ export default function AbandonedCartsPage() {
 
         setTimeout(() => setNewCartAlert(null), 8000)
     }, [soundEnabled])
+
+    // Helper: Get Intent Badge
+    const getIntentBadge = (score: number = 0) => {
+        if (score > 60) return (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full border border-orange-100 text-[10px] font-black uppercase tracking-tight">
+                <Zap className="w-3 h-3 fill-orange-500" />
+                Hoher Intent
+            </div>
+        )
+        if (score > 30) return (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full border border-blue-100 text-[10px] font-black uppercase tracking-tight">
+                <Clock className="w-3 h-3" />
+                Mittel
+            </div>
+        )
+        return (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 text-gray-400 rounded-full border border-gray-100 text-[10px] font-black uppercase tracking-tight">
+                <XCircle className="w-3 h-3" />
+                Gering
+            </div>
+        )
+    }
+
+    // Helper: Render Timeline
+    const renderTimeline = (timeline: TimelineEvent[] = []) => {
+        if (!timeline || !timeline.length) return <div className="text-[10px] text-gray-400 italic">Keine Historie erfasst</div>
+
+        return (
+            <div className="relative pl-4 space-y-4 before:absolute before:left-1 before:top-2 before:bottom-0 before:w-[1px] before:bg-gray-100">
+                {timeline.map((event, idx) => (
+                    <div key={idx} className="relative">
+                        <div className={`absolute -left-[19px] top-1.5 w-2 h-2 rounded-full border-2 border-white ${event.type === 'start_checkout' ? 'bg-emerald-500' :
+                                event.type === 'remove_from_cart' ? 'bg-red-500' : 'bg-blue-400'
+                            }`} />
+                        <div className="flex flex-col">
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-tight">
+                                    {event.type.replace(/_/g, ' ')}
+                                </span>
+                                <span className="text-[9px] text-gray-400 font-medium">
+                                    {event.timestamp ? format(new Date(event.timestamp), 'HH:mm:ss') : '--:--:--'}
+                                </span>
+                            </div>
+                            {event.details && (
+                                <p className="text-[9px] text-gray-500 line-clamp-1">
+                                    {event.details.itemsCount} Artikel • {event.details.cartTotal}€
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    // Helper: Get AI Recommendation
+    const getRecommendationBlock = (rec: any) => {
+        if (!rec) return null
+        return (
+            <div className="mt-3 bg-amber-50/50 border border-amber-100 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">KI Empfehlung</span>
+                </div>
+                <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                    {rec.action === 'email_soon' ? 'Sofortige E-Mail senden (Hohe Kaufabsicht)' :
+                        rec.action === 'email_discount' ? 'Nudge mit 5% Rabatt senden' :
+                            'Warten على المزيد من التفاعل'}
+                </p>
+                <div className="mt-1.5 flex items-center gap-1.5 text-[9px] text-amber-600/70 font-bold uppercase">
+                    <div className="w-1 h-1 rounded-full bg-amber-400" />
+                    Grund: {rec.reason}
+                </div>
+            </div>
+        )
+    }
 
     // 4. Fetch Carts Logic
     const fetchCarts = useCallback(async () => {
@@ -241,31 +336,66 @@ export default function AbandonedCartsPage() {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-white">
-                    <Card className="bg-emerald-600 border-none shadow-lg">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-medium text-emerald-100 uppercase tracking-wider">Erfasste Warenkörbe</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{carts.length}</div>
+                {/* Enterprise Header Analytics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-indigo-100 text-[10px] font-black uppercase tracking-widest mb-1">Erfasste Warenkörbe</p>
+                                    <h3 className="text-2xl font-black tracking-tight">{carts.length}</h3>
+                                </div>
+                                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <ShoppingBag className="w-5 h-5" />
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-blue-600 border-none shadow-lg">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-medium text-blue-100 uppercase tracking-wider">Gesendete E-Mails</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{carts.filter(c => c.recoverySent).length}</div>
+
+                    <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-blue-100 text-[10px] font-black uppercase tracking-widest mb-1">Gesendete E-Mails</p>
+                                    <h3 className="text-2xl font-black tracking-tight">{carts.filter(c => c.recoverySent).length}</h3>
+                                </div>
+                                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-purple-600 border-none shadow-lg">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-medium text-purple-100 uppercase tracking-wider">Erfolgsrate</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">
-                                {carts.length > 0 ? Math.round((carts.filter(c => c.isRecovered).length / carts.length) * 100) : 0}%
+
+                    <Card className="border-none shadow-sm bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-purple-100 text-[10px] font-black uppercase tracking-widest mb-1">Erfolgsrate</p>
+                                    <h3 className="text-2xl font-black tracking-tight">
+                                        {carts.length > 0 ? Math.round((carts.filter(c => c.isRecovered).length / carts.length) * 100) : 0}%
+                                    </h3>
+                                </div>
+                                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <CheckCircle className="w-5 h-5" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-sm bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-emerald-100 text-[10px] font-black uppercase tracking-widest mb-1">Potenzielle Erholung</p>
+                                    <h3 className="text-2xl font-black tracking-tight">
+                                        {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(
+                                            carts.reduce((acc, c) => acc + (parseFloat(c.totalPrice) || 0), 0)
+                                        )}
+                                    </h3>
+                                </div>
+                                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm text-emerald-100">
+                                    <TrendingUp className="w-5 h-5" />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

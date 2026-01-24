@@ -258,8 +258,11 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        // Sync removed items to AbandonedCart (Create or Update)
-        if (finalRemovedItems?.length && (session.checkoutToken || session.cartToken)) {
+        // Sync to AbandonedCart (Create or Update) for ALL cart events
+        const isCartEvent = ['add_to_cart', 'remove_from_cart', 'update_cart', 'start_checkout', 'view_cart'].includes(event);
+        const hasCartData = session.checkoutToken || session.cartToken;
+
+        if ((isCartEvent || finalRemovedItems?.length) && hasCartData) {
             try {
                 // Try to find by checkoutToken OR (checkoutId = cartToken)
                 let cart = await prisma.abandonedCart.findFirst({
@@ -278,6 +281,38 @@ export async function POST(req: NextRequest) {
                 const currency = cartMetadata?.currency || 'EUR';
                 const totalPrice = cartMetadata?.totalValue || 0;
 
+                // SCORING LOGIC
+                // Base score from session
+                let currentScore = cart ? (cart as any).intentScore : (session.intentScore || 0);
+
+                // Event impact
+                if (event === 'add_to_cart') currentScore += 10;
+                if (event === 'start_checkout') currentScore += 30;
+                if (event === 'remove_from_cart') currentScore -= 5;
+                if (totalPrice > 100) currentScore += 5; // High value bonus
+
+                // Cap score
+                const intentScore = Math.max(0, Math.min(100, currentScore));
+
+                // RECOMMENDATION LOGIC
+                let recommendation: any = { action: 'wait', reason: 'Low intent', delay: 24 };
+                if (intentScore > 60 || event === 'start_checkout') {
+                    recommendation = { action: 'email_soon', reason: 'High Intent Detected', delay: 1 }; // 1 hour
+                } else if (intentScore > 30) {
+                    recommendation = { action: 'email_discount', reason: 'Needs Nudge', delay: 4 }; // 4 hours
+                }
+
+                // TIMELINE LOGIC
+                const newTimelineEvent = {
+                    type: event,
+                    timestamp: new Date().toISOString(),
+                    details: {
+                        removedCount: finalRemovedItems?.length || 0,
+                        cartTotal: totalPrice,
+                        itemsCount: currentItems.length
+                    }
+                };
+
                 if (!cart) {
                     // CREATE NEW (Instant Visibility)
                     if (session.cartToken) {
@@ -294,36 +329,45 @@ export async function POST(req: NextRequest) {
                                 lineItems: currentItems,
                                 removedItems: finalRemovedItems,
                                 isRecovered: false,
-                                recoverySent: false
+                                recoverySent: false,
+                                // Enterprise Fields
+                                timeline: [newTimelineEvent],
+                                intentScore: intentScore,
+                                recommendation: recommendation,
+                                lastActiveAt: new Date()
                             } as any
                         });
                     }
                 } else {
                     // UPDATE EXISTING
                     const existingRemoved = (cart.removedItems as any[]) || [];
+                    const existingTimeline = (cart.timeline as any[]) || [];
 
                     // Merge new removed items
-                    const newItems = finalRemovedItems.filter(newItem =>
-                        !existingRemoved.some(existing =>
+                    const newItems = finalRemovedItems ? finalRemovedItems.filter((newItem: any) =>
+                        !existingRemoved.some((existing: any) =>
                             existing.variant_id === newItem.id || existing.id === newItem.id
                         )
-                    );
+                    ) : [];
 
                     // Always determine the new state based on the latest snapshot (cartMetadata)
-                    // If cartMetadata is present, we must trust it accurately reflects the current cart (even if empty)
                     const shouldUpdateState = !!cartMetadata;
                     const hasNewRemovals = newItems.length > 0;
 
-                    if (shouldUpdateState || hasNewRemovals) {
+                    if (shouldUpdateState || hasNewRemovals || isCartEvent) {
                         const mergedRemoved = [...existingRemoved, ...newItems];
+                        const updatedTimeline = [...existingTimeline, newTimelineEvent]; // Append event
 
                         const updateData: any = {
                             removedItems: mergedRemoved,
-                            updatedAt: new Date()
+                            updatedAt: new Date(),
+                            timeline: updatedTimeline,
+                            intentScore: intentScore,
+                            recommendation: recommendation,
+                            lastActiveAt: new Date()
                         };
 
                         // Critical: Always update the main cart state if we have fresh metadata
-                        // This ensures that if the cart is empty, lineItems becomes [] and price becomes 0
                         if (shouldUpdateState) {
                             updateData.lineItems = currentItems;
                             updateData.totalPrice = totalPrice;
@@ -331,10 +375,10 @@ export async function POST(req: NextRequest) {
                         }
 
                         await prisma.abandonedCart.update({
-                            where: { id: cart.id },
+                            where: { id: (cart as any).id }, // Fix bypass
                             data: updateData
                         });
-                        console.log(`[Analytics] Updated AbandonedCart ${cart.id} - Removals: ${newItems.length}, Items in Cart: ${currentItems.length}`);
+                        console.log(`[Analytics] Updated AbandonedCart ${(cart as any).id} [Score: ${intentScore}]`);
                     }
                 }
             } catch (err) {
