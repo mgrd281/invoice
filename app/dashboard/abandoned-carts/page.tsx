@@ -389,7 +389,7 @@ export default function AbandonedCartsPage() {
                                                         <div className="flex flex-col gap-2 pt-2 border-t border-gray-50">
                                                             <div className="text-[9px] font-bold text-red-400/70 uppercase tracking-widest pl-0.5">Entfernte Artikel</div>
                                                             <div className="space-y-2 opacity-60">
-                                                                {((cart as any).removedItems as any[]).map((item: any, idx: number) => (
+                                                                {((cart as any).removedItems as any[]).slice().reverse().map((item: any, idx: number) => (
                                                                     <div key={idx} className="flex items-center gap-2 group grayscale hover:grayscale-0 transition-all duration-300">
                                                                         <div className="w-6 h-6 bg-gray-50 rounded border border-gray-100 flex-shrink-0 overflow-hidden">
                                                                             <img
