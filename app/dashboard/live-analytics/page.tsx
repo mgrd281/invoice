@@ -60,7 +60,8 @@ import {
     ShoppingBag,
     Plus,
     Minus,
-    Contact
+    Contact,
+    Trash2
 } from 'lucide-react';
 import {
     Dialog,
@@ -345,7 +346,7 @@ function LiveAnalyticsContent() {
         const interval = setInterval(() => {
             fetchLiveData();
             fetchSessions();
-        }, 5000);
+        }, 2000);
 
         if (filterType) {
             toast.info(`Filter aktiv: ${filterType}`, { duration: 2000 });
@@ -867,6 +868,43 @@ function LiveAnalyticsContent() {
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Abschluss Score</span>
                                                 </div>
                                             </div>
+
+                                            {/* Removed Items Section - Realtime */}
+                                            {selectedSession.removedItems && selectedSession.removedItems.length > 0 && (
+                                                <Card className="rounded-2xl border-none shadow-sm bg-red-50 overflow-hidden ring-1 ring-red-100 mb-6 group hover:ring-red-200 transition-all">
+                                                    <CardHeader className="py-3 px-6 bg-red-50/50 border-b border-red-100 flex flex-row items-center justify-between">
+                                                        <CardTitle className="text-xs font-black flex items-center gap-2 text-red-900 uppercase tracking-widest">
+                                                            <Trash2 className="h-3.5 w-3.5 text-red-600" /> Entfernte Artikel
+                                                        </CardTitle>
+                                                        <Badge className="bg-red-500 hover:bg-red-600 text-white border-none text-[10px] h-5 shadow-sm shadow-red-200 px-2">{selectedSession.removedItems.length}</Badge>
+                                                    </CardHeader>
+                                                    <CardContent className="p-0">
+                                                        <div className="divide-y divide-red-100/50">
+                                                            {selectedSession.removedItems.slice().reverse().map((item: any, idx: number) => (
+                                                                <div key={idx} className="p-3 flex items-center gap-3 bg-white/40 hover:bg-white/80 transition-colors animate-in fade-in slide-in-from-right-2 duration-300">
+                                                                    <div className="h-10 w-10 rounded-lg bg-white border border-red-100 overflow-hidden shrink-0 shadow-sm relative group-hover:scale-105 transition-transform">
+                                                                        {item.image ? <img src={item.image} className="h-full w-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-slate-300 italic">No Img</div>}
+                                                                        <div className="absolute inset-0 bg-red-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <Minus className="h-4 w-4 text-white drop-shadow-md" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="text-[10px] font-black text-slate-700 truncate decoration-red-300/50 line-through decoration-2">{item.title}</div>
+                                                                        <div className="text-[9px] text-red-400 font-bold mt-0.5 flex items-center gap-1">
+                                                                            <span>{item.qty} × {item.price?.toFixed(2)} €</span>
+                                                                            <span className="text-red-200">•</span>
+                                                                            <span>{item.removedAt ? formatDistanceToNow(new Date(item.removedAt), { addSuffix: true, locale: de }) : 'Gerade eben'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-300 hover:text-red-600 hover:bg-red-100/50 rounded-full" onClick={() => toast.info('Wiederherstellungs-Email wird vorbereitet...')}>
+                                                                        <RotateCcw className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
 
                                             {/* Cart Development Timeline (Session-Akte Exclusive) */}
                                             <Card className="rounded-2xl border-none shadow-sm bg-white overflow-hidden ring-1 ring-slate-100">

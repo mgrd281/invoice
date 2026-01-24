@@ -140,8 +140,65 @@ export async function POST(req: NextRequest) {
         });
 
         // 2. Ensure Session exists
+        // 2. Ensure Session exists & Handle Cart Diff
         const cartMetadata = metadata?.cart;
         const shopifyCustomerId = metadata?.customerId || body.customerId;
+
+        let finalRemovedItems: any[] | undefined = undefined;
+
+        // Handle explicit remove_from_cart event from client
+        if (event === 'remove_from_cart' && metadata?.removedItems?.length) {
+            const clientRemovedItems = metadata.removedItems.map((item: any) => ({
+                ...item,
+                removedAt: item.removedAt || new Date().toISOString()
+            }));
+
+            // Get current session to append to existing removed list
+            const currentSession = await prisma.visitorSession.findUnique({
+                where: { sessionId },
+                select: { removedItems: true }
+            });
+
+            const prevRemoved = (currentSession?.removedItems as any[]) || [];
+
+            // Avoid duplicates
+            const newItems = clientRemovedItems.filter((newItem: any) =>
+                !prevRemoved.some((existing: any) =>
+                    existing.variant_id === newItem.id || existing.id === newItem.id
+                )
+            );
+
+            finalRemovedItems = [...prevRemoved, ...newItems];
+            console.log(`[Analytics] Added ${newItems.length} explicitly removed items to session`);
+        }
+
+        if (cartMetadata) {
+            const currentSession = await prisma.visitorSession.findUnique({
+                where: { sessionId },
+                select: { cartSnapshot: true, removedItems: true }
+            });
+
+            if (currentSession) {
+                const oldItems = (currentSession.cartSnapshot as any[]) || [];
+                const newItems = cartMetadata.items || [];
+
+                // Identify items present in old snapshot but missing in new one
+                const newlyRemoved = oldItems.filter(old => !newItems.some((n: any) => n.id === old.id))
+                    .map(item => ({
+                        ...item,
+                        removedAt: new Date().toISOString()
+                    }));
+
+                const prevRemoved = (currentSession.removedItems as any[]) || [];
+
+                if (newlyRemoved.length > 0) {
+                    console.log(`[Analytics] Detected ${newlyRemoved.length} removed items for session ${sessionId}`);
+                    finalRemovedItems = [...prevRemoved, ...newlyRemoved];
+                } else {
+                    finalRemovedItems = prevRemoved.length > 0 ? prevRemoved : undefined;
+                }
+            }
+        }
 
         const session = await prisma.visitorSession.upsert({
             where: { sessionId },
@@ -156,12 +213,13 @@ export async function POST(req: NextRequest) {
                 region: region || undefined,
                 ipMasked: maskedIp,
                 customerId: shopifyCustomerId || undefined,
-                // Update cart snapshot if provided
+                // Update cart snapshot & removed items if provided
                 ...(cartMetadata && {
                     cartSnapshot: cartMetadata.items || undefined,
                     itemsCount: cartMetadata.itemsCount || 0,
                     totalValue: cartMetadata.totalValue || 0,
                     currency: cartMetadata.currency || 'EUR',
+                    removedItems: finalRemovedItems ?? undefined
                 })
             },
             create: {
@@ -194,10 +252,51 @@ export async function POST(req: NextRequest) {
                     itemsCount: cartMetadata.itemsCount,
                     totalValue: cartMetadata.totalValue,
                     currency: cartMetadata.currency || 'EUR',
-                    peakCartValue: cartMetadata.totalValue
+                    peakCartValue: cartMetadata.totalValue,
+                    removedItems: []
                 })
             }
         });
+
+        // Sync removed items to AbandonedCart if applicable
+        if (finalRemovedItems?.length && (session.checkoutToken || session.cartToken)) {
+            try {
+                // Find AbandonedCart linked to this session
+                const cart = await prisma.abandonedCart.findFirst({
+                    where: {
+                        organizationId,
+                        OR: [
+                            { checkoutToken: session.checkoutToken },
+                            { checkoutId: session.cartToken }
+                        ]
+                    }
+                });
+
+                if (cart) {
+                    const existingRemoved = (cart.removedItems as any[]) || [];
+
+                    // Merge new removed items, avoiding duplicates
+                    const newItems = finalRemovedItems.filter(newItem =>
+                        !existingRemoved.some(existing =>
+                            existing.variant_id === newItem.id || existing.id === newItem.id
+                        )
+                    );
+
+                    if (newItems.length > 0) {
+                        await prisma.abandonedCart.update({
+                            where: { id: cart.id },
+                            data: {
+                                removedItems: [...existingRemoved, ...newItems],
+                                updatedAt: new Date()
+                            } as any
+                        });
+                        console.log(`[Analytics] Synced ${newItems.length} removed items to AbandonedCart ${cart.id}`);
+                    }
+                }
+            } catch (err) {
+                console.error('[Analytics] Failed to sync removed items to AbandonedCart:', err);
+            }
+        }
 
         // Update Peak Value if current is higher
         if (cartMetadata?.totalValue > (session.peakCartValue || 0)) {

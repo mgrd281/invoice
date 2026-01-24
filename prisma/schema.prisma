@@ -927,6 +927,7 @@ model VisitorSession {
   purchaseStatus String?        @default("OPEN")
   totalValue     Float?         @default(0)
   cartSnapshot   Json?
+  removedItems   Json?          // Array of items removed from cart
   itemsCount     Int?           @default(0)
   peakCartValue  Float?         @default(0)
   status         String         @default("ACTIVE")

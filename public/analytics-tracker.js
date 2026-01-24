@@ -597,18 +597,107 @@
         }
     });
 
-    // Smart Cart & Checkout Interception
+    // Smart Cart & Checkout Interception (Enhanced for realtime removal detection)
     const interceptCart = () => {
         const originalFetch = window.fetch;
-        window.fetch = function () {
-            const arg = arguments[0];
-            const url = typeof arg === 'string' ? arg : arg?.url || '';
 
-            if (url.includes('/cart/add')) track('add_to_cart');
-            if (url.includes('/cart/change') || url.includes('/cart/update') || url.includes('/cart/add')) track('update_cart');
-            if (url.includes('/checkout')) track('start_checkout');
+        window.fetch = async function (...args) {
+            const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
 
-            return originalFetch.apply(this, arguments);
+            // BEFORE the fetch: Capture current cart state for cart-modifying calls
+            let cartBefore = null;
+            const isCartModify = url.includes('/cart/change') || url.includes('/cart/update');
+
+            if (isCartModify) {
+                try {
+                    const resp = await originalFetch.call(this, '/cart.js');
+                    cartBefore = await resp.json();
+                    console.log('[Analytics] Pre-fetch cart state captured:', cartBefore?.item_count, 'items');
+                } catch (e) {
+                    console.warn('[Analytics] Failed to capture pre-cart state:', e);
+                }
+            }
+
+            // Execute the original fetch
+            const result = await originalFetch.apply(this, args);
+
+            // AFTER: Analyze the result
+            try {
+                if (result.ok) {
+                    if (url.includes('/cart/add')) {
+                        track('add_to_cart');
+                    }
+
+                    if (isCartModify && cartBefore) {
+                        // Clone the response to read it without consuming
+                        const cloned = result.clone();
+                        const cartAfter = await cloned.json();
+
+                        // Detect FULLY removed items (no longer in cart)
+                        const removedItems = (cartBefore.items || []).filter(oldItem =>
+                            !(cartAfter.items || []).some(newItem =>
+                                newItem.variant_id === oldItem.variant_id
+                            )
+                        ).map(item => ({
+                            id: item.variant_id,
+                            product_id: item.product_id,
+                            variant_id: item.variant_id,
+                            title: item.product_title,
+                            variant_title: item.variant_title,
+                            quantity: item.quantity,
+                            price: item.price / 100,
+                            image: item.image,
+                            url: item.url,
+                            removedAt: new Date().toISOString()
+                        }));
+
+                        // Detect PARTIAL removals (quantity reduced)
+                        const partialRemovals = (cartBefore.items || []).filter(oldItem => {
+                            const newItem = (cartAfter.items || []).find(n => n.variant_id === oldItem.variant_id);
+                            return newItem && newItem.quantity < oldItem.quantity;
+                        }).map(oldItem => {
+                            const newItem = cartAfter.items.find(n => n.variant_id === oldItem.variant_id);
+                            return {
+                                id: oldItem.variant_id,
+                                product_id: oldItem.product_id,
+                                variant_id: oldItem.variant_id,
+                                title: oldItem.product_title,
+                                variant_title: oldItem.variant_title,
+                                quantity: oldItem.quantity - newItem.quantity, // qty removed
+                                price: oldItem.price / 100,
+                                image: oldItem.image,
+                                url: oldItem.url,
+                                removedAt: new Date().toISOString(),
+                                isPartialRemoval: true
+                            };
+                        });
+
+                        const allRemovals = [...removedItems, ...partialRemovals];
+
+                        if (allRemovals.length > 0) {
+                            console.log('[Analytics] 🔴 Detected removed items:', allRemovals);
+                            track('remove_from_cart', {
+                                removedItems: allRemovals,
+                                cartSnapshotAfter: {
+                                    itemsCount: cartAfter.item_count,
+                                    totalValue: cartAfter.total_price / 100,
+                                    currency: cartAfter.currency
+                                }
+                            });
+                        } else {
+                            track('update_cart');
+                        }
+                    }
+
+                    if (url.includes('/checkout')) {
+                        track('start_checkout');
+                    }
+                }
+            } catch (e) {
+                console.warn('[Analytics] Post-fetch analysis error:', e);
+            }
+
+            return result;
         };
 
         // Track Checkout Buttons
