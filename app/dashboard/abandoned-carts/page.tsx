@@ -156,7 +156,7 @@ export default function AbandonedCartsPage() {
             fetchCarts()
             const interval = setInterval(() => {
                 if (!document.hidden) fetchCarts()
-            }, 2000)
+            }, 1000)
             return () => clearInterval(interval)
         }
     }, [mounted, fetchCarts])

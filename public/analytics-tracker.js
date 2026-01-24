@@ -681,7 +681,18 @@
                                 cartSnapshotAfter: {
                                     itemsCount: cartAfter.item_count,
                                     totalValue: cartAfter.total_price / 100,
-                                    currency: cartAfter.currency
+                                    currency: cartAfter.currency,
+                                    items: cartAfter.items.map(item => ({
+                                        id: item.variant_id,
+                                        product_id: item.product_id,
+                                        variant_id: item.variant_id,
+                                        title: item.product_title,
+                                        variant_title: item.variant_title,
+                                        quantity: item.quantity,
+                                        price: item.price / 100,
+                                        image: item.image,
+                                        url: item.url
+                                    }))
                                 }
                             });
                         } else {

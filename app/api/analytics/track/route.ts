@@ -258,37 +258,74 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        // Sync removed items to AbandonedCart if applicable
+        // Sync removed items to AbandonedCart (Create or Update)
         if (finalRemovedItems?.length && (session.checkoutToken || session.cartToken)) {
             try {
-                // Find AbandonedCart linked to this session
-                const cart = await prisma.abandonedCart.findFirst({
+                // Try to find by checkoutToken OR (checkoutId = cartToken)
+                let cart = await prisma.abandonedCart.findFirst({
                     where: {
                         organizationId,
                         OR: [
                             { checkoutToken: session.checkoutToken },
-                            { checkoutId: session.cartToken }
+                            { checkoutId: session.cartToken }, // Fallback for pure carts
+                            session.cartToken ? { checkoutId: session.cartToken } : {}
                         ]
                     }
                 });
 
-                if (cart) {
+                // DATA PREP
+                const currentItems = cartMetadata?.items || [];
+                const currency = cartMetadata?.currency || 'EUR';
+                const totalPrice = cartMetadata?.totalValue || 0;
+
+                if (!cart) {
+                    // CREATE NEW (Instant Visibility)
+                    if (session.cartToken) {
+                        console.log(`[Analytics] Creating new AbandonedCart for session ${sessionId} (Instant)`);
+                        cart = await prisma.abandonedCart.create({
+                            data: {
+                                organizationId,
+                                checkoutId: session.cartToken, // Use cartToken as ID
+                                checkoutToken: session.checkoutToken || session.cartToken,
+                                email: `anonymous-${session.cartToken.substring(0, 8)}@hidden.com`, // Placeholder
+                                cartUrl: `${url ? new URL(url).origin : ''}/cart`,
+                                totalPrice: totalPrice,
+                                currency: currency,
+                                lineItems: currentItems,
+                                removedItems: finalRemovedItems,
+                                isRecovered: false,
+                                recoverySent: false
+                            } as any
+                        });
+                    }
+                } else {
+                    // UPDATE EXISTING
                     const existingRemoved = (cart.removedItems as any[]) || [];
 
-                    // Merge new removed items, avoiding duplicates
+                    // Merge new removed items
                     const newItems = finalRemovedItems.filter(newItem =>
                         !existingRemoved.some(existing =>
                             existing.variant_id === newItem.id || existing.id === newItem.id
                         )
                     );
 
-                    if (newItems.length > 0) {
+                    if (newItems.length > 0 || currentItems.length > 0) {
+                        const mergedRemoved = [...existingRemoved, ...newItems];
+
+                        // Update lineItems too if available, to keep it fresh
+                        const updateData: any = {
+                            removedItems: mergedRemoved,
+                            updatedAt: new Date()
+                        };
+
+                        if (currentItems.length > 0) {
+                            updateData.lineItems = currentItems;
+                            updateData.totalPrice = totalPrice;
+                        }
+
                         await prisma.abandonedCart.update({
                             where: { id: cart.id },
-                            data: {
-                                removedItems: [...existingRemoved, ...newItems],
-                                updatedAt: new Date()
-                            } as any
+                            data: updateData
                         });
                         console.log(`[Analytics] Synced ${newItems.length} removed items to AbandonedCart ${cart.id}`);
                     }
