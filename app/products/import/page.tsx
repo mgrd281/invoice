@@ -778,35 +778,41 @@ export default function ProductImportPage() {
                                                     <Label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                                                         <Package className="h-3.5 w-3.5" /> Variants ({previewData.variants?.length || 1})
                                                     </Label>
-                                                    <div className="border rounded-2xl overflow-hidden bg-white shadow-sm">
-                                                        <table className="w-full text-xs text-left">
+                                                    <div className="border rounded-2xl overflow-hidden bg-white shadow-lg overflow-x-auto">
+                                                        <table className="w-full text-[11px] text-left">
                                                             <thead className="bg-gray-50 border-b">
                                                                 <tr>
-                                                                    <th className="px-3 py-2 font-bold text-gray-600">Option/Color</th>
-                                                                    <th className="px-3 py-2 font-bold text-gray-600">Price</th>
-                                                                    <th className="px-3 py-2 font-bold text-gray-600">Status</th>
+                                                                    <th className="px-4 py-3 font-bold text-gray-600">Option/Color</th>
+                                                                    <th className="px-4 py-3 font-bold text-gray-600">SKU</th>
+                                                                    <th className="px-4 py-3 font-bold text-gray-600">Price</th>
+                                                                    <th className="px-4 py-3 font-bold text-gray-600">Status</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y">
-                                                                {previewData.variants?.slice(0, 10).map((v: any, i: number) => (
-                                                                    <tr key={i} className="hover:bg-gray-50/50">
-                                                                        <td className="px-3 py-2 text-gray-900 font-medium flex items-center gap-2">
-                                                                            {v.image && <img src={v.image} className="h-6 w-6 rounded border object-cover" />}
-                                                                            <span>{v.title}</span>
+                                                                {(previewData.variants && previewData.variants.length > 0 ? previewData.variants : [{ title: 'Default', price: previewData.price, available: true }])?.slice(0, 15).map((v: any, i: number) => (
+                                                                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                                                                        <td className="px-4 py-3 text-gray-900 font-bold flex items-center gap-3">
+                                                                            {v.image && (
+                                                                                <div className="h-8 w-8 rounded-lg overflow-hidden border bg-gray-50 flex-shrink-0 shadow-sm">
+                                                                                    <img src={v.image} className="h-full w-full object-cover" />
+                                                                                </div>
+                                                                            )}
+                                                                            <span className="truncate max-w-[100px]">{v.title}</span>
                                                                         </td>
-                                                                        <td className="px-3 py-2 text-gray-600">{v.price || previewData.price} {previewData.currency || '€'}</td>
-                                                                        <td className="px-3 py-2">
-                                                                            <Badge className={`text-[9px] px-1 py-0 h-4 ${v.available !== false ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'} border-0`}>
-                                                                                {v.available !== false ? 'In Stock' : 'Out of Stock'}
+                                                                        <td className="px-4 py-3 text-gray-400 font-mono scale-95 origin-left">{v.sku || '-'}</td>
+                                                                        <td className="px-4 py-3 text-emerald-600 font-bold whitespace-nowrap">{v.price || previewData.price} {previewData.currency || '€'}</td>
+                                                                        <td className="px-4 py-3">
+                                                                            <Badge className={`text-[9px] px-1.5 py-0.5 h-auto ${v.available !== false ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'} border`}>
+                                                                                {v.available !== false ? 'In Stock' : 'Out of'}
                                                                             </Badge>
                                                                         </td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
                                                         </table>
-                                                        {previewData.variants?.length > 10 && (
-                                                            <div className="p-2 text-center text-[10px] text-gray-400 font-medium bg-gray-50/30">
-                                                                + {previewData.variants.length - 10} more variants
+                                                        {previewData.variants?.length > 15 && (
+                                                            <div className="p-2.5 text-center text-[10px] text-gray-400 font-bold bg-gray-50/50 border-t">
+                                                                + {previewData.variants.length - 15} more variants available
                                                             </div>
                                                         )}
                                                     </div>
