@@ -109,35 +109,71 @@ export async function POST(request: NextRequest) {
         const price = parseFloat(product.price)
         const compareAtPrice = product.compare_at_price || (price * 1.3).toFixed(2)
 
-        // Prepare Super Metafields
+        // Helper to format values correctly based on type
+        const formatMetafield = (key: string, value: any, type: string, namespace = 'custom') => {
+            if (!value) return null
+            let finalValue = value
+
+            if (type === 'rich_text_field') {
+                // Ensure value is a string and handle HTML-like content by stripping or wrapping
+                // For Shopify Rich Text, we must provide it as a JSON string of the content tree
+                const textValue = typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : String(value)
+                finalValue = JSON.stringify({
+                    type: "root",
+                    children: [
+                        {
+                            type: "paragraph",
+                            children: [
+                                {
+                                    type: "text",
+                                    value: textValue
+                                }
+                            ]
+                        }
+                    ]
+                })
+            } else if (type === 'multi_line_text_field') {
+                finalValue = typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').trim() : String(value)
+            } else {
+                finalValue = String(value).substring(0, 255)
+            }
+
+            return {
+                namespace,
+                key,
+                value: finalValue,
+                type
+            }
+        }
+
+        // Map product metadata fields using the new formatter
         const superMetafields = [
-            ...(productMetafields || []),
-            { namespace: 'google', key: 'mpn', value: product.google_mpn || product.sku || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'condition', value: product.google_condition || 'new', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'gender', value: product.google_gender || 'unisex', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'age_group', value: product.google_age_group || 'adult', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'size_type', value: product.google_size_type || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'size_system', value: product.google_size_system || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'custom_label_0', value: product.google_custom_label_0 || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'custom_label_1', value: product.google_custom_label_1 || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'custom_label_2', value: product.google_custom_label_2 || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'custom_label_3', value: product.google_custom_label_3 || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'custom_label_4', value: product.google_custom_label_4 || '', type: 'single_line_text_field' },
-            { namespace: 'google', key: 'custom_product', value: product.google_custom_product || '', type: 'single_line_text_field' },
-            { namespace: 'dhl', key: 'customs_item_description', value: product.dhl_customs_item_description || product.dhl_custom_description || product.title?.slice(0, 50), type: 'single_line_text_field' },
-            { namespace: 'custom', key: 'versandkosten', value: product.shipping_costs || product.versandkosten || '0.00', type: 'single_line_text_field' },
-            { namespace: 'custom', key: 'shipping_date_time', value: product.shipping_date_time || '', type: 'single_line_text_field' },
-            { namespace: 'custom', key: 'collapsible_row_content_1', value: product.collapsible_row_1_content || '', type: 'rich_text_field' },
-            { namespace: 'custom', key: 'collapsible_row_heading_1', value: product.collapsible_row_1_heading || 'Details', type: 'single_line_text_field' },
-            { namespace: 'custom', key: 'collapsible_row_content_2', value: product.collapsible_row_2_content || '', type: 'rich_text_field' },
-            { namespace: 'custom', key: 'collapsible_row_heading_2', value: product.collapsible_row_2_heading || 'Lieferung', type: 'single_line_text_field' },
-            { namespace: 'custom', key: 'collapsible_row_content_3', value: product.collapsible_row_3_content || '', type: 'rich_text_field' },
-            { namespace: 'custom', key: 'collapsible_row_heading_3', value: product.collapsible_row_3_heading || 'Garantie', type: 'single_line_text_field' },
-            { namespace: 'custom', key: 'emoji_benefits', value: product.emoji_benefits || '', type: 'multi_line_text_field' },
-            { namespace: 'custom', key: 'product_boosts', value: product.product_boosts || '', type: 'multi_line_text_field' },
-            { namespace: 'global', key: 'title_tag', value: product.metaTitle || product.title, type: 'single_line_text_field' },
-            { namespace: 'global', key: 'description_tag', value: product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), type: 'multi_line_text_field' }
-        ].filter(m => m.value && m.value !== '');
+            formatMetafield('mpn', product.google_mpn || product.sku, 'single_line_text_field', 'google'),
+            formatMetafield('condition', product.google_condition || 'new', 'single_line_text_field', 'google'),
+            formatMetafield('gender', product.google_gender || 'unisex', 'single_line_text_field', 'google'),
+            formatMetafield('age_group', product.google_age_group || 'adult', 'single_line_text_field', 'google'),
+            formatMetafield('size_type', product.google_size_type, 'single_line_text_field', 'google'),
+            formatMetafield('size_system', product.google_size_system, 'single_line_text_field', 'google'),
+            formatMetafield('custom_label_0', product.google_custom_label_0, 'single_line_text_field', 'google'),
+            formatMetafield('custom_label_1', product.google_custom_label_1, 'single_line_text_field', 'google'),
+            formatMetafield('custom_label_2', product.google_custom_label_2, 'single_line_text_field', 'google'),
+            formatMetafield('custom_label_3', product.google_custom_label_3, 'single_line_text_field', 'google'),
+            formatMetafield('custom_label_4', product.google_custom_label_4, 'single_line_text_field', 'google'),
+            formatMetafield('custom_product', product.google_custom_product, 'single_line_text_field', 'google'),
+            formatMetafield('customs_item_description', product.dhl_customs_item_description || product.dhl_custom_description || product.title?.slice(0, 50), 'single_line_text_field', 'dhl'),
+            formatMetafield('versandkosten', product.shipping_costs || product.versandkosten || '0.00', 'single_line_text_field', 'custom'),
+            formatMetafield('shipping_date_time', product.shipping_date_time, 'single_line_text_field', 'custom'),
+            formatMetafield('collapsible_row_content_1', product.collapsible_row_1_content, 'rich_text_field', 'custom'),
+            formatMetafield('collapsible_row_heading_1', product.collapsible_row_1_heading || 'Details', 'single_line_text_field', 'custom'),
+            formatMetafield('collapsible_row_content_2', product.collapsible_row_2_content, 'rich_text_field', 'custom'),
+            formatMetafield('collapsible_row_heading_2', product.collapsible_row_2_heading || 'Lieferung', 'single_line_text_field', 'custom'),
+            formatMetafield('collapsible_row_content_3', product.collapsible_row_3_content, 'rich_text_field', 'custom'),
+            formatMetafield('collapsible_row_heading_3', product.collapsible_row_3_heading || 'Garantie', 'single_line_text_field', 'custom'),
+            formatMetafield('emoji_benefits', product.emoji_benefits, 'multi_line_text_field', 'custom'),
+            formatMetafield('product_boosts', product.product_boosts, 'multi_line_text_field', 'custom'),
+            formatMetafield('title_tag', product.metaTitle || product.title, 'single_line_text_field', 'global'),
+            formatMetafield('description_tag', product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), 'multi_line_text_field', 'global')
+        ].filter(m => m !== null) as any[]
 
         // Prepare variants and options
         let options: string[] = [];
