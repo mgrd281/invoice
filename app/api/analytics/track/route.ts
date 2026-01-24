@@ -330,15 +330,14 @@ export async function POST(req: NextRequest) {
                     where: {
                         organizationId,
                         OR: [
-                            { checkoutToken: session.checkoutToken },
-                            { checkoutId: session.cartToken }, // Fallback for pure carts
+                            session.checkoutToken ? { checkoutToken: session.checkoutToken } : {},
                             session.cartToken ? { checkoutId: session.cartToken } : {}
-                        ]
+                        ].filter(cond => Object.keys(cond).length > 0) as any
                     }
                 });
 
                 // DATA PREP
-                const currentItems = cartMetadata?.items || [];
+                const currentItems = (cartMetadata?.items as any[]) || [];
                 const currency = cartMetadata?.currency || 'EUR';
                 const totalPrice = cartMetadata?.totalValue || 0;
 
