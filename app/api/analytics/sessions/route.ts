@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         offset = parseInt(searchParams.get('offset') || '0');
         deviceType = searchParams.get('deviceType');
         sessionId = searchParams.get('sessionId');
+        const search = searchParams.get('search');
 
         const user = await prisma.user.findUnique({
             where: { email: session.user.email! },
@@ -37,6 +38,13 @@ export async function GET(request: NextRequest) {
 
         if (deviceType) where.deviceType = deviceType;
         if (sessionId) where.sessionId = sessionId;
+        if (search) {
+            where.OR = [
+                { city: { contains: search, mode: 'insensitive' } },
+                { visitor: { customIdentifier: { contains: search, mode: 'insensitive' } } },
+                { visitorId: { contains: search, mode: 'insensitive' } }
+            ];
+        }
 
         const [sessionsRaw, total] = await Promise.all([
             prisma.visitorSession.findMany({

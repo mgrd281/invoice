@@ -101,6 +101,7 @@ function LiveAnalyticsContent() {
     const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [followedSessionId, setFollowedSessionId] = useState<string | null>(null);
+    const [historySearch, setHistorySearch] = useState('');
 
     const fetchVisitors = async () => {
         setLoadingVisitors(true);
@@ -398,7 +399,8 @@ function LiveAnalyticsContent() {
 
     const fetchSessions = async () => {
         try {
-            const res = await fetch('/api/analytics/sessions?limit=50');
+            const query = historySearch ? `&search=${encodeURIComponent(historySearch)}` : '';
+            const res = await fetch(`/api/analytics/sessions?limit=50${query}`);
             const data = await res.json();
             let s = data.sessions || [];
 
@@ -424,7 +426,7 @@ function LiveAnalyticsContent() {
         }
 
         return () => clearInterval(interval);
-    }, [filterType]);
+    }, [filterType, historySearch]);
 
     useEffect(() => {
         if (liveData) setLoading(false);
@@ -1385,107 +1387,130 @@ function LiveAnalyticsContent() {
                 </TabsContent>
 
                 <TabsContent value="history" className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h2 className="text-xl font-bold tracking-tight">Session-Archiv</h2>
-                            <p className="text-sm text-muted-foreground">Historische Aufzeichnungen und Nutzerverhalten.</p>
+                            <p className="text-sm text-muted-foreground">Historische Aufzeichnungen والبحث حسب الموقع أو المعرف (ID).</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="h-8 px-3 border-slate-200 bg-white">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Suchen nach Stadt أو ID..."
+                                    className="h-9 w-[250px] bg-white border border-slate-200 rounded-lg pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    value={historySearch}
+                                    onChange={(e) => setHistorySearch(e.target.value)}
+                                />
+                            </div>
+                            <Badge variant="outline" className="h-9 px-3 border-slate-200 bg-white">
                                 {sessions.length} Aufzeichnungen
                             </Badge>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {sessions.map((session: any) => (
-                            <Card
-                                key={session.id}
-                                className={`group overflow-hidden border-slate-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative ${selectedSession?.id === session.id ? 'ring-2 ring-blue-500 border-transparent' : ''}`}
-                                onClick={() => {
-                                    setSelectedSession(session);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                            >
-                                {/* Thumbnail / Replay Indicator */}
-                                <div className="aspect-video w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
-                                    {session.recordingStatus === 'AVAILABLE' ? (
-                                        <>
-                                            {session.thumbnailUrl ? (
-                                                <img src={session.thumbnailUrl} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
-                                            ) : (
-                                                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
-                                            )}
-                                            <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-100">
-                                                <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 group-hover:bg-red-600 group-hover:border-red-500 transition-all">
-                                                    <Play className="h-6 w-6 fill-current ml-1" />
+                        {sessions.map((session: any) => {
+                            const durationMs = new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime();
+                            const durationMin = Math.floor(durationMs / 60000);
+                            const durationSec = Math.floor((durationMs % 60000) / 1000);
+
+                            return (
+                                <Card
+                                    key={session.id}
+                                    className={`group overflow-hidden border-slate-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative ${selectedSession?.id === session.id ? 'ring-2 ring-blue-500 border-transparent' : ''}`}
+                                    onClick={() => {
+                                        setSelectedSession(session);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                >
+                                    {/* Thumbnail / Replay Indicator */}
+                                    <div className="aspect-video w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                                        {session.recordingStatus === 'AVAILABLE' ? (
+                                            <>
+                                                {session.thumbnailUrl ? (
+                                                    <img src={session.thumbnailUrl} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
+                                                ) : (
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-950">
+                                                        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+                                                        <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-center">
+                                                            <div className="h-12 w-12 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                                                                <Video className="h-6 w-6 text-white/40" />
+                                                            </div>
+                                                            <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">Session Replay</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-100">
+                                                    <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 group-hover:bg-red-600 group-hover:border-red-500 transition-all shadow-xl">
+                                                        <Play className="h-6 w-6 fill-current ml-1" />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <Badge className="absolute top-3 right-3 bg-red-600 text-white border-none font-bold text-[10px]">VIDEO</Badge>
-                                        </>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2 text-slate-300">
-                                            <Video className="h-10 w-10 opacity-20" />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Kein Video</span>
-                                        </div>
-                                    )}
-
-                                    {/* Overlay Info */}
-                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                                        <div className="flex justify-between items-end">
-                                            <div className="flex items-center gap-2 text-white">
-                                                {getDeviceIcon(session.deviceType)}
-                                                <span className="text-[10px] font-bold">{session.browser}</span>
-                                            </div>
-                                            <span className="text-[10px] text-white/80 font-mono">{formatDistanceToNow(new Date(session.startTime), { addSuffix: true, locale: de })}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <CardContent className="p-4">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex flex-col">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-black text-sm text-slate-900">
-                                                    {session.visitor?.country || 'DE'} {session.city ? `(${session.city})` : ''}
-                                                </span>
-                                                {session.isVip && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
-                                            </div>
-                                            <span className="text-[10px] text-slate-400 font-mono">#{session.visitor?.id.substring(0, 8).toUpperCase()}</span>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                            {getIntentBadge(session.intentLabel)}
-                                            {session.purchaseStatus === 'PAID' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[9px] font-bold">BEZAHLT</Badge>}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between text-xs border-t pt-3 mt-1">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Aktivität</span>
-                                            <span className="font-black">{session._count?.events || session.events?.length || 0} Events</span>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Dauer</span>
-                                            <span className="font-black">{Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 flex gap-1.5 flex-wrap">
-                                        {session.sourceLabel && (
-                                            <div className="flex items-center gap-1 bg-slate-50 border px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500">
-                                                {getSourceIcon(session.sourceLabel, session.sourceMedium)}
-                                                {session.sourceLabel}
+                                                <Badge className="absolute top-3 right-3 bg-red-600 text-white border-none font-bold text-[10px] shadow-lg">VIDEO</Badge>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2 text-slate-300">
+                                                <Video className="h-10 w-10 opacity-20" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Kein Video</span>
                                             </div>
                                         )}
-                                        {session.totalValue > 0 && (
-                                            <div className="bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded text-[9px] font-black">
-                                                {session.totalValue.toFixed(2)} € WK
+
+                                        {/* Overlay Info */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                            <div className="flex justify-between items-end">
+                                                <div className="flex items-center gap-2 text-white">
+                                                    {getDeviceIcon(session.deviceType)}
+                                                    <span className="text-[10px] font-bold">{session.browser}</span>
+                                                </div>
+                                                <span className="text-[10px] text-white/80 font-mono">{formatDistanceToNow(new Date(session.startTime), { addSuffix: true, locale: de })}</span>
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+
+                                    <CardContent className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-black text-sm text-slate-900">
+                                                        {session.visitor?.country || 'DE'} {session.city ? `(${session.city})` : ''}
+                                                    </span>
+                                                    {session.isVip && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 font-mono">#{session.visitor?.id.substring(0, 8).toUpperCase()}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                {getIntentBadge(session.intentLabel)}
+                                                {session.purchaseStatus === 'PAID' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[9px] font-bold">BEZAHLT</Badge>}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-xs border-t pt-3 mt-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Aktivität</span>
+                                                <span className="font-black">{session._count?.events || session.events?.length || 0} Events</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Dauer</span>
+                                                <span className="font-black">{Math.round((new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 60000)} Min.</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 flex gap-1.5 flex-wrap">
+                                            {session.sourceLabel && (
+                                                <div className="flex items-center gap-1 bg-slate-50 border px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500">
+                                                    {getSourceIcon(session.sourceLabel, session.sourceMedium)}
+                                                    {session.sourceLabel}
+                                                </div>
+                                            )}
+                                            {session.totalValue > 0 && (
+                                                <div className="bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded text-[9px] font-black">
+                                                    {session.totalValue.toFixed(2)} € WK
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
 
                         {sessions.length === 0 && (
                             <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 italic bg-white rounded-2xl border border-dashed">
