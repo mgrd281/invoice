@@ -196,8 +196,14 @@ export function VoiceAssistant() {
             }
 
             if (data.reply) {
-                setReply(data.reply);
-                speak(data.reply, data.language);
+                // For NAVIGATE commands, force silence even if backend sent a reply
+                if (data.intent !== 'NAVIGATE') {
+                    setReply(data.reply);
+                    speak(data.reply, data.language);
+                } else {
+                    console.log("Navigation intent detected, suppressing speech.");
+                    setIsOpen(false);
+                }
             }
 
             if (data.intent === 'ACTION') {
