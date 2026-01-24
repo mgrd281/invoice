@@ -191,7 +191,8 @@ export async function POST(request: NextRequest) {
                     inventory_management: 'shopify',
                     inventory_quantity: 889,
                     taxable: settings.chargeTax,
-                    requires_shipping: settings.isPhysical
+                    requires_shipping: settings.isPhysical,
+                    metafields: superMetafields // Essential: add metafields to all variants
                 };
 
                 if (v.options && Array.isArray(v.options)) {
@@ -215,9 +216,15 @@ export async function POST(request: NextRequest) {
                     inventory_management: 'shopify',
                     inventory_quantity: 889,
                     requires_shipping: settings.isPhysical,
-                    metafields: variantMetafields.length > 0 ? variantMetafields : undefined
+                    metafields: superMetafields
                 }
             ];
+
+        // Prepare product images
+        const productImages = (product.images || []).map((img: any) => ({
+            src: typeof img === 'string' ? img : img.src,
+            alt: typeof img === 'string' ? product.title : (img.alt || product.title)
+        }));
 
         // Prepare product data for Shopify
         const shopifyProduct: any = {
@@ -229,13 +236,12 @@ export async function POST(request: NextRequest) {
             tags: product.tags ? `${product.tags}, Imported` : 'Imported',
             status: settings.isActive ? 'active' : 'draft',
             options: options.length > 0 ? options.map(name => ({ name })) : undefined,
-            images: product.images.map((img: any) => ({
-                src: typeof img === 'string' ? img : img.src,
-                alt: typeof img === 'string' ? product.title : (img.alt || product.title)
-            })),
+            images: productImages,
             metafields: superMetafields,
             variants: shopifyVariants
         }
+
+        console.log('Final Shopify Product Payload:', JSON.stringify(shopifyProduct, null, 2))
 
         // If original product had variants, we might want to try mapping them, 
         // but for this simple import we'll stick to a single variant created from the main price
