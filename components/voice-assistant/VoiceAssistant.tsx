@@ -225,6 +225,34 @@ export function VoiceAssistant() {
                         "info"
                     );
                 }
+
+                else if (command === 'UPDATE_INVOICE') {
+                    const { id, status } = payload;
+                    // Map STATUS to Frontend German Format for the API
+                    let germanStatus = 'Offen';
+                    if (status === 'PAID') germanStatus = 'Bezahlt';
+                    if (status === 'CANCELLED') germanStatus = 'Storniert';
+                    if (status === 'OVERDUE') germanStatus = 'Mahnung';
+
+                    try {
+                        // Call the API to update
+                        await fetch(`/api/invoices/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: germanStatus })
+                        });
+
+                        showToast(
+                            `Rechnung ${id} Status geändert zu: ${germanStatus}`,
+                            "success"
+                        );
+                        // Refresh dashboard stats if we just updated a status
+                        window.dispatchEvent(new Event('invoiceUpdated'));
+                    } catch (e) {
+                        console.error("Update failed", e);
+                        setReply("Fehler beim Aktualisieren der Rechnung.");
+                    }
+                }
             }
 
             if (!data.reply) {
