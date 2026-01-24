@@ -4,13 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor, TrendingUp, History, Sparkles, MapPin, User } from 'lucide-react'
+import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor, TrendingUp, History, Sparkles, MapPin, User, Zap, Package, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { EmailComposer } from '@/components/abandoned-carts/EmailComposer'
 import { RecoverySettings } from '@/components/abandoned-carts/RecoverySettings'
-import { Zap, Settings } from 'lucide-react'
 
 interface TimelineEvent {
     type: string
@@ -55,6 +54,9 @@ export default function AbandonedCartsPage() {
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
     const [soundEnabled, setSoundEnabled] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [timeRange, setTimeRange] = useState('7d')
+    const [stats, setStats] = useState<any>(null)
+    const [statsLoading, setStatsLoading] = useState(false)
 
     // Recovery Modals State
     const [isEmailComposerOpen, setIsEmailComposerOpen] = useState(false)
@@ -109,7 +111,7 @@ export default function AbandonedCartsPage() {
 
             if ('Notification' in window && Notification.permission !== 'granted') {
                 try {
-                    const permission = await Notification.requestPermission()
+                    await Notification.requestPermission()
                 } catch (e) { }
             }
         }
@@ -172,7 +174,7 @@ export default function AbandonedCartsPage() {
                 {timeline.map((event, idx) => (
                     <div key={idx} className="relative">
                         <div className={`absolute -left-[19px] top-1.5 w-2 h-2 rounded-full border-2 border-white ${event.type === 'start_checkout' ? 'bg-emerald-500' :
-                                event.type === 'remove_from_cart' ? 'bg-red-500' : 'bg-blue-400'
+                            event.type === 'remove_from_cart' ? 'bg-red-500' : 'bg-blue-400'
                             }`} />
                         <div className="flex flex-col">
                             <div className="flex items-center justify-between gap-4">
@@ -207,7 +209,7 @@ export default function AbandonedCartsPage() {
                 <p className="text-xs text-amber-800 font-medium leading-relaxed">
                     {rec.action === 'email_soon' ? 'Sofortige E-Mail senden (Hohe Kaufabsicht)' :
                         rec.action === 'email_discount' ? 'Nudge mit 5% Rabatt senden' :
-                            'Warten على المزيد من التفاعل'}
+                            'Warten auf Interaktion'}
                 </p>
                 <div className="mt-1.5 flex items-center gap-1.5 text-[9px] text-amber-600/70 font-bold uppercase">
                     <div className="w-1 h-1 rounded-full bg-amber-400" />
@@ -245,16 +247,35 @@ export default function AbandonedCartsPage() {
         }
     }, [authenticatedFetch, triggerNewCartAlert])
 
+    const fetchStats = useCallback(async (range: string) => {
+        setStatsLoading(true)
+        try {
+            const response = await authenticatedFetch(`/api/abandoned-carts/stats?range=${range}`)
+            if (response.ok) {
+                const data = await response.json()
+                setStats(data.stats)
+            }
+        } catch (e) {
+            console.error("Failed to fetch stats:", e)
+        } finally {
+            setStatsLoading(false)
+        }
+    }, [authenticatedFetch])
+
     // 5. Initial Load & Interval
     useEffect(() => {
         if (mounted) {
             fetchCarts()
+            fetchStats(timeRange)
             const interval = setInterval(() => {
-                if (!document.hidden) fetchCarts()
-            }, 1000)
+                if (!document.hidden) {
+                    fetchCarts()
+                    fetchStats(timeRange)
+                }
+            }, 5000)
             return () => clearInterval(interval)
         }
-    }, [mounted, fetchCarts])
+    }, [mounted, fetchCarts, fetchStats, timeRange])
 
     const openComposer = (cart: AbandonedCart) => {
         setSelectedCart(cart)
@@ -309,7 +330,7 @@ export default function AbandonedCartsPage() {
 
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
+                <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 flex items-center mb-2">
                             <ArrowLeft className="w-4 h-4 mr-1" /> Zurück zum Dashboard
@@ -321,7 +342,29 @@ export default function AbandonedCartsPage() {
                             Warenkorb Wiederherstellung
                         </h1>
                     </div>
-                    <div className="flex items-center gap-3">
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Timeframe Selector */}
+                        <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-100 flex items-center">
+                            {[
+                                { id: 'today', label: 'Heute' },
+                                { id: '7d', label: '7 Tage' },
+                                { id: '30d', label: '30 Tage' },
+                                { id: 'all', label: 'Alle' }
+                            ].map((r) => (
+                                <button
+                                    key={r.id}
+                                    onClick={() => setTimeRange(r.id)}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${timeRange === r.id
+                                            ? 'bg-emerald-100 text-emerald-700 shadow-sm'
+                                            : 'text-gray-400 hover:text-gray-600'
+                                        }`}
+                                >
+                                    {r.label}
+                                </button>
+                            ))}
+                        </div>
+
                         <Button
                             onClick={() => setIsSettingsOpen(true)}
                             variant="outline"
@@ -332,22 +375,29 @@ export default function AbandonedCartsPage() {
                         <Button onClick={toggleSound} variant={soundEnabled ? "default" : "outline"} className={soundEnabled ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}>
                             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                         </Button>
-                        <Button onClick={fetchCarts} variant="outline"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></Button>
                     </div>
                 </div>
 
                 {/* Enterprise Header Analytics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
+                    <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-500 to-indigo-600 text-white overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
+                            <ShoppingBag className="w-20 h-20" />
+                        </div>
+                        <CardContent className="pt-6 relative">
+                            <div className="flex items-center justify-between mb-4">
                                 <div>
                                     <p className="text-indigo-100 text-[10px] font-black uppercase tracking-widest mb-1">Erfasste Warenkörbe</p>
-                                    <h3 className="text-2xl font-black tracking-tight">{carts.length}</h3>
+                                    <h3 className="text-3xl font-black tracking-tight">{carts.length}</h3>
                                 </div>
                                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                                     <ShoppingBag className="w-5 h-5" />
                                 </div>
+                            </div>
+                            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] font-bold text-indigo-100 uppercase tracking-tighter">
+                                <span>{stats?.totalItemsAdded || 0} Artikel</span>
+                                <span className="opacity-40">•</span>
+                                <span>{stats?.uniqueProductsCount || 0} Einzigartig</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -357,7 +407,7 @@ export default function AbandonedCartsPage() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-blue-100 text-[10px] font-black uppercase tracking-widest mb-1">Gesendete E-Mails</p>
-                                    <h3 className="text-2xl font-black tracking-tight">{carts.filter(c => c.recoverySent).length}</h3>
+                                    <h3 className="text-3xl font-black tracking-tight">{carts.filter(c => c.recoverySent).length}</h3>
                                 </div>
                                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                                     <Mail className="w-5 h-5" />
@@ -371,7 +421,7 @@ export default function AbandonedCartsPage() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-purple-100 text-[10px] font-black uppercase tracking-widest mb-1">Erfolgsrate</p>
-                                    <h3 className="text-2xl font-black tracking-tight">
+                                    <h3 className="text-3xl font-black tracking-tight">
                                         {carts.length > 0 ? Math.round((carts.filter(c => c.isRecovered).length / carts.length) * 100) : 0}%
                                     </h3>
                                 </div>
@@ -387,7 +437,7 @@ export default function AbandonedCartsPage() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-emerald-100 text-[10px] font-black uppercase tracking-widest mb-1">Potenzielle Erholung</p>
-                                    <h3 className="text-2xl font-black tracking-tight">
+                                    <h3 className="text-3xl font-black tracking-tight">
                                         {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(
                                             carts.reduce((acc, c) => acc + (parseFloat(c.totalPrice) || 0), 0)
                                         )}
@@ -401,231 +451,227 @@ export default function AbandonedCartsPage() {
                     </Card>
                 </div>
 
-                {/* Carts List */}
-                <Card className="shadow-xl border-none">
-                    <CardHeader className="border-b bg-gray-50/50">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Aktuelle Warenkörbe</CardTitle>
-                                <CardDescription>Verfolgen Sie verlorene Verkäufe und kontaktieren Sie Kunden.</CardDescription>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => fetchCarts()} className="text-emerald-600 hover:text-emerald-700">
-                                <RefreshCw className="w-4 h-4 mr-2" /> Liste aktualisieren
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
-                                    <tr>
-                                        <th className="px-6 py-4 font-semibold">Kunde / E-Mail</th>
-                                        <th className="px-6 py-4 font-semibold">Inhalt / Wert</th>
-                                        <th className="px-6 py-4 font-semibold text-center">Status</th>
-                                        <th className="px-6 py-4 font-semibold">Zeitpunkt</th>
-                                        <th className="px-6 py-4 font-semibold text-right">Aktion</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {carts.map((cart) => (
-                                        <tr key={cart.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-6 font-medium">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-gray-900">{cart.email}</span>
-                                                    <span className="text-[10px] text-gray-400 font-mono">{cart.id.substring(0, 8)}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6 vertical-top align-top">
-                                                <div className="flex flex-col mb-4">
-                                                    <div className="text-xl font-black text-gray-900 leading-none">
-                                                        {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
-                                                    </div>
-                                                    {(cart as any).totalPricePeak && Number((cart as any).totalPricePeak) > Number(cart.totalPrice) && (
-                                                        <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">
-                                                            HÖCHSTWERT: {Number((cart as any).totalPricePeak).toLocaleString('de-DE', { style: 'currency', currency: cart.currency || 'EUR' })}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <div className="flex flex-col gap-2">
-                                                        {Array.isArray(cart.lineItems) && cart.lineItems.length > 0 ? (
-                                                            <>
-                                                                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">Aktuelle Artikel</div>
-                                                                {(expandedCarts.has(cart.id) ? cart.lineItems : cart.lineItems.slice(0, 3)).map((item: any, idx: number) => (
-                                                                    <div key={idx} className="flex items-center gap-2 group">
-                                                                        <div className="w-8 h-8 bg-gray-50 rounded-md border border-gray-100 flex-shrink-0 overflow-hidden shadow-sm group-hover:scale-110 transition-transform duration-200">
-                                                                            <img
-                                                                                src={item.image?.src || (typeof item.image === 'string' ? item.image : 'https://via.placeholder.com/32?text=')}
-                                                                                alt=""
-                                                                                className="w-full h-full object-cover"
-                                                                                loading="lazy"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="flex flex-col min-w-0">
-                                                                            <div className="text-[11px] font-semibold text-gray-700 truncate max-w-[180px]" title={item.title}>
-                                                                                {item.title}
-                                                                            </div>
-                                                                            {(item.variant_title && item.variant_title !== 'Default Title') && (
-                                                                                <span className="text-[9px] text-gray-400 -mt-0.5">
-                                                                                    x{item.quantity} · {item.variant_title}
-                                                                                </span>
-                                                                            )}
-                                                                            {(!item.variant_title || item.variant_title === 'Default Title') && (
-                                                                                <span className="text-[9px] text-gray-400 -mt-0.5">
-                                                                                    Menge: {item.quantity}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-
-                                                                {cart.lineItems.length > 3 && (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const next = new Set(expandedCarts)
-                                                                            if (next.has(cart.id)) next.delete(cart.id)
-                                                                            else next.add(cart.id)
-                                                                            setExpandedCarts(next)
-                                                                        }}
-                                                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1 transition-colors"
-                                                                    >
-                                                                        {expandedCarts.has(cart.id) ? (
-                                                                            <><ChevronUp className="w-3 h-3" /> verbergen</>
-                                                                        ) : (
-                                                                            <><ChevronDown className="w-3 h-3" /> {cart.lineItems.length - 3} weitere anzeigen</>
-                                                                        )}
-                                                                    </button>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <div className="flex flex-col gap-2">
-                                                                {/* "Warenkorb geleert" badge removed as per user request */}
-
-                                                                {Array.isArray((cart as any).removedItems) && ((cart as any).removedItems as any[]).length > 0 && (
-                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-50 border border-red-100/50 rounded-full w-fit">
-                                                                        <div className="w-1 h-1 rounded-full bg-red-500" />
-                                                                        <span className="text-[9px] font-semibold text-red-600 uppercase tracking-wide">
-                                                                            {((cart as any).removedItems as any[]).length} Artikel entfernt
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Section: Entfernte Artikel */}
-                                                    {Array.isArray((cart as any).removedItems) && ((cart as any).removedItems as any[]).length > 0 && (
-                                                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-50">
-                                                            <div className="text-[9px] font-bold text-red-400/70 uppercase tracking-widest pl-0.5">Entfernte Artikel</div>
-                                                            <div className="space-y-2 opacity-60">
-                                                                {((cart as any).removedItems as any[]).slice().reverse().map((item: any, idx: number) => (
-                                                                    <div key={idx} className="flex items-center gap-2 group grayscale hover:grayscale-0 transition-all duration-300">
-                                                                        <div className="w-6 h-6 bg-gray-50 rounded border border-gray-100 flex-shrink-0 overflow-hidden">
-                                                                            <img
-                                                                                src={item.image?.src || (typeof item.image === 'string' ? item.image : 'https://via.placeholder.com/24?text=')}
-                                                                                alt=""
-                                                                                className="w-full h-full object-cover"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="flex flex-col min-w-0">
-                                                                            <div className="text-[10px] font-medium text-gray-500 line-through truncate max-w-[160px]" title={item.title}>
-                                                                                {item.title}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <span className="text-[8px] font-bold text-red-500 bg-red-50 px-1 rounded truncate uppercase">
-                                                                                    {item.isPartialRemoval ? `QTY REDUZIERT (-${item.quantity})` : 'ENTFERNT'}
-                                                                                </span>
-                                                                                {item.removedAt && (
-                                                                                    <span className="text-[9px] text-gray-400">
-                                                                                        {format(new Date(item.removedAt), 'HH:mm:ss')}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6">
-                                                <div className="flex flex-col items-center gap-2">
-                                                    {cart.isRecovered ? (
-                                                        <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold flex items-center gap-1 uppercase">
-                                                            <CheckCircle className="w-3 h-3" /> Recovered
-                                                        </span>
-                                                    ) : (
-                                                        <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-[10px] font-bold flex items-center gap-1 uppercase">
-                                                            <Clock className="w-3 h-3" /> Pending
-                                                        </span>
-                                                    )}
-                                                    {cart.recoverySent && (
-                                                        <span className="text-[10px] text-blue-600 flex items-center gap-1">
-                                                            <Mail className="w-3 h-3" /> E-Mail gesendet
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6 text-gray-500 align-top" title={`Erstellt am ${format(new Date(cart.createdAt), 'dd.MM.yyyy')} um ${format(new Date(cart.createdAt), 'HH:mm')} Uhr`}>
-                                                <div className="flex flex-col">
-                                                    <span className="text-gray-900 font-medium">
-                                                        {formatDistanceToNow(new Date(cart.updatedAt), { addSuffix: true, locale: de })}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Left: Top Products Sidebar/Card */}
+                    <div className="lg:col-span-1 space-y-4">
+                        <Card className="shadow-lg border-none overflow-hidden bg-white">
+                            <CardHeader className="bg-gray-50/50 border-b pb-3 pt-4">
+                                <div className="flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest">Top Produkte</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-gray-50">
+                                    {statsLoading && !stats && (
+                                        <div className="p-8 text-center text-xs text-gray-400 font-medium">Lade Daten...</div>
+                                    )}
+                                    {stats?.topProducts?.length === 0 && (
+                                        <div className="p-8 text-center text-xs text-gray-400 font-medium italic">Keine Daten verfügbar</div>
+                                    )}
+                                    {stats?.topProducts?.map((prod: any, i: number) => (
+                                        <div key={prod.productId} className="p-3 flex items-center gap-3 hover:bg-gray-50/80 transition-all group">
+                                            <div className="w-10 h-10 rounded bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 relative">
+                                                <img
+                                                    src={prod.image || '/placeholder-product.png'}
+                                                    alt=""
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                />
+                                                <div className="absolute top-0 left-0 bg-black/60 text-white text-[8px] px-1 font-bold">#{i + 1}</div>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[11px] font-bold text-gray-800 truncate leading-tight group-hover:text-emerald-700 transition-colors">{prod.title}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                                                        {prod.count}x Hinzugefügt
                                                     </span>
-                                                    <span className="text-[10px] text-gray-400 mt-0.5">
-                                                        {format(new Date(cart.updatedAt), 'dd.MM.yyyy – HH:mm')}
-                                                    </span>
-
-                                                    {/* Device info */}
-                                                    {(cart as any).deviceInfo && (
-                                                        <div
-                                                            className={`flex items-center gap-1.5 mt-2 text-[10px] font-bold w-fit px-2 py-0.5 rounded-md border transition-all ${((cart as any).deviceInfo as any).detection_confidence === 'high'
-                                                                ? 'text-indigo-600 bg-indigo-50 border-indigo-200 shadow-sm'
-                                                                : 'text-gray-500 bg-gray-50 border-gray-200'
-                                                                }`}
-                                                            title={`Gerät: ${((cart as any).deviceInfo as any).device} | System: ${((cart as any).deviceInfo as any).os} | Browser: ${((cart as any).deviceInfo as any).browser} | Auflösung: ${((cart as any).deviceInfo as any).viewportWidth || ((cart as any).deviceInfo as any).screenWidth || '?'}px | Erkennung: ${((cart as any).deviceInfo as any).detection_confidence === 'high' ? 'Verifiziert' : 'Schätzung'} | UA: ${((cart as any).deviceInfo as any).ua}`}
-                                                        >
-                                                            {((cart as any).deviceInfo as any).device === 'Mobile' ? (
-                                                                <Smartphone className="w-3 h-3" />
-                                                            ) : (
-                                                                <Monitor className="w-3 h-3" />
-                                                            )}
-                                                            <span className="uppercase tracking-tight">{((cart as any).deviceInfo as any).device} · {((cart as any).deviceInfo as any).os}</span>
-                                                            {((cart as any).deviceInfo as any).detection_confidence === 'high' && (
-                                                                <Zap className="w-2.5 h-2.5 fill-indigo-600 animate-pulse" />
-                                                            )}
-                                                        </div>
-                                                    )}
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-6 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => openComposer(cart)}
-                                                        className="h-8 text-blue-600 border-blue-100 hover:bg-blue-50"
-                                                    >
-                                                        <Mail className="w-4 h-4 mr-2" /> E-Mail senden
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => window.open(cart.cartUrl, '_blank')}
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <ExternalLink className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </div>
                                     ))}
-                                </tbody>
-                            </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <div className="bg-indigo-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                                <Sparkles className="w-16 h-16" />
+                            </div>
+                            <h4 className="text-sm font-black uppercase tracking-widest mb-2">Profi-Tipp</h4>
+                            <p className="text-xs text-indigo-100 leading-relaxed font-medium">
+                                Kunden mit einem Intent-Score über 60 haben eine 4x höhere Wahrscheinlichkeit zu kaufen. Kontaktieren Sie diese Zuerst!
+                            </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+
+                    {/* Right: Carts List */}
+                    <div className="lg:col-span-3">
+                        <Card className="shadow-xl border-none">
+                            <CardHeader className="border-b bg-gray-50/50">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-lg font-bold">Live Sitzungen</CardTitle>
+                                        <CardDescription className="text-xs">Echtzeit-Einblick in das Verhalten Ihrer Kunden.</CardDescription>
+                                    </div>
+                                    <Button variant="ghost" size="sm" onClick={() => fetchCarts()} className="text-emerald-600 hover:text-emerald-700 h-8">
+                                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Liste aktualisieren
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-gray-100">
+                                    {carts.length === 0 ? (
+                                        <div className="p-20 text-center">
+                                            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <ShoppingBag className="w-10 h-10 text-gray-300" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-gray-900">Keine Warenkörbe gefunden</h3>
+                                            <p className="text-gray-500 max-w-xs mx-auto mt-2">Sobald Kunden Artikel in ihren Warenkorb legen oder entfernen, werden diese hier sofort angezeigt.</p>
+                                        </div>
+                                    ) : (
+                                        carts.map((cart) => (
+                                            <div key={cart.id} className="p-6 hover:bg-gray-50/50 transition-all group">
+                                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                                                    {/* Column 1: Customer & Status */}
+                                                    <div className="lg:col-span-3 space-y-4">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
+                                                                <User className="w-5 h-5" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-black text-gray-900 truncate mb-0.5">
+                                                                    {cart.email.includes('anonymous-') ? 'Gast-Besucher' : cart.email}
+                                                                </p>
+                                                                <p className="text-[10px] text-gray-400 font-mono uppercase tracking-tighter">ID: {cart.id.split('-')[0]}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                                                                Status & Intent
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {getIntentBadge(cart.intentScore)}
+                                                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold uppercase">
+                                                                    {cart.deviceInfo?.device === 'mobile' ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
+                                                                    {cart.deviceInfo?.device || 'Desktop'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="pt-2">
+                                                            <Button
+                                                                onClick={() => openComposer(cart)}
+                                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm"
+                                                                size="sm"
+                                                            >
+                                                                <Mail className="w-3.5 h-3.5 mr-2" /> E-Mail senden
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Spacer (LG only) */}
+                                                    <div className="lg:col-span-1 border-r border-gray-100 hidden lg:block" />
+
+                                                    {/* Column 2: Cart Content */}
+                                                    <div className="lg:col-span-4 space-y-6">
+                                                        <div>
+                                                            <div className="flex items-baseline gap-2 mb-1">
+                                                                <span className="text-2xl font-black text-gray-900">
+                                                                    {Number(cart.totalPrice).toLocaleString('de-DE', { style: 'currency', currency: cart.currency })}
+                                                                </span>
+                                                                {cart.totalPricePeak && Number(cart.totalPricePeak) > Number(cart.totalPrice) && (
+                                                                    <span className="text-[10px] text-gray-400 font-bold line-through">
+                                                                        {Number(cart.totalPricePeak).toLocaleString('de-DE', { style: 'currency', currency: cart.currency })}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest pl-0.5">Aktueller Warenwert</p>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            {/* Current Items */}
+                                                            <div>
+                                                                <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                    <ShoppingBag className="w-3 h-3" /> Aktuelle Artikel ({(cart.lineItems as any[])?.length || 0})
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    {(cart.lineItems as any[])?.map((item: any, i: number) => (
+                                                                        <div key={i} className="flex items-center gap-3">
+                                                                            <div className="w-8 h-8 rounded bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0">
+                                                                                <img src={item.image || '/placeholder-product.png'} alt="" className="w-full h-full object-cover" />
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <p className="text-[11px] font-bold text-gray-800 truncate leading-tight">{item.title}</p>
+                                                                                <p className="text-[9px] text-gray-500">Menge: {item.quantity} • {item.price}€</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Removed Items */}
+                                                            {Array.isArray(cart.removedItems) && (cart.removedItems as any[]).length > 0 && (
+                                                                <div className="pt-4 border-t border-gray-100">
+                                                                    <div className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                        <XCircle className="w-3 h-3" /> Entfernte Artikel ({(cart.removedItems as any[]).length})
+                                                                    </div>
+                                                                    <div className="space-y-2 opacity-60">
+                                                                        {(cart.removedItems as any[]).slice().reverse().map((item: any, i: number) => (
+                                                                            <div key={i} className="flex items-center gap-3 line-through">
+                                                                                <div className="w-8 h-8 rounded bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 grayscale">
+                                                                                    <img src={item.image || '/placeholder-product.png'} alt="" className="w-full h-full object-cover" />
+                                                                                </div>
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-[11px] font-medium text-gray-500 truncate leading-tight">{item.title}</p>
+                                                                                    <p className="text-[9px] text-gray-400">Entfernt um {item.removedAt ? format(new Date(item.removedAt), 'HH:mm') : 'Unbekannt'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Column 3: Insights & Timeline */}
+                                                    <div className="lg:col-span-1 border-r border-gray-100 hidden lg:block" />
+
+                                                    <div className="lg:col-span-3 space-y-4">
+                                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                                            <History className="w-3 h-3" /> Timeline & Insights
+                                                        </div>
+
+                                                        {/* AI Recommendation */}
+                                                        {getRecommendationBlock(cart.recommendation)}
+
+                                                        {/* Timeline */}
+                                                        <div className="mt-4 max-h-[120px] overflow-y-auto scrollbar-hide">
+                                                            {renderTimeline(cart.timeline)}
+                                                        </div>
+
+                                                        <div className="pt-4 flex items-center gap-4 text-[9px] text-gray-400 font-bold uppercase tracking-tighter border-t border-gray-100">
+                                                            <div className="flex items-center gap-1">
+                                                                <Clock className="w-3 h-3" /> {formatDistanceToNow(new Date(cart.updatedAt), { addSuffix: true, locale: de })}
+                                                            </div>
+                                                            {cart.deviceInfo?.location?.city && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <MapPin className="w-3 h-3" /> {cart.deviceInfo.location.city}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             </div>
         </div>
     )
