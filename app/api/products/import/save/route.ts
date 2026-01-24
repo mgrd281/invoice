@@ -109,10 +109,39 @@ export async function POST(request: NextRequest) {
         const price = parseFloat(product.price)
         const compareAtPrice = product.compare_at_price || (price * 1.3).toFixed(2)
 
+        // Prepare Super Metafields
+        const superMetafields = [
+            ...(productMetafields || []),
+            { namespace: 'google', key: 'mpn', value: product.google_mpn || product.sku || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'condition', value: product.google_condition || 'new', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'gender', value: product.google_gender || 'unisex', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'age_group', value: product.google_age_group || 'adult', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'size_type', value: product.google_size_type || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'size_system', value: product.google_size_system || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'custom_label_0', value: product.google_custom_label_0 || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'custom_label_1', value: product.google_custom_label_1 || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'custom_label_2', value: product.google_custom_label_2 || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'custom_label_3', value: product.google_custom_label_3 || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'custom_label_4', value: product.google_custom_label_4 || '', type: 'single_line_text_field' },
+            { namespace: 'google', key: 'custom_product', value: product.google_custom_product || '', type: 'single_line_text_field' },
+            { namespace: 'dhl', key: 'customs_item_description', value: product.dhl_customs_item_description || product.dhl_custom_description || product.title?.slice(0, 50), type: 'single_line_text_field' },
+            { namespace: 'custom', key: 'versandkosten', value: product.shipping_costs || product.versandkosten || '0.00', type: 'single_line_text_field' },
+            { namespace: 'custom', key: 'shipping_date_time', value: product.shipping_date_time || '', type: 'single_line_text_field' },
+            { namespace: 'custom', key: 'collapsible_row_content_1', value: product.collapsible_row_1_content || '', type: 'rich_text_field' },
+            { namespace: 'custom', key: 'collapsible_row_heading_1', value: product.collapsible_row_1_heading || 'Details', type: 'single_line_text_field' },
+            { namespace: 'custom', key: 'collapsible_row_content_2', value: product.collapsible_row_2_content || '', type: 'rich_text_field' },
+            { namespace: 'custom', key: 'collapsible_row_heading_2', value: product.collapsible_row_2_heading || 'Lieferung', type: 'single_line_text_field' },
+            { namespace: 'custom', key: 'collapsible_row_content_3', value: product.collapsible_row_3_content || '', type: 'rich_text_field' },
+            { namespace: 'custom', key: 'collapsible_row_heading_3', value: product.collapsible_row_3_heading || 'Garantie', type: 'single_line_text_field' },
+            { namespace: 'custom', key: 'emoji_benefits', value: product.emoji_benefits || '', type: 'multi_line_text_field' },
+            { namespace: 'custom', key: 'product_boosts', value: product.product_boosts || '', type: 'multi_line_text_field' },
+            { namespace: 'global', key: 'title_tag', value: product.metaTitle || product.title, type: 'single_line_text_field' },
+            { namespace: 'global', key: 'description_tag', value: product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), type: 'multi_line_text_field' }
+        ].filter(m => m.value && m.value !== '');
+
         // Prepare variants and options
         let options: string[] = [];
         if (product.variants && product.variants.length > 0) {
-            // Attempt to detect option names if not provided
             options = product.options?.map((o: any) => o.name) || ['Title'];
         }
 
@@ -129,7 +158,6 @@ export async function POST(request: NextRequest) {
                     requires_shipping: settings.isPhysical
                 };
 
-                // Map options (Shopify supports up to 3 options: option1, option2, option3)
                 if (v.options && Array.isArray(v.options)) {
                     v.options.forEach((opt: string, i: number) => {
                         if (i < 3) variantEntry[`option${i + 1}`] = opt;
@@ -165,25 +193,11 @@ export async function POST(request: NextRequest) {
             tags: product.tags ? `${product.tags}, Imported` : 'Imported',
             status: settings.isActive ? 'active' : 'draft',
             options: options.length > 0 ? options.map(name => ({ name })) : undefined,
-            images: product.images.map((src: string, index: number) => ({
-                src,
-                alt: index === 0 && product.image_alt_text ? product.image_alt_text : undefined
+            images: product.images.map((img: any) => ({
+                src: typeof img === 'string' ? img : img.src,
+                alt: typeof img === 'string' ? product.title : (img.alt || product.title)
             })),
-            metafields: [
-                ...(productMetafields || []),
-                {
-                    namespace: 'global',
-                    key: 'title_tag',
-                    value: product.metaTitle || product.title,
-                    type: 'single_line_text_field'
-                },
-                {
-                    namespace: 'global',
-                    key: 'description_tag',
-                    value: product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)),
-                    type: 'multi_line_text_field'
-                }
-            ],
+            metafields: superMetafields,
             variants: shopifyVariants
         }
 

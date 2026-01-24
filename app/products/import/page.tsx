@@ -45,12 +45,45 @@ interface ImportedProduct {
     id: string
     title: string
     price: string
-    image?: { src: string }
-    variants?: Array<{ price: string }>
+    image?: { src: string, alt: string }
+    images?: Array<{ src: string, alt: string }>
+    variants?: Array<{ title: string, price: string, sku: string }>
     status?: 'imported' | 'pending' | 'failed'
     importedAt?: string
     sourceUrl?: string
     sourceDomain?: string
+    metaTitle?: string
+    metaDescription?: string
+    // New Fields
+    google_mpn?: string
+    google_age_group?: string
+    google_condition?: string
+    google_gender?: string
+    google_custom_label_0?: string
+    google_custom_label_1?: string
+    google_custom_label_2?: string
+    google_custom_label_3?: string
+    google_custom_label_4?: string
+    google_custom_product?: string
+    google_size_type?: string
+    google_size_system?: string
+    dhl_customs_item_description?: string
+    shipping_costs?: string
+    shipping_date_time?: string
+    collapsible_row_1_heading?: string
+    collapsible_row_1_content?: string
+    collapsible_row_2_heading?: string
+    collapsible_row_2_content?: string
+    collapsible_row_3_heading?: string
+    collapsible_row_3_content?: string
+    emoji_benefits?: string
+    beae_countdown_start?: string
+    beae_countdown_end?: string
+    ecomposer_countdown_end?: string
+    offer_end_date?: string
+    product_boosts?: string
+    related_products_settings?: string
+    related_products?: string
 }
 
 export default function ProductImportPage() {
@@ -761,6 +794,109 @@ export default function ProductImportPage() {
                                                             </div>
                                                         )}
                                                     </div>
+                                                </div>
+
+                                                {/* Advanced Metadata Section (Super Metafields) */}
+                                                <div className="space-y-4">
+                                                    {/* Pinned Section (Angepinnt) */}
+                                                    <div className="space-y-2">
+                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-violet-500 flex items-center gap-2">
+                                                            <Zap className="h-3 w-3" /> Angepinnt
+                                                        </Label>
+                                                        <div className="grid grid-cols-1 gap-2">
+                                                            {previewData.google_mpn && (
+                                                                <div className="p-3 bg-violet-50 border border-violet-200 rounded-2xl flex justify-between items-center shadow-sm">
+                                                                    <div>
+                                                                        <span className="text-[10px] text-violet-400 font-bold uppercase block">Google: MPN</span>
+                                                                        <span className="text-sm font-bold text-violet-700">{previewData.google_mpn}</span>
+                                                                    </div>
+                                                                    <Badge className="bg-violet-100 text-violet-600 border-0">Primary</Badge>
+                                                                </div>
+                                                            )}
+                                                            {previewData.dhl_customs_item_description && (
+                                                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex justify-between items-center shadow-sm">
+                                                                    <div>
+                                                                        <span className="text-[10px] text-blue-400 font-bold uppercase block">[DHL] Customs Description</span>
+                                                                        <span className="text-sm font-bold text-blue-700">{previewData.dhl_customs_item_description}</span>
+                                                                    </div>
+                                                                    <Badge className="bg-blue-100 text-blue-600 border-0">Logistic</Badge>
+                                                                </div>
+                                                            )}
+                                                            {previewData.google_custom_label_4 && (
+                                                                <div className="p-3 bg-pink-50 border border-pink-200 rounded-2xl flex justify-between items-center shadow-sm">
+                                                                    <div>
+                                                                        <span className="text-[10px] text-pink-400 font-bold uppercase block">Google: Custom Label 4</span>
+                                                                        <span className="text-sm font-bold text-pink-700">{previewData.google_custom_label_4}</span>
+                                                                    </div>
+                                                                    <Badge className="bg-pink-100 text-pink-600 border-0">Priority</Badge>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Non-Pinned Section (Nicht angepinnt) */}
+                                                    <div className="space-y-2">
+                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                                            <Box className="h-3 w-3" /> Weitere Details
+                                                        </Label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {[
+                                                                { label: 'Age Group', value: previewData.google_age_group, color: 'gray' },
+                                                                { label: 'Condition', value: previewData.google_condition, color: 'gray' },
+                                                                { label: 'Gender', value: previewData.google_gender, color: 'gray' },
+                                                                { label: 'Size Type', value: previewData.google_size_type, color: 'gray' },
+                                                                { label: 'Size System', value: previewData.google_size_system, color: 'gray' },
+                                                                { label: 'Shipping', value: previewData.shipping_costs, color: 'emerald' },
+                                                                { label: 'Dispatch', value: previewData.shipping_date_time, color: 'emerald' },
+                                                                { label: 'Custom Label 0', value: previewData.google_custom_label_0, color: 'violet' },
+                                                                { label: 'Custom Label 1', value: previewData.google_custom_label_1, color: 'violet' },
+                                                                { label: 'Custom Label 2', value: previewData.google_custom_label_4, color: 'violet' },
+                                                            ].filter(f => f.value).map((field, idx) => (
+                                                                <div key={idx} className={`p-2 bg-white border border-gray-200 rounded-xl`}>
+                                                                    <span className={`text-[9px] text-gray-400 font-bold uppercase block`}>{field.label}</span>
+                                                                    <span className="text-xs font-semibold text-gray-700 truncate block">{field.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Content Blocks (Collapsible Rows) */}
+                                                    <div className="space-y-3">
+                                                        {[1, 2, 3].map(num => (
+                                                            <div key={num} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden">
+                                                                <div className="px-4 py-3 bg-gray-100/50 flex justify-between items-center cursor-pointer">
+                                                                    <span className="text-xs font-bold text-gray-700">
+                                                                        {previewData[`collapsible_row_${num}_heading`] || `Collapsible Row ${num}`}
+                                                                    </span>
+                                                                    <ArrowRight className="h-3 w-3 text-gray-400 rotate-90" />
+                                                                </div>
+                                                                {(previewData[`collapsible_row_${num}_content`] || num === 1) && (
+                                                                    <div
+                                                                        className="p-4 text-[11px] text-gray-600 leading-relaxed max-h-40 overflow-y-auto scrollbar-hide"
+                                                                        dangerouslySetInnerHTML={{ __html: previewData[`collapsible_row_${num}_content`] || 'No content provided.' }}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Emoji Benefits & Boosts */}
+                                                    {(previewData.emoji_benefits || previewData.product_boosts) && (
+                                                        <div className="grid grid-cols-1 gap-2">
+                                                            {previewData.emoji_benefits && (
+                                                                <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl">
+                                                                    <span className="text-[10px] text-amber-500 font-bold uppercase block">Emoji Benefits</span>
+                                                                    <p className="text-xs font-medium text-amber-700 mt-1">{previewData.emoji_benefits}</p>
+                                                                </div>
+                                                            )}
+                                                            {previewData.product_boosts && (
+                                                                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl">
+                                                                    <span className="text-[10px] text-blue-500 font-bold uppercase block">Product Boosts</span>
+                                                                    <p className="text-xs font-medium text-blue-700 mt-1">{previewData.product_boosts}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* SEO Preview Card */}

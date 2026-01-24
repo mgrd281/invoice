@@ -75,7 +75,37 @@ export async function POST(request: NextRequest) {
                 sku: '',
                 ean: '',
                 compare_at_price: null,
-                discount_percentage: 0
+                discount_percentage: 0,
+                // New Fields
+                google_mpn: '',
+                google_age_group: 'adult',
+                google_condition: 'new',
+                google_gender: 'unisex',
+                google_custom_label_0: '',
+                google_custom_label_1: '',
+                google_custom_label_2: '',
+                google_custom_label_3: '',
+                google_custom_label_4: '',
+                google_custom_product: '',
+                google_size_type: '',
+                google_size_system: '',
+                dhl_customs_item_description: '',
+                shipping_costs: '',
+                shipping_date_time: '',
+                collapsible_row_1_heading: 'Details',
+                collapsible_row_1_content: '',
+                collapsible_row_2_heading: 'Shipping Info',
+                collapsible_row_2_content: '',
+                collapsible_row_3_heading: 'Returns',
+                collapsible_row_3_content: '',
+                emoji_benefits: '',
+                beae_countdown_start: '',
+                beae_countdown_end: '',
+                ecomposer_countdown_end: '',
+                offer_end_date: '',
+                product_boosts: '',
+                related_products_settings: '',
+                related_products: ''
             }
 
             // A. Try JSON-LD (Schema.org) - The Gold Standard
@@ -87,7 +117,6 @@ export async function POST(request: NextRequest) {
                     const json = JSON.parse(jsonContent)
                     const items = Array.isArray(json) ? json : [json]
 
-                    // Find Product in potential array or @graph
                     const findProduct = (obj: any): any => {
                         if (obj['@type'] === 'Product' || obj['@type'] === 'http://schema.org/Product') return obj;
                         if (obj['@graph']) return obj['@graph'].find((item: any) => item['@type'] === 'Product' || item['@type'] === 'http://schema.org/Product');
@@ -103,15 +132,18 @@ export async function POST(request: NextRequest) {
                         data.product_type = product.category || data.product_type
                         data.sku = product.sku || data.sku
                         data.ean = product.gtin || product.gtin13 || product.gtin12 || product.ean || data.ean
+                        data.google_mpn = product.mpn || data.sku
 
                         if (product.image) {
                             const imgs = Array.isArray(product.image) ? product.image : [product.image];
-                            data.images.push(...imgs.map((img: any) => typeof img === 'string' ? img : img.url));
+                            imgs.forEach((img: any) => {
+                                const src = typeof img === 'string' ? img : (img.url || img['@id']);
+                                if (src) data.images.push({ src, alt: product.name || '' });
+                            });
                         }
 
                         if (product.offers) {
                             const offers = Array.isArray(product.offers) ? product.offers : [product.offers];
-                            // Handle variants from offers
                             if (offers.length > 1) {
                                 data.variants = offers.map((offer: any) => ({
                                     title: offer.name || offer.sku || 'Variant',
@@ -133,26 +165,75 @@ export async function POST(request: NextRequest) {
             data.metaDescription = $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content')
             data.canonicalUrl = $('link[rel="canonical"]').attr('href') || sourceUrl
 
-            // C. Specific Vendor Logic (Amazon, Otto, etc.)
+            // C. Super Metadata Extraction (Tables & Details)
+            const extractedMetadata: any = {}
+            $('table tr, .specification-row, .p_details__row, .product-info-row').each((_: number, el: any) => {
+                const key = $(el).find('th, td:first-child, .label, dt').text().trim().replace(':', '')
+                const value = $(el).find('td:last-child, .value, dd').text().trim()
+                if (key && value && key.length < 50 && value.length < 500) {
+                    extractedMetadata[key] = value
+                }
+            })
+
+            // Mapping for Google/DHL/Custom Fields
+            data.google_mpn = extractedMetadata['MPN'] || extractedMetadata['Herstellernummer'] || extractedMetadata['Modellbezeichnung'] || data.google_mpn
+            data.google_condition = extractedMetadata['Zustand'] || extractedMetadata['Condition'] || (sourceUrl.includes('ebay') ? 'used' : 'new')
+            data.google_gender = extractedMetadata['Geschlecht'] || extractedMetadata['Gender'] || 'unisex'
+            data.google_age_group = extractedMetadata['Altersgruppe'] || extractedMetadata['Age Group'] || 'adult'
+            data.google_size_type = extractedMetadata['Größentyp'] || extractedMetadata['Size Type'] || ''
+            data.google_size_system = extractedMetadata['Größensystem'] || extractedMetadata['Size System'] || ''
+
+            data.dhl_customs_item_description = extractedMetadata['Zolltarifnummer'] || extractedMetadata['Customs Description'] || data.title.slice(0, 50)
+            data.shipping_costs = extractedMetadata['Versandkosten'] || extractedMetadata['Shipping'] || ''
+            data.shipping_date_time = extractedMetadata['Versanddatum'] || extractedMetadata['Delivery Time'] || ''
+
+            // Collapsible rows & Ganze Details
+            data.collapsible_row_1_heading = "Produktdetails"
+            data.collapsible_row_1_content = Object.entries(extractedMetadata)
+                .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
+                .join('<br>')
+
+            data.collapsible_row_2_heading = "Versand & Lieferung"
+            data.collapsible_row_2_content = extractedMetadata['Lieferumfang'] || "Standardversand weltweit."
+
+            data.collapsible_row_3_heading = "Rückgabe & Garantie"
+            data.collapsible_row_3_content = extractedMetadata['Garantie'] || "30 Tage Rückgaberecht."
+
+            // D. Specific Vendor Logic (Amazon, Otto, etc.) with Alt-Text
             if (vendor === 'Amazon') {
                 data.title = data.title || $('#productTitle').text().trim()
-                const amazonPrice = $('.a-price .a-offscreen').first().text().trim()
-                if (amazonPrice) {
-                    const match = amazonPrice.match(/[\d,.]+/)
-                    if (match) data.price = match[0].replace(',', '.')
-                }
-                const features = $('#feature-bullets li span.a-list-item').map((_: number, el: any) => $(el).text().trim()).get()
-                if (features.length > 0) data.description = '<ul>' + features.map((f: string) => `<li>${f}</li>`).join('') + '</ul>'
+                $('#imgTagWrapperId img, #landingImage, #altImages img').each((_: number, el: any) => {
+                    const src = $(el).attr('src') || $(el).attr('data-old-hires') || $(el).attr('data-a-dynamic-image')
+                    const alt = $(el).attr('alt') || data.title
+                    if (src && !src.includes('base64')) {
+                        // Handle Amazon's JSON images
+                        if (src.startsWith('{')) {
+                            try {
+                                const urls = Object.keys(JSON.parse(src))
+                                data.images.push({ src: urls[urls.length - 1], alt })
+                            } catch (e) { }
+                        } else {
+                            data.images.push({ src, alt })
+                        }
+                    }
+                })
             }
             else if (vendor === 'Otto') {
                 data.title = data.title || $('h1[data-qa="product-title"]').text().trim()
-                const ottoPrice = $('span[data-qa="price"]').text().trim()
-                if (ottoPrice) {
-                    const match = ottoPrice.match(/[\d,.]+/)
-                    if (match) data.price = match[0].replace(',', '.')
-                }
                 $('img[data-qa="product-gallery-image"]').each((_: number, el: any) => {
-                    const src = $(el).attr('data-src') || $(el).attr('src'); if (src) data.images.push(src)
+                    const src = $(el).attr('data-src') || $(el).attr('src')
+                    const alt = $(el).attr('alt') || data.title
+                    if (src) data.images.push({ src, alt })
+                })
+            } else {
+                // Generic image extraction with Alt-Text
+                $('img').each((_: number, el: any) => {
+                    const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src')
+                    const alt = $(el).attr('alt') || $(el).attr('title') || data.title
+                    const width = parseInt($(el).attr('width') || '0')
+                    if (src && !src.includes('icon') && !src.includes('logo') && width > 100) {
+                        data.images.push({ src, alt })
+                    }
                 })
             }
 
