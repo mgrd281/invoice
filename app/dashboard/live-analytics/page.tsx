@@ -61,6 +61,7 @@ import {
     Plus,
     Minus,
     Contact,
+    ShieldCheck,
     Trash2
 } from 'lucide-react';
 import {
