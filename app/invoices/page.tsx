@@ -314,10 +314,13 @@ function InvoicesPageContent() {
 
       if (debouncedSearchQuery) {
         queryParams.append('search', debouncedSearchQuery)
+        // Optimization: When searching, ignore date filter to search GLOBAL history
+        // This solves the issue of having to clear date range to find old invoices
+      } else {
+        // Only apply date filter if NOT searching
+        if (dateRange.from) queryParams.append('from', dateRange.from)
+        if (dateRange.to) queryParams.append('to', dateRange.to)
       }
-
-      if (dateRange.from) queryParams.append('from', dateRange.from)
-      if (dateRange.to) queryParams.append('to', dateRange.to)
 
       if (statusFilter) {
         // Map common German labels to status keys the API/Enum understands
@@ -1048,12 +1051,7 @@ function InvoicesPageContent() {
               </h1>
             </div>
             <div className="flex space-x-2">
-              <Link href="/blocked-users">
-                <Button variant="outline" className="text-red-700 hover:text-red-800 hover:bg-red-50 hover:border-red-200">
-                  <ShieldAlert className="h-4 w-4 mr-2" />
-                  Blocklist
-                </Button>
-              </Link>
+
               <Button
                 variant={showAnalytics ? "secondary" : "outline"}
                 onClick={() => setShowAnalytics(!showAnalytics)}
