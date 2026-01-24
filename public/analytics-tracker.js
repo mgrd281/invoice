@@ -58,40 +58,33 @@
         } catch (e) { return null; }
     };
 
-    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes of inactivity
+    const SESSION_TIMEOUT = 90 * 1000; // 90 seconds (Radical)
+
     const getSessionId = () => {
         try {
+            const now = Date.now();
             let sId = sessionStorage.getItem('s_id');
-            if (!sId) {
-                // Generate a fresh ID for this window/tab Session
+            let lastActive = parseInt(localStorage.getItem('s_last_active') || '0');
+
+            // NEW: If session expired (90s) OR no ID => Generate fresh one
+            if (!sId || (now - lastActive > SESSION_TIMEOUT)) {
                 sId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join('');
                 sessionStorage.setItem('s_id', sId);
+                console.log(`[Analytics] New Session Started: ${sId}`);
+                window._isNewSession = true;
             }
+
+            localStorage.setItem('s_last_active', now.toString());
             return sId;
         } catch (e) {
-            return 's_fallback_' + Math.random().toString(36).substr(2, 9);
+            return 's_rb_' + Math.random().toString(36).substr(2, 9);
         }
     };
 
-    const visitorToken = getUrlParam('v_token') || getOrGenerateToken('v_token');
-    let sessionId = getUrlParam('s_id') || getSessionId();
-
-    if (getUrlParam('s_id')) {
-        sessionStorage.setItem('s_id', sessionId);
-    }
-
-    const now = Date.now();
-    // Always update last active on script load
-    localStorage.setItem('s_last_active', now.toString());
-
-    // Ensure tokens are synced to storage
-    if (getUrlParam('v_token')) {
-        setCookie('v_token', visitorToken, 365);
-        localStorage.setItem('v_token', visitorToken);
-    }
-    sessionStorage.setItem('s_id', sessionId);
+    const visitorToken = getOrGenerateToken('v_token');
+    let sessionId = getSessionId();
 
     const getUtms = () => {
         try {
@@ -139,32 +132,26 @@
             if (!organizationId) return;
         }
 
+        const commerceEvents = ['add_to_cart', 'remove_from_cart', 'update_cart', 'view_cart', 'start_checkout', 'view_product'];
+        const isCommerce = commerceEvents.includes(event);
+
         // Auto-enrich with cart snapshot for relevant events
-        if (['add_to_cart', 'remove_from_cart', 'update_cart', 'view_cart', 'start_checkout'].includes(event)) {
+        if (isCommerce && event !== 'view_product') {
             const cartData = await fetchCart();
             if (cartData) {
                 metadata.cart = cartData;
-                // Proactively record snapshot to the specialized endpoint
+                // Proactively record snapshot
                 try {
                     fetch(`${baseOrigin}/api/analytics/sessions/${sessionId}/cart`, {
                         method: 'POST',
-                        body: JSON.stringify({
-                            ...cartData,
-                            action: event.toUpperCase()
-                        }),
+                        body: JSON.stringify({ ...cartData, action: event.toUpperCase() }),
                         keepalive: true
                     });
                 } catch (e) { }
             }
         }
 
-        // Sync session to Shopify cart attributes if not already done in this page view
-        if (!window._sessionSynced) {
-            syncSessionToShopify();
-        }
-
-        console.log(`[Analytics] Event: ${event}`, metadata);
-
+        // Helper to get detailed device info
         const getDetailedDeviceInfo = () => {
             const ua = navigator.userAgent;
             let browser = "Unknown";
@@ -207,7 +194,6 @@
 
         const getIdentity = () => {
             try {
-                // Try Shopify customer object
                 const shopifyCustomer = window.ShopifyAnalytics?.lib?.user()?.traits() || {};
                 return {
                     name: shopifyCustomer.firstName ? `${shopifyCustomer.firstName} ${shopifyCustomer.lastName || ''}`.trim() : null,
@@ -237,9 +223,13 @@
             metadata
         });
 
-        if (metadata?.isUnloading && navigator.sendBeacon) {
-            console.log(`[Analytics] Using sendBeacon for ${event}`);
-            navigator.sendBeacon(TRACKER_ENDPOINT, payload);
+        // RADICAL: Immediate delivery for commerce events
+        if (isCommerce || metadata?.isUnloading || (navigator.sendBeacon && event === 'session_end')) {
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(TRACKER_ENDPOINT, payload);
+            } else {
+                fetch(TRACKER_ENDPOINT, { method: 'POST', body: payload, mode: 'cors', headers: { 'Content-Type': 'application/json' } });
+            }
             return;
         }
 
@@ -249,12 +239,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
                 body: payload
-                // REMOVED keepalive: true because it prevents reading the response body
             });
             const data = await res.json();
-            if (data.actions && Array.isArray(data.actions)) {
-                handleServerActions(data.actions);
-            }
+            if (data.actions) handleServerActions(data.actions);
         } catch (e) { }
     };
 
@@ -659,13 +646,16 @@
         } catch (e) { return null; }
     };
 
-    // Initial Tracking
-    track('tracker_loaded', { version: '2.6.0' });
+    // Initial Tracking Pipeline
+    if (window._isNewSession) track('session_start');
     track('page_view');
     loadRRWeb();
 
-    // Heartbeat every 5 seconds (Optimized for ultra-live Follow Mode)
-    setInterval(() => track('heartbeat'), 5000);
+    // Heartbeat every 15 seconds
+    setInterval(() => {
+        track('heartbeat');
+        localStorage.setItem('s_last_active', Date.now().toString());
+    }, 15000);
 
     // Visibility / Activity Tracking
     document.addEventListener('visibilitychange', () => {

@@ -160,6 +160,20 @@ export async function POST(req: NextRequest) {
 
         const scoreBoost = getScoreBoost();
 
+        // 0.5: Radical Session-Start Handling
+        if (event === 'session_start') {
+            console.log(`[Analytics] Radical Session Start: ${sessionId} for Org: ${organizationId}`);
+            // Force create or find
+            const existing = await prisma.visitorSession.findUnique({ where: { sessionId } });
+            if (existing && (new Date().getTime() - new Date(existing.lastActiveAt).getTime() < 10000)) {
+                // If it exists and very recent, just extend
+                await prisma.visitorSession.update({
+                    where: { sessionId },
+                    data: { status: 'ACTIVE', lastActiveAt: new Date() }
+                });
+            }
+        }
+
         // 1. Ensure Visitor exists
         const visitor = await prisma.visitor.upsert({
             where: { visitorToken },
