@@ -54,14 +54,14 @@ export function VoiceAssistant() {
                 const lowerText = text.toLowerCase();
                 let commandTail = "";
 
-                if (lowerText.includes("karinex")) {
-                    commandTail = lowerText.split("karinex")[1].trim();
-                } else if (lowerText.includes("kari nex")) {
-                    commandTail = lowerText.split("kari nex")[1].trim();
-                } else if (lowerText.includes("kari next")) {
-                    commandTail = lowerText.split("kari next")[1].trim();
-                } else if (lowerText.includes("kari")) {
-                    commandTail = lowerText.split("kari")[1].trim(); // Fallback
+                if (lowerText.includes("siri")) {
+                    commandTail = lowerText.split("siri")[1].trim();
+                } else if (lowerText.includes("serie")) {
+                    commandTail = lowerText.split("serie")[1].trim();
+                } else if (lowerText.includes("seari")) {
+                    commandTail = lowerText.split("seari")[1].trim();
+                } else if (lowerText.includes("ceari")) {
+                    commandTail = lowerText.split("ceari")[1].trim();
                 }
 
                 if (commandTail && commandTail.length > 2) {

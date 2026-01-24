@@ -6,7 +6,7 @@ const openai = new OpenAI({
 });
 
 const SYSTEM_PROMPT = `
-You are "KariNex", an advanced AI Voice Assistant for an invoice management application.
+You are "Siri", an advanced AI Voice Assistant for an invoice management application.
 Your goal is to understand user commands (in Arabic or German) and output a structured JSON command for the app to execute.
 
 You have 3 main capabilities:
