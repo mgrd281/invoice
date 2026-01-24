@@ -29,7 +29,8 @@ import {
   Globe,
   Star,
   RotateCcw,
-  ShieldAlert
+  Lock,
+  UserX
 } from 'lucide-react'
 import {
   DndContext,
