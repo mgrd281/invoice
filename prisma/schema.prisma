@@ -899,6 +899,10 @@ model Visitor {
   deviceType     String?
   os             String?
   browser        String?
+  browserVersion String?
+  osVersion      String?
+  ipv4           String?
+  ipv6           String?
   country        String?
   language       String?
   createdAt      DateTime         @default(now())
@@ -957,6 +961,12 @@ model VisitorSession {
   customerId     String?
   isVip          Boolean        @default(false)
   adminNotes     String?
+  browserVersion String?
+  osVersion      String?
+  ipv4           String?
+  ipv6           String?
+  visitorName    String?
+  visitorEmail   String?
   recordingStatus String?       @default("NONE") // NONE, PROCESSING, AVAILABLE
   thumbnailUrl   String?
   events         SessionEvent[]

@@ -24,6 +24,12 @@ export async function POST(req: NextRequest) {
             isReturning,
             cartToken,
             checkoutToken,
+            browser,
+            browserVersion,
+            os,
+            osVersion,
+            visitorName,
+            visitorEmail,
             metadata
         } = body;
 
@@ -40,6 +46,11 @@ export async function POST(req: NextRequest) {
         const ua = req.headers.get('user-agent') || '';
         const rawIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
         const ip = rawIp.split(',')[0].trim();
+
+        // Detect IPv4 vs IPv6 for specific fields
+        const isIPv6 = ip.includes(':');
+        const ipv4 = isIPv6 ? (metadata?.ip || undefined) : ip;
+        const ipv6 = isIPv6 ? ip : undefined;
 
         console.log(`[IP DEBUG] Incoming IP: ${ip} (Raw: ${rawIp}) for Org: ${organizationId}`);
 
@@ -156,6 +167,10 @@ export async function POST(req: NextRequest) {
                 userAgent: ua,
                 ipHash,
                 country: country || undefined,
+                browserVersion: browserVersion || undefined,
+                osVersion: osVersion || undefined,
+                ipv4: ipv4 || undefined,
+                ipv6: ipv6 || undefined,
             },
             create: {
                 visitorToken,
@@ -166,6 +181,10 @@ export async function POST(req: NextRequest) {
                 os: deviceInfo.os,
                 browser: deviceInfo.browser,
                 country: country || undefined,
+                browserVersion: browserVersion || undefined,
+                osVersion: osVersion || undefined,
+                ipv4: ipv4 || undefined,
+                ipv6: ipv6 || undefined,
             }
         });
 
@@ -243,6 +262,12 @@ export async function POST(req: NextRequest) {
                 region: region || undefined,
                 ipMasked: maskedIp,
                 customerId: shopifyCustomerId || undefined,
+                visitorName: visitorName || undefined,
+                visitorEmail: visitorEmail || undefined,
+                browserVersion: browserVersion || undefined,
+                osVersion: osVersion || undefined,
+                ipv4: ipv4 || undefined,
+                ipv6: ipv6 || undefined,
                 // Update cart snapshot & removed items if provided
                 ...(cartMetadata && {
                     cartSnapshot: cartMetadata.items || undefined,
@@ -260,8 +285,14 @@ export async function POST(req: NextRequest) {
                 referrer,
                 entryUrl: url,
                 deviceType: deviceInfo.device.toLowerCase(),
-                os: deviceInfo.os,
-                browser: deviceInfo.browser,
+                os: os || deviceInfo.os,
+                browser: browser || deviceInfo.browser,
+                browserVersion: browserVersion || undefined,
+                osVersion: osVersion || undefined,
+                ipv4: ipv4 || undefined,
+                ipv6: ipv6 || undefined,
+                visitorName: visitorName || undefined,
+                visitorEmail: visitorEmail || undefined,
                 sourceLabel: source.label,
                 sourceMedium: source.medium,
                 utmSource,

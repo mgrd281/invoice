@@ -165,6 +165,60 @@
 
         console.log(`[Analytics] Event: ${event}`, metadata);
 
+        const getDetailedDeviceInfo = () => {
+            const ua = navigator.userAgent;
+            let browser = "Unknown";
+            let browserVersion = "Unknown";
+            let os = "Unknown";
+            let osVersion = "Unknown";
+
+            // Browser detection
+            if (ua.includes("Firefox/")) {
+                browser = "Firefox";
+                browserVersion = ua.split("Firefox/")[1];
+            } else if (ua.includes("Edg/")) {
+                browser = "Edge";
+                browserVersion = ua.split("Edg/")[1];
+            } else if (ua.includes("Chrome/")) {
+                browser = "Chrome";
+                browserVersion = ua.split("Chrome/")[1].split(" ")[0];
+            } else if (ua.includes("Safari/")) {
+                browser = "Safari";
+                browserVersion = ua.split("Version/")[1]?.split(" ")[0] || "Unknown";
+            }
+
+            // OS detection
+            if (ua.includes("Windows NT")) {
+                os = "Windows";
+                osVersion = ua.split("Windows NT ")[1].split(";")[0];
+            } else if (ua.includes("Mac OS X")) {
+                os = "macOS";
+                osVersion = ua.split("Mac OS X ")[1].split(")")[0].replace(/_/g, '.');
+            } else if (ua.includes("Android")) {
+                os = "Android";
+                osVersion = ua.split("Android ")[1].split(";")[0];
+            } else if (ua.includes("iPhone OS")) {
+                os = "iOS";
+                osVersion = ua.split("iPhone OS ")[1].split(" ")[0].replace(/_/g, '.');
+            }
+
+            return { browser, browserVersion, os, osVersion };
+        };
+
+        const getIdentity = () => {
+            try {
+                // Try Shopify customer object
+                const shopifyCustomer = window.ShopifyAnalytics?.lib?.user()?.traits() || {};
+                return {
+                    name: shopifyCustomer.firstName ? `${shopifyCustomer.firstName} ${shopifyCustomer.lastName || ''}`.trim() : null,
+                    email: shopifyCustomer.email || null
+                };
+            } catch (e) { return { name: null, email: null }; }
+        };
+
+        const device = getDetailedDeviceInfo();
+        const identity = getIdentity();
+
         const payload = JSON.stringify({
             event,
             url: window.location.href,
@@ -177,6 +231,9 @@
             checkoutToken: window.Shopify?.Checkout?.token || window.Shopify?.checkout?.token || window.ShopifyAnalytics?.lib?.user()?.traits()?.checkoutToken,
             referrer: document.referrer,
             ...getUtms(),
+            ...device,
+            visitorName: identity.name,
+            visitorEmail: identity.email,
             metadata
         });
 
@@ -592,8 +649,18 @@
     // Enable mobile error tracking
     trackMobileErrors();
 
+    // IP Detection Helper (As requested in screenshots)
+    window.fetchIpDetails = async () => {
+        try {
+            const res = await fetch('https://api64.ipify.org?format=json');
+            const data = await res.json();
+            track('ip_detection', { ip: data.ip });
+            return data.ip;
+        } catch (e) { return null; }
+    };
+
     // Initial Tracking
-    track('tracker_loaded', { version: '2.5.0' });
+    track('tracker_loaded', { version: '2.6.0' });
     track('page_view');
     loadRRWeb();
 

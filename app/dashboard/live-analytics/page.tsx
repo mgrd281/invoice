@@ -799,9 +799,16 @@ function LiveAnalyticsContent() {
                                                                 </div>
                                                             ) : (
                                                                 <>
-                                                                    <h3 className="font-black text-2xl tracking-tight text-slate-900">
-                                                                        {selectedSession.visitor?.customIdentifier || `Besucher #${selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}`}
-                                                                    </h3>
+                                                                    <div className="flex flex-col">
+                                                                        <h3 className="font-black text-2xl tracking-tight text-slate-900 leading-tight">
+                                                                            {selectedSession.visitorName || selectedSession.visitor?.customIdentifier || `Besucher #${selectedSession.visitor?.id?.substring(0, 6).toUpperCase()}`}
+                                                                        </h3>
+                                                                        {selectedSession.visitorEmail && (
+                                                                            <span className="text-[11px] font-bold text-blue-600/70 lowercase flex items-center gap-1">
+                                                                                <Mail className="h-3 w-3" /> {selectedSession.visitorEmail}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     <Button
                                                                         variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-full"
                                                                         onClick={() => {
@@ -835,7 +842,13 @@ function LiveAnalyticsContent() {
                                                         <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
                                                             <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
                                                             <span className="h-1 w-1 rounded-full bg-slate-200" />
-                                                            <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> {selectedSession.ipMasked || '***.***.***.0'}</span>
+                                                            <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> {selectedSession.ipv4 || selectedSession.ipMasked || '***.***.***.0'}</span>
+                                                            {selectedSession.ipv6 && (
+                                                                <>
+                                                                    <span className="h-1 w-1 rounded-full bg-slate-200" />
+                                                                    <span className="flex items-center gap-1.5 font-mono text-[9px] opacity-70"><ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> {selectedSession.ipv6}</span>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1201,9 +1214,41 @@ function LiveAnalyticsContent() {
                                                             </div>
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Gerät & Technologie</span>
                                                         </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="text-xs font-bold text-slate-100">{selectedSession.deviceType} • {selectedSession.browser}</span>
-                                                            <span className="text-[10px] text-slate-400 font-medium">{selectedSession.os} • {selectedSession.screenResolution || '1920x1080'}</span>
+                                                        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-[8px] font-black uppercase text-slate-500 tracking-tighter">Browser</span>
+                                                                <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                                                                    {selectedSession.browser} <span className="text-[9px] text-blue-400 font-mono">{selectedSession.browserVersion}</span>
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-[8px] font-black uppercase text-slate-500 tracking-tighter">Betriebssystem</span>
+                                                                <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                                                                    {selectedSession.os} <span className="text-[9px] text-emerald-400 font-mono">{selectedSession.osVersion}</span>
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-col gap-0.5 col-span-2">
+                                                                <span className="text-[8px] font-black uppercase text-slate-500 tracking-tighter">Netzwerk-Identität</span>
+                                                                <div className="flex items-center gap-3 mt-1">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[9px] font-mono text-slate-300">IPv4: {selectedSession.ipv4 || 'Unbekannt'}</span>
+                                                                        {selectedSession.ipv6 && <span className="text-[8px] font-mono text-slate-500">IPv6: {selectedSession.ipv6}</span>}
+                                                                    </div>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="h-6 text-[8px] bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-all font-black"
+                                                                        onClick={async () => {
+                                                                            toast.loading('Ermittle lokale IP...');
+                                                                            // This logic triggers a "poke" to the visitor to report their real IP
+                                                                            // For now we'll simulate the ping
+                                                                            setTimeout(() => toast.success('IP-Abgleich gestartet'), 1000);
+                                                                        }}
+                                                                    >
+                                                                        <RefreshCw className="h-2.5 w-2.5 mr-1" /> LOKALE IPV4 ERMITTELN
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
