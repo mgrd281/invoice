@@ -370,10 +370,7 @@ export default function AbandonedCartsPage() {
                                                             </>
                                                         ) : (
                                                             <div className="flex flex-col gap-2">
-                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100 w-fit">
-                                                                    <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                                                                    <span className="text-[11px] font-black text-red-600 uppercase tracking-tight">Warenkorb geleert</span>
-                                                                </div>
+                                                                {/* "Warenkorb geleert" badge removed as per user request */}
 
                                                                 {Array.isArray((cart as any).removedItems) && ((cart as any).removedItems as any[]).length > 0 && (
                                                                     <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50/50 border border-red-100/50 rounded-full w-fit">
