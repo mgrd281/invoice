@@ -67,6 +67,7 @@ model Organization {
   auditLogs               AuditLog[]
   autoReviewSettings      AutoReviewSettings?
   blockedUsers            BlockedUser[]
+  blockedIps              BlockedIp[]
   blockedUserAttempts     BlockedUserAttempt[]
   customers               Customer[]
   digitalProducts         DigitalProduct[]
@@ -193,6 +194,18 @@ model BlockedUser {
 
   @@unique([organizationId, email])
   @@index([email])
+}
+
+model BlockedIp {
+  id             String       @id @default(uuid())
+  organizationId String
+  ipAddress      String
+  reason         String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, ipAddress])
+  @@index([ipAddress])
 }
 
 model BlockedUserAttempt {

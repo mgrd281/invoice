@@ -42,6 +42,25 @@ export async function POST(req: NextRequest) {
         const ua = req.headers.get('user-agent') || '';
         const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
 
+        // 0. Check for Blocked IP
+        const isBlocked = await prisma.blockedIp.findFirst({
+            where: {
+                organizationId,
+                ipAddress: ip
+            }
+        });
+
+        if (isBlocked) {
+            console.warn(`[Analytics Tracker] Blocked IP attempt: ${ip} for Org: ${organizationId}`);
+            return NextResponse.json({
+                success: false,
+                actions: [{
+                    type: 'BLOCK_VISITOR',
+                    payload: { reason: isBlocked.reason || 'Security Policy' }
+                }]
+            });
+        }
+
         // Mask IP for privacy (GDPR)
         let maskedIp = '0.0.0.0';
         if (ip.includes('.')) {

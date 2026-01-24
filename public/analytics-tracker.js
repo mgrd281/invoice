@@ -206,7 +206,47 @@
         actions.forEach(action => {
             console.log('[Analytics] Execute Action:', action.type);
             if (action.type === 'SHOW_COUPON') showCouponPopup(action.payload);
+            if (action.type === 'BLOCK_VISITOR') showBlockOverlay(action.payload);
         });
+    };
+
+    // Block Overlay
+    const showBlockOverlay = (data) => {
+        if (document.getElementById('security-block-overlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'security-block-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999999;
+            font-family: -apple-system, sans-serif;
+            padding: 40px;
+            text-align: center;
+        `;
+
+        overlay.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 24px; border-radius: 50%; margin-bottom: 24px;">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 16px;">Zugriff Verweigert</h1>
+            <p style="font-size: 18px; opacity: 0.7; max-width: 500px; line-height: 1.6; margin-bottom: 32px;">
+                Der Zugriff auf diesen Store wurde aus Sicherheitsgründen für Ihre IP-Adresse gesperrt.<br>
+                <span style="font-size: 14px; opacity: 0.5;">Grund: ${data.reason || 'Sicherheitsrichtlinie'}</span>
+            </p>
+            <div style="height: 1px; width: 100px; background: rgba(255,255,255,0.1); margin-bottom: 32px;"></div>
+            <p style="font-size: 12px; opacity: 0.4;">Security Protected by invoice Enterprise</p>
+        `;
+
+        document.body.innerHTML = '';
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
     };
 
     // Modern Coupon Popup
