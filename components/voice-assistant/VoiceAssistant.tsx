@@ -25,33 +25,59 @@ export function VoiceAssistant() {
     const recognitionRef = useRef<any>(null);
     const wakeWordRef = useRef<any>(null);
 
-    // --- WAKE WORD LOGIC ---
+    // --- WAKE WORD LOGIC (HYBRID) ---
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
-        // Create separate instance for wake word to avoid conflicts
         const wakeWordRecognition = new SpeechRecognition();
-        wakeWordRecognition.lang = 'en-US'; // Use English for better "KariNex" detection
+        wakeWordRecognition.lang = 'en-US';
         wakeWordRecognition.continuous = true;
         wakeWordRecognition.interimResults = true;
 
         wakeWordRecognition.onresult = (event: any) => {
-            if (activeRef.current) return; // Don't process wake word if already active
+            if (activeRef.current) return;
 
             const current = event.resultIndex;
             const text = event.results[current][0].transcript.toLowerCase();
-            console.log("Wake Word Stream:", text); // DEBUG
+            console.log("Wake Word Stream:", text);
+
+            // Normalize text to check for keywords
+            const normalizedText = text.replace(/[^a-zA-Z\s]/g, "");
 
             // Check for wake words
-            if (text.includes('kari') || text.includes('nex') || text.includes('next')) {
-                wakeWordRecognition.stop(); // Stop listening for wake word
-                startListening(); // Trigger main assistant
+            if (normalizedText.includes('kari') || normalizedText.includes('nex')) {
+                wakeWordRecognition.stop();
+
+                // HYBRID CHECK: Did user say "KariNex [command]"?
+                // Split by wake word and check if there is a tail
+                const lowerText = text.toLowerCase();
+                let commandTail = "";
+
+                if (lowerText.includes("karinex")) {
+                    commandTail = lowerText.split("karinex")[1].trim();
+                } else if (lowerText.includes("kari nex")) {
+                    commandTail = lowerText.split("kari nex")[1].trim();
+                } else if (lowerText.includes("kari next")) {
+                    commandTail = lowerText.split("kari next")[1].trim();
+                } else if (lowerText.includes("kari")) {
+                    commandTail = lowerText.split("kari")[1].trim(); // Fallback
+                }
+
+                if (commandTail && commandTail.length > 2) {
+                    console.log("Hybrid Command Detected:", commandTail);
+                    // Process immediately!
+                    setIsOpen(true);
+                    setTranscript(commandTail);
+                    processCommand(commandTail);
+                } else {
+                    // Just open and listen
+                    startListening();
+                }
             }
         };
 
         wakeWordRecognition.onend = () => {
-            // Restart wake word listener if not active
             if (!activeRef.current) {
                 try { wakeWordRecognition.start(); } catch (e) { /* ignore */ }
             }
@@ -59,7 +85,6 @@ export function VoiceAssistant() {
 
         wakeWordRef.current = wakeWordRecognition;
 
-        // Initial Start
         try { wakeWordRecognition.start(); } catch (e) { /* ignore */ }
 
         return () => {
@@ -72,7 +97,6 @@ export function VoiceAssistant() {
         if (isOpen) {
             if (wakeWordRef.current) wakeWordRef.current.stop();
         } else {
-            // Delay restart slightly to avoid conflict with main recognition stopping
             setTimeout(() => {
                 if (wakeWordRef.current && !activeRef.current) {
                     try { wakeWordRef.current.start(); } catch (e) { }
@@ -92,7 +116,7 @@ export function VoiceAssistant() {
         transcriptRef.current = '';
         activeRef.current = true;
 
-        // Sound effect for activation (optional, simpler than MP3)
+        // Optional Ping Sound
         // const audio = new Audio('/sounds/ping.mp3');
         // audio.play().catch(e => {});
 
@@ -120,7 +144,6 @@ export function VoiceAssistant() {
             if (activeRef.current && finalTranscript.length > 1) {
                 processCommand(finalTranscript);
             } else {
-                // Only set IDLE if we are not processing a command
                 if (status === 'LISTENING') {
                     setStatus('IDLE');
                     activeRef.current = false;
@@ -160,10 +183,10 @@ export function VoiceAssistant() {
                 console.log("Navigating to:", data.payload.route);
                 router.push(data.payload.route);
 
-                // Close IMMEDIATELY for navigation
+                // Close IMMEDIATELY
                 setIsOpen(false);
                 stopListening();
-                return; // Exit function, no need to speak confirmation
+                return;
             }
 
             if (data.reply) {
@@ -186,8 +209,6 @@ export function VoiceAssistant() {
                     params.set('action', 'new-invoice');
                     if (payload.amount) params.set('amount', payload.amount);
                     router.push(`/dashboard?${params.toString()}`);
-                    // Trigger modal, maybe close assistant? 
-                    // Let's keep it open for invoice creation feedback unless user prefers speed.
                 }
 
                 else if (command === 'FILTER_INVOICES') {
@@ -195,7 +216,6 @@ export function VoiceAssistant() {
                     if (payload.status) params.set('status', payload.status);
                     if (payload.date_range) params.set('date', payload.date_range);
                     router.push(`/invoices?${params.toString()}`);
-                    // For filters, we might want to see the result, close it.
                     setIsOpen(false);
                 }
 
