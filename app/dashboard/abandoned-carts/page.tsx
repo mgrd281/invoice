@@ -156,7 +156,7 @@ export default function AbandonedCartsPage() {
             fetchCarts()
             const interval = setInterval(() => {
                 if (!document.hidden) fetchCarts()
-            }, 3000)
+            }, 2000)
             return () => clearInterval(interval)
         }
     }, [mounted, fetchCarts])
@@ -409,6 +409,11 @@ export default function AbandonedCartsPage() {
                                                                                 <span className="text-[8px] font-bold text-red-500 bg-red-50 px-1 rounded truncate uppercase">
                                                                                     {item.isPartialRemoval ? `QTY REDUZIERT (-${item.quantity})` : 'ENTFERNT'}
                                                                                 </span>
+                                                                                {item.removedAt && (
+                                                                                    <span className="text-[9px] text-gray-400">
+                                                                                        {format(new Date(item.removedAt), 'HH:mm:ss')}
+                                                                                    </span>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     </div>
