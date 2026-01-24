@@ -285,20 +285,31 @@ export function VoiceAssistant() {
                 if (command === 'GET_INVOICE') {
                     console.log("Fetching details for invoice:", payload.id);
                     try {
-                        const invRes = await fetch(`/api/invoices/${payload.id}`);
-                        if (invRes.ok) {
-                            const invData = await invRes.json();
-                            // RECURSIVE CALL: Send data back to AI
-                            const contextMessage = `DATA_FETCHED: Invoice ${payload.id} details: Total ${invData.total}€, Customer ${invData.customer.name}, Status ${invData.status}, Date ${invData.date}. Summarize this for the user.`;
+                        // Use SEARCH API instead of ID lookup to support Invoice Numbers (e.g. "5")
+                        const searchRes = await fetch(`/api/invoices?search=${payload.id}&limit=1`);
 
-                            // Call processCommand again with the data
-                            await processCommand(contextMessage);
-                            return; // Exit this loop, the next call will handle speaking
+                        if (searchRes.ok) {
+                            const searchData = await searchRes.json();
+                            const invoices = searchData.invoices || [];
+
+                            if (invoices.length > 0) {
+                                const invData = invoices[0];
+                                // RECURSIVE CALL: Send data back to AI
+                                const contextMessage = `DATA_FETCHED: Invoice ${invData.number} (ID: ${invData.id}) details: Total ${invData.total}€, Customer ${invData.customer.name}, Status ${invData.status}, Date ${invData.date}. Summarize this for the user.`;
+
+                                // Call processCommand again with the data
+                                await processCommand(contextMessage);
+                                return; // Exit this loop
+                            } else {
+                                setReply(`Rechnung ${payload.id} nicht gefunden.`);
+                                speak(`Rechnung ${payload.id} nicht gefunden.`);
+                            }
                         } else {
-                            setReply("Rechnung nicht gefunden.");
-                            speak("Rechnung nicht gefunden.");
+                            setReply("Fehler beim Suchen der Rechnung.");
+                            speak("Fehler beim Suchen.");
                         }
                     } catch (e) {
+                        console.error(e);
                         setReply("Fehler beim Abrufen der Daten.");
                     }
                 }
