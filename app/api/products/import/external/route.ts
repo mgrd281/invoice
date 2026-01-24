@@ -219,7 +219,16 @@ export async function POST(request: NextRequest) {
             // D. Specific Vendor Logic (Amazon, Otto, etc.) with Alt-Text
             if (vendor === 'Amazon') {
                 data.title = data.title || $('#productTitle').text().trim()
-                $('#imgTagWrapperId img, #landingImage, #altImages img').each((_: number, el: any) => {
+                data.description = data.description || $('#feature-bullets').text().trim() || $('#productDescription').text().trim()
+
+                // Technical Specs from Amazon Table
+                $('#prodDetails tr, #technicalSpecifications_feature_div tr, .a-keyvalue tr').each((_: number, el: any) => {
+                    const key = $(el).find('th, td:first-child').text().trim()
+                    const value = $(el).find('td:last-child').text().trim()
+                    if (key && value && key.length < 50) extractedMetadata[key] = value
+                })
+
+                $('#imgTagWrapperId img, #landingImage, #altImages img, .a-dynamic-image').each((_: number, el: any) => {
                     const src = $(el).attr('src') || $(el).attr('data-old-hires') || $(el).attr('data-a-dynamic-image')
                     const alt = $(el).attr('alt') || data.title
                     if (src && !src.includes('base64')) {
@@ -241,7 +250,7 @@ export async function POST(request: NextRequest) {
                 if (mainImg) data.images.push({ src: mainImg, alt: data.title })
 
                 // Gallery Images
-                $('img.carousel__image, .pdp_product-gallery__image img, .carousel li img').each((_: number, el: any) => {
+                $('img.carousel__image, .pdp_product-gallery__image img, .carousel li img, .pdp_productGallery__image img').each((_: number, el: any) => {
                     const src = $(el).attr('data-src') || $(el).attr('src')
                     const alt = $(el).attr('alt') || data.title
                     if (src && !data.images.some((i: any) => i.src === src)) {
@@ -262,15 +271,37 @@ export async function POST(request: NextRequest) {
                         })
                     }
                 })
-            } else {
+            }
+            else if (sourceUrl.includes('zalando')) {
+                data.vendor = $('.K9_Bex.re_oN.Z9_Y6.u5_M_').text() || data.vendor
+                data.title = $('h1 span').text() || data.title
+                $('.Q81_0w.re_oN.Z9_Y6.u5_M_').each((_: number, el: any) => {
+                    const text = $(el).text()
+                    if (text.includes('€')) data.price = text.replace(/[^0-9,.]/g, '').replace(',', '.')
+                })
+                $('img.RY9u9S.pY9u9S').each((_: number, el: any) => {
+                    const src = $(el).attr('src')
+                    if (src) data.images.push({ src, alt: data.title })
+                })
+            }
+            else if (sourceUrl.includes('ebay')) {
+                data.title = data.title || $('.x-item-title__mainTitle').text().trim()
+                data.price = $('.x-price-primary').text().replace(/[^0-9,.]/g, '').replace(',', '.') || data.price
+                data.google_condition = $('.x-item-condition-text').text().toLowerCase().includes('neu') ? 'new' : 'used'
+                $('.ux-image-filmstrip-carousel img').each((_: number, el: any) => {
+                    const src = $(el).attr('src')?.replace(/s-l\d+/, 's-l1600')
+                    if (src) data.images.push({ src, alt: data.title })
+                })
+            }
+            else {
                 // Generic image extraction with Alt-Text
                 $('img').each((_: number, el: any) => {
                     const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src')
                     const alt = $(el).attr('alt') || $(el).attr('title') || data.title
 
                     if (src && !src.includes('analytics') && !src.includes('tracking') && !src.includes('base64')) {
-                        // Allow if it has a high-res indicator or is common format
-                        if (src.includes('i.otto.de') || src.includes('amazon-adsystem') === false) {
+                        // Avoid small icons and common logos
+                        if (!src.includes('logo') && !src.includes('icon') && !src.includes('placeholder')) {
                             if (!data.images.some((i: any) => i.src === src)) {
                                 data.images.push({ src, alt: alt || data.title })
                             }
@@ -309,15 +340,39 @@ export async function POST(request: NextRequest) {
             })
 
             // E. Normalization & Fallbacks
-            data.images = Array.from(new Set(data.images)).filter(Boolean).map((img: any) => {
-                const imgSrc = typeof img === 'string' ? img : '';
-                if (!imgSrc) return '';
-                if (imgSrc.startsWith('//')) return 'https:' + imgSrc;
-                if (!imgSrc.startsWith('http')) {
-                    try { return new URL(imgSrc, sourceUrl).toString() } catch { return imgSrc }
+            // CRITICAL FIX: Ensure image normalization handles both string and {src, alt} objects correctly
+            data.images = data.images.map((img: any) => {
+                let imgSrc = '';
+                let imgAlt = data.title || '';
+
+                if (typeof img === 'string') {
+                    imgSrc = img;
+                } else if (img && typeof img === 'object') {
+                    imgSrc = img.src || '';
+                    imgAlt = img.alt || data.title || '';
                 }
-                return imgSrc;
+
+                if (!imgSrc) return null;
+
+                // Absolute URL resolution
+                if (imgSrc.startsWith('//')) imgSrc = 'https:' + imgSrc;
+                if (!imgSrc.startsWith('http')) {
+                    try { imgSrc = new URL(imgSrc, sourceUrl).toString() } catch { return null }
+                }
+
+                return { src: imgSrc, alt: imgAlt };
             }).filter(Boolean);
+
+            // Remove duplicated images based on SRC
+            const uniqueImages: any[] = [];
+            const seenSrcs = new Set();
+            data.images.forEach((img: any) => {
+                if (!seenSrcs.has(img.src)) {
+                    seenSrcs.add(img.src);
+                    uniqueImages.push(img);
+                }
+            });
+            data.images = uniqueImages;
 
             // If no variants, create a default one
             if (data.variants.length === 0) {
