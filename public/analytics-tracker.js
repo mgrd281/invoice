@@ -607,8 +607,9 @@
             // BEFORE the fetch: Capture current cart state for cart-modifying calls
             let cartBefore = null;
             const isCartModify = url.includes('/cart/change') || url.includes('/cart/update');
+            const isCartClear = url.includes('/cart/clear');
 
-            if (isCartModify) {
+            if (isCartModify || isCartClear) {
                 try {
                     const resp = await originalFetch.call(this, '/cart.js');
                     cartBefore = await resp.json();
@@ -628,10 +629,14 @@
                         track('add_to_cart');
                     }
 
-                    if (isCartModify && cartBefore) {
+                    if ((isCartModify || isCartClear) && cartBefore) {
                         // Clone the response to read it without consuming
                         const cloned = result.clone();
-                        const cartAfter = await cloned.json();
+                        let cartAfter = { item_count: 0, total_price: 0, items: [], currency: 'EUR' }; // Default for clear
+
+                        if (!isCartClear) {
+                            cartAfter = await cloned.json();
+                        }
 
                         // Detect FULLY removed items (no longer in cart)
                         const removedItems = (cartBefore.items || []).filter(oldItem =>

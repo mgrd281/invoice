@@ -309,25 +309,32 @@ export async function POST(req: NextRequest) {
                         )
                     );
 
-                    if (newItems.length > 0 || currentItems.length > 0) {
+                    // Always determine the new state based on the latest snapshot (cartMetadata)
+                    // If cartMetadata is present, we must trust it accurately reflects the current cart (even if empty)
+                    const shouldUpdateState = !!cartMetadata;
+                    const hasNewRemovals = newItems.length > 0;
+
+                    if (shouldUpdateState || hasNewRemovals) {
                         const mergedRemoved = [...existingRemoved, ...newItems];
 
-                        // Update lineItems too if available, to keep it fresh
                         const updateData: any = {
                             removedItems: mergedRemoved,
                             updatedAt: new Date()
                         };
 
-                        if (currentItems.length > 0) {
+                        // Critical: Always update the main cart state if we have fresh metadata
+                        // This ensures that if the cart is empty, lineItems becomes [] and price becomes 0
+                        if (shouldUpdateState) {
                             updateData.lineItems = currentItems;
                             updateData.totalPrice = totalPrice;
+                            updateData.currency = currency;
                         }
 
                         await prisma.abandonedCart.update({
                             where: { id: cart.id },
                             data: updateData
                         });
-                        console.log(`[Analytics] Synced ${newItems.length} removed items to AbandonedCart ${cart.id}`);
+                        console.log(`[Analytics] Updated AbandonedCart ${cart.id} - Removals: ${newItems.length}, Items in Cart: ${currentItems.length}`);
                     }
                 }
             } catch (err) {
