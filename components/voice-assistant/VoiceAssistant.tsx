@@ -199,7 +199,8 @@ export function VoiceAssistant() {
                 // For NAVIGATE commands, force silence even if backend sent a reply
                 if (data.intent !== 'NAVIGATE') {
                     setReply(data.reply);
-                    speak(data.reply, data.language);
+                    const shouldAutoListen = data.intent === 'CHAT' || data.intent === 'Q_AND_A';
+                    speak(data.reply, data.language, shouldAutoListen);
                 } else {
                     console.log("Navigation intent detected, suppressing speech.");
                     setIsOpen(false);
@@ -279,7 +280,7 @@ export function VoiceAssistant() {
         }
     };
 
-    const speak = (text: string, lang: string = 'de') => {
+    const speak = (text: string, lang: string = 'de', shouldListenAfter: boolean = false) => {
         setStatus('SPEAKING');
         window.speechSynthesis.cancel();
 
@@ -293,7 +294,12 @@ export function VoiceAssistant() {
         utterance.lang = lang === 'ar' ? 'ar-SA' : 'de-DE';
 
         utterance.onend = () => {
-            setStatus('IDLE');
+            if (shouldListenAfter) {
+                console.log("Auto-listening for follow-up...");
+                startListening();
+            } else {
+                setStatus('IDLE');
+            }
         };
         utterance.onerror = (e) => {
             console.error("TTS Error:", e);
