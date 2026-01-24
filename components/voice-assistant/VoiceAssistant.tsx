@@ -21,8 +21,68 @@ export function VoiceAssistant() {
     const transcriptRef = useRef('');
     const activeRef = useRef(false);
 
-    // Recognition Ref
+    // Refs for recognition instances
     const recognitionRef = useRef<any>(null);
+    const wakeWordRef = useRef<any>(null);
+
+    // --- WAKE WORD LOGIC ---
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        // Create separate instance for wake word to avoid conflicts
+        const wakeWordRecognition = new SpeechRecognition();
+        wakeWordRecognition.lang = 'en-US'; // Use English for better "KariNex" detection
+        wakeWordRecognition.continuous = true;
+        wakeWordRecognition.interimResults = true;
+
+        wakeWordRecognition.onresult = (event: any) => {
+            if (activeRef.current) return; // Don't process wake word if already active
+
+            const current = event.resultIndex;
+            const text = event.results[current][0].transcript.toLowerCase();
+            console.log("Wake Word Stream:", text); // DEBUG
+
+            // Check for wake words
+            if (text.includes('kari') || text.includes('nex') || text.includes('next')) {
+                wakeWordRecognition.stop(); // Stop listening for wake word
+                startListening(); // Trigger main assistant
+            }
+        };
+
+        wakeWordRecognition.onend = () => {
+            // Restart wake word listener if not active
+            if (!activeRef.current) {
+                try { wakeWordRecognition.start(); } catch (e) { /* ignore */ }
+            }
+        };
+
+        wakeWordRef.current = wakeWordRecognition;
+
+        // Initial Start
+        try { wakeWordRecognition.start(); } catch (e) { /* ignore */ }
+
+        return () => {
+            if (wakeWordRef.current) wakeWordRef.current.stop();
+        };
+    }, []);
+
+    // Ensure wake word stops/starts based on active state
+    useEffect(() => {
+        if (isOpen) {
+            if (wakeWordRef.current) wakeWordRef.current.stop();
+        } else {
+            // Delay restart slightly to avoid conflict with main recognition stopping
+            setTimeout(() => {
+                if (wakeWordRef.current && !activeRef.current) {
+                    try { wakeWordRef.current.start(); } catch (e) { }
+                }
+            }, 500);
+        }
+    }, [isOpen]);
+
+
+    // --- MAIN COMMAND LOGIC ---
 
     const startListening = () => {
         setIsOpen(true);
@@ -30,7 +90,11 @@ export function VoiceAssistant() {
         setTranscript('');
         setReply('');
         transcriptRef.current = '';
-        activeRef.current = true; // Mark as intentionally active
+        activeRef.current = true;
+
+        // Sound effect for activation (optional, simpler than MP3)
+        // const audio = new Audio('/sounds/ping.mp3');
+        // audio.play().catch(e => {});
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -39,7 +103,6 @@ export function VoiceAssistant() {
         }
 
         const recognition = new SpeechRecognition();
-        // Try to detect user language or default to German
         recognition.lang = navigator.language || 'de-DE';
         recognition.continuous = false;
         recognition.interimResults = true;
@@ -52,14 +115,16 @@ export function VoiceAssistant() {
         };
 
         recognition.onend = () => {
-            // Check if we are still active (didn't manually stop)
             const finalTranscript = transcriptRef.current;
 
             if (activeRef.current && finalTranscript.length > 1) {
                 processCommand(finalTranscript);
             } else {
-                setStatus('IDLE');
-                activeRef.current = false;
+                // Only set IDLE if we are not processing a command
+                if (status === 'LISTENING') {
+                    setStatus('IDLE');
+                    activeRef.current = false;
+                }
             }
         };
 
@@ -68,7 +133,7 @@ export function VoiceAssistant() {
     };
 
     const stopListening = () => {
-        activeRef.current = false; // Mark as manually stopped
+        activeRef.current = false;
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
@@ -77,9 +142,9 @@ export function VoiceAssistant() {
 
     const processCommand = async (text: string) => {
         setStatus('PROCESSING');
-        activeRef.current = false; // Stop listening while processing
+        activeRef.current = false;
 
-        console.log("Sending command:", text); // DEBUG
+        console.log("Sending command:", text);
         try {
             const res = await fetch('/api/assistant', {
                 method: 'POST',
@@ -88,26 +153,28 @@ export function VoiceAssistant() {
             });
 
             const data = await res.json();
-            console.log("Received AI Response:", data); // DEBUG
+            console.log("Received AI Response:", data);
+
+            // --- INSTANT NAVIGATION OPTIMIZATION ---
+            if (data.intent === 'NAVIGATE' && data.payload?.route) {
+                console.log("Navigating to:", data.payload.route);
+                router.push(data.payload.route);
+
+                // Close IMMEDIATELY for navigation
+                setIsOpen(false);
+                stopListening();
+                return; // Exit function, no need to speak confirmation
+            }
 
             if (data.reply) {
                 setReply(data.reply);
                 speak(data.reply, data.language);
             }
 
-            // --- COMMAND ROUTER ---
-
-            if (data.intent === 'NAVIGATE' && data.payload?.route) {
-                console.log("Navigating to:", data.payload.route);
-                router.push(data.payload.route);
-            }
-
-            else if (data.intent === 'ACTION') {
+            if (data.intent === 'ACTION') {
                 const { command, payload } = data;
-                console.log("Executing Action:", command, payload);
 
                 if (command === 'SEND_INVOICE') {
-                    // Simulation of sending
                     showToast(
                         `E-Mail gesendet: Rechnung ${payload.id || '?'} wurde an ${payload.recipient || 'Kunde'} gesendet.`,
                         "success"
@@ -115,11 +182,12 @@ export function VoiceAssistant() {
                 }
 
                 else if (command === 'CREATE_INVOICE') {
-                    // Navigate to dashboard with query params to triger modal
                     const params = new URLSearchParams();
                     params.set('action', 'new-invoice');
                     if (payload.amount) params.set('amount', payload.amount);
                     router.push(`/dashboard?${params.toString()}`);
+                    // Trigger modal, maybe close assistant? 
+                    // Let's keep it open for invoice creation feedback unless user prefers speed.
                 }
 
                 else if (command === 'FILTER_INVOICES') {
@@ -127,6 +195,8 @@ export function VoiceAssistant() {
                     if (payload.status) params.set('status', payload.status);
                     if (payload.date_range) params.set('date', payload.date_range);
                     router.push(`/invoices?${params.toString()}`);
+                    // For filters, we might want to see the result, close it.
+                    setIsOpen(false);
                 }
 
                 else if (command === 'EXPORT_DATA') {
@@ -137,8 +207,6 @@ export function VoiceAssistant() {
                 }
             }
 
-            // Note: We don't set status to IDLE here if speaking. 
-            // The speak function handles setting IDLE after speech ends.
             if (!data.reply) {
                 setStatus('IDLE');
             }
@@ -153,12 +221,10 @@ export function VoiceAssistant() {
 
     const speak = (text: string, lang: string = 'de') => {
         setStatus('SPEAKING');
-        // Cancel previous speech
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Better Voice Selection
         const voices = window.speechSynthesis.getVoices();
         const targetLang = lang === 'ar' ? 'ar' : 'de';
         const preferredVoice = voices.find(v => v.lang.startsWith(targetLang));
