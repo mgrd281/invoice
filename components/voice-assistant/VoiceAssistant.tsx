@@ -30,12 +30,13 @@ export function VoiceAssistant() {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            setReply('Browser not supported.');
+            setReply('Browser nicht unterstützt / Browser not supported.');
             return;
         }
 
         const recognition = new SpeechRecognition();
-        recognition.lang = 'de-DE'; // Default, but we can make this dynamic or mixed
+        // Try to detect user language or default to German
+        recognition.lang = navigator.language || 'de-DE';
         recognition.continuous = false;
         recognition.interimResults = true;
 
@@ -66,6 +67,7 @@ export function VoiceAssistant() {
 
     const processCommand = async (text: string) => {
         setStatus('PROCESSING');
+        console.log("Sending command:", text); // DEBUG
         try {
             const res = await fetch('/api/assistant', {
                 method: 'POST',
@@ -74,6 +76,7 @@ export function VoiceAssistant() {
             });
 
             const data = await res.json();
+            console.log("Received AI Response:", data); // DEBUG
 
             if (data.reply) {
                 setReply(data.reply);
@@ -83,16 +86,18 @@ export function VoiceAssistant() {
             // --- COMMAND ROUTER ---
 
             if (data.intent === 'NAVIGATE' && data.payload?.route) {
+                console.log("Navigating to:", data.payload.route);
                 router.push(data.payload.route);
             }
 
             else if (data.intent === 'ACTION') {
                 const { command, payload } = data;
+                console.log("Executing Action:", command, payload);
 
                 if (command === 'SEND_INVOICE') {
                     // Simulation of sending
                     showToast(
-                        `E-Mail gesendet: Rechnung ${payload.id} wurde an ${payload.recipient} gesendet.`,
+                        `E-Mail gesendet: Rechnung ${payload.id || '?'} wurde an ${payload.recipient || 'Kunde'} gesendet.`,
                         "success"
                     );
                 }
@@ -114,7 +119,7 @@ export function VoiceAssistant() {
 
                 else if (command === 'EXPORT_DATA') {
                     showToast(
-                        `Export gestartet: Deine ${payload.scope} werden als ${payload.format} exportiert.`,
+                        `Export gestartet: ${payload.scope} (${payload.format})`,
                         "info"
                     );
                 }
@@ -123,17 +128,34 @@ export function VoiceAssistant() {
             setStatus('IDLE');
 
         } catch (e) {
-            setReply('Sorry, something went wrong.');
-            speak('Entschuldigung, ein Fehler ist aufgetreten.', 'de');
+            console.error("Voice Assistant Error:", e);
+            setReply('Fehler bei der Verarbeitung.');
+            speak('Es gab einen Fehler.', 'de');
             setStatus('IDLE');
         }
     };
 
     const speak = (text: string, lang: string = 'de') => {
         setStatus('SPEAKING');
+        // Cancel previous speech
+        window.speechSynthesis.cancel();
+
         const utterance = new SpeechSynthesisUtterance(text);
+
+        // Better Voice Selection
+        const voices = window.speechSynthesis.getVoices();
+        const targetLang = lang === 'ar' ? 'ar' : 'de';
+        const preferredVoice = voices.find(v => v.lang.startsWith(targetLang));
+
+        if (preferredVoice) utterance.voice = preferredVoice;
         utterance.lang = lang === 'ar' ? 'ar-SA' : 'de-DE';
+
         utterance.onend = () => setStatus('IDLE');
+        utterance.onerror = (e) => {
+            console.error("TTS Error:", e);
+            setStatus('IDLE');
+        };
+
         window.speechSynthesis.speak(utterance);
     };
 

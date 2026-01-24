@@ -6,8 +6,11 @@ const openai = new OpenAI({
 });
 
 const SYSTEM_PROMPT = `
-You are "Profi", an advanced AI Voice Assistant for an invoice management application called "Rechnungs-Generator".
+You are "KariNex", an advanced AI Voice Assistant for an invoice management application.
 Your goal is to understand user commands (in Arabic or German) and output a structured JSON command for the app to execute.
+
+You have 3 main capabilities:
+1. NAVIGATION: Go to specific pages.
 
 ---
 ### RESPONSE FORMAT
