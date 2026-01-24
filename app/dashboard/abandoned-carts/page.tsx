@@ -272,7 +272,7 @@ export default function AbandonedCartsPage() {
                     fetchCarts()
                     fetchStats(timeRange)
                 }
-            }, 5000)
+            }, 1000) // Increased frequency to 1s for "Live" feel
             return () => clearInterval(interval)
         }
     }, [mounted, fetchCarts, fetchStats, timeRange])
@@ -356,8 +356,8 @@ export default function AbandonedCartsPage() {
                                     key={r.id}
                                     onClick={() => setTimeRange(r.id)}
                                     className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${timeRange === r.id
-                                            ? 'bg-emerald-100 text-emerald-700 shadow-sm'
-                                            : 'text-gray-400 hover:text-gray-600'
+                                        ? 'bg-emerald-100 text-emerald-700 shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-600'
                                         }`}
                                 >
                                     {r.label}
