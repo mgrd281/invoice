@@ -942,6 +942,7 @@ model VisitorSession {
   recordings     SessionRecording[]
   cartSnapshots  CartSnapshot[]
   goals          GoalTracking[]
+  actions        SessionAction[]
   organization   Organization   @relation("OrganizationToVisitorSessions", fields: [organizationId], references: [id])
   visitor        Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
@@ -949,6 +950,21 @@ model VisitorSession {
   @@index([visitorId])
   @@index([sessionId])
   @@index([lastActiveAt])
+}
+
+model SessionAction {
+  id             String         @id @default(uuid())
+  sessionId      String
+  type           String         // e.g. SHOW_COUPON, REQUEST_EMAIL
+  payload        Json?          // { code: "SAVE10", value: 10 }
+  status         String         @default("PENDING") // PENDING, DELIVERED, COMPLETED
+  createdAt      DateTime       @default(now())
+  deliveredAt    DateTime?
+  
+  session        VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([status])
 }
 
 model CartSnapshot {

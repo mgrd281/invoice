@@ -187,17 +187,207 @@
         }
 
         try {
-            await fetch(TRACKER_ENDPOINT, {
+            const res = await fetch(TRACKER_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 mode: 'cors',
                 body: payload,
                 keepalive: true
             });
+            const data = await res.json();
+            if (data.actions && Array.isArray(data.actions)) {
+                handleServerActions(data.actions);
+            }
         } catch (e) { }
     };
 
-    // Session Recording Logic (rrweb Integration)
+    // Server Action Handler
+    const handleServerActions = (actions) => {
+        actions.forEach(action => {
+            console.log('[Analytics] Execute Action:', action.type);
+            if (action.type === 'SHOW_COUPON') showCouponPopup(action.payload);
+        });
+    };
+
+    // Modern Coupon Popup
+    const showCouponPopup = (data) => {
+        if (document.getElementById('live-coupon-popup')) return;
+
+        // Styles
+        const style = document.createElement('style');
+        style.textContent = `
+            #live-coupon-popup {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 380px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+                z-index: 999999;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                overflow: hidden;
+                animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+                opacity: 0;
+                transform: translateY(20px);
+                animation-fill-mode: forwards;
+            }
+            @keyframes slideIn {
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .lcp-header {
+                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                padding: 24px;
+                color: white;
+                position: relative;
+            }
+            .lcp-close {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                transition: background 0.2s;
+            }
+            .lcp-close:hover { background: rgba(255,255,255,0.4); }
+            .lcp-title {
+                font-size: 20px;
+                font-weight: 800;
+                margin: 0 0 8px 0;
+                line-height: 1.2;
+            }
+            .lcp-desc {
+                font-size: 14px;
+                opacity: 0.9;
+                margin: 0;
+                line-height: 1.4;
+            }
+            .lcp-body {
+                padding: 24px;
+                text-align: center;
+            }
+            .lcp-code-box {
+                background: #f8fafc;
+                border: 2px dashed #cbd5e1;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 20px;
+                cursor: pointer;
+                transition: all 0.2s;
+                position: relative;
+            }
+            .lcp-code-box:hover {
+                border-color: #2563eb;
+                background: #eff6ff;
+            }
+            .lcp-code-label {
+                display: block;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: #64748b;
+                font-weight: 700;
+                margin-bottom: 4px;
+            }
+            .lcp-code {
+                font-size: 24px;
+                font-weight: 900;
+                color: #0f172a;
+                letter-spacing: 2px;
+                font-family: monospace;
+            }
+            .lcp-btn {
+                width: 100%;
+                background: #0f172a;
+                color: white;
+                border: none;
+                padding: 14px;
+                border-radius: 10px;
+                font-weight: 700;
+                font-size: 14px;
+                cursor: pointer;
+                transition: transform 0.1s;
+            }
+            .lcp-btn:hover {
+                transform: scale(1.02);
+                background: #1e293b;
+            }
+            .lcp-btn:active { transform: scale(0.98); }
+            .lcp-copy-toast {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+            }
+            .lcp-code-box.copied .lcp-copy-toast { opacity: 1; }
+        `;
+        document.head.appendChild(style);
+
+        const popup = document.createElement('div');
+        popup.id = 'live-coupon-popup';
+        popup.innerHTML = `
+            <div class="lcp-header">
+                <button class="lcp-close">✕</button>
+                <h3 class="lcp-title">${data.title}</h3>
+                <p class="lcp-desc">${data.description}</p>
+            </div>
+            <div class="lcp-body">
+                <div class="lcp-code-box" id="lcp-trigger">
+                    <span class="lcp-code-label">Gutscheincode</span>
+                    <div class="lcp-code">${data.code}</div>
+                    <div class="lcp-copy-toast">Kopiert!</div>
+                </div>
+                <button class="lcp-btn" id="lcp-btn">Jetzt Einlösen & Sparen</button>
+            </div>
+        `;
+
+        document.body.appendChild(popup);
+
+        // Interaction
+        const closeBtn = popup.querySelector('.lcp-close');
+        const codeBox = popup.querySelector('#lcp-trigger');
+        const actionBtn = popup.querySelector('#lcp-btn');
+
+        const close = () => {
+            popup.style.animation = 'none';
+            popup.style.opacity = '0';
+            popup.style.transform = 'translateY(20px)';
+            popup.style.transition = 'all 0.3s';
+            setTimeout(() => popup.remove(), 300);
+        };
+
+        const copy = () => {
+            navigator.clipboard.writeText(data.code);
+            codeBox.classList.add('copied');
+            setTimeout(() => codeBox.classList.remove('copied'), 2000);
+        };
+
+        closeBtn.onclick = close;
+        codeBox.onclick = copy;
+        actionBtn.onclick = () => {
+            copy();
+            // Optionally redirect or close
+            close();
+        };
+    };
+
     const RECORD_ENDPOINT = baseOrigin ? `${baseOrigin}/api/analytics/record` : '/api/analytics/record';
     let rrwebEvents = [];
 

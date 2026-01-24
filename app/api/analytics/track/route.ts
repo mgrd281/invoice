@@ -356,7 +356,44 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const response = NextResponse.json({ success: true });
+
+
+        // 5. Check for Pending Actions (Piggyback)
+        let actionsToExecute: any[] = [];
+        try {
+            const pendingActions = await prisma.sessionAction.findMany({
+                where: {
+                    sessionId: session.id,
+                    status: 'PENDING'
+                }
+            });
+
+            if (pendingActions.length > 0) {
+                actionsToExecute = pendingActions.map(a => ({
+                    id: a.id,
+                    type: a.type,
+                    payload: a.payload
+                }));
+
+                // Mark as DELIVERED
+                await prisma.sessionAction.updateMany({
+                    where: {
+                        id: { in: pendingActions.map(a => a.id) }
+                    },
+                    data: {
+                        status: 'DELIVERED',
+                        deliveredAt: new Date()
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('[Action Piggyback] Error:', e);
+        }
+
+        const response = NextResponse.json({
+            success: true,
+            actions: actionsToExecute
+        });
 
         // Add CORS Headers
         response.headers.set('Access-Control-Allow-Origin', '*');

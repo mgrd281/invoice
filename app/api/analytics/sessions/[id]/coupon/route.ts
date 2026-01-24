@@ -30,6 +30,22 @@ export async function POST(
         // Mocking Shopify PriceRule & DiscountCode creation for now
         const code = `LIVE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+        // Create Session Action for the Tracker to pick up
+        await prisma.sessionAction.create({
+            data: {
+                sessionId: visitorSessionId,
+                type: 'SHOW_COUPON',
+                payload: {
+                    code,
+                    discountValue,
+                    discountType,
+                    title: `Dein Exklusiver ${discountValue}${discountType === 'percentage' ? '%' : '€'} Rabatt`,
+                    description: 'Nur für kurze Zeit verfügbar! Jetzt einlösen.'
+                },
+                status: 'PENDING'
+            }
+        });
+
         // Create Audit Log
         await prisma.auditLog.create({
             data: {
@@ -41,7 +57,6 @@ export async function POST(
                 details: {
                     code,
                     discountValue,
-                    discountType,
                     timestamp: new Date().toISOString()
                 }
             }
