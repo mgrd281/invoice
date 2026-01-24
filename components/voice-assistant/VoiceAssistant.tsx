@@ -268,6 +268,31 @@ export function VoiceAssistant() {
                 }
             }
 
+            // --- FETCH DETAILS (RECURSIVE) ---
+            if (data.intent === 'FETCH_DETAILS') {
+                const { command, payload } = data;
+                if (command === 'GET_INVOICE') {
+                    console.log("Fetching details for invoice:", payload.id);
+                    try {
+                        const invRes = await fetch(`/api/invoices/${payload.id}`);
+                        if (invRes.ok) {
+                            const invData = await invRes.json();
+                            // RECURSIVE CALL: Send data back to AI
+                            const contextMessage = `DATA_FETCHED: Invoice ${payload.id} details: Total ${invData.total}€, Customer ${invData.customer.name}, Status ${invData.status}, Date ${invData.date}. Summarize this for the user.`;
+
+                            // Call processCommand again with the data
+                            await processCommand(contextMessage);
+                            return; // Exit this loop, the next call will handle speaking
+                        } else {
+                            setReply("Rechnung nicht gefunden.");
+                            speak("Rechnung nicht gefunden.");
+                        }
+                    } catch (e) {
+                        setReply("Fehler beim Abrufen der Daten.");
+                    }
+                }
+            }
+
             if (!data.reply) {
                 setStatus('IDLE');
             }
