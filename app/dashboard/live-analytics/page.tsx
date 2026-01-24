@@ -265,8 +265,8 @@ function LiveAnalyticsContent() {
                 retryCount++;
             }
 
-            // Wait 3 seconds before checking for new activity
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // Wait 1 second before checking for new activity (Instant Live)
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
         console.log('[Live Stream] Stream concluded for session:', sessionId);
     };

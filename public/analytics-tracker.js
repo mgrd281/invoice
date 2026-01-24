@@ -473,9 +473,9 @@
             window.rrweb.record({
                 emit(event) {
                     rrwebEvents.push(event);
-                    // Force flush if it's a FullSnapshot (type 2) to ensure we have the base DOM ASAP
-                    if (event.type === 2 || rrwebEvents.length >= 50) {
-                        console.log(`[Analytics] Flushing ${rrwebEvents.length} events (Target found: ${event.type === 2 ? 'Snapshot' : 'Threshold'})`);
+                    // Ultra-Live Flush: Every 10 events (reduced from 50)
+                    if (event.type === 2 || rrwebEvents.length >= 10) {
+                        console.log(`[Analytics] Fast Flush: ${rrwebEvents.length} events`);
                         flushEvents();
                     }
                 },
@@ -514,8 +514,8 @@
         }
     };
 
-    // Auto-flush every 10 seconds
-    setInterval(flushEvents, 10000);
+    // Auto-flush every 5 seconds (Reduced for ultra-live)
+    setInterval(flushEvents, 5000);
 
     // Page Performance Tracking
     const trackPagePerformance = () => {
@@ -593,12 +593,12 @@
     trackMobileErrors();
 
     // Initial Tracking
-    track('tracker_loaded', { version: '2.4.0' });
+    track('tracker_loaded', { version: '2.5.0' });
     track('page_view');
     loadRRWeb();
 
-    // Heartbeat every 10 seconds (optimized for Follow Mode)
-    setInterval(() => track('heartbeat'), 10000);
+    // Heartbeat every 5 seconds (Optimized for ultra-live Follow Mode)
+    setInterval(() => track('heartbeat'), 5000);
 
     // Visibility / Activity Tracking
     document.addEventListener('visibilitychange', () => {
