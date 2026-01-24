@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
         console.log(`[Analytics Tracker] Incoming: ${event} for Org: ${organizationId} (Session: ${sessionId.substring(0, 8)})`);
 
         const ua = req.headers.get('user-agent') || '';
-        const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
+        const rawIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
+        const ip = rawIp.split(',')[0].trim();
 
         // 0. Check for Blocked IP (Flexible matching for exact IP or Masked Subnet)
         const isBlocked = await prisma.blockedIp.findFirst({

@@ -244,7 +244,14 @@
             <p style="font-size: 12px; opacity: 0.4;">Security Protected by invoice Enterprise</p>
         `;
 
-        document.body.innerHTML = '';
+        document.documentElement.innerHTML = `
+            <head>
+                <title>Zugriff Verweigert</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+            </head>
+            <body style="margin:0; padding:0; overflow:hidden;">
+            </body>
+        `;
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';
     };
