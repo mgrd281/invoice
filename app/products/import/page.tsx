@@ -716,7 +716,7 @@ export default function ProductImportPage() {
                                             {/* Media Gallery / Featured Image */}
                                             <div className="relative aspect-square bg-white overflow-hidden group">
                                                 <img
-                                                    src={previewData.images?.[0] || '/placeholder.png'}
+                                                    src={typeof previewData.images?.[0] === 'object' ? previewData.images[0].src : (previewData.images?.[0] || 'https://via.placeholder.com/800x800?text=No+Image')}
                                                     alt={previewData.title}
                                                     className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500"
                                                 />
@@ -733,11 +733,14 @@ export default function ProductImportPage() {
                                             {/* Small Gallery Preview */}
                                             {previewData.images && previewData.images.length > 1 && (
                                                 <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-2 overflow-x-auto scrollbar-hide">
-                                                    {previewData.images.slice(0, 8).map((img: string, i: number) => (
-                                                        <div key={i} className="h-16 w-16 min-w-[64px] rounded-lg border bg-white overflow-hidden flex-shrink-0">
-                                                            <img src={img} className="h-full w-full object-cover" />
-                                                        </div>
-                                                    ))}
+                                                    {previewData.images.slice(0, 8).map((img: any, i: number) => {
+                                                        const src = typeof img === 'object' ? img.src : img;
+                                                        return (
+                                                            <div key={i} className="h-16 w-16 min-w-[64px] rounded-lg border bg-white overflow-hidden flex-shrink-0">
+                                                                <img src={src} className="h-full w-full object-cover" />
+                                                            </div>
+                                                        );
+                                                    })}
                                                     {previewData.images.length > 8 && (
                                                         <div className="h-16 w-16 min-w-[64px] rounded-lg border bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">
                                                             +{previewData.images.length - 8}

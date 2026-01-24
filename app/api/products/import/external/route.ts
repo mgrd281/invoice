@@ -221,12 +221,23 @@ export async function POST(request: NextRequest) {
                 data.title = data.title || $('#productTitle').text().trim()
                 data.description = data.description || $('#feature-bullets').text().trim() || $('#productDescription').text().trim()
 
-                // Technical Specs from Amazon Table
-                $('#prodDetails tr, #technicalSpecifications_feature_div tr, .a-keyvalue tr').each((_: number, el: any) => {
-                    const key = $(el).find('th, td:first-child').text().trim()
-                    const value = $(el).find('td:last-child').text().trim()
+                // Technical Specs from Amazon Table (Expanded)
+                $('#prodDetails tr, #technicalSpecifications_feature_div tr, .a-keyvalue tr, #detailBullets_feature_div li').each((_: number, el: any) => {
+                    const key = $(el).find('th, td:first-child, .a-list-item b').text().trim().replace(/[:\n]/g, '')
+                    const value = $(el).find('td:last-child, .a-list-item span:last-child').text().trim()
                     if (key && value && key.length < 50) extractedMetadata[key] = value
                 })
+
+                // Amazon High-Res Image Extraction (Deep Scan)
+                const amazonImgRegex = /"hiRes":"([^"]+)"|"large":"([^"]+)"/g
+                const htmlString = $.html()
+                let imgMatch;
+                while ((imgMatch = amazonImgRegex.exec(htmlString)) !== null) {
+                    const src = imgMatch[1] || imgMatch[2]
+                    if (src && !data.images.some((i: any) => i.src === src)) {
+                        data.images.push({ src, alt: data.title })
+                    }
+                }
 
                 $('#imgTagWrapperId img, #landingImage, #altImages img, .a-dynamic-image').each((_: number, el: any) => {
                     const src = $(el).attr('src') || $(el).attr('data-old-hires') || $(el).attr('data-a-dynamic-image')
@@ -235,10 +246,15 @@ export async function POST(request: NextRequest) {
                         if (src.startsWith('{')) {
                             try {
                                 const urls = Object.keys(JSON.parse(src))
-                                data.images.push({ src: urls[urls.length - 1], alt })
+                                const highRes = urls[urls.length - 1]
+                                if (!data.images.some((i: any) => i.src === highRes)) {
+                                    data.images.push({ src: highRes, alt })
+                                }
                             } catch (e) { }
                         } else {
-                            data.images.push({ src, alt })
+                            if (!data.images.some((i: any) => i.src === src)) {
+                                data.images.push({ src, alt })
+                            }
                         }
                     }
                 })
