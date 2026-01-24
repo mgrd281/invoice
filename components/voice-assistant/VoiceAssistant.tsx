@@ -7,8 +7,6 @@ import { Mic, X, Loader2, Volume2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-// Fallback for SpeechRecognition type handled in app/types/speech.d.ts
-
 import { useToast } from '@/components/ui/use-toast';
 
 export function VoiceAssistant() {
@@ -18,7 +16,10 @@ export function VoiceAssistant() {
     const [status, setStatus] = useState<'IDLE' | 'LISTENING' | 'PROCESSING' | 'SPEAKING'>('IDLE');
     const [transcript, setTranscript] = useState('');
     const [reply, setReply] = useState('');
-    const transcriptRef = useRef(''); // Ref to hold latest transcript
+
+    // Refs for safe access in closures
+    const transcriptRef = useRef('');
+    const activeRef = useRef(false);
 
     // Recognition Ref
     const recognitionRef = useRef<any>(null);
@@ -29,6 +30,7 @@ export function VoiceAssistant() {
         setTranscript('');
         setReply('');
         transcriptRef.current = '';
+        activeRef.current = true; // Mark as intentionally active
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -50,12 +52,14 @@ export function VoiceAssistant() {
         };
 
         recognition.onend = () => {
-            // Access via ref to avoid stale closure
+            // Check if we are still active (didn't manually stop)
             const finalTranscript = transcriptRef.current;
-            if (status === 'LISTENING' && finalTranscript.length > 2) {
+
+            if (activeRef.current && finalTranscript.length > 1) {
                 processCommand(finalTranscript);
             } else {
                 setStatus('IDLE');
+                activeRef.current = false;
             }
         };
 
@@ -64,13 +68,17 @@ export function VoiceAssistant() {
     };
 
     const stopListening = () => {
+        activeRef.current = false; // Mark as manually stopped
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
+        setStatus('IDLE');
     };
 
     const processCommand = async (text: string) => {
         setStatus('PROCESSING');
+        activeRef.current = false; // Stop listening while processing
+
         console.log("Sending command:", text); // DEBUG
         try {
             const res = await fetch('/api/assistant', {
@@ -129,7 +137,11 @@ export function VoiceAssistant() {
                 }
             }
 
-            setStatus('IDLE');
+            // Note: We don't set status to IDLE here if speaking. 
+            // The speak function handles setting IDLE after speech ends.
+            if (!data.reply) {
+                setStatus('IDLE');
+            }
 
         } catch (e) {
             console.error("Voice Assistant Error:", e);
@@ -154,7 +166,9 @@ export function VoiceAssistant() {
         if (preferredVoice) utterance.voice = preferredVoice;
         utterance.lang = lang === 'ar' ? 'ar-SA' : 'de-DE';
 
-        utterance.onend = () => setStatus('IDLE');
+        utterance.onend = () => {
+            setStatus('IDLE');
+        };
         utterance.onerror = (e) => {
             console.error("TTS Error:", e);
             setStatus('IDLE');
@@ -174,7 +188,10 @@ export function VoiceAssistant() {
             </Button>
 
             {/* Panel */}
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Dialog open={isOpen} onOpenChange={(open) => {
+                setIsOpen(open);
+                if (!open) stopListening();
+            }}>
                 <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-violet-100 p-6 shadow-2xl rounded-3xl">
                     <div className="flex flex-col items-center gap-6 text-center">
 
@@ -205,7 +222,10 @@ export function VoiceAssistant() {
                         </div>
 
                         {/* Stop Button */}
-                        <Button variant="ghost" className="rounded-full h-12 w-12 p-0 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setIsOpen(false)}>
+                        <Button variant="ghost" className="rounded-full h-12 w-12 p-0 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => {
+                            setIsOpen(false);
+                            stopListening();
+                        }}>
                             <X className="h-6 w-6" />
                         </Button>
                     </div>
