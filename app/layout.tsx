@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 import { AuthProvider as CustomAuthProvider } from '@/lib/auth-context'
 import { NavigationManager } from '@/components/navigation/navigation-manager'
 import { Suspense } from 'react'
+import { VoiceAssistant } from '@/components/voice-assistant/VoiceAssistant'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,6 +31,7 @@ export default function RootLayout({
                 <NavigationManager />
               </Suspense>
               {children}
+              <VoiceAssistant />
             </AuthProvider>
           </CustomAuthProvider>
         </ThemeProvider>
