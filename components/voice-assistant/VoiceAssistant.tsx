@@ -18,6 +18,7 @@ export function VoiceAssistant() {
     const [status, setStatus] = useState<'IDLE' | 'LISTENING' | 'PROCESSING' | 'SPEAKING'>('IDLE');
     const [transcript, setTranscript] = useState('');
     const [reply, setReply] = useState('');
+    const transcriptRef = useRef(''); // Ref to hold latest transcript
 
     // Recognition Ref
     const recognitionRef = useRef<any>(null);
@@ -27,6 +28,7 @@ export function VoiceAssistant() {
         setStatus('LISTENING');
         setTranscript('');
         setReply('');
+        transcriptRef.current = '';
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -44,12 +46,14 @@ export function VoiceAssistant() {
             const current = event.resultIndex;
             const transcriptText = event.results[current][0].transcript;
             setTranscript(transcriptText);
+            transcriptRef.current = transcriptText;
         };
 
         recognition.onend = () => {
-            // If user stopped talking, send to backend
-            if (status === 'LISTENING' && transcript.length > 2) {
-                processCommand(transcript);
+            // Access via ref to avoid stale closure
+            const finalTranscript = transcriptRef.current;
+            if (status === 'LISTENING' && finalTranscript.length > 2) {
+                processCommand(finalTranscript);
             } else {
                 setStatus('IDLE');
             }
