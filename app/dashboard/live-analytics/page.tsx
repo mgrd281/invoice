@@ -1480,14 +1480,14 @@ function LiveAnalyticsContent() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h2 className="text-xl font-bold tracking-tight">Session-Archiv</h2>
-                            <p className="text-sm text-muted-foreground">Historische Aufzeichnungen والبحث حسب الموقع أو المعرف (ID).</p>
+                            <p className="text-sm text-muted-foreground">Historische Aufzeichnungen und Suche nach Stadt oder Session ID.</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Suchen nach Stadt أو ID..."
+                                    placeholder="Suchen nach Stadt oder ID..."
                                     className="h-9 w-[250px] bg-white border border-slate-200 rounded-lg pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                     value={historySearch}
                                     onChange={(e) => setHistorySearch(e.target.value)}
@@ -1511,7 +1511,11 @@ function LiveAnalyticsContent() {
                                     className={`group overflow-hidden border-slate-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative ${selectedSession?.id === session.id ? 'ring-2 ring-blue-500 border-transparent' : ''}`}
                                     onClick={() => {
                                         setSelectedSession(session);
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        if (session.recordingStatus === 'AVAILABLE') {
+                                            startReplay(session.id);
+                                        } else {
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }
                                     }}
                                 >
                                     {/* Thumbnail / Replay Indicator */}
@@ -1659,7 +1663,7 @@ function LiveAnalyticsContent() {
             />
 
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/style.css" />
-            <Script src="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/index.js" strategy="lazyOnload" />
+            <Script src="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/index.js" strategy="afterInteractive" />
         </div >
     );
 }
