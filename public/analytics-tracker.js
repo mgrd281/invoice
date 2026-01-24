@@ -271,8 +271,83 @@
     // Auto-flush every 10 seconds
     setInterval(flushEvents, 10000);
 
+    // Page Performance Tracking
+    const trackPagePerformance = () => {
+        try {
+            if (!window.performance || !window.performance.getEntriesByType) return;
+
+            const perfData = performance.getEntriesByType('navigation')[0];
+            if (perfData) {
+                const loadTime = Math.round(perfData.loadEventEnd - perfData.fetchStart);
+                const domContentLoaded = Math.round(perfData.domContentLoadedEventEnd - perfData.fetchStart);
+
+                track('page_performance', {
+                    loadTime,
+                    domContentLoaded,
+                    isSlow: loadTime > 3000,
+                    deviceType: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+                });
+            }
+        } catch (e) {
+            console.error('[Analytics] performance tracking error:', e);
+        }
+    };
+
+    // Mobile Error Detection
+    const trackMobileErrors = () => {
+        if (!/Mobile|Android|iPhone/i.test(navigator.userAgent)) return;
+
+        window.addEventListener('error', (event) => {
+            track('mobile_error', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno
+            });
+        }, true);
+    };
+
+    // Goal Tracking Helper
+    window.trackGoal = (goalType, goalValue = null, metadata = {}) => {
+        track('goal_complete', {
+            goalType,
+            goalValue,
+            ...metadata
+        });
+    };
+
+    // Auto-detect WhatsApp clicks
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest('a');
+        if (target && target.href && target.href.includes('wa.me')) {
+            window.trackGoal('whatsapp_click', null, { url: target.href });
+        }
+    }, true);
+
+    // Auto-detect form submissions
+    document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (form && form.tagName === 'FORM') {
+            window.trackGoal('form_submit', null, {
+                formId: form.id,
+                formAction: form.action,
+                formMethod: form.method
+            });
+        }
+    }, true);
+
+    // Page Load complete - track performance
+    if (document.readyState === 'complete') {
+        trackPagePerformance();
+    } else {
+        window.addEventListener('load', trackPagePerformance);
+    }
+
+    // Enable mobile error tracking
+    trackMobileErrors();
+
     // Initial Tracking
-    track('tracker_loaded', { version: '2.2.0' });
+    track('tracker_loaded', { version: '2.3.0' });
     track('page_view');
     loadRRWeb();
 

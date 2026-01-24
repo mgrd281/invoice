@@ -220,7 +220,130 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // 3. Log Event
+        // 3. Handle special event types
+
+        // Page Performance Tracking
+        if (event === 'page_performance' && metadata?.loadTime) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const isMobile = metadata.deviceType === 'mobile';
+            const isSlow = metadata.loadTime > 3000;
+
+            await prisma.pageAnalytics.upsert({
+                where: {
+                    organizationId_url_date: {
+                        organizationId,
+                        url,
+                        date: today
+                    }
+                },
+                update: {
+                    totalViews: { increment: 1 },
+                    avgLoadTime: metadata.loadTime, // We'll average this properly later
+                    slowLoadCount: isSlow ? { increment: 1 } : undefined,
+                    mobileViews: isMobile ? { increment: 1 } : undefined,
+                },
+                create: {
+                    organizationId,
+                    url,
+                    date: today,
+                    totalViews: 1,
+                    avgLoadTime: metadata.loadTime,
+                    slowLoadCount: isSlow ? 1 : 0,
+                    mobileViews: isMobile ? 1 : 0,
+                }
+            });
+        }
+
+        // Mobile Error Tracking
+        if (event === 'mobile_error') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            await prisma.pageAnalytics.upsert({
+                where: {
+                    organizationId_url_date: {
+                        organizationId,
+                        url,
+                        date: today
+                    }
+                },
+                update: {
+                    mobileErrors: { increment: 1 }
+                },
+                create: {
+                    organizationId,
+                    url,
+                    date: today,
+                    mobileErrors: 1
+                }
+            });
+        }
+
+        // Goal Tracking
+        if (event === 'goal_complete' && metadata?.goalType) {
+            await prisma.goalTracking.create({
+                data: {
+                    organizationId,
+                    sessionId: session.id,
+                    goalType: metadata.goalType,
+                    goalValue: metadata.goalValue || null,
+                    metadata: metadata || {}
+                }
+            });
+        }
+
+        // Track Page Views and Exits for analytics
+        if (event === 'page_view') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            await prisma.pageAnalytics.upsert({
+                where: {
+                    organizationId_url_date: {
+                        organizationId,
+                        url,
+                        date: today
+                    }
+                },
+                update: {
+                    totalViews: { increment: 1 }
+                },
+                create: {
+                    organizationId,
+                    url,
+                    date: today,
+                    totalViews: 1
+                }
+            });
+        }
+
+        if (event === 'session_ended') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            await prisma.pageAnalytics.upsert({
+                where: {
+                    organizationId_url_date: {
+                        organizationId,
+                        url,
+                        date: today
+                    }
+                },
+                update: {
+                    exitCount: { increment: 1 }
+                },
+                create: {
+                    organizationId,
+                    url,
+                    date: today,
+                    exitCount: 1
+                }
+            });
+        }
+
+        // 4. Log Event
         if (event !== 'heartbeat') {
             await prisma.sessionEvent.create({
                 data: {

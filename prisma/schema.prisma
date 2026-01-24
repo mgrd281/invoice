@@ -94,6 +94,8 @@ model Organization {
   visitorSessions         VisitorSession[]          @relation("OrganizationToVisitorSessions")
   vorkasseSettings        VorkasseSettings?
   widgetSettings          WidgetSettings?
+  pageAnalytics           PageAnalytics[]
+  goalTracking            GoalTracking[]
 }
 
 model WidgetSettings {
@@ -939,6 +941,7 @@ model VisitorSession {
   events         SessionEvent[]
   recordings     SessionRecording[]
   cartSnapshots  CartSnapshot[]
+  goals          GoalTracking[]
   organization   Organization   @relation("OrganizationToVisitorSessions", fields: [organizationId], references: [id])
   visitor        Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
@@ -985,6 +988,51 @@ model SessionRecording {
   session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+}
+
+model PageAnalytics {
+  id              String   @id @default(cuid())
+  organizationId  String
+  url             String
+  
+  // Performance Metrics
+  avgLoadTime     Int      @default(0)  // milliseconds
+  slowLoadCount   Int      @default(0)  // times > 3s
+  
+  // Engagement Metrics  
+  totalViews      Int      @default(0)
+  totalDuration   Int      @default(0)  // total seconds
+  exitCount       Int      @default(0)
+  bounceCount     Int      @default(0)
+  
+  // Mobile Metrics
+  mobileViews     Int      @default(0)
+  mobileErrors    Int      @default(0)
+  
+  date            DateTime @default(now())
+  
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([organizationId, url, date])
+  @@index([organizationId])
+  @@index([date])
+}
+
+model GoalTracking {
+  id              String   @id @default(cuid())
+  organizationId  String
+  sessionId       String
+  goalType        String   // 'purchase', 'whatsapp_click', 'form_submit'
+  goalValue       Float?   // order value for purchases
+  metadata        Json?    // additional goal data
+  timestamp       DateTime @default(now())
+  
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session         VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([organizationId])
+  @@index([sessionId])
+  @@index([goalType])
 }
 
 enum UserRole {
