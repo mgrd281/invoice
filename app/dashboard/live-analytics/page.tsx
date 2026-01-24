@@ -100,6 +100,7 @@ function LiveAnalyticsContent() {
     const [isVisitorProfileOpen, setIsVisitorProfileOpen] = useState(false);
     const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [followedSessionId, setFollowedSessionId] = useState<string | null>(null);
 
     const fetchVisitors = async () => {
         setLoadingVisitors(true);
@@ -325,26 +326,48 @@ function LiveAnalyticsContent() {
 
             setLiveData({ ...data, sessions: filteredSessions });
 
+            // Follow Mode Logic
+            if (followedSessionId) {
+                const session = filteredSessions.find((s: any) => s.id === followedSessionId);
+                if (session) {
+                    // Update the selected session details if following
+                    setSelectedSession(session);
+
+                    // Specific toast if a major event happened in the followed session (e.g. checkout)
+                    const lastEvent = session.events?.[session.events.length - 1];
+                    if (lastEvent?.type === 'purchase' || lastEvent?.type === 'paid') {
+                        toast.success(`Zahlung erhalten von #${session.visitor?.customIdentifier || 'Besucher'}`);
+                    }
+                } else {
+                    // Session ended or visitor left
+                    setFollowedSessionId(null);
+                    toast.info('Session beendet – im Verlauf verfügbar', {
+                        description: 'Der Besucher ist nicht mehr live.',
+                        action: {
+                            label: 'Zu Verlauf',
+                            onClick: () => setActiveTab('history')
+                        }
+                    });
+                }
+            }
+
             // Auto-select session if nothing selected or refresh selected one
-            if (filteredSessions.length > 0 && !selectedSession) {
+            if (filteredSessions.length > 0 && !selectedSession && !followedSessionId) {
                 // Only auto-select if we are in the Live view to provide a starting point
                 if (!filterType || filterType === 'live') {
                     setSelectedSession(filteredSessions[0]);
                 }
-            } else if (selectedSession) {
+            } else if (selectedSession && !followedSessionId) {
                 const isStillInList = filteredSessions.some((s: any) => s.id === selectedSession.id);
                 if (isStillInList) {
                     const updated = filteredSessions.find((s: any) => s.id === selectedSession.id);
                     if (updated) setSelectedSession(updated);
                 } else if (!filterType || filterType === 'live') {
-                    // Logic: If we are in the "Live" tab (default or explicit), 
-                    // and the session is no longer in the filtered list (which means it's not ACTIVE/Live anymore),
-                    // then we must clear the right panel to avoid "ghost" profiles.
                     setSelectedSession(null);
                 }
             } else if (filteredSessions.length === 0 && (!filterType || filterType === 'live')) {
-                // If the list becomes empty and we are in Live view, ensure panel is cleared
                 setSelectedSession(null);
+                if (followedSessionId) setFollowedSessionId(null);
             }
         } catch (err) {
             console.error('Failed to fetch live data', err);
@@ -615,27 +638,65 @@ function LiveAnalyticsContent() {
                             </CardHeader>
                             <CardContent className="flex-1 overflow-hidden p-0">
                                 <ScrollArea className="h-full">
-                                    <div className="divide-y">
-                                        {liveData?.sessions?.map((session: any) => (
+                                    <div className="divide-y relative">
+                                        {liveData?.sessions?.sort((a: any, b: any) => {
+                                            if (a.id === followedSessionId) return -1;
+                                            if (b.id === followedSessionId) return 1;
+                                            return 0;
+                                        }).map((session: any) => (
                                             <div
                                                 key={session.id}
-                                                className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${selectedSession?.id === session.id ? 'bg-muted border-l-4 border-blue-500' : ''}`}
+                                                className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors relative group/row ${selectedSession?.id === session.id ? 'bg-muted border-l-4 border-blue-500' : ''}`}
                                                 onClick={() => setSelectedSession(session)}
                                             >
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
                                                         {getDeviceIcon(session.deviceType)}
-                                                        <span className="font-black text-sm flex items-center gap-1 text-slate-900 capitalize">
+                                                        <span className="font-black text-xs flex items-center gap-1 text-slate-900 capitalize">
                                                             {session.city ? `${session.city}, ` : ''}
                                                             {session.visitor?.country || 'DE'}
                                                         </span>
-                                                        <Badge variant="outline" className="text-[10px] font-mono bg-slate-50 max-w-[80px] truncate">
+                                                        <Badge variant="outline" className="text-[9px] font-mono bg-slate-50 max-w-[60px] truncate">
                                                             #{session.visitor?.customIdentifier || session.visitor?.id?.substring(0, 4).toUpperCase() || '????'}
                                                         </Badge>
-                                                        {session.isReturning && (
-                                                            <div className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">
+
+                                                        {session.id === followedSessionId ? (
+                                                            <div className="flex items-center gap-1 bg-amber-500 text-white px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest animate-pulse border border-amber-600">
+                                                                ⭐ Following
+                                                            </div>
+                                                        ) : (
+                                                            <div className="hidden group-hover/row:flex items-center gap-1 animate-in fade-in slide-in-from-left-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-amber-600 hover:bg-amber-50 gap-1 border border-slate-200"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFollowedSessionId(session.id);
+                                                                        setSelectedSession(session);
+                                                                        toast.success('Follow Mode Aktiv');
+                                                                    }}
+                                                                >
+                                                                    ⭐ Follow
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-5 px-1.5 text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:bg-blue-50 gap-1 border border-slate-200"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedSession(session);
+                                                                    }}
+                                                                >
+                                                                    👁 Live
+                                                                </Button>
+                                                            </div>
+                                                        )}
+
+                                                        {session.isReturning && !followedSessionId && (
+                                                            <div className="flex items-center gap-0.5 text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">
                                                                 <RotateCcw className="h-2.5 w-2.5" />
-                                                                RETURN
+                                                                RET
                                                             </div>
                                                         )}
                                                         {session.isVip && <Star className="h-3 w-3 text-amber-500 fill-amber-500 ml-1" />}
@@ -757,6 +818,16 @@ function LiveAnalyticsContent() {
 
                                                 <div className="flex flex-col items-end gap-3 relative z-10">
                                                     <div className="flex items-center gap-2">
+                                                        {followedSessionId === selectedSession.id && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                className="h-8 px-3 font-black text-[10px] uppercase tracking-widest bg-red-600 shadow-lg shadow-red-100"
+                                                                onClick={() => setFollowedSessionId(null)}
+                                                            >
+                                                                Stop Follow
+                                                            </Button>
+                                                        )}
                                                         <Badge variant="outline" className="bg-slate-50 text-[10px] font-mono border-slate-200 px-2 py-1">
                                                             {selectedSession.sessionId.substring(0, 12)}
                                                         </Badge>
