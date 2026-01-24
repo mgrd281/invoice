@@ -752,6 +752,15 @@ export default function ProductImportPage() {
                                                         <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-violet-600 border-violet-200">
                                                             {previewData.product_type || 'General Product'}
                                                         </Badge>
+                                                        {previewData.tags && (
+                                                            <div className="flex gap-1 overflow-hidden max-w-[200px]">
+                                                                {previewData.tags.split(',').slice(0, 2).map((tag: string, i: number) => (
+                                                                    <Badge key={i} variant="secondary" className="text-[9px] bg-gray-100 text-gray-500 border-0 truncate">
+                                                                        {tag.trim()}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <h3 className="text-2xl font-bold text-gray-900 mb-2">{previewData.title}</h3>
                                                     <div className="flex items-center gap-3">
@@ -773,24 +782,31 @@ export default function ProductImportPage() {
                                                         <table className="w-full text-xs text-left">
                                                             <thead className="bg-gray-50 border-b">
                                                                 <tr>
-                                                                    <th className="px-3 py-2 font-bold text-gray-600">Variant</th>
+                                                                    <th className="px-3 py-2 font-bold text-gray-600">Option/Color</th>
                                                                     <th className="px-3 py-2 font-bold text-gray-600">Price</th>
-                                                                    <th className="px-3 py-2 font-bold text-gray-600">SKU</th>
+                                                                    <th className="px-3 py-2 font-bold text-gray-600">Status</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y">
-                                                                {previewData.variants?.slice(0, 5).map((v: any, i: number) => (
+                                                                {previewData.variants?.slice(0, 10).map((v: any, i: number) => (
                                                                     <tr key={i} className="hover:bg-gray-50/50">
-                                                                        <td className="px-3 py-2 text-gray-900 font-medium">{v.title}</td>
-                                                                        <td className="px-3 py-2 text-gray-600">{v.price} {previewData.currency || '€'}</td>
-                                                                        <td className="px-3 py-2 text-gray-400 font-mono truncate max-w-[80px]">{v.sku || '-'}</td>
+                                                                        <td className="px-3 py-2 text-gray-900 font-medium flex items-center gap-2">
+                                                                            {v.image && <img src={v.image} className="h-6 w-6 rounded border object-cover" />}
+                                                                            <span>{v.title}</span>
+                                                                        </td>
+                                                                        <td className="px-3 py-2 text-gray-600">{v.price || previewData.price} {previewData.currency || '€'}</td>
+                                                                        <td className="px-3 py-2">
+                                                                            <Badge className={`text-[9px] px-1 py-0 h-4 ${v.available !== false ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'} border-0`}>
+                                                                                {v.available !== false ? 'In Stock' : 'Out of Stock'}
+                                                                            </Badge>
+                                                                        </td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
                                                         </table>
-                                                        {previewData.variants?.length > 5 && (
+                                                        {previewData.variants?.length > 10 && (
                                                             <div className="p-2 text-center text-[10px] text-gray-400 font-medium bg-gray-50/30">
-                                                                + {previewData.variants.length - 5} more variants
+                                                                + {previewData.variants.length - 10} more variants
                                                             </div>
                                                         )}
                                                     </div>

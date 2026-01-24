@@ -187,6 +187,17 @@ export async function POST(request: NextRequest) {
             data.shipping_costs = extractedMetadata['Versandkosten'] || extractedMetadata['Shipping'] || ''
             data.shipping_date_time = extractedMetadata['Versanddatum'] || extractedMetadata['Delivery Time'] || ''
 
+            // Category / Breadcrumbs Extraction
+            const breadcrumbs: string[] = []
+            $('.nav_grimm-breadcrumb__link, .breadcrumb-item, .breadcrumbs li, .breadcrumb a').each((_: number, el: any) => {
+                const text = $(el).text().trim()
+                if (text && text !== 'Startseite' && text !== 'Home') breadcrumbs.push(text)
+            })
+            if (breadcrumbs.length > 0) {
+                data.product_type = breadcrumbs[breadcrumbs.length - 1]
+                data.tags = (data.tags ? data.tags + ', ' : '') + breadcrumbs.join(', ')
+            }
+
             // Collapsible rows & Ganze Details
             data.collapsible_row_1_heading = "Produktdetails"
             data.collapsible_row_1_content = Object.entries(extractedMetadata)
@@ -206,7 +217,6 @@ export async function POST(request: NextRequest) {
                     const src = $(el).attr('src') || $(el).attr('data-old-hires') || $(el).attr('data-a-dynamic-image')
                     const alt = $(el).attr('alt') || data.title
                     if (src && !src.includes('base64')) {
-                        // Handle Amazon's JSON images
                         if (src.startsWith('{')) {
                             try {
                                 const urls = Object.keys(JSON.parse(src))
@@ -219,11 +229,32 @@ export async function POST(request: NextRequest) {
                 })
             }
             else if (vendor === 'Otto') {
-                data.title = data.title || $('h1[data-qa="product-title"]').text().trim()
-                $('img[data-qa="product-gallery-image"]').each((_: number, el: any) => {
+                data.title = data.title || $('h1[data-qa="product-title"]').text().trim() || $('.pdp_productName').text().trim()
+                // Principal Image
+                const mainImg = $('img[id^="pdp_mainProductImage"]').first().attr('src')
+                if (mainImg) data.images.push({ src: mainImg, alt: data.title })
+
+                // Gallery Images
+                $('img.carousel__image, .pdp_product-gallery__image img').each((_: number, el: any) => {
                     const src = $(el).attr('data-src') || $(el).attr('src')
                     const alt = $(el).attr('alt') || data.title
-                    if (src) data.images.push({ src, alt })
+                    if (src && !data.images.some((i: any) => i.src === src)) {
+                        data.images.push({ src, alt })
+                    }
+                })
+
+                // Variants (Otto specific color selection)
+                $('.pdp_dimension-selection__color-tile-label').each((_: number, el: any) => {
+                    const colorName = $(el).text().trim()
+                    const thumb = $(el).find('img').attr('src')
+                    if (colorName) {
+                        data.variants.push({
+                            title: colorName,
+                            price: data.price,
+                            image: thumb,
+                            available: true
+                        })
+                    }
                 })
             } else {
                 // Generic image extraction with Alt-Text
@@ -231,8 +262,14 @@ export async function POST(request: NextRequest) {
                     const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src')
                     const alt = $(el).attr('alt') || $(el).attr('title') || data.title
                     const width = parseInt($(el).attr('width') || '0')
-                    if (src && !src.includes('icon') && !src.includes('logo') && width > 100) {
-                        data.images.push({ src, alt })
+                    const height = parseInt($(el).attr('height') || '0')
+
+                    if (src && !src.includes('analytics') && !src.includes('tracking') && !src.includes('base64')) {
+                        if (width > 200 || height > 200 || (!width && !height)) {
+                            if (!data.images.some((i: any) => i.src === src)) {
+                                data.images.push({ src, alt: alt || data.title })
+                            }
+                        }
                     }
                 })
             }
