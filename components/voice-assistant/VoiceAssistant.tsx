@@ -198,6 +198,7 @@ export function VoiceAssistant() {
             if (data.reply) {
                 // For NAVIGATE commands, force silence even if backend sent a reply
                 if (data.intent !== 'NAVIGATE') {
+                    console.log("Speaking reply for intent:", data.intent);
                     setReply(data.reply);
                     const shouldAutoListen = data.intent === 'CHAT' || data.intent === 'Q_AND_A';
                     speak(data.reply, data.language, shouldAutoListen);
@@ -209,6 +210,16 @@ export function VoiceAssistant() {
 
             if (data.intent === 'ACTION') {
                 const { command, payload } = data;
+
+                if (command === 'NAVIGATE') {
+                    // Fallback if LLM returns NAVIGATE command inside ACTION intent
+                    if (payload?.route) {
+                        router.push(payload.route);
+                        setIsOpen(false);
+                        stopListening();
+                        return;
+                    }
+                }
 
                 if (command === 'SEND_INVOICE') {
                     showToast(
