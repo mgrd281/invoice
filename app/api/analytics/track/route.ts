@@ -42,11 +42,21 @@ export async function POST(req: NextRequest) {
         const ua = req.headers.get('user-agent') || '';
         const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
 
-        // 0. Check for Blocked IP
+        // 0. Check for Blocked IP (Flexible matching for exact IP or Masked Subnet)
         const isBlocked = await prisma.blockedIp.findFirst({
             where: {
                 organizationId,
-                ipAddress: ip
+                OR: [
+                    { ipAddress: ip }, // Exact match
+                    {
+                        ipAddress: {
+                            in: [
+                                ip.split('.').slice(0, 3).join('.') + '.0', // IPv4 Masked match
+                                ip.split(':').slice(0, 3).join(':') + '::0'  // IPv6 Masked match
+                            ]
+                        }
+                    }
+                ]
             }
         });
 
