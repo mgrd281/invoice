@@ -882,6 +882,9 @@ model Visitor {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   organization   Organization     @relation("OrganizationToVisitors", fields: [organizationId], references: [id])
+  notes            String?
+  tags             String?          // Comma-separated or JSON
+  lifecycleStatus  String           @default("NEW") // NEW, ACTIVE, LOYAL, CHURNED
   sessions       VisitorSession[]
 
   @@index([organizationId])

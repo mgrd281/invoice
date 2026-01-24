@@ -59,7 +59,8 @@ import {
     PlayCircle,
     ShoppingBag,
     Plus,
-    Minus
+    Minus,
+    Contact
 } from 'lucide-react';
 import {
     Dialog,
@@ -72,6 +73,7 @@ import { de } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth-compat';
 import { toast } from 'sonner';
 import Script from 'next/script';
+import { VisitorProfileDialog } from '@/components/visitor-profile-dialog';
 
 function LiveAnalyticsContent() {
     const { user } = useAuth();
@@ -90,8 +92,32 @@ function LiveAnalyticsContent() {
     const [isReplayOpen, setIsReplayOpen] = useState(false);
     const [replayEvents, setReplayEvents] = useState<any[]>([]);
     const [loadingReplay, setLoadingReplay] = useState(false);
+    const [activeTab, setActiveTab] = useState('live');
     const [visitorHistory, setVisitorHistory] = useState<any[]>([]);
+    const [visitors, setVisitors] = useState<any[]>([]);
+    const [loadingVisitors, setLoadingVisitors] = useState(false);
+    const [isVisitorProfileOpen, setIsVisitorProfileOpen] = useState(false);
+    const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const fetchVisitors = async () => {
+        setLoadingVisitors(true);
+        try {
+            const res = await fetch('/api/analytics/visitors/list');
+            const data = await res.json();
+            if (data.visitors) setVisitors(data.visitors);
+        } catch (err) {
+            console.error('Error fetching visitors:', err);
+        } finally {
+            setLoadingVisitors(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'visitors') {
+            fetchVisitors();
+        }
+    }, [activeTab]);
 
     const fetchVisitorHistory = async (visitorId: string) => {
         if (!visitorId) return;
@@ -139,14 +165,14 @@ function LiveAnalyticsContent() {
         }
     };
 
-    const handleWatchReplay = async () => {
-        if (!selectedSession?.id) return;
-        console.log('[Replay] Starting chunked replay for session:', selectedSession.id);
+    const startReplay = async (sessionId: string) => {
+        if (!sessionId) return;
+        console.log('[Replay] Starting chunked replay for session:', sessionId);
         setLoadingReplay(true);
         setIsReplayOpen(true);
         try {
             // Step 1: Fetch chunk 0 immediately for rapid start
-            const res = await fetch(`/api/analytics/sessions/${selectedSession.id}/recording?chunk=0`);
+            const res = await fetch(`/api/analytics/sessions/${sessionId}/recording?chunk=0`);
             const data = await res.json();
 
             if (data.success && data.events?.length > 0) {
@@ -168,7 +194,7 @@ function LiveAnalyticsContent() {
 
                             // Background loading of remaining chunks
                             if (data.hasMore) {
-                                loadRemainingChunks(selectedSession.id, player);
+                                loadRemainingChunks(sessionId, player);
                             }
                         } catch (playerErr) {
                             console.error('[Replay] Player init error:', playerErr);
@@ -187,6 +213,10 @@ function LiveAnalyticsContent() {
         } finally {
             setLoadingReplay(false);
         }
+    };
+
+    const handleWatchReplay = () => {
+        if (selectedSession?.id) startReplay(selectedSession.id);
     };
 
     const loadRemainingChunks = async (sessionId: string, player: any) => {
@@ -536,13 +566,16 @@ function LiveAnalyticsContent() {
                 </div>
             )}
 
-            <Tabs defaultValue="live" className="w-full">
-                <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+            <Tabs defaultValue="live" className="w-full" onValueChange={setActiveTab}>
+                <TabsList className="grid w-full max-w-[600px] grid-cols-3">
                     <TabsTrigger value="live" className="flex items-center gap-2">
                         <Users className="h-4 w-4" /> Live
                     </TabsTrigger>
                     <TabsTrigger value="history" className="flex items-center gap-2">
                         <History className="h-4 w-4" /> Verlauf
+                    </TabsTrigger>
+                    <TabsTrigger value="visitors" className="flex items-center gap-2">
+                        <Contact className="h-4 w-4" /> Besucher
                     </TabsTrigger>
                 </TabsList>
 
@@ -673,6 +706,19 @@ function LiveAnalyticsContent() {
                                                                     <Star className="h-3 w-3 fill-amber-950" /> VIP
                                                                 </Badge>
                                                             )}
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-7 px-2.5 text-[10px] gap-1.5 font-black uppercase tracking-wider text-slate-500 border-slate-200 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all ml-auto md:ml-2"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedVisitorId(selectedSession.visitor?.id || selectedSession.visitorId);
+                                                                    setIsVisitorProfileOpen(true);
+                                                                }}
+                                                            >
+                                                                <FileText className="h-3 w-3" />
+                                                                Kunden-Akte
+                                                            </Button>
                                                         </div>
                                                         <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
                                                             <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {selectedSession.city || 'Unbekannt'}, {selectedSession.visitor?.country || 'DE'}</span>
@@ -1071,6 +1117,116 @@ function LiveAnalyticsContent() {
                     </div>
                 </TabsContent>
 
+                <TabsContent value="visitors" className="space-y-6">
+                    <Card className="border-none shadow-xl bg-white/80 backdrop-blur-xl overflow-hidden">
+                        <CardHeader className="border-b border-slate-50 bg-slate-50/30">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Kunden-Akte (CRM)</CardTitle>
+                                    <CardDescription className="text-xs font-medium text-slate-500">Profilübersicht und Lifetime-Tracking aller Besucher.</CardDescription>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={fetchVisitors} disabled={loadingVisitors} className="h-8 text-[10px] font-bold uppercase tracking-widest border-slate-200">
+                                        <RefreshCw className={`h-3 w-3 mr-2 ${loadingVisitors ? 'animate-spin' : ''}`} /> Aktualisieren
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50/50 border-b border-slate-100">
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Besucher</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Zuletzt Aktiv</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Sessions</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Aktion</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {loadingVisitors ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-20 text-center">
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+                                                        <p className="text-sm font-bold text-slate-400">Lade Kunden-Daten...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : visitors.length > 0 ? (
+                                            visitors.map((v) => (
+                                                <tr key={v.id} className="hover:bg-slate-50/50 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-indigo-100">
+                                                                {v.country || '??'}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-black text-slate-900">
+                                                                    #{v.visitorToken.substring(0, 8).toUpperCase()}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                                    {v.browser} • {v.os}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold text-slate-700">
+                                                                {new Date(v.lastActiveAt).toLocaleDateString('de-DE')}
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-400 font-medium tracking-tight">
+                                                                {new Date(v.lastActiveAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Badge variant="outline" className="bg-slate-50 border-slate-100 text-slate-600 font-black text-[10px]">
+                                                            {v.sessionCount} Visiten
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Badge className={`text-[9px] font-black tracking-widest ${v.lifecycleStatus === 'LOYAL' ? 'bg-emerald-500 text-white' :
+                                                            v.lifecycleStatus === 'ACTIVE' ? 'bg-blue-500 text-white' :
+                                                                'bg-slate-100 text-slate-500'
+                                                            }`}>
+                                                            {v.lifecycleStatus}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0 hover:bg-indigo-50 hover:text-indigo-600 rounded-full transition-all"
+                                                            onClick={() => {
+                                                                setSelectedVisitorId(v.id);
+                                                                setIsVisitorProfileOpen(true);
+                                                            }}
+                                                        >
+                                                            <FileText className="h-4 w-4" />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-20 text-center">
+                                                    <div className="flex flex-col items-center gap-2 grayscale">
+                                                        <Users className="h-10 w-10 text-slate-200" />
+                                                        <p className="text-sm font-bold text-slate-400 italic">Noch keine Besucher in der Datenbank</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="history" className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -1210,9 +1366,21 @@ function LiveAnalyticsContent() {
                 </DialogContent>
             </Dialog>
 
+            <VisitorProfileDialog
+                visitorId={selectedVisitorId}
+                open={isVisitorProfileOpen}
+                onOpenChange={setIsVisitorProfileOpen}
+                onReplaySession={(session) => {
+                    setSelectedSession(session);
+                    setIsVisitorProfileOpen(false);
+                    setIsReplayOpen(true);
+                    startReplay(session.id);
+                }}
+            />
+
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/style.css" />
             <Script src="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/index.js" strategy="lazyOnload" />
-        </div>
+        </div >
     );
 }
 
