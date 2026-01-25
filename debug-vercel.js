@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 
 async function testVercelImport() {
     const urls = [
-        "https://bewertungen.vercel.app/lego_monster_jam.html"
+        "https://bewertungen.vercel.app/lego_botanical.html"
     ];
 
     for (const url of urls) {

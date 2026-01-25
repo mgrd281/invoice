@@ -145,14 +145,18 @@ export async function POST(request: NextRequest) {
                     const scriptSrc = $('script[src^="reviews_data_"]').attr('src')
                     if (scriptSrc) {
                         try {
+                            console.log(`Vercel: Found script ${scriptSrc}, fetching...`)
                             const jsUrl = new URL(scriptSrc, targetUrl).href
                             const jsRes = await fetch(jsUrl)
                             if (jsRes.ok) {
                                 const jsContent = await jsRes.text()
+                                console.log(`Vercel: Fetched JS content (${jsContent.length} bytes)`)
                                 // Extract JSON: const REVIEWS_DATA = [...]
                                 const jsonMatch = jsContent.match(/const REVIEWS_DATA\s*=\s*(\[[\s\S]*?\]);/)
                                 if (jsonMatch && jsonMatch[1]) {
+                                    console.log('Vercel: JSON match found, parsing...')
                                     const reviewsData = JSON.parse(jsonMatch[1]) // This might fail if simpler JS obj, but for now assume JSON-like
+                                    console.log(`Vercel: Parsed ${reviewsData.length} reviews`)
 
                                     reviewsData.forEach((r: any) => {
                                         // Limit removed
