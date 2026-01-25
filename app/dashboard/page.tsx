@@ -521,9 +521,9 @@ export default function DashboardPage() {
                 Administration
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Link href="/admin">
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-red-100 bg-red-50">
-                    <CardHeader>
+                <Link href="/admin" className="h-full">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-red-100 bg-red-50 h-full flex flex-col">
+                    <CardHeader className="flex-1">
                       <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl flex items-center justify-center mb-4">
                         <Users className="h-6 w-6 text-white" />
                       </div>
@@ -535,9 +535,9 @@ export default function DashboardPage() {
                   </Card>
                 </Link>
 
-                <Link href="/blocked-users">
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-rose-100 bg-rose-50">
-                    <CardHeader>
+                <Link href="/blocked-users" className="h-full">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-rose-100 bg-rose-50 h-full flex flex-col">
+                    <CardHeader className="flex-1">
                       <div className="w-12 h-12 bg-gradient-to-r from-rose-600 to-red-700 rounded-xl flex items-center justify-center mb-4">
                         <UserX className="h-6 w-6 text-white" />
                       </div>
@@ -549,9 +549,9 @@ export default function DashboardPage() {
                   </Card>
                 </Link>
 
-                <Link href="/dashboard/security">
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-slate-200 bg-slate-50">
-                    <CardHeader>
+                <Link href="/dashboard/security" className="h-full">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-slate-200 bg-slate-50 h-full flex flex-col">
+                    <CardHeader className="flex-1">
                       <div className="w-12 h-12 bg-gradient-to-r from-slate-600 to-slate-800 rounded-xl flex items-center justify-center mb-4">
                         <Lock className="h-6 w-6 text-white" />
                       </div>
