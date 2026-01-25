@@ -152,7 +152,12 @@ export default function AnalyticsDashboard() {
                             </Button>
                         </NextLink>
                     </div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Shop Analytics</h1>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
+                        <div className="bg-blue-100 p-2 rounded-2xl shadow-sm">
+                            <TrendingUp className="h-8 w-8 text-blue-600" />
+                        </div>
+                        Shop Analytics
+                    </h1>
                     <p className="text-muted-foreground mt-1">Vollständige Übersicht über Besucher, Traffic und Verhalten.</p>
                 </div>
 

@@ -145,8 +145,10 @@ function BlockedUsersContent() {
                     <div className="flex items-center gap-4">
                         <BackButton fallbackUrl="/dashboard" />
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                                <ShieldAlert className="h-6 w-6 mr-2 text-red-600" />
+                            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                <div className="bg-red-100 p-2 rounded-lg shadow-sm">
+                                    <ShieldAlert className="h-8 w-8 text-red-600" />
+                                </div>
                                 Blockierte Benutzer
                             </h1>
                             <p className="text-sm text-gray-500">Verwalten Sie hier die Blacklist für Bestellungen</p>

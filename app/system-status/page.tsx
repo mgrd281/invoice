@@ -36,9 +36,14 @@ export default function SystemStatusPage() {
             <Card className="w-full max-w-2xl shadow-lg">
                 <CardHeader>
                     <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle className="text-2xl">System Status</CardTitle>
-                            <CardDescription>Diagnose der Datenbank-Verbindung</CardDescription>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-50 rounded-lg">
+                                <Server className="w-8 h-8 text-blue-600" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-2xl">System Status</CardTitle>
+                                <CardDescription>Diagnose der Datenbank-Verbindung</CardDescription>
+                            </div>
                         </div>
                         <Button onClick={checkStatus} disabled={loading} variant="outline">
                             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -50,8 +55,8 @@ export default function SystemStatusPage() {
 
                     {/* Status Indicator */}
                     <div className={`p-6 rounded-xl border-2 ${loading ? 'bg-gray-50 border-gray-200' :
-                            status?.status === 'healthy' ? 'bg-green-50 border-green-200' :
-                                'bg-red-50 border-red-200'
+                        status?.status === 'healthy' ? 'bg-green-50 border-green-200' :
+                            'bg-red-50 border-red-200'
                         }`}>
                         <div className="flex items-start gap-4">
                             {loading ? (

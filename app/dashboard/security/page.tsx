@@ -85,7 +85,7 @@ export default function SecurityPage() {
                     </Link>
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                            <div className="bg-red-100 p-2 rounded-lg">
+                            <div className="bg-red-100 p-2 rounded-lg shadow-sm">
                                 <Shield className="w-8 h-8 text-red-600" />
                             </div>
                             Sicherheit & IP-Sperren

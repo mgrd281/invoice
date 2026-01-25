@@ -257,8 +257,10 @@ export default function AdminPage() {
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                                <Shield className="h-8 w-8 text-blue-600" />
+                            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                <div className="bg-blue-100 p-2 rounded-lg shadow-sm">
+                                    <Users className="h-8 w-8 text-blue-600" />
+                                </div>
                                 Admin Panel
                             </h1>
                             <p className="text-gray-500">Systemverwaltung & Benutzersteuerung</p>

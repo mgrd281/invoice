@@ -541,7 +541,12 @@ function LiveAnalyticsContent() {
                 </div>
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Live Besucher & Session Analytics</h1>
+                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                            <div className="bg-green-100 p-2 rounded-xl shadow-sm">
+                                <Activity className="h-8 w-8 text-green-600" />
+                            </div>
+                            Live Besucher & Session Analytics
+                        </h1>
                         <p className="text-muted-foreground">Echtzeit-Überwachung des Kundenverhaltens im Shop.</p>
                     </div>
                     <div className="flex items-center gap-4">

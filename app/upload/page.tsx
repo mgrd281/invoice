@@ -496,11 +496,11 @@ export default function UploadPage() {
               </Button>
             </Link>
             <div className="h-6 w-px bg-gray-200" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <div className="p-1.5 bg-blue-100 rounded-lg">
-                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                <FileSpreadsheet className="h-4 w-4 text-blue-600" />
               </div>
-              <h1 className="font-semibold text-gray-900">CSV/Excel Import</h1>
+              <h2 className="text-sm font-bold text-gray-900">CSV-Import & Belegverarbeitung</h2>
             </div>
           </div>
         </div>
@@ -543,10 +543,12 @@ export default function UploadPage() {
             <Card className="border-none shadow-lg shadow-gray-200/50 overflow-hidden">
               <CardHeader className="bg-white border-b border-gray-100 pb-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Upload className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <CardTitle>Datei hochladen</CardTitle>
+                  <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                      <FileSpreadsheet className="w-8 h-8 text-purple-600" />
+                    </div>
+                    CSV-Import & Belegverarbeitung
+                  </h1>
                 </div>
                 <CardDescription>
                   Laden Sie Ihre Shopify-Bestellungen als CSV, Excel oder Numbers Datei hoch.

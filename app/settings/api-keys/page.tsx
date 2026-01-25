@@ -128,9 +128,14 @@ export default function ApiKeysPage() {
                             <div className="p-2 bg-indigo-50 rounded-lg mr-4">
                                 <Key className="h-6 w-6 text-indigo-600" />
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Master API Key</h1>
-                                <p className="text-sm text-gray-500">Unbeschränkter Zugriff auf alle Ihre Daten</p>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-100 rounded-lg shadow-sm">
+                                    <Key className="h-8 w-8 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">Master API Key</h1>
+                                    <p className="text-sm text-gray-500">Unbeschränkter Zugriff auf alle Ihre Daten</p>
+                                </div>
                             </div>
                         </div>
                     </div>

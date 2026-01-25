@@ -207,8 +207,10 @@ export default function SupportPage() {
                                 <ArrowLeft className="w-5 h-5 text-gray-600" />
                             </Button>
                         </Link>
-                        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <MessageSquare className="w-6 h-6 text-blue-600" />
+                        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg shadow-sm">
+                                <MessageSquare className="w-6 h-6 text-blue-600" />
+                            </div>
                             Kundensupport Center
                         </h1>
                     </div>

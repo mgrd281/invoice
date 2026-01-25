@@ -516,7 +516,7 @@ export default function NewInvoicePage() {
 
               <div className="h-8 w-[1px] bg-slate-200 mx-1" />
 
-              <Button className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-6 rounded-full font-bold text-sm">
+              <Button className="bg-[#0B0D12] text-white hover:bg-[#1F2937] active:bg-black shadow-none px-6 rounded-[14px] font-semibold text-sm min-h-[44px]">
                 Senden
               </Button>
 
@@ -538,7 +538,7 @@ export default function NewInvoicePage() {
               <CardHeader className="pb-4 pt-6 px-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 shadow-sm border border-slate-200/50">
                       <User className="w-5 h-5" />
                     </div>
                     <div>
@@ -551,7 +551,7 @@ export default function NewInvoicePage() {
                       onClick={() => setCustomer(prev => ({ ...prev, type: 'organization' }))}
                       className={cn(
                         "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
-                        customer.type === 'organization' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                        customer.type === 'organization' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
                       )}
                     >
                       <Building2 className="w-3.5 h-3.5 inline-block mr-1.5 mb-0.5" /> Organisation
@@ -560,7 +560,7 @@ export default function NewInvoicePage() {
                       onClick={() => setCustomer(prev => ({ ...prev, type: 'person' }))}
                       className={cn(
                         "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
-                        customer.type === 'person' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                        customer.type === 'person' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
                       )}
                     >
                       <User className="w-3.5 h-3.5 inline-block mr-1.5 mb-0.5" /> Person
@@ -579,8 +579,8 @@ export default function NewInvoicePage() {
                       onChange={(e) => setCustomer(prev => ({ ...prev, name: e.target.value }))}
                       className="pl-11 h-12 bg-slate-50/50 border-slate-200/60 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all"
                     />
-                    <Button size="sm" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 font-bold text-xs hover:bg-blue-50 rounded-lg">
-                      <Plus className="w-4 h-4 mr-1" /> Neu
+                    <Button size="sm" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-900 font-bold text-xs hover:bg-slate-100 rounded-lg">
+                      <Search className="w-3.5 h-3.5 mr-1" /> Kunde suchen
                     </Button>
                   </div>
                 </div>
@@ -741,7 +741,7 @@ export default function NewInvoicePage() {
                           onClick={() => {
                             setInvoiceData(prev => ({ ...prev, dueDate: prev.date }))
                           }}
-                          className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-blue-100 transition-all"
+                          className="px-3 py-1 bg-slate-200 text-slate-900 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-slate-300 transition-all shadow-sm"
                         >Sofort</button>
                       </div>
                     </div>
@@ -877,7 +877,7 @@ export default function NewInvoicePage() {
                   <Button
                     onClick={addItem}
                     variant="ghost"
-                    className="text-blue-600 hover:bg-blue-50 font-bold rounded-xl px-6 py-6 border-2 border-dashed border-blue-100 hover:border-blue-400 transition-all h-auto"
+                    className="text-slate-900 shadow-none hover:bg-slate-50 font-bold rounded-xl px-6 py-6 border-2 border-dashed border-slate-200 hover:border-slate-400 transition-all h-auto"
                   >
                     <Plus className="w-5 h-5 mr-2" /> Neue Position hinzufügen
                   </Button>
@@ -1068,7 +1068,7 @@ export default function NewInvoicePage() {
                   </div>
                   <div className="flex justify-between items-end pt-4">
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black uppercase tracking-tighter text-blue-600">Gesamtbetrag</span>
+                      <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Gesamtbetrag</span>
                       <span className="text-3xl font-black text-slate-900 tracking-tight">{grossTotal.toFixed(2)} <span className="text-lg text-slate-400">€</span></span>
                     </div>
                     <div className="flex flex-col items-end pb-1">
@@ -1079,22 +1079,22 @@ export default function NewInvoicePage() {
                 </div>
 
                 <div className="pt-2">
-                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/50 space-y-4">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Quick Checks
+                  <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100/50 space-y-3">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <Zap className="w-3 h-3 text-amber-500" /> Quick Checks
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between group">
-                        <span className="text-xs font-bold text-slate-600">Empfänger angelegt</span>
-                        {customer.name ? <Check className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-600">Empfänger angelegt</span>
+                        {customer.name ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-400" />}
                       </div>
-                      <div className="flex items-center justify-between group">
-                        <span className="text-xs font-bold text-slate-600">Positionen erfasst</span>
-                        {items.filter(i => i.description).length > 0 ? <Check className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-600">Positionen erfasst</span>
+                        {items.filter(i => i.description).length > 0 ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-400" />}
                       </div>
-                      <div className="flex items-center justify-between group">
-                        <span className="text-xs font-bold text-slate-600">Bankdaten gültig</span>
-                        <Check className="w-4 h-4 text-emerald-500" />
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-600">Bankdaten gültig</span>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
                       </div>
                     </div>
                   </div>
@@ -1103,24 +1103,13 @@ export default function NewInvoicePage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full py-7 rounded-[20px] bg-blue-600 hover:bg-blue-700 text-white font-black shadow-xl shadow-blue-500/20 text-base flex flex-col items-center justify-center h-auto group overflow-hidden relative"
+                  className="w-full h-11 rounded-[14px] bg-[#0B0D12] hover:bg-[#1F2937] active:bg-black text-white font-semibold shadow-sm text-sm"
                 >
-                  <span className="relative z-10">Rechnung Senden</span>
-                  <span className="text-[10px] text-blue-200 font-bold uppercase tracking-widest relative z-10 group-hover:translate-y-px transition-transform">Sofort per E-Mail & Post</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  Rechnung Senden
                 </Button>
               </div>
             </Card>
 
-            <div className="bg-indigo-600 rounded-[20px] p-6 text-white shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                <Info className="w-16 h-16 rotate-12" />
-              </div>
-              <h4 className="text-xs font-black uppercase tracking-widest mb-1">Experten-Tipp</h4>
-              <p className="text-[11px] text-indigo-100 leading-relaxed font-medium">
-                Standardisierte Rechnungen mit einem klaren Zahlungsziel von 14 Tagen werden im Durchschnitt 4 Tage schneller bezahlt.
-              </p>
-            </div>
           </div>
         </div>
       </main >
@@ -1165,7 +1154,7 @@ export default function NewInvoicePage() {
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setShowSaveTemplateDialog(false)} className="rounded-xl font-bold">Abbrechen</Button>
-            <Button onClick={saveItemTemplate} className="bg-blue-600 text-white rounded-xl font-black px-6">Speichern</Button>
+            <Button onClick={saveItemTemplate} className="bg-[#0B0D12] text-white rounded-[14px] font-semibold px-6 h-11">Speichern</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1210,7 +1199,7 @@ export default function NewInvoicePage() {
           </div>
           <Button
             onClick={handleSave}
-            className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-8 h-12 rounded-2xl font-black transition-transform active:scale-95"
+            className="bg-[#0B0D12] hover:bg-[#1F2937] active:bg-black text-white px-8 h-11 rounded-[14px] font-semibold transition-all shadow-sm"
           >
             Senden
           </Button>

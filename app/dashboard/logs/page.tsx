@@ -63,8 +63,10 @@ export default function LogsPage() {
                                 Zurück
                             </Button>
                         </Link>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
-                            <Terminal className="h-6 w-6" />
+                        <h1 className="text-2xl font-bold flex items-center gap-3">
+                            <div className="bg-slate-900 p-2 rounded-lg">
+                                <Terminal className="h-6 w-6 text-green-400" />
+                            </div>
                             System Logs
                         </h1>
                     </div>
