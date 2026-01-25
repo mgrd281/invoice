@@ -2263,7 +2263,7 @@ function ReviewsPageContent() {
                             <Card>
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
-                                        <Button variant="ghost" size="icon" onClick={() => setImportStep(2)}>
+                                        <Button variant="ghost" size="icon" onClick={() => setImportStep(autoMapping ? 1 : 2)}>
                                             <ArrowLeft className="h-4 w-4" />
                                         </Button>
                                         <div>
