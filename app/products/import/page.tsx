@@ -532,261 +532,260 @@ export default function ProductImportPage() {
                                 )}
 
                                 {urls.map((urlItem, index) => (
-                                    <div key={index} className="flex gap-2">
-                                        <div className="relative flex-1">
-                                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                            <Input
-                                                value={urlItem}
-                                                onChange={(e) => handleUrlChange(index, e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, index)}
-                                                placeholder="https://shop.example.com/product/item"
-                                                className={`pl-10 h-11 ${errors[index] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                            />
+                                    <div key={index} className="space-y-1">
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                <Input
+                                                    value={urlItem}
+                                                    onChange={(e) => handleUrlChange(index, e.target.value)}
+                                                    onKeyDown={(e) => handleKeyDown(e, index)}
+                                                    placeholder="https://shop.example.com/product/item"
+                                                    className={`pl-10 h-11 ${errors[index] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                                />
+                                            </div>
+                                            {urls.length > 1 && (
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveUrl(index)} className="text-slate-400 hover:text-red-500">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
-                                        {urls.length > 1 && (
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveUrl(index)} className="text-slate-400 hover:text-red-500">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                        {errors[index] && (
+                                            <p className="text-red-500 text-xs ml-1 font-medium animate-in slide-in-from-top-1">
+                                                {errors[index]}
+                                            </p>
                                         )}
-                                    </Button>
-                                )}
-                            </div>
-                            {errors[index] && (
-                                <p className="text-red-500 text-xs ml-1 mt-1 font-medium animate-in slide-in-from-top-1">
-                                    {errors[index]}
-                                </p>
-                            )}
-                    </div>
+                                    </div>
                                 ))}
-                    <Button variant="outline" onClick={handleAddUrl} className="w-full border-dashed border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400">
-                        <Plus className="h-4 w-4 mr-2" /> Weitere URL hinzufügen
-                    </Button>
+                                <Button variant="outline" onClick={handleAddUrl} className="w-full border-dashed border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400">
+                                    <Plus className="h-4 w-4 mr-2" /> Weitere URL hinzufügen
+                                </Button>
 
-                    <div className="pt-4 flex justify-end">
-                        <Button
-                            size="lg"
-                            onClick={handleStartImport}
-                            className="bg-violet-600 hover:bg-violet-700 text-white font-semibold px-8 shadow-lg shadow-violet-200"
-                            disabled={isImporting || urls.every(u => !u.trim())}
-                        >
-                            {isImporting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                            {isImporting ? 'Analysing...' : 'Import Starten'}
-                        </Button>
-                    </div>
-                </CardContent>
-                        </Card>
-
-                        {/* Preview Section */ }
-    {
-        isImporting && (
-            <div className="space-y-4">
-                {/* Skeletons or Loading State */}
-                <div className="h-48 rounded-xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-400">
-                    Thinking...
-                </div>
-            </div>
-        )
-    }
-
-    {
-        previewData && (
-            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-slate-900">Preview Results</h3>
-                        {Array.isArray(previewData) && (
-                            <div className="flex items-center gap-3">
-                                <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold">
-                                    {previewData.length} Ready
-                                </Badge>
-                                <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 font-bold">
-                                    0 Warnings
-                                </Badge>
-                            </div>
-                        )}
-                    </div>
-
-                    {Array.isArray(previewData) ? (
-                        <div className="space-y-8">
-                            {previewData.map((product: any, idx: number) => (
-                                <div key={idx} className="space-y-4">
-                                    <div className="flex items-center gap-2 px-2">
-                                        <div className="h-6 w-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">
-                                            {idx + 1}
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Produkt {idx + 1}</span>
-                                    </div>
-                                    <ProductPreview
-                                        product={product}
-                                        settings={settings}
-                                        collections={collections}
-                                        onUpdate={(updated) => handleUpdateProductInPreview(idx, updated)}
-                                    />
-                                    {checkDuplicates(product) && (
-                                        <div className="mx-2 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-xs text-red-700">
-                                            <AlertCircle className="h-4 w-4" />
-                                            <span>Achtung: Dieses Produkt scheint bereits im Store zu existieren (gleicher Handle oder SKU).</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <ProductPreview
-                                product={previewData}
-                                settings={settings}
-                                collections={collections}
-                                onUpdate={(updated) => handleUpdateProductInPreview(-1, updated)}
-                            />
-                            {checkDuplicates(previewData) && (
-                                <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-xs text-red-700">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>Achtung: Dieses Produkt scheint bereits im Store zu existieren (gleicher Handle oder SKU).</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 z-50 flex items-center justify-center">
-                    <Button size="lg" onClick={handleSaveProducts} disabled={isSaving} className="shadow-xl bg-slate-900 text-white hover:bg-slate-800 px-8">
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-                        Import {Array.isArray(previewData) ? previewData.length : 1} Products to Shopify
-                    </Button>
-                </div>
-            </div>
-        )
-    }
-                    </div >
-
-        {/* Right Column: Settings */ }
-        < div className = "space-y-6" >
-            <Card className="border-slate-200 shadow-sm sticky top-6">
-                <CardHeader className="py-4 border-b border-slate-100">
-                    <CardTitle className="text-sm uppercase tracking-wider text-slate-500 font-bold">Import Einstellungen</CardTitle>
-                </CardHeader>
-                <CardContent className="p-5 space-y-6">
-                    <div className="space-y-3">
-                        <Label className="text-xs font-semibold text-slate-600 uppercase">Kollektion</Label>
-                        <Select value={settings.collection} onValueChange={(val) => setSettings({ ...settings, collection: val })}>
-                            <SelectTrigger className="bg-slate-50 border-slate-200"><SelectValue placeholder="Kollektion wählen..." /></SelectTrigger>
-                            <SelectContent>
-                                {collections.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-3">
-                        <Label className="text-xs font-semibold text-slate-600 uppercase">Preis-Multiplikator</Label>
-                        <div className="relative">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">x</div>
-                            <Input type="number" step="0.1" value={settings.priceMultiplier} onChange={(e) => setSettings({ ...settings, priceMultiplier: e.target.value })} className="pl-8 bg-slate-50" />
-                        </div>
-                    </div>
-                    <Separator />
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between"><Label>Sofort Aktivieren</Label><Checkbox checked={settings.isActive} onCheckedChange={(c: boolean) => setSettings({ ...settings, isActive: !!c })} /></div>
-                        <div className="flex items-center justify-between"><Label>Physisches Produkt</Label><Checkbox checked={settings.isPhysical} onCheckedChange={(c: boolean) => setSettings({ ...settings, isPhysical: !!c })} /></div>
-                        <div className="flex items-center justify-between"><Label>Bestandsverfolgung</Label><Checkbox checked={settings.trackQuantity} onCheckedChange={(c: boolean) => setSettings({ ...settings, trackQuantity: !!c })} /></div>
-                        <div className="flex items-center justify-between"><Label>Steuer erheben</Label><Checkbox checked={settings.chargeTax} onCheckedChange={(c: boolean) => setSettings({ ...settings, chargeTax: !!c })} /></div>
-                        <div className="flex items-center justify-between"><Label>Terms akzeptieren</Label><Checkbox checked={settings.acceptTerms} onCheckedChange={(c: boolean) => setSettings({ ...settings, acceptTerms: !!c })} /></div>
-                    </div>
-                </CardContent>
-            </Card>
-                    </div >
-                </div >
-            ) : (
-        // STORE TAB CONTENT
-        <div className="space-y-6">
-            {/* Filters Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Produkte suchen..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 border-slate-200"
-                    />
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                        <SelectTrigger className="w-[200px] border-slate-200">
-                            <div className="flex items-center gap-2">
-                                <Globe className="h-4 w-4 text-slate-500" />
-                                <SelectValue placeholder="Alle Quellen" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Alle Quellen</SelectItem>
-                            {uniqueSources.map(source => (
-                                <SelectItem key={source} value={source}>
-                                    <div className="flex items-center gap-2">
-                                        <img src={getFaviconUrl(source)} className="w-4 h-4 rounded-sm" onError={(e) => e.currentTarget.style.display = 'none'} />
-                                        {source}
-                                    </div>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon" onClick={loadImportedProducts} className="border-slate-200"><RefreshCw className="h-4 w-4" /></Button>
-                </div>
-            </div>
-
-            {/* Product Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                {filteredProducts.map((product) => (
-                    <div key={product.id} className="group relative">
-                        <Card className="overflow-hidden border-slate-200 bg-white hover:border-violet-400 hover:shadow-2xl hover:shadow-violet-200/40 transition-all duration-500 rounded-2xl group-hover:-translate-y-1">
-                            <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden">
-                                {product?.image ? (
-                                    <img src={product.image.src} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                ) : (
-                                    <div className="h-full w-full flex items-center justify-center text-slate-300 bg-slate-50"><Box className="h-10 w-10 opacity-20" /></div>
-                                )}
-
-                                {/* Status Badge */}
-                                <div className="absolute top-3 right-3">
-                                    <Badge className={cn(
-                                        "backdrop-blur-md shadow-sm text-[10px] font-black uppercase tracking-wider border-0 px-2",
-                                        product.status === 'active' ? "bg-emerald-500/90 text-white" : "bg-slate-900/80 text-white"
-                                    )}>
-                                        {product.status || 'imported'}
-                                    </Badge>
-                                </div>
-
-                                {/* Quick Actions Overlay */}
-                                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] flex items-center justify-center gap-3">
-                                    <Link href={`https://${shopDomain}/products/${product.handle}`} target="_blank">
-                                        <Button size="icon" className="h-10 w-10 rounded-full bg-white text-slate-900 hover:bg-violet-600 hover:text-white shadow-xl hover:scale-110 transition-all"><Eye className="h-5 w-5" /></Button>
-                                    </Link>
-                                    <Link href={`https://${shopDomain}/admin/products/${product.id}`} target="_blank">
-                                        <Button size="icon" className="h-10 w-10 rounded-full bg-white text-slate-900 hover:bg-violet-600 hover:text-white shadow-xl hover:scale-110 transition-all"><Edit className="h-5 w-5" /></Button>
-                                    </Link>
-                                </div>
-                            </div>
-                            <CardContent className="p-5">
-                                <div className="mb-3">
-                                    {product.sourceDomain && (
-                                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-1.5 font-bold uppercase tracking-widest" title={product.sourceUrl || product.sourceDomain}>
-                                            <img src={getFaviconUrl(product.sourceDomain)} className="w-3.5 h-3.5 rounded-sm grayscale group-hover:grayscale-0 transition-all" alt="" />
-                                            <span className="truncate max-w-[120px]">{product.sourceDomain}</span>
-                                        </div>
-                                    )}
-                                    <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-violet-600 transition-colors" title={product.title}>{product.title}</h3>
-                                </div>
-                                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                                    <span className="text-base font-black text-slate-900">{product.variants?.[0]?.price || '-'} <span className="text-xs font-normal text-slate-400 italic">€</span></span>
-                                    <span className="text-[10px] font-bold text-slate-300 uppercase">{new Date(product.importedAt).toLocaleDateString()}</span>
+                                <div className="pt-4 flex justify-end">
+                                    <Button
+                                        size="lg"
+                                        onClick={handleStartImport}
+                                        className="bg-violet-600 hover:bg-violet-700 text-white font-semibold px-8 shadow-lg shadow-violet-200"
+                                        disabled={isImporting || urls.every(u => !u.trim())}
+                                    >
+                                        {isImporting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                        {isImporting ? 'Analysing...' : 'Import Starten'}
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Preview Section */}
+                        {
+                            isImporting && (
+                                <div className="space-y-4">
+                                    {/* Skeletons or Loading State */}
+                                    <div className="h-48 rounded-xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-400">
+                                        Thinking...
+                                    </div>
+                                </div>
+                            )
+                        }
+
+                        {
+                            previewData && (
+                                <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-bold text-slate-900">Preview Results</h3>
+                                            {Array.isArray(previewData) && (
+                                                <div className="flex items-center gap-3">
+                                                    <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold">
+                                                        {previewData.length} Ready
+                                                    </Badge>
+                                                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 font-bold">
+                                                        0 Warnings
+                                                    </Badge>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {Array.isArray(previewData) ? (
+                                            <div className="space-y-8">
+                                                {previewData.map((product: any, idx: number) => (
+                                                    <div key={idx} className="space-y-4">
+                                                        <div className="flex items-center gap-2 px-2">
+                                                            <div className="h-6 w-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">
+                                                                {idx + 1}
+                                                            </div>
+                                                            <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Produkt {idx + 1}</span>
+                                                        </div>
+                                                        <ProductPreview
+                                                            product={product}
+                                                            settings={settings}
+                                                            collections={collections}
+                                                            onUpdate={(updated) => handleUpdateProductInPreview(idx, updated)}
+                                                        />
+                                                        {checkDuplicates(product) && (
+                                                            <div className="mx-2 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-xs text-red-700">
+                                                                <AlertCircle className="h-4 w-4" />
+                                                                <span>Achtung: Dieses Produkt scheint bereits im Store zu existieren (gleicher Handle oder SKU).</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <ProductPreview
+                                                    product={previewData}
+                                                    settings={settings}
+                                                    collections={collections}
+                                                    onUpdate={(updated) => handleUpdateProductInPreview(-1, updated)}
+                                                />
+                                                {checkDuplicates(previewData) && (
+                                                    <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-xs text-red-700">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <span>Achtung: Dieses Produkt scheint bereits im Store zu existieren (gleicher Handle oder SKU).</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 z-50 flex items-center justify-center">
+                                        <Button size="lg" onClick={handleSaveProducts} disabled={isSaving} className="shadow-xl bg-slate-900 text-white hover:bg-slate-800 px-8">
+                                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                                            Import {Array.isArray(previewData) ? previewData.length : 1} Products to Shopify
+                                        </Button>
+                                    </div>
+                                </div>
+                            )
+                        }
+                    </div >
+
+                    {/* Right Column: Settings */}
+                    < div className="space-y-6" >
+                        <Card className="border-slate-200 shadow-sm sticky top-6">
+                            <CardHeader className="py-4 border-b border-slate-100">
+                                <CardTitle className="text-sm uppercase tracking-wider text-slate-500 font-bold">Import Einstellungen</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-5 space-y-6">
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-semibold text-slate-600 uppercase">Kollektion</Label>
+                                    <Select value={settings.collection} onValueChange={(val) => setSettings({ ...settings, collection: val })}>
+                                        <SelectTrigger className="bg-slate-50 border-slate-200"><SelectValue placeholder="Kollektion wählen..." /></SelectTrigger>
+                                        <SelectContent>
+                                            {collections.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-semibold text-slate-600 uppercase">Preis-Multiplikator</Label>
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">x</div>
+                                        <Input type="number" step="0.1" value={settings.priceMultiplier} onChange={(e) => setSettings({ ...settings, priceMultiplier: e.target.value })} className="pl-8 bg-slate-50" />
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between"><Label>Sofort Aktivieren</Label><Checkbox checked={settings.isActive} onCheckedChange={(c: boolean) => setSettings({ ...settings, isActive: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Physisches Produkt</Label><Checkbox checked={settings.isPhysical} onCheckedChange={(c: boolean) => setSettings({ ...settings, isPhysical: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Bestandsverfolgung</Label><Checkbox checked={settings.trackQuantity} onCheckedChange={(c: boolean) => setSettings({ ...settings, trackQuantity: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Steuer erheben</Label><Checkbox checked={settings.chargeTax} onCheckedChange={(c: boolean) => setSettings({ ...settings, chargeTax: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Terms akzeptieren</Label><Checkbox checked={settings.acceptTerms} onCheckedChange={(c: boolean) => setSettings({ ...settings, acceptTerms: !!c })} /></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div >
+                </div >
+            ) : (
+                // STORE TAB CONTENT
+                <div className="space-y-6">
+                    {/* Filters Toolbar */}
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                                placeholder="Produkte suchen..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 border-slate-200"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                                <SelectTrigger className="w-[200px] border-slate-200">
+                                    <div className="flex items-center gap-2">
+                                        <Globe className="h-4 w-4 text-slate-500" />
+                                        <SelectValue placeholder="Alle Quellen" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Alle Quellen</SelectItem>
+                                    {uniqueSources.map(source => (
+                                        <SelectItem key={source} value={source}>
+                                            <div className="flex items-center gap-2">
+                                                <img src={getFaviconUrl(source)} className="w-4 h-4 rounded-sm" onError={(e) => e.currentTarget.style.display = 'none'} />
+                                                {source}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button variant="outline" size="icon" onClick={loadImportedProducts} className="border-slate-200"><RefreshCw className="h-4 w-4" /></Button>
+                        </div>
                     </div>
-                ))}
-            </div>
-        </div>
-    )
-}
+
+                    {/* Product Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                        {filteredProducts.map((product) => (
+                            <div key={product.id} className="group relative">
+                                <Card className="overflow-hidden border-slate-200 bg-white hover:border-violet-400 hover:shadow-2xl hover:shadow-violet-200/40 transition-all duration-500 rounded-2xl group-hover:-translate-y-1">
+                                    <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden">
+                                        {product?.image ? (
+                                            <img src={product.image.src} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center text-slate-300 bg-slate-50"><Box className="h-10 w-10 opacity-20" /></div>
+                                        )}
+
+                                        {/* Status Badge */}
+                                        <div className="absolute top-3 right-3">
+                                            <Badge className={cn(
+                                                "backdrop-blur-md shadow-sm text-[10px] font-black uppercase tracking-wider border-0 px-2",
+                                                product.status === 'active' ? "bg-emerald-500/90 text-white" : "bg-slate-900/80 text-white"
+                                            )}>
+                                                {product.status || 'imported'}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Quick Actions Overlay */}
+                                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] flex items-center justify-center gap-3">
+                                            <Link href={`https://${shopDomain}/products/${product.handle}`} target="_blank">
+                                                <Button size="icon" className="h-10 w-10 rounded-full bg-white text-slate-900 hover:bg-violet-600 hover:text-white shadow-xl hover:scale-110 transition-all"><Eye className="h-5 w-5" /></Button>
+                                            </Link>
+                                            <Link href={`https://${shopDomain}/admin/products/${product.id}`} target="_blank">
+                                                <Button size="icon" className="h-10 w-10 rounded-full bg-white text-slate-900 hover:bg-violet-600 hover:text-white shadow-xl hover:scale-110 transition-all"><Edit className="h-5 w-5" /></Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-5">
+                                        <div className="mb-3">
+                                            {product.sourceDomain && (
+                                                <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-1.5 font-bold uppercase tracking-widest" title={product.sourceUrl || product.sourceDomain}>
+                                                    <img src={getFaviconUrl(product.sourceDomain)} className="w-3.5 h-3.5 rounded-sm grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                                    <span className="truncate max-w-[120px]">{product.sourceDomain}</span>
+                                                </div>
+                                            )}
+                                            <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-violet-600 transition-colors" title={product.title}>{product.title}</h3>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                            <span className="text-base font-black text-slate-900">{product.variants?.[0]?.price || '-'} <span className="text-xs font-normal text-slate-400 italic">€</span></span>
+                                            <span className="text-[10px] font-bold text-slate-300 uppercase">{new Date(product.importedAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )
+            }
         </div >
     )
 }
