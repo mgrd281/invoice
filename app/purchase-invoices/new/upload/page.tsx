@@ -1,0 +1,260 @@
+'use client'
+
+import React, { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import {
+    ArrowLeft,
+    Home,
+    Upload,
+    FileText,
+    X,
+    CheckCircle2,
+    Loader2,
+    ScanLine,
+    ShieldCheck,
+    AlertCircle,
+    ArrowRight
+} from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+
+export default function PurchaseInvoiceUploadPage() {
+    const router = useRouter()
+    const { showToast, ToastContainer } = useToast()
+    const [isDragging, setIsDragging] = useState(false)
+    const [file, setFile] = useState<File | null>(null)
+    const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'analyzing' | 'complete'>('idle')
+    const [progress, setProgress] = useState(0)
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDragging(true)
+    }, [])
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDragging(false)
+    }, [])
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDragging(false)
+        const droppedFile = e.dataTransfer.files[0]
+        if (droppedFile && (droppedFile.type === 'application/pdf' || droppedFile.type.startsWith('image/'))) {
+            setFile(droppedFile)
+        } else {
+            showToast("Bitte nur PDF oder Bilder hochladen.", "error")
+        }
+    }, [showToast])
+
+    const startUpload = async () => {
+        if (!file) return
+
+        setUploadStep('uploading')
+        setProgress(20)
+
+        // Mock Upload & OCR
+        try {
+            await new Promise(resolve => setTimeout(resolve, 800))
+            setProgress(60)
+            setUploadStep('analyzing')
+
+            await new Promise(resolve => setTimeout(resolve, 1500))
+            setProgress(100)
+            setUploadStep('complete')
+
+            showToast("Beleg erfolgreich analysiert!", "success")
+
+            // Redirect to a preview/edit page with extracted data
+            // For now, let's redirect to manual with dummy params or just back
+            setTimeout(() => {
+                router.push('/purchase-invoices/new/manual?from=ocr')
+            }, 1000)
+
+        } catch (error) {
+            showToast("Fehler bei der AI-Analyse.", "error")
+            setUploadStep('idle')
+        }
+    }
+
+    return (
+        <div className="container mx-auto p-6 max-w-4xl space-y-8 pb-32">
+            <ToastContainer />
+
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.back()}
+                        className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                        title="Zurück"
+                    >
+                        <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                    </Button>
+                    <Link href="/dashboard">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                            title="Dashboard"
+                        >
+                            <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                        </Button>
+                    </Link>
+                    <div className="ml-1">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Rechnung hochladen</h1>
+                        <p className="text-sm text-slate-500">AI-gestützte Belegerkennung (OCR)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Dropzone */}
+                    <Card
+                        className={`relative border-2 border-dashed transition-all duration-200 min-h-[400px] flex flex-col items-center justify-center p-12 text-center overflow-hidden
+                            ${isDragging ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'}
+                            ${file ? 'border-emerald-500 bg-emerald-50/10' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
+                        {!file ? (
+                            <div className="space-y-4">
+                                <div className="mx-auto w-20 h-20 bg-violet-100 rounded-3xl flex items-center justify-center animate-pulse">
+                                    <Upload className="h-10 w-10 text-violet-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">Datei hier ablegen</h3>
+                                    <p className="text-slate-500 mt-2 max-w-xs mx-auto">
+                                        Ziehen Sie Ihre PDF oder Bild-Rechnung hierher oder klicken Sie zum Auswählen.
+                                    </p>
+                                </div>
+                                <Button variant="outline" className="mt-4" onClick={() => document.getElementById('file-upload')?.click()}>
+                                    Datei auswählen
+                                </Button>
+                                <input
+                                    type="file"
+                                    id="file-upload"
+                                    className="hidden"
+                                    accept="application/pdf,image/*"
+                                    onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])}
+                                />
+                            </div>
+                        ) : (
+                            <div className="space-y-6 w-full max-w-md">
+                                <div className="mx-auto w-24 h-24 bg-white shadow-md rounded-2xl flex items-center justify-center relative">
+                                    <FileText className="h-12 w-12 text-blue-600" />
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                                        className="absolute -top-2 -right-2 h-7 w-7 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 shadow-sm transition-colors"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 truncate px-4">{file.name}</h3>
+                                    <p className="text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                </div>
+
+                                {uploadStep === 'idle' ? (
+                                    <Button
+                                        className="w-full bg-violet-600 hover:bg-violet-700 text-white h-12 gap-2 shadow-lg"
+                                        onClick={startUpload}
+                                    >
+                                        <ScanLine className="h-5 w-5" /> Analyse starten
+                                    </Button>
+                                ) : (
+                                    <div className="space-y-4 text-center">
+                                        <div className="flex items-center justify-center gap-2 text-violet-600 font-medium">
+                                            {uploadStep === 'uploading' && <><Loader2 className="h-5 w-5 animate-spin" /> Datei wird hochgeladen...</>}
+                                            {uploadStep === 'analyzing' && <><ScanLine className="h-5 w-5 animate-pulse" /> AI extrahiert Daten...</>}
+                                            {uploadStep === 'complete' && <><CheckCircle2 className="h-5 w-5" /> Fertig!</>}
+                                        </div>
+                                        <Progress value={progress} className="h-2 bg-slate-100" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Security Badge */}
+                        <div className="absolute bottom-6 flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                            <ShieldCheck className="h-3 w-3" /> SSL-Verschlüsselt & DSGVO-Konform
+                        </div>
+                    </Card>
+
+                    {/* Features Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="border-none bg-slate-50/50 p-4 flex gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                                <ScanLine className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-900">Automatische Erkennung</h4>
+                                <p className="text-xs text-slate-500 mt-1">Betrag, Datum, MwSt und Lieferant werden automatisch erkannt.</p>
+                            </div>
+                        </Card>
+                        <Card className="border-none bg-slate-50/50 p-4 flex gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-900">Dubletten-Check</h4>
+                                <p className="text-xs text-slate-500 mt-1">System erkennt automatisch, ob eine Rechnung bereits existiert.</p>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Sidebar Tips */}
+                <div className="space-y-6">
+                    <Card className="border-slate-200 shadow-sm bg-gradient-to-br from-white to-violet-50">
+                        <CardHeader className="p-6">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <AlertCircle className="h-5 w-5 text-violet-500" /> Profi-Tipp
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-6 pb-8 space-y-4">
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                Achten Sie darauf, dass alle Ecken des Belegs sichtbar sind und die Schrift gut lesbar ist.
+                            </p>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> PDF Dokumente bevorzugt
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Keine Schatten auf dem Foto
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Hoher Kontrast
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none bg-blue-600 text-white shadow-lg overflow-hidden relative">
+                        <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                        <CardContent className="p-6 space-y-4">
+                            <h4 className="font-bold text-lg">Keine Lust auf Upload?</h4>
+                            <p className="text-blue-100 text-sm">
+                                Erfassen Sie Ihre Belege einfach manuell über unser Formular.
+                            </p>
+                            <Link href="/purchase-invoices/new/manual">
+                                <Button className="w-full bg-white text-blue-600 hover:bg-blue-50 border-none font-bold">
+                                    Manuell erfassen <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+        </div>
+    )
+}

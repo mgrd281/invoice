@@ -82,6 +82,20 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
+        id: 'purchase-invoices',
+        href: '/purchase-invoices',
+        title: 'Einkaufsrechnungen',
+        description: 'Belege erfassen, verwalten & OCR-Upload',
+        icon: FileText,
+        iconBg: 'bg-gradient-to-r from-teal-500 to-emerald-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-teal-300 bg-gradient-to-br from-white to-teal-50',
+        badge: 'NEU',
+        badgeClass: 'bg-teal-100 text-teal-700',
+        hasPing: true,
+        pingColor: 'bg-teal-400',
+        pingDotColor: 'bg-teal-500'
+    },
+    {
         id: 'reviews',
         href: '/reviews',
         title: 'Produkt Reviews',
