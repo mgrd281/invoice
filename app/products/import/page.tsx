@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Download, Package, ShoppingCart, Search, Filter, Eye, Edit, Trash2, ArrowLeft, Globe, Plus, RefreshCw, Sparkles, ArrowRight, CheckCircle, Info, Settings as SettingsIcon, CheckCircle2, FileText, Tag, Zap, Box, Clock, XCircle, DollarSign, Upload } from "lucide-react"
+import { Loader2, Download, Package, ShoppingCart, Search, Filter, Eye, Edit, Trash2, ArrowLeft, Globe, Plus, RefreshCw, Sparkles, ArrowRight, CheckCircle, Info, Settings as SettingsIcon, CheckCircle2, FileText, Tag, Zap, Box, Clock, XCircle, DollarSign, Upload, Home } from "lucide-react"
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
 
@@ -343,10 +343,34 @@ export default function ProductImportPage() {
 
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Product Importer</h1>
-                    <p className="text-slate-500 mt-1">Importieren Sie Produkte von jeder URL – Powered by AI</p>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.back()}
+                        className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                        title="Zurück"
+                        aria-label="Zurück"
+                    >
+                        <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                    </Button>
+                    <Link href="/dashboard">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                            title="Dashboard"
+                            aria-label="Dashboard"
+                        >
+                            <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                        </Button>
+                    </Link>
+                    <div className="ml-1">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Product Importer</h1>
+                        <p className="text-sm text-slate-500">Importieren Sie Produkte von jeder URL – Powered by AI</p>
+                    </div>
                 </div>
+
                 <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
                     <button
                         onClick={() => setActiveTab('import')}
