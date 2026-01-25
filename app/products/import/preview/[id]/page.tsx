@@ -135,13 +135,18 @@ export default function ImportPreviewPage({ params }: PreviewPageProps) {
     )
 
     if (!draft) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-                <h1 className="text-xl font-bold">Entwurf nicht gefunden</h1>
-                <p className="text-slate-500 mt-2 text-sm">Der angeforderte Entwurf existiert nicht oder wurde gelöscht.</p>
-                <div className="flex justify-center gap-3 mt-6">
-                    <Button onClick={() => router.back()} variant="outline">Zurück</Button>
-                    <Button onClick={() => router.push('/products/import')} variant="default">Neuer Import</Button>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-sm border border-gray-100">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <AlertTriangle className="w-8 h-8" />
+                </div>
+                <h1 className="text-xl font-bold text-gray-900">Import fehlgeschlagen</h1>
+                <p className="text-slate-500 mt-2 text-sm leading-relaxed">
+                    Der angeforderte Entwurf konnte nicht gefunden werden. Möglicherweise ist beim Erstellen ein Fehler aufgetreten.
+                </p>
+                <div className="flex justify-center gap-3 mt-8">
+                    <Button onClick={() => router.back()} variant="outline" className="w-32">Zurück</Button>
+                    <Button onClick={() => router.push('/products/import')} variant="default" className="w-32 bg-violet-600 hover:bg-violet-700">Erneut versuchen</Button>
                 </div>
             </div>
         </div>

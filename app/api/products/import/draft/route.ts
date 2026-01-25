@@ -19,6 +19,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Organization not found for current shop' }, { status: 404 })
         }
 
+        // Verify Organization exists in DB to prevent foreign key errors
+        const orgExists = await prisma.organization.findUnique({
+            where: { id: organizationId },
+            select: { id: true }
+        })
+
+        if (!orgExists) {
+            return NextResponse.json({ error: 'Organization record mismatch' }, { status: 500 })
+        }
+
         // 2. Create Draft in DB
         // If product is provided, status is READY, otherwise PENDING
         const initialStatus = product ? 'READY' : 'PENDING'

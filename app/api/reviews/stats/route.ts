@@ -18,12 +18,18 @@ export async function GET(request: NextRequest) {
 
         // 1. Total Reviews
         const totalReviews = await prisma.review.count({
-            where: { organizationId: org.id }
+            where: {
+                organizationId: org.id,
+                status: { not: 'DELETED' }
+            }
         })
 
         // 2. Average Rating
         const aggregate = await prisma.review.aggregate({
-            where: { organizationId: org.id },
+            where: {
+                organizationId: org.id,
+                status: { not: 'DELETED' }
+            },
             _avg: { rating: true }
         })
         const averageRating = aggregate._avg.rating || 0
@@ -34,6 +40,7 @@ export async function GET(request: NextRequest) {
         const photoReviews = await prisma.review.count({
             where: {
                 organizationId: org.id,
+                status: { not: 'DELETED' },
                 NOT: {
                     images: {
                         equals: []
@@ -52,7 +59,10 @@ export async function GET(request: NextRequest) {
 
         // 5. Recent Reviews
         const recentReviews = await prisma.review.findMany({
-            where: { organizationId: org.id },
+            where: {
+                organizationId: org.id,
+                status: { not: 'DELETED' }
+            },
             orderBy: { createdAt: 'desc' },
             take: 5
         })
@@ -61,6 +71,7 @@ export async function GET(request: NextRequest) {
         const negativeReviews = await prisma.review.findMany({
             where: {
                 organizationId: org.id,
+                status: { not: 'DELETED' },
                 rating: { lte: 2 }
             },
             orderBy: { createdAt: 'desc' },

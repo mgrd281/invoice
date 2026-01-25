@@ -13,7 +13,10 @@ export async function GET(request: NextRequest) {
         const groupedReviews = await prisma.review.groupBy({
             by: ['productId'],
             where: {
-                organizationId: organization.id
+                organizationId: organization.id,
+                status: {
+                    not: 'DELETED'
+                }
             },
             _count: {
                 id: true

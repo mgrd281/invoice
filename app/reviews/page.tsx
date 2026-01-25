@@ -218,10 +218,79 @@ function ReviewsPageContent() {
     const [reviewSearch, setReviewSearch] = useState(searchParams.get('search') || '')
     const [searchMode, setSearchMode] = useState<'products' | 'reviews'>('products')
 
-    // Bulk Delete State
+    // Bulk Delete State (Reviews)
     const [selectedReviews, setSelectedReviews] = useState<string[]>([])
     const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
     const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+
+    // Bulk Product Delete State
+    const [isSelectionMode, setIsSelectionMode] = useState(false)
+    const [selectedProductIdsForDelete, setSelectedProductIdsForDelete] = useState<string[]>([])
+    const [showBulkProductDeleteDialog, setShowBulkProductDeleteDialog] = useState(false)
+    const [isBulkDeletingProducts, setIsBulkDeletingProducts] = useState(false)
+
+    const toggleProductSelection = (productId: string) => {
+        setSelectedProductIdsForDelete(prev =>
+            prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+        )
+    }
+
+    const handleBulkDeleteProducts = async () => {
+        if (selectedProductIdsForDelete.length === 0) return
+        setIsBulkDeletingProducts(true)
+        try {
+            const res = await authenticatedFetch('/api/reviews/products/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productIds: selectedProductIdsForDelete })
+            })
+
+            if (res.ok) {
+                const count = selectedProductIdsForDelete.length
+                toast.success(`${count} Produkte entfernt`, {
+                    action: {
+                        label: 'Rückgängig',
+                        onClick: () => handleRestoreProducts(selectedProductIdsForDelete)
+                    },
+                    duration: 5000
+                })
+
+                // Optimistic Update (or just refresh)
+                setProductStats(prev => prev.filter(p => !selectedProductIdsForDelete.includes(String(p.productId))))
+
+                setSelectedProductIdsForDelete([])
+                setIsSelectionMode(false)
+                setShowBulkProductDeleteDialog(false)
+                fetchStats() // Background refresh
+            } else {
+                toast.error('Fehler beim Entfernen der Produkte')
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error('Fehler beim Entfernen')
+        } finally {
+            setIsBulkDeletingProducts(false)
+        }
+    }
+
+    const handleRestoreProducts = async (idsToRestore: string[]) => {
+        try {
+            const res = await authenticatedFetch('/api/reviews/products/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productIds: idsToRestore })
+            })
+
+            if (res.ok) {
+                toast.success('Produkte wiederhergestellt')
+                fetchProductStats() // Refresh data
+            } else {
+                toast.error('Wiederherstellung fehlgeschlagen')
+            }
+        } catch (error) {
+            toast.error('Wiederherstellung fehlgeschlagen')
+        }
+    }
 
     // Google Integration State
     const [googleTab, setGoogleTab] = useState(searchParams.get('googleTab') || 'shopping')
@@ -724,17 +793,24 @@ function ReviewsPageContent() {
     const handleDeleteProductReviews = async () => {
         if (!deletingProductStat) return
         try {
-            const res = await authenticatedFetch('/api/reviews', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: deletingProductStat.productId })
+            const res = await authenticatedFetch(`/api/reviews/products/${deletingProductStat.productId}`, {
+                method: 'DELETE'
             })
 
             if (res.ok) {
-                toast.success('Alle Bewertungen für das Produkt wurden gelöscht')
+                const deletedId = deletingProductStat.productId
+                toast.success('Produkt entfernt', {
+                    action: {
+                        label: 'Rückgängig',
+                        onClick: () => handleRestoreProducts([String(deletedId)])
+                    },
+                    duration: 5000
+                })
+
                 setDeletingProductStat(null)
-                fetchProductStats() // Refresh list
-                fetchStats() // Refresh global stats
+                // Optimistic Remove
+                setProductStats(prev => prev.filter(p => String(p.productId) !== String(deletedId)))
+                fetchStats()
             } else {
                 toast.error('Fehler beim Löschen')
             }
@@ -1263,14 +1339,46 @@ function ReviewsPageContent() {
                 </AlertDialogContent>
             </AlertDialog>
 
+            {/* Bulk Product Delete Dialog */}
+            <AlertDialog open={showBulkProductDeleteDialog} onOpenChange={setShowBulkProductDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{selectedProductIdsForDelete.length} Produkte entfernen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Möchten Sie diese Produkte wirklich aus der Liste entfernen? Die Bewertungen bleiben in der Datenbank erhalten (Soft-Delete).
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isBulkDeletingProducts}>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault()
+                                handleBulkDeleteProducts()
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={isBulkDeletingProducts}
+                        >
+                            {isBulkDeletingProducts ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Entfernen...
+                                </>
+                            ) : (
+                                'Entfernen'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             {/* Delete Product Reviews Dialog */}
             <AlertDialog open={!!deletingProductStat} onOpenChange={(open) => !open && setDeletingProductStat(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Alle Bewertungen löschen?</AlertDialogTitle>
+                        <AlertDialogTitle>Produkt entfernen?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Möchten Sie wirklich alle {deletingProductStat?.reviewCount} Bewertungen für "{deletingProductStat?.productTitle}" löschen?
-                            Das Produkt wird danach aus dieser Liste entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+                            Möchten Sie "{deletingProductStat?.productTitle}" aus der Liste entfernen?
+                            Die Bewertungen bleiben erhalten, werden aber ausgeblendet.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1282,7 +1390,7 @@ function ReviewsPageContent() {
                             }}
                             className="bg-red-600 hover:bg-red-700"
                         >
-                            Löschen
+                            Entfernen
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1627,6 +1735,17 @@ function ReviewsPageContent() {
                                                 <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium border border-blue-100">
                                                     {filteredProducts.length} Produkte
                                                 </span>
+                                                <Button
+                                                    variant={isSelectionMode ? "secondary" : "ghost"}
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIsSelectionMode(!isSelectionMode)
+                                                        setSelectedProductIdsForDelete([])
+                                                    }}
+                                                    className={`ml-2 h-8 text-xs font-medium ${isSelectionMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                >
+                                                    {isSelectionMode ? 'Abbrechen' : 'Auswählen'}
+                                                </Button>
                                             </div>
                                             <CardDescription className="text-base text-gray-500 mt-1">
                                                 Wählen Sie ein Produkt, um dessen Bewertungen zu verwalten
@@ -1811,21 +1930,51 @@ function ReviewsPageContent() {
                                             const ProductCard = ({ stat, isRecent }: { stat: any, isRecent: boolean }) => {
                                                 const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
                                                 const productImage = shopifyProduct?.images?.[0]?.src || stat.productImage
+                                                const isSelected = selectedProductIdsForDelete.includes(String(stat.productId))
 
                                                 return (
                                                     <div
-                                                        className="group bg-white rounded-[16px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer p-5 flex items-center gap-5 relative overflow-hidden h-full"
-                                                        onClick={() => {
-                                                            setSelectedProductStat({
-                                                                ...stat,
-                                                                productImage: productImage
-                                                            })
-                                                            setViewMode('details')
+                                                        className={`group bg-white rounded-[16px] border ${isSelected ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/10' : 'border-gray-100'} shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer p-5 flex items-center gap-5 relative overflow-hidden h-full`}
+                                                        onClick={(e) => {
+                                                            if (isSelectionMode) {
+                                                                e.preventDefault()
+                                                                toggleProductSelection(String(stat.productId))
+                                                            } else {
+                                                                setSelectedProductStat({
+                                                                    ...stat,
+                                                                    productImage: productImage
+                                                                })
+                                                                setViewMode('details')
+                                                            }
                                                         }}
                                                     >
-                                                        {isRecent && (
+                                                        {isSelectionMode ? (
+                                                            <div className="absolute top-3 left-3 z-10">
+                                                                <Checkbox
+                                                                    checked={isSelected}
+                                                                    onCheckedChange={() => toggleProductSelection(String(stat.productId))}
+                                                                    className="h-5 w-5 border-2 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                                />
+                                                            </div>
+                                                        ) : isRecent && (
                                                             <div className="absolute top-3 right-3">
                                                                 <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-0.5 shadow-sm">Neu</Badge>
+                                                            </div>
+                                                        )}
+
+                                                        {!isSelectionMode && (
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        setDeletingProductStat(stat)
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
                                                             </div>
                                                         )}
 
@@ -1940,6 +2089,38 @@ function ReviewsPageContent() {
                                         </div>
                                     )}
                                 </CardContent>
+
+                                {/* Bulk Action Bar (Floating) */}
+                                {isSelectionMode && selectedProductIdsForDelete.length > 0 && (
+                                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300 pointer-events-auto">
+                                        <div className="bg-white rounded-full shadow-2xl border border-gray-200 p-2 pl-6 pr-2 flex items-center gap-4 ring-1 ring-black/5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-blue-600 text-white text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center">
+                                                    {selectedProductIdsForDelete.length}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-700">ausgewählt</span>
+                                            </div>
+                                            <div className="h-4 w-px bg-gray-200"></div>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                className="rounded-full h-9 px-4 shadow-sm"
+                                                onClick={() => setShowBulkProductDeleteDialog(true)}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Entfernen
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100"
+                                                onClick={() => setSelectedProductIdsForDelete([])}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </Card>
                         ) : (
                             <div className="space-y-4">

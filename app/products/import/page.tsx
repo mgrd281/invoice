@@ -287,7 +287,9 @@ export default function ProductImportPage() {
                 }
 
                 // 2. Redirect to Preview (which will handle processing)
-                router.push(`/products/import/preview/${draftData.draftId}`)
+                if (draftData.draftId) {
+                    router.push(`/products/import/preview/${draftData.draftId}`)
+                }
                 return
 
             } else {
