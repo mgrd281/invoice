@@ -24,7 +24,8 @@ import {
     Clock,
     AlertCircle,
     Loader2,
-    CalendarDays
+    CalendarDays,
+    Receipt
 } from 'lucide-react'
 
 export default function PurchaseInvoicesPage() {
@@ -225,8 +226,10 @@ export default function PurchaseInvoicesPage() {
                                     <tr>
                                         <td colSpan={7} className="px-6 py-12 text-center">
                                             <div className="flex flex-col items-center gap-2">
-                                                <FileText className="h-8 w-8 text-slate-300" />
-                                                <p className="text-slate-500">Keine Rechnungen gefunden</p>
+                                                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+                                                    <Receipt className="h-6 w-6 text-slate-400" />
+                                                </div>
+                                                <p className="text-slate-500 font-medium">Keine Rechnungen gefunden</p>
                                             </div>
                                         </td>
                                     </tr>
