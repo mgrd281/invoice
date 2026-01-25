@@ -188,7 +188,11 @@ export async function POST(request: NextRequest) {
 
             // Global SEO fields
             formatMetafield('title_tag', product.metaTitle || product.title, 'single_line_text_field', 'global'),
-            formatMetafield('description_tag', product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), 'multi_line_text_field', 'global')
+            formatMetafield('description_tag', product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), 'multi_line_text_field', 'global'),
+
+            // Source Data
+            formatMetafield('source_url', product.sourceUrl, 'single_line_text_field', 'custom'),
+            formatMetafield('source_domain', product.sourceDomain, 'single_line_text_field', 'custom')
         ].filter(m => m !== null) as any[]
 
         // Prepare variants and options
@@ -249,7 +253,7 @@ export async function POST(request: NextRequest) {
             vendor: product.vendor,
             product_type: product.product_type,
             handle: product.handle,
-            tags: product.tags ? `${product.tags}, Imported` : 'Imported',
+            tags: product.tags ? `${product.tags}, Imported, Source:${product.sourceDomain}` : `Imported, Source:${product.sourceDomain}`,
             status: settings.isActive ? 'active' : 'draft',
             options: options.length > 0 ? options.map(name => ({ name })) : undefined,
             images: productImages,

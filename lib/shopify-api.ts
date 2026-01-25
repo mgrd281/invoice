@@ -528,7 +528,7 @@ export class ShopifyAPI {
         if (params.fields) {
           searchParams.set('fields', params.fields)
         } else {
-          searchParams.set('fields', 'id,title,handle,vendor,product_type,status,created_at,updated_at,images,variants')
+          searchParams.set('fields', 'id,title,handle,vendor,product_type,status,tags,created_at,updated_at,images,variants')
         }
 
         const response = await this.makeRequest(`/products.json?${searchParams}`, params.fetchOptions)
@@ -549,7 +549,7 @@ export class ShopifyAPI {
           if (params.fields) {
             searchParams.set('fields', params.fields)
           } else {
-            searchParams.set('fields', 'id,title,handle,vendor,product_type,status,created_at,updated_at,images,variants')
+            searchParams.set('fields', 'id,title,handle,vendor,product_type,status,tags,created_at,updated_at,images,variants')
           }
 
           // Cursor pagination
@@ -597,6 +597,7 @@ export class ShopifyAPI {
         handle: product.handle,
         vendor: product.vendor,
         product_type: product.product_type,
+        tags: product.tags,
         created_at: product.created_at,
         updated_at: product.updated_at,
         images: product.images?.map((img: any) => ({ src: img.src })) || [],
