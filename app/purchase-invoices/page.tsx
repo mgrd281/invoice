@@ -224,12 +224,17 @@ export default function PurchaseInvoicesPage() {
                                     </tr>
                                 ) : invoices.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-12 text-center">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
-                                                    <Receipt className="h-6 w-6 text-slate-400" />
+                                        <td colSpan={7} className="px-6 py-24 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-4 min-h-[200px]">
+                                                <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mb-2">
+                                                    <Receipt className="h-8 w-8 text-slate-400" />
                                                 </div>
-                                                <p className="text-slate-500 font-medium">Keine Rechnungen gefunden</p>
+                                                <div className="space-y-1">
+                                                    <p className="text-slate-900 font-semibold text-lg">Keine Rechnungen gefunden</p>
+                                                    <p className="text-slate-500 max-w-xs mx-auto">
+                                                        Es wurden keine Rechnungen für Ihre aktuelle Suche oder Filterung gefunden.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>

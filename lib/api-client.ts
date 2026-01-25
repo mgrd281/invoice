@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/use-auth-compat'
+import { useCallback } from 'react'
 
 // Helper function to create authenticated API requests
 export function createAuthenticatedRequest(user: any) {
@@ -21,7 +22,7 @@ export function createAuthenticatedRequest(user: any) {
 export function useAuthenticatedFetch() {
   const { user } = useAuth()
 
-  const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+  const authenticatedFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     if (!user) {
       console.warn('⚠️ useAuthenticatedFetch called without authenticated user')
       // For login/register pages, just use regular fetch
@@ -49,7 +50,7 @@ export function useAuthenticatedFetch() {
     }
 
     return fetch(url, mergedOptions)
-  }
+  }, [user])
 
   return authenticatedFetch
 }

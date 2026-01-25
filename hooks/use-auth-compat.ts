@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 
 // Compatibility hook that mimics the old useAuth interface
 export function useAuth() {
@@ -12,16 +13,19 @@ export function useAuth() {
   const loading = status === 'loading'
 
   // Mock user object that matches the old interface
-  const user = session ? {
-    id: (session.user as any)?.id || 1,
-    email: session.user?.email || '',
-    name: session.user?.name || session.user?.email?.split('@')[0] || 'User',
-    role: 'user',
-    firstName: session.user?.name?.split(' ')[0] || '',
-    lastName: session.user?.name?.split(' ')[1] || '',
-    // Check for admin email
-    isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes((session.user?.email || '').toLowerCase())
-  } : null
+  const user = useMemo(() => {
+    if (!session) return null
+    return {
+      id: (session.user as any)?.id || 1,
+      email: session.user?.email || '',
+      name: session.user?.name || session.user?.email?.split('@')[0] || 'User',
+      role: 'user',
+      firstName: session.user?.name?.split(' ')[0] || '',
+      lastName: session.user?.name?.split(' ')[1] || '',
+      // Check for admin email
+      isAdmin: ['mgrdegh@web.de', 'Mkarina321@'].includes((session.user?.email || '').toLowerCase())
+    }
+  }, [session])
 
   // Login function that redirects to NextAuth signin
   const login = async (credentials?: { email: string; password: string }) => {
