@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -89,13 +90,9 @@ export default function TaxAdvisorPage() {
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <Link href="/buchhaltung">
-                                <Button variant="ghost" size="sm" className="mr-4 text-gray-500 hover:text-gray-900">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Zurück zur Buchhaltung
-                                </Button>
-                            </Link>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
+                            <div className="mx-1" />
                             <div className="flex items-center space-x-3">
                                 <div className="p-2 bg-blue-50 rounded-lg">
                                     <Briefcase className="h-6 w-6 text-blue-600" />

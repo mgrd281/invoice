@@ -1,14 +1,15 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Upload, 
-  Download, 
-  Trash2, 
-  File, 
-  Folder, 
+import {
+  Upload,
+  Download,
+  Trash2,
+  File,
+  Folder,
   RefreshCw,
   AlertCircle,
   CheckCircle,
@@ -55,7 +56,7 @@ export default function FilesPage() {
     try {
       const response = await fetch(`/api/files?dir=${currentDirectory}&includeSize=true`)
       const data = await response.json()
-      
+
       if (data.success) {
         setFiles(data.data.files)
         setTotalSize(data.data.totalSize || 0)
@@ -74,7 +75,7 @@ export default function FilesPage() {
     try {
       const response = await fetch('/api/files/upload')
       const data = await response.json()
-      
+
       if (data.success) {
         setUploadLimits(data.data)
       }
@@ -113,7 +114,7 @@ export default function FilesPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         showToast('Datei erfolgreich hochgeladen', 'success')
         fetchFiles() // Dateiliste neu laden
@@ -128,7 +129,7 @@ export default function FilesPage() {
               body: formData
             })
             const retryData = await retryResponse.json()
-            
+
             if (retryData.success) {
               showToast('Datei erfolgreich ersetzt', 'success')
               fetchFiles()
@@ -154,7 +155,7 @@ export default function FilesPage() {
   const handleFileDownload = async (fileName: string) => {
     try {
       const response = await fetch(`/api/files/${encodeURIComponent(fileName)}?dir=${currentDirectory}&download=true`)
-      
+
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -187,7 +188,7 @@ export default function FilesPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         showToast('Datei erfolgreich gelöscht', 'success')
         fetchFiles()
@@ -218,7 +219,7 @@ export default function FilesPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         showToast(data.message, 'success')
         if (currentDirectory === 'temp') {
@@ -247,10 +248,10 @@ export default function FilesPage() {
 
   const getFileIcon = (fileName: string, isDirectory: boolean) => {
     if (isDirectory) return <Folder className="w-5 h-5 text-blue-500" />
-    
+
     const ext = fileName.toLowerCase().split('.').pop()
     const iconClass = "w-5 h-5"
-    
+
     switch (ext) {
       case 'pdf':
         return <File className={`${iconClass} text-red-500`} />
@@ -276,17 +277,10 @@ export default function FilesPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => window.history.back()}
-                className="mr-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Zurück
-              </Button>
-              <Folder className="h-8 w-8 text-blue-600 mr-4" />
+            <div className="flex items-center gap-4">
+              <HeaderNavIcons />
+              <div className="mx-1" />
+              <Folder className="h-8 w-8 text-blue-600 mr-1" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Dateiverwaltung
               </h1>
@@ -314,8 +308,8 @@ export default function FilesPage() {
                 const usagePercentage = Math.min((totalSize / uploadLimits.maxStorageSize) * 100, 100);
                 return (
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${usagePercentage}%` }}
                     ></div>
                   </div>
@@ -457,7 +451,7 @@ export default function FilesPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       {!file.isDirectory && (
                         <>
@@ -507,7 +501,7 @@ export default function FilesPage() {
           </Card>
         )}
       </div>
-      
+
       <ToastContainer />
     </div>
   )

@@ -1,7 +1,6 @@
-'use client'
-
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { BackButton } from '@/components/navigation/back-button'
+// ...
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -1290,26 +1289,8 @@ function ReviewsPageContent() {
             <header className="bg-white border-b sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => router.back()}
-                                className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
-                                title="Zurück"
-                            >
-                                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                            </Button>
-                            <Link href="/dashboard">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
-                                    title="Dashboard"
-                                >
-                                    <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                                </Button>
-                            </Link>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
                             <div className="flex items-center gap-2">
                                 <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
                                 <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
@@ -1796,7 +1777,7 @@ function ReviewsPageContent() {
                                             const now = new Date()
                                             const sevenDaysAgo = new Date()
                                             sevenDaysAgo.setDate(now.getDate() - 7)
-                                            
+
                                             const sortByDate = (a: any, b: any) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime()
 
                                             // Helper to get category
@@ -1845,7 +1826,7 @@ function ReviewsPageContent() {
                                                                 <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-0.5 shadow-sm">Neu</Badge>
                                                             </div>
                                                         )}
-                                                        
+
                                                         <div className="h-[72px] w-[72px] rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
                                                             {productImage ? (
                                                                 <img src={productImage} alt={stat.productTitle} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -1870,7 +1851,7 @@ function ReviewsPageContent() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         {/* Chevron */}
                                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                                                             <Button

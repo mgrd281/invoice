@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -132,13 +133,8 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
             <header className="bg-white shadow-sm border-b sticky top-0 z-10 backdrop-blur-xl bg-white/80">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <Link href="/customers">
-                                <Button variant="ghost" size="sm" className="mr-4">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Zurück
-                                </Button>
-                            </Link>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                                     {customer.name}

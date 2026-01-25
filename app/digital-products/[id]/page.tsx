@@ -1,6 +1,6 @@
-
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -362,12 +362,7 @@ Viel Spaß!`
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/digital-products">
-                            <Button variant="ghost" size="sm" className="flex items-center">
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Zurück
-                            </Button>
-                        </Link>
+                        <HeaderNavIcons />
                         <div className="flex items-center gap-2">
                             <h1 className="text-xl font-bold text-gray-900">{product.title}</h1>
                             <Button variant="ghost" size="icon" onClick={() => {

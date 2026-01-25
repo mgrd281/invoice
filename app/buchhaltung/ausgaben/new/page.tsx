@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState } from 'react'
 import { BackButton } from '@/components/navigation/back-button'
 import { useRouter } from 'next/navigation'
@@ -193,7 +194,7 @@ export default function NewExpensePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <BackButton fallbackUrl="/buchhaltung" variant="outline" className="flex items-center space-x-2" />
+          <HeaderNavIcons />
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
               <Calculator className="w-8 h-8 text-blue-600" />

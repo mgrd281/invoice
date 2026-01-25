@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { BackButton } from '@/components/navigation/back-button'
 import Link from 'next/link'
@@ -233,26 +234,8 @@ export default function DigitalProductsPage() {
             <header className="bg-white shadow-sm border-b sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => router.back()}
-                                className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
-                                title="Zurück"
-                            >
-                                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                            </Button>
-                            <Link href="/dashboard">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
-                                    title="Dashboard"
-                                >
-                                    <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                                </Button>
-                            </Link>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
                             <div className="ml-1">
                                 <h1 className="text-xl font-bold text-gray-900">Digitale Produkte</h1>
                                 <p className="text-xs text-gray-500">Verwalten Sie Ihre Lizenzschlüssel und Downloads</p>

@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -61,7 +62,7 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
         currency: 'EUR',
         language: 'de'
       }
-      
+
       setSettings(mockSettings)
     } catch (error) {
       console.error('Error fetching settings:', error)
@@ -75,12 +76,12 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
     try {
       // In a real app, you'd send PUT request to /api/organizations/[id]/settings
       console.log('Saving settings:', settings)
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       alert('Einstellungen erfolgreich gespeichert!')
-      
+
     } catch (error) {
       console.error('Error saving settings:', error)
       alert('Fehler beim Speichern der Einstellungen')
@@ -110,13 +111,9 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/organizations">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück zu Organisationen
-                </Button>
-              </Link>
+            <div className="flex items-center gap-4">
+              <HeaderNavIcons />
+              <div className="mx-1" />
               <Settings className="h-8 w-8 text-purple-600 mr-3" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">

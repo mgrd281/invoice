@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { BackButton } from '@/components/navigation/back-button'
 import { useRouter } from 'next/navigation'
@@ -149,7 +150,7 @@ export default function NewDigitalProductPage() {
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
-                    <BackButton fallbackUrl="/digital-products" />
+                    <HeaderNavIcons />
                     <h1 className="text-xl font-bold text-gray-900">Digitales Produkt hinzufügen</h1>
                 </div>
             </header>

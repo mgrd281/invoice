@@ -1,5 +1,4 @@
-'use client'
-
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -118,16 +117,8 @@ export default function ApiKeysPage() {
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-6">
-                        <div className="flex items-center">
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="sm" className="mr-4">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Zurück
-                                </Button>
-                            </Link>
-                            <div className="p-2 bg-indigo-50 rounded-lg mr-4">
-                                <Key className="h-6 w-6 text-indigo-600" />
-                            </div>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-indigo-100 rounded-lg shadow-sm">
                                     <Key className="h-8 w-8 text-indigo-600" />

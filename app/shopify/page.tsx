@@ -1,5 +1,6 @@
 'use client';
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -368,15 +369,18 @@ function ShopifyEmbeddedContent() {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
-            <div className="bg-blue-50 p-1.5 rounded-lg">
-              <ShoppingBag className="w-5 h-5 text-blue-600" />
-            </div>
-            {activeTab === 'dashboard' && 'Dashboard'}
-            {activeTab === 'invoices' && 'Alle Rechnungen'}
-            {activeTab === 'settings' && 'Einstellungen'}
-            {activeTab === 'digital-products' && 'Digitale Produkte'}
-          </h2>
+          <div className="flex items-center gap-4">
+            <HeaderNavIcons />
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+              <div className="bg-blue-50 p-1.5 rounded-lg">
+                <ShoppingBag className="w-5 h-5 text-blue-600" />
+              </div>
+              {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'invoices' && 'Alle Rechnungen'}
+              {activeTab === 'settings' && 'Einstellungen'}
+              {activeTab === 'digital-products' && 'Digitale Produkte'}
+            </h2>
+          </div>
           <button
             onClick={fetchData}
             className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-gray-100"

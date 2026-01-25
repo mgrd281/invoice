@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -71,9 +72,9 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
         },
         body: JSON.stringify(organization)
       })
-      
+
       const data = await response.json()
-      
+
       if (response.ok) {
         if (data.organization) {
           setOrganization(data.organization)
@@ -113,13 +114,9 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/organizations">
-                <Button variant="ghost" size="sm" className="mr-4">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück zu Organisationen
-                </Button>
-              </Link>
+            <div className="flex items-center gap-4">
+              <HeaderNavIcons />
+              <div className="mx-1" />
               <Building2 className="h-8 w-8 text-purple-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Organisation bearbeiten

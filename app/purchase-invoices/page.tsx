@@ -1,5 +1,4 @@
-'use client'
-
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -72,29 +71,11 @@ export default function PurchaseInvoicesPage() {
     return (
         <div className="container mx-auto p-6 max-w-7xl space-y-8 pb-32">
 
-            {/* Header with Navigation */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => router.back()}
-                        className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
-                        title="Zurück"
-                    >
-                        <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                    </Button>
-                    <Link href="/dashboard">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
-                            title="Dashboard"
-                        >
-                            <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                        </Button>
-                    </Link>
-                    <div className="ml-1">
+                <div className="flex items-center gap-4">
+                    <HeaderNavIcons />
+                    <div className="mx-1" />
+                    <div>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Einkaufsrechnungen</h1>
                         <p className="text-sm text-slate-500">Verwalten Sie Ihre Ausgaben und Belege zentral</p>
                     </div>

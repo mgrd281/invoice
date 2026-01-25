@@ -1,5 +1,4 @@
-'use client'
-
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -79,11 +78,9 @@ export default function SecurityPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-5xl mx-auto">
-                <div className="mb-8">
-                    <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 flex items-center mb-2">
-                        <ArrowLeft className="w-4 h-4 mr-1" /> Zurück zum Dashboard
-                    </Link>
-                    <div className="flex items-center justify-between">
+                <div className="mb-8 flex items-center gap-4">
+                    <HeaderNavIcons />
+                    <div className="flex-1 flex items-center justify-between">
                         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                             <div className="bg-red-100 p-2 rounded-lg shadow-sm">
                                 <Shield className="w-8 h-8 text-red-600" />

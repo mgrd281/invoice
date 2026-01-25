@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -68,10 +69,8 @@ export function ProfileForm({ initialData, isEdit }: ProfileFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto py-8">
-            <div className="mb-6">
-                <Link href="/real-estate" className="text-gray-500 hover:text-gray-700 flex items-center gap-2">
-                    <ArrowLeft className="h-4 w-4" /> Zurück zur Übersicht
-                </Link>
+            <div className="mb-6 flex items-center gap-4">
+                <HeaderNavIcons />
             </div>
 
             <Card>

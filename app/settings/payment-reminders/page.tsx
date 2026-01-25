@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -249,13 +250,8 @@ export default function PaymentRemindersSettingsPage() {
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <Link href="/settings">
-                                <Button variant="ghost" size="sm" className="mr-4">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Zurück
-                                </Button>
-                            </Link>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
                             <h1 className="text-xl font-bold text-gray-900">
                                 Zahlungserinnerungen (Vorkasse & Rechnung)
                             </h1>

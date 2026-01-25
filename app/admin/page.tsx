@@ -1,6 +1,8 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
+// import { BackButton } from '@/components/navigation/back-button'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -251,11 +253,7 @@ export default function AdminPage() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <div className="flex items-center gap-4">
-                        <Link href="/dashboard">
-                            <Button variant="outline" size="icon" className="rounded-full h-10 w-10">
-                                <ArrowLeft className="h-5 w-5" />
-                            </Button>
-                        </Link>
+                        <HeaderNavIcons />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                                 <div className="bg-blue-100 p-2 rounded-lg shadow-sm">

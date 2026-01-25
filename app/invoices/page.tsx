@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { BackButton } from '@/components/navigation/back-button'
 import Link from 'next/link'
@@ -1039,7 +1040,8 @@ function InvoicesPageContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <BackButton fallbackUrl="/dashboard" className="mr-4" />
+              <HeaderNavIcons />
+              <div className="mx-2" />
               <FileText className="h-8 w-8 text-blue-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 Rechnungen

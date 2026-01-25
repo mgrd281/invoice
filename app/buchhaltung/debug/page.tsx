@@ -1,3 +1,4 @@
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -53,14 +54,10 @@ export default async function DebugPage() {
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <Link href="/buchhaltung">
-                            <Button variant="ghost">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Zurück zur Buchhaltung
-                            </Button>
-                        </Link>
-                        <h1 className="text-3xl font-bold text-gray-900">System Diagnose (Erweitert)</h1>
+                    <div className="flex items-center gap-4">
+                        <HeaderNavIcons />
+                        <div className="mx-1" />
+                        <h1 className="text-3xl font-bold text-gray-900">System Diagnose</h1>
                     </div>
                     <div className="text-sm text-gray-500">
                         Serverzeit: {new Date().toLocaleString('de-DE')}

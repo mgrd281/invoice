@@ -209,17 +209,6 @@ export const DEFAULT_FEATURES = [
     },
 
     {
-        id: 'logs',
-        href: '/dashboard/logs',
-        title: 'System Logs (Aktiv)',
-        description: 'Echtzeit-Status und Fehlerdiagnose',
-        icon: Terminal,
-        iconBg: 'bg-black',
-        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer',
-        badge: 'NEW',
-        badgeClass: 'bg-gray-100 text-gray-700'
-    },
-    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',

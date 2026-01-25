@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
+import { transformToShopifyProduct } from '@/lib/shopify-transform'
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,278 +18,19 @@ export async function POST(request: NextRequest) {
         }
         const api = new ShopifyAPI(shopifySettings)
 
-        // Helper to create metafields
-        const createMetafields = (metaData: any) => {
-            if (!metaData) return []
-            console.log('Processing variant metafields:', metaData)
-            return Object.entries(metaData).map(([key, value]) => {
-                let type = 'single_line_text_field'
+        // Use the central transformation logic to get consistent payload
+        const shopifyProduct = transformToShopifyProduct(product, {
+            ...settings,
+            isActive: settings.isActive,
+            isPhysical: settings.isPhysical,
+            chargeTax: settings.chargeTax,
+            trackQuantity: settings.trackQuantity
+        })
 
-                // Determine type based on key or content
-                // STRICTLY enforce rich_text_field for known rich text keys
-                if (key.includes('collapsible_row_content') || key === 'faq') {
-                    type = 'rich_text_field'
-                } else if ((value as string).length > 200 || (value as string).includes('\n')) {
-                    type = 'multi_line_text_field'
-                }
+        console.log('Final Shopify Product Payload (via Transform):', JSON.stringify(shopifyProduct, null, 2))
 
-                // For rich_text_field, Shopify expects a JSON string of the content tree
-                // But for simplicity via API, we can often send just text if we don't have the complex structure.
-                // However, to be safe and fix the error, let's try 'multi_line_text_field' for everything EXCEPT
-                // those explicitly defined as rich_text in the store.
-                // The error explicitly says: "must be consistent with the definition's type: 'rich_text_field'".
-                // So we MUST use 'rich_text_field' for those keys.
-
-                // Construct rich text value (simple paragraph wrapper)
-                let finalValue = value
-
-                if (type === 'rich_text_field') {
-                    // Always format as JSON for rich_text_field
-                    finalValue = JSON.stringify({
-                        type: "root",
-                        children: [
-                            {
-                                type: "paragraph",
-                                children: [
-                                    {
-                                        type: "text",
-                                        value: value
-                                    }
-                                ]
-                            }
-                        ]
-                    })
-                }
-
-                return {
-                    namespace: 'custom',
-                    key: key,
-                    value: finalValue || '',
-                    type: type
-                }
-            }).filter(m => m.value !== '' && m.value !== null && m.value !== undefined)
-        }
-
-        const variantMetafields = createMetafields(product.variantMetafields)
-        const productMetafields = createMetafields(product.productMetafields)
-
-        // Add FAQ to product metafields if available
-        if (product.faq) {
-            productMetafields.push({
-                namespace: 'custom',
-                key: 'collapsible_row_content_2',
-                value: JSON.stringify({
-                    type: "root",
-                    children: [
-                        {
-                            type: "paragraph",
-                            children: [
-                                {
-                                    type: "text",
-                                    value: product.faq
-                                }
-                            ]
-                        }
-                    ]
-                }),
-                type: 'rich_text_field'
-            })
-            // Add heading for FAQ
-            productMetafields.push({
-                namespace: 'custom',
-                key: 'collapsible_row_heading_2',
-                value: 'Häufige Fragen',
-                type: 'single_line_text_field'
-            })
-        }
-
-        console.log('Final variant metafields:', variantMetafields)
-        console.log('Final product metafields:', productMetafields)
-
-        // Calculate Compare At Price (optional)
-        const price = parseFloat(product.price)
-        const compareAtPrice = product.compare_at_price || (price * 1.3).toFixed(2)
-
-        // Helper to format values correctly based on type
-        const formatMetafield = (key: string, value: any, type: string, namespace = 'custom') => {
-            if (!value) return null
-            let finalValue = value
-
-            if (type === 'rich_text_field') {
-                // Ensure value is a string and handle HTML-like content by preserving line breaks
-                const strValue = typeof value === 'string' ? value : String(value)
-
-                // Replace HTML breaks/paragraphs with newlines BEFORE stripping other tags
-                const preservedText = strValue
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<\/p>/gi, '\n')
-                    .replace(/<[^>]*>/g, '') // Strip remaining tags (strong, em, etc.)
-                    .trim()
-
-                // Shopify Rich Text expects a specific JSON structure
-                // We wrap the content in a root > paragraph > text node
-                finalValue = JSON.stringify({
-                    type: "root",
-                    children: [
-                        {
-                            type: "paragraph",
-                            children: [
-                                {
-                                    type: "text",
-                                    value: preservedText
-                                }
-                            ]
-                        }
-                    ]
-                })
-            } else if (type === 'multi_line_text_field') {
-                const strValue = typeof value === 'string' ? value : String(value)
-                finalValue = strValue
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<\/p>/gi, '\n')
-                    .replace(/<[^>]*>/g, '')
-                    .trim()
-            } else {
-                finalValue = String(value).substring(0, 255)
-            }
-
-            return {
-                namespace,
-                key,
-                value: finalValue,
-                type
-            }
-        }
-
-        // Map product metadata fields using the new formatter
-        // We use 'custom' namespace for most fields to ensure they are visible in Shopify Admin > Custom Data
-        const superMetafields = [
-            formatMetafield('mpn', product.google_mpn || product.sku, 'single_line_text_field', 'custom'),
-            formatMetafield('condition', product.google_condition || 'new', 'single_line_text_field', 'custom'),
-            formatMetafield('gender', product.google_gender || 'unisex', 'single_line_text_field', 'custom'),
-            formatMetafield('age_group', product.google_age_group || 'adult', 'single_line_text_field', 'custom'),
-            formatMetafield('size_type', product.google_size_type, 'single_line_text_field', 'custom'),
-            formatMetafield('size_system', product.google_size_system, 'single_line_text_field', 'custom'),
-            formatMetafield('google_product_category', product.google_custom_product, 'single_line_text_field', 'custom'),
-            formatMetafield('customs_description', product.dhl_customs_item_description || product.dhl_custom_description || product.title?.slice(0, 50), 'single_line_text_field', 'custom'),
-            formatMetafield('shipping_cost', product.shipping_costs || product.versandkosten || '0.00', 'single_line_text_field', 'custom'),
-            formatMetafield('shipping_time', product.shipping_date_time, 'single_line_text_field', 'custom'),
-
-            // Collapsible Rows (Rich Text)
-            formatMetafield('details_content', product.collapsible_row_1_content, 'rich_text_field', 'custom'),
-            formatMetafield('details_heading', product.collapsible_row_1_heading || 'Details', 'single_line_text_field', 'custom'),
-
-            formatMetafield('shipping_content', product.collapsible_row_2_content, 'rich_text_field', 'custom'),
-            formatMetafield('shipping_heading', product.collapsible_row_2_heading || 'Lieferung', 'single_line_text_field', 'custom'),
-
-            formatMetafield('warranty_content', product.collapsible_row_3_content, 'rich_text_field', 'custom'),
-            formatMetafield('warranty_heading', product.collapsible_row_3_heading || 'Garantie', 'single_line_text_field', 'custom'),
-
-            formatMetafield('benefits', product.emoji_benefits, 'multi_line_text_field', 'custom'),
-
-            // Global SEO fields
-            formatMetafield('title_tag', product.metaTitle || product.title, 'single_line_text_field', 'global'),
-            formatMetafield('description_tag', product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), 'multi_line_text_field', 'global'),
-
-            // Source Data
-            formatMetafield('source_url', product.sourceUrl, 'single_line_text_field', 'custom'),
-            formatMetafield('source_domain', product.sourceDomain, 'single_line_text_field', 'custom')
-        ].filter(m => m !== null) as any[]
-
-        // Prepare variants and options
-        let options: string[] = [];
-        if (product.variants && product.variants.length > 0) {
-            options = product.options?.map((o: any) => o.name) || ['Title'];
-        }
-
-        const shopifyVariants = product.variants && product.variants.length > 0
-            ? product.variants.map((v: any, idx: number) => {
-                const variantEntry: any = {
-                    price: v.price || product.price,
-                    compare_at_price: v.compare_at_price || (parseFloat(v.price || product.price) * 1.3).toFixed(2),
-                    sku: v.sku || (product.sku ? `${product.sku}-${idx}` : undefined),
-                    barcode: v.barcode || product.ean,
-                    inventory_management: 'shopify',
-                    inventory_quantity: 889,
-                    taxable: settings.chargeTax,
-                    requires_shipping: settings.isPhysical,
-                    metafields: superMetafields // Essential: add metafields to all variants
-                };
-
-                if (v.options && Array.isArray(v.options)) {
-                    v.options.forEach((opt: string, i: number) => {
-                        if (i < 3) variantEntry[`option${i + 1}`] = opt;
-                    });
-                } else {
-                    variantEntry.option1 = v.title || `Variant ${idx + 1}`;
-                }
-
-                return variantEntry;
-            })
-            : [
-                {
-                    option1: 'Default Title',
-                    price: product.price,
-                    compare_at_price: compareAtPrice,
-                    sku: product.sku,
-                    barcode: product.ean,
-                    taxable: settings.chargeTax,
-                    inventory_management: 'shopify',
-                    inventory_quantity: 889,
-                    requires_shipping: settings.isPhysical,
-                    metafields: superMetafields
-                }
-            ];
-
-        // Prepare product images
-        const productImages = (product.images || []).map((img: any) => ({
-            src: typeof img === 'string' ? img : img.src,
-            alt: typeof img === 'string' ? product.title : (img.alt || product.title)
-        }));
-
-        // Prepare product data for Shopify
-        const shopifyProduct: any = {
-            title: product.title,
-            body_html: product.fullDescription || product.description,
-            vendor: product.vendor,
-            product_type: product.product_type,
-            handle: product.handle,
-            tags: product.tags ? `${product.tags}, Imported, Source:${product.sourceDomain}` : `Imported, Source:${product.sourceDomain}`,
-            status: settings.isActive ? 'active' : 'draft',
-            options: options.length > 0 ? options.map(name => ({ name })) : undefined,
-            images: productImages,
-            metafields: superMetafields,
-            variants: shopifyVariants
-        }
-
-        console.log('Final Shopify Product Payload:', JSON.stringify(shopifyProduct, null, 2))
-
-        // If original product had variants, we might want to try mapping them, 
-        // but for this simple import we'll stick to a single variant created from the main price
-        // to avoid complex option mapping issues unless we want to do a full clone.
-        // For a "Migration" tool, a full clone is better, but let's start with the simple version 
-        // that matches the preview data.
-
-        // If the user provided a collection, we can't easily add it during creation 
-        // (requires a separate call to Collects API), so we'll skip it for now or handle it later.
-
+        // Create the product in Shopify
         const createdProduct = await api.createProduct(shopifyProduct)
-
-        // Update Inventory Item with HS Code and Country of Origin
-        if (createdProduct && createdProduct.variants && createdProduct.variants.length > 0 && product.shipping) {
-            const inventoryItemId = (createdProduct.variants[0] as any).inventory_item_id
-            if (inventoryItemId) {
-                try {
-                    await api.updateInventoryItem(inventoryItemId, {
-                        harmonized_system_code: product.shipping.hs_code,
-                        country_code_of_origin: product.shipping.origin_country
-                    })
-                    console.log('Updated inventory item with shipping data')
-                } catch (invError) {
-                    console.error('Failed to update inventory item:', invError)
-                }
-            }
-        }
 
         // Publish to ALL Sales Channels (Google, TikTok, etc.)
         if (createdProduct && createdProduct.id) {
@@ -297,11 +39,6 @@ export async function POST(request: NextRequest) {
 
         // Add to collection if specified
         if (settings.collection && createdProduct.id) {
-            // Check if collection is an ID (numeric) or title (string)
-            // If it's a string, we might need to find the ID first, but for now we assume the frontend sends the ID
-            // if we implement the Select component correctly.
-            // However, the current settings.collection might be a string title if coming from the old Input.
-            // We'll try to parse it as an ID.
             const collectionId = parseInt(settings.collection)
             if (!isNaN(collectionId)) {
                 await api.addProductToCollection(createdProduct.id, collectionId)

@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { BackButton } from '@/components/navigation/back-button'
 import { useRouter, useParams } from 'next/navigation'
@@ -205,11 +206,11 @@ export default function CancelInvoicePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <BackButton fallbackUrl={`/invoices/${params.id}`} variant="outline" className="flex items-center space-x-2" />
+          <HeaderNavIcons />
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
               <FileX className="w-8 h-8 text-red-500" />
-              <span>Storno-Rechnung erstellen / Create Cancellation Invoice</span>
+              <span>Storno-Rechnung erstellen</span>
             </h1>
             <p className="text-gray-600">
               Erstellen Sie eine Storno-Rechnung für Rechnung #{originalInvoice.invoiceNumber}

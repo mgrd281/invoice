@@ -1,9 +1,11 @@
 'use client';
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons';
 import { useEffect, useState, useMemo } from 'react';
 import {
     Users,
     Monitor,
+    // ...
     Smartphone,
     Tablet,
     MousePointer2,
@@ -140,12 +142,8 @@ export default function AnalyticsDashboard() {
             {/* Header Section */}
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b pb-6">
                 <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <NextLink href="/dashboard">
-                            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-slate-900">
-                                <ArrowLeft className="h-4 w-4" /> Zurück zum Dashboard
-                            </Button>
-                        </NextLink>
+                    <div className="flex items-center gap-4 mb-2">
+                        <HeaderNavIcons />
                         <NextLink href="/dashboard/live-analytics">
                             <Button variant="ghost" size="sm" className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                 <Activity className="h-4 w-4" /> Live Monitor

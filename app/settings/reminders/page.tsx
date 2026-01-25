@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,15 +13,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  ArrowLeft, 
-  Bell, 
-  Clock, 
-  Mail, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Edit, 
+import {
+  ArrowLeft,
+  Bell,
+  Clock,
+  Mail,
+  Save,
+  Plus,
+  Trash2,
+  Edit,
   Eye,
   AlertTriangle,
   CheckCircle,
@@ -29,9 +30,9 @@ import {
   Settings
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
-import { 
-  ReminderSettings, 
-  ReminderSchedule, 
+import {
+  ReminderSettings,
+  ReminderSchedule,
   ReminderTemplate,
   ReminderLevel,
   DEFAULT_REMINDER_SETTINGS,
@@ -112,7 +113,7 @@ export default function RemindersSettingsPage() {
   const updateScheduleItem = (scheduleId: string, updates: Partial<ReminderSchedule>) => {
     setSettings(prev => ({
       ...prev,
-      schedule: prev.schedule.map(item => 
+      schedule: prev.schedule.map(item =>
         item.id === scheduleId ? { ...item, ...updates } : item
       )
     }))
@@ -155,14 +156,9 @@ export default function RemindersSettingsPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       <div className="mb-8">
-        <div className="flex items-center mb-6">
-          <Link href="/settings">
-            <Button variant="ghost" size="sm" className="mr-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück zu Einstellungen
-            </Button>
-          </Link>
-          <Bell className="h-8 w-8 text-blue-600 mr-3" />
+        <div className="flex items-center mb-6 gap-4">
+          <HeaderNavIcons />
+          <Bell className="h-8 w-8 text-blue-600" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Rechnungserinnerungen
@@ -170,7 +166,7 @@ export default function RemindersSettingsPage() {
           </div>
         </div>
         <p className="text-gray-600 mt-2">
-          Konfigurieren Sie automatische Erinnerungen für überfällige Rechnungen. 
+          Konfigurieren Sie automatische Erinnerungen für überfällige Rechnungen.
           Das System sendet automatisch E-Mails basierend auf Ihrem Zeitplan.
         </p>
       </div>
@@ -225,7 +221,7 @@ export default function RemindersSettingsPage() {
 
               <div className="space-y-4">
                 <Label className="text-base">E-Mail-Optionen</Label>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>PDF-Rechnung anhängen</Label>
@@ -298,7 +294,7 @@ export default function RemindersSettingsPage() {
                         <div className="flex items-center gap-4">
                           <Switch
                             checked={schedule.enabled}
-                            onCheckedChange={(checked) => 
+                            onCheckedChange={(checked) =>
                               updateScheduleItem(schedule.id, { enabled: checked })
                             }
                           />

@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -460,27 +461,8 @@ export default function NewInvoicePage() {
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => router.back()}
-                className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-200"
-                title="Zurück"
-              >
-                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2.5} />
-              </Button>
-              <Link href="/dashboard">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-200"
-                  title="Dashboard"
-                >
-                  <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2.5} />
-                </Button>
-              </Link>
-              <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+            <div className="flex items-center gap-4">
+              <HeaderNavIcons />
               <div className="flex flex-col">
                 <h1 className="text-base font-bold text-gray-900 leading-none">Neue Rechnung</h1>
                 <div className="flex items-center gap-1.5 mt-1">

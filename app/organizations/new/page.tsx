@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -79,8 +80,9 @@ export default function NewOrganizationPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <BackButton fallbackUrl="/organizations" />
+            <div className="flex items-center gap-4">
+              <HeaderNavIcons />
+              <div className="mx-1" />
               <Building2 className="h-8 w-8 text-purple-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Neue Organisation erstellen

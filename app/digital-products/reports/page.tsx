@@ -1,6 +1,6 @@
-
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -83,10 +83,7 @@ export default function ReportsPage() {
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => router.push('/digital-products')}>
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Zurück
-                    </Button>
+                    <HeaderNavIcons />
                     <h1 className="text-xl font-bold text-gray-900">Berichte & Statistiken</h1>
                 </div>
             </header>

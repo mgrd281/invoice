@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -169,7 +170,7 @@ export default function SupportPage() {
         try {
             const res = await fetch(`/api/support/tickets/${id}`, { method: 'DELETE' })
             if (res.ok) {
-                setTickets(tickets.filter(t => t.id !== id))
+                setTickets(tickets.filter(t => t.id === id))
             } else {
                 alert('Fehler beim Löschen.')
             }
@@ -202,17 +203,13 @@ export default function SupportPage() {
             <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center gap-4">
-                        <Link href="/dashboard">
-                            <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                            </Button>
-                        </Link>
-                        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg shadow-sm">
-                                <MessageSquare className="w-6 h-6 text-blue-600" />
+                        <HeaderNavIcons />
+                        <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+                            <div className="bg-blue-50 p-1.5 rounded-lg">
+                                <MessageSquare className="w-5 h-5 text-blue-600" />
                             </div>
                             Kundensupport Center
-                        </h1>
+                        </h2>
                     </div>
                 </div>
             </header>

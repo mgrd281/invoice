@@ -1,7 +1,9 @@
 'use client';
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import NextLink from 'next/link';
+// ...
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -531,13 +533,8 @@ function LiveAnalyticsContent() {
     return (
         <div className="p-6 space-y-6">
             <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                    <NextLink href="/dashboard">
-                        <Button variant="ghost" size="sm" className="gap-2">
-                            <ArrowLeft className="h-4 w-4" />
-                            Zurück
-                        </Button>
-                    </NextLink>
+                <div className="flex items-center gap-4">
+                    <HeaderNavIcons />
                 </div>
                 <div className="flex justify-between items-center">
                     <div>

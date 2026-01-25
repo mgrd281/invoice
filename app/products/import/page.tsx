@@ -10,9 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Download, Package, ShoppingCart, Search, Filter, Eye, Edit, Trash2, ArrowLeft, Globe, Plus, RefreshCw, Sparkles, ArrowRight, CheckCircle, Info, Settings as SettingsIcon, CheckCircle2, FileText, Tag, Zap, Box, Clock, XCircle, DollarSign, Upload, Home } from "lucide-react"
+import { Loader2, Download, Package, ShoppingCart, Search, Filter, Eye, Edit, Trash2, ArrowLeft, Globe, Plus, RefreshCw, Sparkles, ArrowRight, CheckCircle, Info, Settings as SettingsIcon, CheckCircle2, FileText, Tag, Zap, Box, Clock, XCircle, DollarSign, Upload, Home, AlertCircle } from "lucide-react"
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
+import ProductPreview from '@/components/product-preview'
+import { cn } from '@/lib/utils'
 
 interface ImportedProduct {
     id: string
@@ -20,7 +22,7 @@ interface ImportedProduct {
     variants: any[]
     price?: string
     image?: any
-    status: 'imported' | 'pending' | 'failed'
+    status: 'imported' | 'pending' | 'failed' | 'active' | 'draft'
     importedAt: string
     sourceUrl?: string
     sourceDomain?: string
@@ -112,6 +114,24 @@ export default function ProductImportPage() {
         const sources = Array.from(new Set(importedProducts.map(p => p.sourceDomain).filter(Boolean))) as string[]
         setUniqueSources(sources)
     }, [importedProducts])
+
+    const handleUpdateProductInPreview = (index: number, updatedProduct: any) => {
+        if (Array.isArray(previewData)) {
+            const newData = [...previewData]
+            newData[index] = updatedProduct
+            setPreviewData(newData)
+        } else {
+            setPreviewData(updatedProduct)
+        }
+    }
+
+    const checkDuplicates = (product: any) => {
+        if (!product) return false
+        return importedProducts.some(p =>
+            p.handle === product.handle ||
+            (p.variants?.[0]?.sku && p.variants[0].sku === (product.sku || product.variants?.[0]?.sku))
+        )
+    }
 
     const loadImportedProducts = async () => {
         try {
@@ -250,7 +270,11 @@ export default function ProductImportPage() {
                 setIsLoadingPreview(false)
                 showToast("Produktdaten erfolgreich geladen", "success")
             } else {
-                // Bulk import
+                // Bulk import - Collect previews instead of saving immediately
+                setImportStep('importing')
+                setIsLoadingPreview(true)
+                const previews = []
+
                 for (const url of validUrls) {
                     try {
                         const scrapeRes = await fetch('/api/products/import/external', {
@@ -262,31 +286,19 @@ export default function ProductImportPage() {
                         if (!scrapeRes.ok) continue
                         const scrapeData = await scrapeRes.json()
                         const product = scrapeData.product
-
-                        // Add source tracking
                         product.sourceUrl = url
                         product.sourceDomain = extractDomain(url)
 
-                        // Apply multiplier
-                        const multiplier = parseFloat(settings.priceMultiplier) || 1
-                        if (product.price && multiplier !== 1) {
-                            product.price = (parseFloat(product.price) * multiplier).toFixed(2)
-                        }
-
-                        // Save immediately
-                        await fetch('/api/products/import/save', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ product, settings })
-                        })
+                        previews.push(product)
                     } catch (error) {
-                        console.error(`Failed to import ${url}:`, error)
+                        console.error(`Failed to scrape ${url}:`, error)
                     }
                 }
 
-                showToast(`Bulk Import abgeschlossen (${validUrls.length} Produkte)`, "success")
-                setUrls([''])
-                setActiveTab('store')
+                setPreviewData(previews)
+                setImportStep('complete')
+                setIsLoadingPreview(false)
+                showToast(`${previews.length} Produkte zum Import bereit`, "success")
             }
         } catch (error) {
             console.error('Import error:', error)
@@ -300,6 +312,18 @@ export default function ProductImportPage() {
 
     const handleSaveProducts = async () => {
         if (!previewData) return
+
+        const productsToSave = Array.isArray(previewData) ? previewData : [previewData]
+
+        // Final sanity check for warnings
+        const productsWithWarnings = productsToSave.filter(p => {
+            return !p.images?.length || (!p.sku && !p.google_mpn) || parseFloat(p.price) <= 0
+        })
+
+        if (productsWithWarnings.length > 0) {
+            const proceed = window.confirm(`${productsWithWarnings.length} Produkte haben Warnungen (fehlende Bilder oder SKU). Trotzdem importieren?`)
+            if (!proceed) return
+        }
 
         setIsSaving(true)
         try {
@@ -463,67 +487,63 @@ export default function ProductImportPage() {
 
                         {previewData && (
                             <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-slate-800">Preview Results</h3>
-                                    <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">Ready to Import</Badge>
-                                </div>
-
-                                {Array.isArray(previewData) ? previewData.map((product: any, idx: number) => (
-                                    <Card key={idx} className="overflow-hidden border-slate-200 shadow-md group hover:border-violet-300 transition-all">
-                                        <div className="flex flex-col sm:flex-row">
-                                            <div className="w-full sm:w-48 aspect-[4/3] bg-slate-100 relative overflow-hidden">
-                                                {product.images?.[0] ? (
-                                                    <img src={typeof product.images[0] === 'string' ? product.images[0] : product.images[0].src} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                ) : (
-                                                    <div className="h-full w-full flex items-center justify-center text-slate-400"><Box className="h-8 w-8" /></div>
-                                                )}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-bold text-slate-900">Preview Results</h3>
+                                        {Array.isArray(previewData) && (
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold">
+                                                    {previewData.length} Ready
+                                                </Badge>
+                                                <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 font-bold">
+                                                    0 Warnings
+                                                </Badge>
                                             </div>
-                                            <div className="p-5 flex-1 flex flex-col justify-between">
-                                                <div>
-                                                    <h4 className="font-bold text-slate-900 line-clamp-2">{product.title}</h4>
-                                                    <p className="text-slate-500 text-sm mt-1">{product.vendor}</p>
-                                                    <div className="flex flex-wrap gap-2 mt-3">
-                                                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[10px]">{product.variants?.length || 1} Variants</Badge>
-                                                        {product.google_mpn && <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px]">MPN: {product.google_mpn}</Badge>}
-                                                        {product.dhl_custom_description && <Badge variant="secondary" className="bg-orange-50 text-orange-600 border-orange-100 text-[10px]">Customs OK</Badge>}
+                                        )}
+                                    </div>
+
+                                    {Array.isArray(previewData) ? (
+                                        <div className="space-y-8">
+                                            {previewData.map((product: any, idx: number) => (
+                                                <div key={idx} className="space-y-4">
+                                                    <div className="flex items-center gap-2 px-2">
+                                                        <div className="h-6 w-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">
+                                                            {idx + 1}
+                                                        </div>
+                                                        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Produkt {idx + 1}</span>
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center justify-between mt-4">
-                                                    <div className="text-xl font-mono font-bold text-slate-900">{product.price} {product.currency}</div>
-                                                    {product.compare_at_price && (
-                                                        <div className="text-sm text-slate-400 line-through pl-2">{product.compare_at_price} {product.currency}</div>
+                                                    <ProductPreview
+                                                        product={product}
+                                                        settings={settings}
+                                                        collections={collections}
+                                                        onUpdate={(updated) => handleUpdateProductInPreview(idx, updated)}
+                                                    />
+                                                    {checkDuplicates(product) && (
+                                                        <div className="mx-2 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-xs text-red-700">
+                                                            <AlertCircle className="h-4 w-4" />
+                                                            <span>Achtung: Dieses Produkt scheint bereits im Store zu existieren (gleicher Handle oder SKU).</span>
+                                                        </div>
                                                     )}
                                                 </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    </Card>
-                                )) : (
-                                    // Single product preview
-                                    <Card className="overflow-hidden border-slate-200 shadow-md group hover:border-violet-300 transition-all">
-                                        <div className="flex flex-col sm:flex-row">
-                                            <div className="w-full sm:w-48 aspect-[4/3] bg-slate-100 relative overflow-hidden">
-                                                {previewData.images?.[0] ? (
-                                                    <img src={typeof previewData.images[0] === 'string' ? previewData.images[0] : previewData.images[0].src} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                ) : (
-                                                    <div className="h-full w-full flex items-center justify-center text-slate-400"><Box className="h-8 w-8" /></div>
-                                                )}
-                                            </div>
-                                            <div className="p-5 flex-1 flex flex-col justify-between">
-                                                <div>
-                                                    <h4 className="font-bold text-slate-900 line-clamp-2">{previewData.title}</h4>
-                                                    <p className="text-slate-500 text-sm mt-1">{previewData.vendor}</p>
-                                                    <div className="flex flex-wrap gap-2 mt-3">
-                                                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[10px]">{previewData.variants?.length || 1} Variants</Badge>
-                                                        {previewData.google_mpn && <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px]">MPN: {previewData.google_mpn}</Badge>}
-                                                    </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <ProductPreview
+                                                product={previewData}
+                                                settings={settings}
+                                                collections={collections}
+                                                onUpdate={(updated) => handleUpdateProductInPreview(-1, updated)}
+                                            />
+                                            {checkDuplicates(previewData) && (
+                                                <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-xs text-red-700">
+                                                    <AlertCircle className="h-4 w-4" />
+                                                    <span>Achtung: Dieses Produkt scheint bereits im Store zu existieren (gleicher Handle oder SKU).</span>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-4">
-                                                    <div className="text-xl font-mono font-bold text-slate-900">{previewData.price} {previewData.currency}</div>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    </Card>
-                                )}
+                                    )}
+                                </div>
 
                                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 z-50 flex items-center justify-center">
                                     <Button size="lg" onClick={handleSaveProducts} disabled={isSaving} className="shadow-xl bg-slate-900 text-white hover:bg-slate-800 px-8">
@@ -561,6 +581,7 @@ export default function ProductImportPage() {
                                 <Separator />
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between"><Label>Sofort Aktivieren</Label><Checkbox checked={settings.isActive} onCheckedChange={(c: boolean) => setSettings({ ...settings, isActive: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Physisches Produkt</Label><Checkbox checked={settings.isPhysical} onCheckedChange={(c: boolean) => setSettings({ ...settings, isPhysical: !!c })} /></div>
                                     <div className="flex items-center justify-between"><Label>Bestandsverfolgung</Label><Checkbox checked={settings.trackQuantity} onCheckedChange={(c: boolean) => setSettings({ ...settings, trackQuantity: !!c })} /></div>
                                     <div className="flex items-center justify-between"><Label>Steuer erheben</Label><Checkbox checked={settings.chargeTax} onCheckedChange={(c: boolean) => setSettings({ ...settings, chargeTax: !!c })} /></div>
                                     <div className="flex items-center justify-between"><Label>Terms akzeptieren</Label><Checkbox checked={settings.acceptTerms} onCheckedChange={(c: boolean) => setSettings({ ...settings, acceptTerms: !!c })} /></div>
@@ -608,49 +629,54 @@ export default function ProductImportPage() {
                     </div>
 
                     {/* Product Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                         {filteredProducts.map((product) => (
-                            <Card key={product.id} className="group overflow-hidden border-slate-200 hover:border-violet-300 hover:shadow-md transition-all">
-                                <div className="aspect-[4/5] bg-slate-100 relative overflow-hidden">
-                                    {product?.image ? (
-                                        <img src={product.image.src} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    ) : (
-                                        <div className="h-full w-full flex items-center justify-center text-slate-400 bg-slate-50">No Image</div>
-                                    )}
-
-                                    {/* Status Badge */}
-                                    <div className="absolute top-2 right-2">
-                                        <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm shadow-sm text-xs font-normal border-0">
-                                            {product.status}
-                                        </Badge>
-                                    </div>
-
-                                    {/* Quick Actions Overlay */}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <Link href={`https://${shopDomain}/products/${product.handle}`} target="_blank">
-                                            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white text-slate-900 hover:bg-violet-50 hover:text-violet-600"><Eye className="h-4 w-4" /></Button>
-                                        </Link>
-                                        <Link href={`https://${shopDomain}/admin/products/${product.id}`} target="_blank">
-                                            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white text-slate-900 hover:bg-violet-50 hover:text-violet-600"><Edit className="h-4 w-4" /></Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                                <CardContent className="p-4">
-                                    <div className="mb-2">
-                                        {product.sourceDomain && (
-                                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1" title={product.sourceUrl || product.sourceDomain}>
-                                                <img src={getFaviconUrl(product.sourceDomain)} className="w-3.5 h-3.5 rounded-sm opacity-70" alt="" />
-                                                <span className="font-medium truncate max-w-[120px]">Quelle: {product.sourceDomain}</span>
-                                            </div>
+                            <div key={product.id} className="group relative">
+                                <Card className="overflow-hidden border-slate-200 bg-white hover:border-violet-400 hover:shadow-2xl hover:shadow-violet-200/40 transition-all duration-500 rounded-2xl group-hover:-translate-y-1">
+                                    <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden">
+                                        {product?.image ? (
+                                            <img src={product.image.src} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center text-slate-300 bg-slate-50"><Box className="h-10 w-10 opacity-20" /></div>
                                         )}
-                                        <h3 className="font-semibold text-slate-800 text-sm leading-snug line-clamp-2 min-h-[2.5em]" title={product.title}>{product.title}</h3>
+
+                                        {/* Status Badge */}
+                                        <div className="absolute top-3 right-3">
+                                            <Badge className={cn(
+                                                "backdrop-blur-md shadow-sm text-[10px] font-black uppercase tracking-wider border-0 px-2",
+                                                product.status === 'active' ? "bg-emerald-500/90 text-white" : "bg-slate-900/80 text-white"
+                                            )}>
+                                                {product.status || 'imported'}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Quick Actions Overlay */}
+                                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] flex items-center justify-center gap-3">
+                                            <Link href={`https://${shopDomain}/products/${product.handle}`} target="_blank">
+                                                <Button size="icon" className="h-10 w-10 rounded-full bg-white text-slate-900 hover:bg-violet-600 hover:text-white shadow-xl hover:scale-110 transition-all"><Eye className="h-5 w-5" /></Button>
+                                            </Link>
+                                            <Link href={`https://${shopDomain}/admin/products/${product.id}`} target="_blank">
+                                                <Button size="icon" className="h-10 w-10 rounded-full bg-white text-slate-900 hover:bg-violet-600 hover:text-white shadow-xl hover:scale-110 transition-all"><Edit className="h-5 w-5" /></Button>
+                                            </Link>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                                        <span className="text-sm font-mono font-bold text-slate-900">{product.variants?.[0]?.price || '-'} €</span>
-                                        <span className="text-[10px] text-slate-400">{new Date(product.importedAt).toLocaleDateString()}</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    <CardContent className="p-5">
+                                        <div className="mb-3">
+                                            {product.sourceDomain && (
+                                                <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-1.5 font-bold uppercase tracking-widest" title={product.sourceUrl || product.sourceDomain}>
+                                                    <img src={getFaviconUrl(product.sourceDomain)} className="w-3.5 h-3.5 rounded-sm grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                                    <span className="truncate max-w-[120px]">{product.sourceDomain}</span>
+                                                </div>
+                                            )}
+                                            <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-violet-600 transition-colors" title={product.title}>{product.title}</h3>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                            <span className="text-base font-black text-slate-900">{product.variants?.[0]?.price || '-'} <span className="text-xs font-normal text-slate-400 italic">€</span></span>
+                                            <span className="text-[10px] font-bold text-slate-300 uppercase">{new Date(product.importedAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         ))}
                     </div>
                 </div>

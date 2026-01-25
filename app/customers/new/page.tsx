@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -138,7 +139,7 @@ export default function NewCustomerPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-4">
-              <BackButton fallbackUrl="/customers" showIcon={true} label="" />
+              <HeaderNavIcons />
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Neuen Kunden erstellen</h1>
                 <div className="flex items-center gap-2 text-sm text-gray-500">

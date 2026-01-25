@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
                 ean: '',
                 compare_at_price: null,
                 discount_percentage: 0,
+                videos: [],
                 // New Fields
                 google_mpn: '',
                 google_age_group: 'adult',
@@ -405,6 +406,18 @@ export async function POST(request: NextRequest) {
                                 data.images.push({ src, alt: alt || data.title })
                             }
                         }
+                    }
+                })
+
+                // Video extraction
+                $('video source').each((_: number, el: any) => {
+                    const src = $(el).attr('src')
+                    if (src) data.videos.push(src)
+                })
+                $('iframe').each((_: number, el: any) => {
+                    const src = $(el).attr('src')
+                    if (src && (src.includes('youtube') || src.includes('vimeo'))) {
+                        data.videos.push(src)
                     }
                 })
             }

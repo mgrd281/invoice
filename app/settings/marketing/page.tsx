@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -105,27 +106,8 @@ export default function MarketingSettingsPage() {
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-6">
-                        <div className="flex items-center gap-3">
-                            <Link href="/settings">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
-                                    title="Zurück"
-                                >
-                                    <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                                </Button>
-                            </Link>
-                            <Link href="/dashboard">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
-                                    title="Dashboard"
-                                >
-                                    <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
-                                </Button>
-                            </Link>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
                             <div className="ml-1">
                                 <h1 className="text-2xl font-bold text-gray-900">
                                     Marketing & Automatisierung

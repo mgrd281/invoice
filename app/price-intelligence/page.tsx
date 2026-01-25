@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -110,11 +111,8 @@ export default function PriceIntelligencePage() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4">
-                        <Link href="/dashboard">
-                            <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                            </Button>
-                        </Link>
+                        <HeaderNavIcons />
+                        <div className="mx-1" />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Price Intelligence</h1>
                             <p className="text-gray-500">Wettbewerbsanalyse & Preisoptimierung</p>
@@ -280,8 +278,8 @@ export default function PriceIntelligencePage() {
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${comp.price < product.myPrice
-                                                                            ? 'bg-red-100 text-red-800'
-                                                                            : 'bg-green-100 text-green-800'
+                                                                        ? 'bg-red-100 text-red-800'
+                                                                        : 'bg-green-100 text-green-800'
                                                                         }`}>
                                                                         {comp.price < product.myPrice
                                                                             ? `-${formatCurrency(product.myPrice - comp.price)}`
@@ -307,8 +305,8 @@ export default function PriceIntelligencePage() {
                                         <div className="bg-gray-50 p-4 border-t flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className={`p-2 rounded-full ${product.suggestion.action === 'decrease' ? 'bg-red-100 text-red-600' :
-                                                        product.suggestion.action === 'increase' ? 'bg-green-100 text-green-600' :
-                                                            'bg-gray-100 text-gray-600'
+                                                    product.suggestion.action === 'increase' ? 'bg-green-100 text-green-600' :
+                                                        'bg-gray-100 text-gray-600'
                                                     }`}>
                                                     {product.suggestion.action === 'decrease' ? <TrendingDown className="w-5 h-5" /> :
                                                         product.suggestion.action === 'increase' ? <TrendingUp className="w-5 h-5" /> :

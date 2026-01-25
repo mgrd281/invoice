@@ -1,5 +1,6 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,13 +37,17 @@ export default function SystemStatusPage() {
             <Card className="w-full max-w-2xl shadow-lg">
                 <CardHeader>
                     <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-50 rounded-lg">
-                                <Server className="w-8 h-8 text-blue-600" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-2xl">System Status</CardTitle>
-                                <CardDescription>Diagnose der Datenbank-Verbindung</CardDescription>
+                        <div className="flex items-center gap-4">
+                            <HeaderNavIcons />
+                            <div className="mx-1" />
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-50 rounded-lg">
+                                    <Server className="w-8 h-8 text-blue-600" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-2xl">System Status</CardTitle>
+                                    <CardDescription>Diagnose der Datenbank-Verbindung</CardDescription>
+                                </div>
                             </div>
                         </div>
                         <Button onClick={checkStatus} disabled={loading} variant="outline">

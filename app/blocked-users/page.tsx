@@ -1,7 +1,8 @@
 'use client'
 
+import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
-import { BackButton } from '@/components/navigation/back-button'
+// import { BackButton } from '@/components/navigation/back-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -143,7 +144,7 @@ function BlockedUsersContent() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <BackButton fallbackUrl="/dashboard" />
+                        <HeaderNavIcons />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                                 <div className="bg-red-100 p-2 rounded-lg shadow-sm">
