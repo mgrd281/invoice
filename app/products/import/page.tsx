@@ -269,13 +269,49 @@ export default function ProductImportPage() {
                 setImportStep('complete')
                 setIsLoadingPreview(false)
                 showToast("Produktdaten erfolgreich geladen", "success")
+
+                // Create Draft and Redirect
+                try {
+                    const draftRes = await fetch('/api/products/import/draft', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: validUrls[0],
+                            product: product,
+                            settings: settings
+                        })
+                    })
+
+                    if (!draftRes.ok) throw new Error('Failed to create preview draft')
+
+                    const draftData = await draftRes.json()
+                    router.push(`/products/import/preview/${draftData.draftId}`)
+                    return
+                } catch (e) {
+                    console.error('Draft creation failed', e)
+                    showToast('Fehler beim Erstellen der Vorschau', 'error')
+                    setImportStep('idle')
+                }
             } else {
-                // Bulk import - Collect previews instead of saving immediately
+                // Bulk import - Collect previews
+                // For now, let's keep bulk import as is or handle it later. 
+                // User requirement specifically mentioned "Import Starten" -> "Review Page".
+                // Assuming single URL for the intense review flow first.
+                // Or we could create multiple drafts?
+                // Let's stick to the single URL logic enhancement first as requested.
+                // But wait, the user said "Import Starten" (generic).
+                // If multiple URLs, we probably need a "Bulk Review" page or just handle one.
+                // Let's keep the existing logic for bulk for now to avoid breaking it, 
+                // OR loop through and create drafts?
+                // Let's focus on the single active flow the user described.
+
+                // ... keep existing bulk logic for now ...
                 setImportStep('importing')
                 setIsLoadingPreview(true)
                 const previews = []
 
                 for (const url of validUrls) {
+                    // ... existing bulk scraping ...
                     try {
                         const scrapeRes = await fetch('/api/products/import/external', {
                             method: 'POST',

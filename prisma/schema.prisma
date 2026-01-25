@@ -99,6 +99,7 @@ model Organization {
   vorkasseSettings        VorkasseSettings?
   widgetSettings          WidgetSettings?
   reviewSources           ReviewSource[]
+  importDrafts            ImportDraft[]
 }
 
 model ReviewSource {
@@ -1151,4 +1152,16 @@ enum PurchaseInvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+}
+
+model ImportDraft {
+  id             String       @id @default(uuid())
+  organizationId String
+  status         String       @default("PENDING") // PENDING, IMPORTED, ABANDONED
+  sourceUrl      String
+  data           Json         // The full scraped product data
+  settings       Json         // The import settings (collection, tax, etc)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }
