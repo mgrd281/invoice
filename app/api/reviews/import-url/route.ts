@@ -95,11 +95,11 @@ export async function POST(request: NextRequest) {
                     date = new Date(parseInt(dateMatch[3]), months[dateMatch[2]] || 0, parseInt(dateMatch[1]))
                 }
 
-                if (title && content) {
+                if (title || content) {
                     reviews.push({
                         rating,
                         title,
-                        content,
+                        content: content || title,
                         customerName: author,
                         date: date.toISOString(),
                         source: 'amazon'
@@ -123,6 +123,39 @@ export async function POST(request: NextRequest) {
             // Fallback: Check for basic HTML structure if SSR
             $('.feedback-item').each((i, el) => {
                 // ... implementation would go here
+            })
+        } else if (url.includes('vercel.app')) {
+            // Scraper for bewertungen.vercel.app
+            $('table tbody tr').each((i, el) => {
+                const cells = $(el).find('td')
+                if (cells.length >= 5) {
+                    // Column mapping based on screenshot: 
+                    // 0: #, 1: Rating, 2: Title, 3: Content, 4: Name, 5: Date
+                    const ratingStars = $(cells[1]).find('span').length || $(cells[1]).text().split('★').length - 1 || 5
+                    const title = $(cells[2]).text().trim()
+                    const content = $(cells[3]).text().trim()
+                    const name = $(cells[4]).text().trim().split('\n')[0] // Take first line of name
+                    const dateRaw = $(cells[5]).text().trim()
+
+                    let date = new Date()
+                    if (dateRaw) {
+                        const parts = dateRaw.split('.')
+                        if (parts.length === 3) {
+                            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+                        }
+                    }
+
+                    if (content || title) {
+                        reviews.push({
+                            rating: ratingStars,
+                            title,
+                            content: content || title,
+                            customerName: name || 'Anonymer Kunde',
+                            date: date.toISOString(),
+                            source: 'vercel'
+                        })
+                    }
+                }
             })
         }
 

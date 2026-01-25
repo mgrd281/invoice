@@ -2001,19 +2001,67 @@ function ReviewsPageContent() {
 
                     {/* IMPORT TAB */}
                     <TabsContent value="import" className="space-y-6">
-                        {/* Step 1: Select Products */}
+                        {/* Step 1: Choose Source */}
                         {importStep === 1 && (
                             <Card>
                                 <CardHeader>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <CardTitle>1. Produkte auswählen</CardTitle>
-                                            <CardDescription>Wählen Sie die Produkte aus, für die Sie Bewertungen importieren oder exportieren möchten</CardDescription>
+                                    <div>
+                                        <CardTitle>1. Quelle wählen</CardTitle>
+                                        <CardDescription>Woher möchten Sie die Bewertungen importieren?</CardDescription>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-blue-500 ${importSource === 'csv' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
+                                            onClick={() => { setImportSource('csv'); setImportStep(2); }}
+                                        >
+                                            <FileText className="h-8 w-8 text-blue-600 mb-4" />
+                                            <h3 className="font-semibold mb-2">Datei Upload</h3>
+                                            <p className="text-sm text-gray-500">CSV, Excel oder Numbers Datei hochladen</p>
                                         </div>
+
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-purple-500 ${importSource === 'url' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
+                                            onClick={() => { setImportSource('url'); setImportStep(2); }}
+                                        >
+                                            <LinkIcon className="h-8 w-8 text-purple-600 mb-4" />
+                                            <h3 className="font-semibold mb-2">URL Import</h3>
+                                            <p className="text-sm text-gray-500">AliExpress, Amazon oder Vercel URLs</p>
+                                        </div>
+
+                                        <div
+                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-green-500 ${importSource === 'manual' ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}
+                                            onClick={() => { setImportSource('manual'); setImportStep(2); }}
+                                        >
+                                            <PenTool className="h-8 w-8 text-green-600 mb-4" />
+                                            <h3 className="font-semibold mb-2">Manuell erstellen</h3>
+                                            <p className="text-sm text-gray-500">Schreiben Sie eine Bewertung selbst</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 pt-8 border-t flex justify-end">
                                         <Button variant="outline" onClick={handleExportReviews} disabled={selectedProducts.length === 0}>
                                             <Download className="h-4 w-4 mr-2" />
-                                            Exportieren
+                                            Bewertungen Exportieren
                                         </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Step 2: Select Products */}
+                        {importStep === 2 && (
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-4">
+                                        <Button variant="ghost" size="icon" onClick={() => setImportStep(1)}>
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </Button>
+                                        <div>
+                                            <CardTitle>2. Produkte auswählen</CardTitle>
+                                            <CardDescription>Wählen Sie die Produkte aus, denen Sie die Bewertungen zuordnen möchten</CardDescription>
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -2023,7 +2071,6 @@ function ReviewsPageContent() {
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
-                                            {/* Search Input */}
                                             <div className="relative">
                                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                                                 <Input
@@ -2086,9 +2133,9 @@ function ReviewsPageContent() {
                                                 <Button
                                                     className="bg-blue-600 hover:bg-blue-700"
                                                     disabled={selectedProducts.length === 0}
-                                                    onClick={() => setImportStep(2)}
+                                                    onClick={() => setImportStep(3)}
                                                 >
-                                                    Weiter zu Schritt 2
+                                                    Weiter zu Schritt 3
                                                     <ArrowRight className="h-4 w-4 ml-2" />
                                                 </Button>
                                             </div>
@@ -2098,52 +2145,25 @@ function ReviewsPageContent() {
                             </Card>
                         )}
 
-                        {/* Step 2: Choose Source */}
-                        {importStep === 2 && (
+                        {/* Step 3: Input Data */}
+                        {importStep === 3 && (
                             <Card>
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
-                                        <Button variant="ghost" size="icon" onClick={() => setImportStep(1)}>
+                                        <Button variant="ghost" size="icon" onClick={() => setImportStep(2)}>
                                             <ArrowLeft className="h-4 w-4" />
                                         </Button>
                                         <div>
-                                            <CardTitle>2. Quelle wählen</CardTitle>
-                                            <CardDescription>Woher möchten Sie die Bewertungen importieren?</CardDescription>
+                                            <CardTitle>
+                                                3. {importSource === 'manual' ? 'Bewertung schreiben' : importSource === 'url' ? 'URL eingeben' : 'Datei hochladen'}
+                                            </CardTitle>
+                                            <CardDescription>Finalisieren Sie den Import für {selectedProducts.length} ausgewählte Produkte</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div
-                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-blue-500 ${importSource === 'csv' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
-                                            onClick={() => setImportSource('csv')}
-                                        >
-                                            <FileText className="h-8 w-8 text-blue-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">Datei Upload</h3>
-                                            <p className="text-sm text-gray-500">CSV, Excel oder Numbers Datei hochladen</p>
-                                        </div>
-
-                                        <div
-                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-purple-500 ${importSource === 'url' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
-                                            onClick={() => setImportSource('url')}
-                                        >
-                                            <LinkIcon className="h-8 w-8 text-purple-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">AliExpress / Amazon</h3>
-                                            <p className="text-sm text-gray-500">Importieren Sie per URL von anderen Marktplätzen</p>
-                                        </div>
-
-                                        <div
-                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-green-500 ${importSource === 'manual' ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}
-                                            onClick={() => setImportSource('manual')}
-                                        >
-                                            <PenTool className="h-8 w-8 text-green-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">Manuell erstellen</h3>
-                                            <p className="text-sm text-gray-500">Schreiben Sie eine Bewertung selbst</p>
-                                        </div>
-                                    </div>
-
                                     {/* Source Content */}
-                                    <div className="mt-8">
+                                    <div className="">
                                         {importSource === 'url' && (
                                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
                                                 <div className="flex gap-2">
@@ -2168,7 +2188,7 @@ function ReviewsPageContent() {
                                                     </Button>
                                                 </div>
                                                 <p className="text-sm text-gray-500">
-                                                    Unterstützt aktuell AliExpress und Amazon Produkt-URLs.
+                                                    Unterstützt AliExpress, Amazon und Vercel Produkt-URLs.
                                                 </p>
                                             </div>
                                         )}
@@ -2178,7 +2198,7 @@ function ReviewsPageContent() {
                                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors relative">
                                                     <Upload className="h-10 w-10 text-gray-400 mx-auto mb-4" />
                                                     <p className="text-sm text-gray-600 mb-2">
-                                                        Datei hier ablegen oder klicken zum Auswählen
+                                                        Datei هنا ablegen oder klicken zum Auswählen
                                                     </p>
                                                     <p className="text-xs text-gray-400">
                                                         Unterstützt CSV, Excel (.xlsx, .xls) und Numbers
@@ -2201,7 +2221,7 @@ function ReviewsPageContent() {
                                                 <div className="mt-6 border-t pt-6">
                                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                                         <ImageIcon className="h-4 w-4 text-gray-500" />
-                                                        Bilder & Videos für Bewertungen (Optional)
+                                                        Bilder & Videos (Optional)
                                                     </h4>
                                                     <div
                                                         className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors relative"
@@ -2214,14 +2234,11 @@ function ReviewsPageContent() {
                                                             <Video className="h-10 w-10 text-gray-400" />
                                                         </div>
                                                         <p className="text-sm text-gray-600 mb-2">
-                                                            Dateien hier ablegen oder klicken zum Hochladen
-                                                        </p>
-                                                        <p className="text-xs text-gray-400">
-                                                            JPG, PNG, WebP (Max. 5MB) | MP4, WebM (Max. 50MB)
+                                                            Dateien hier ablegen oder klicken
                                                         </p>
                                                         <input
                                                             type="file"
-                                                            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                                                            accept="image/*,video/*"
                                                             multiple
                                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                             onChange={(e) => {
@@ -2230,60 +2247,7 @@ function ReviewsPageContent() {
                                                                 }
                                                             }}
                                                         />
-                                                        {isUploadingMedia && (
-                                                            <div className="flex flex-col items-center mt-4">
-                                                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                                                                <span className="text-xs text-blue-600 mt-1">Medien werden hochgeladen...</span>
-                                                            </div>
-                                                        )}
                                                     </div>
-
-                                                    {/* Uploaded Media Preview */}
-                                                    {uploadedMedia.length > 0 && (
-                                                        <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-4">
-                                                            {uploadedMedia.map((media, idx) => (
-                                                                <div key={idx} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border">
-                                                                    {media.type === 'image' ? (
-                                                                        <img src={media.url} alt={media.name} className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white">
-                                                                            <Video className="h-8 w-8" />
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                                        <button
-                                                                            onClick={() => removeUploadedMedia(idx)}
-                                                                            className="p-1 bg-white rounded-full text-red-600 hover:bg-red-50"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </button>
-                                                                    </div>
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] p-1 truncate px-2">
-                                                                        {media.name}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-
-                                                    <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-3 rounded border border-blue-100">
-                                                        <p className="font-medium text-blue-700 mb-1">So ordnen Sie Medien zu:</p>
-                                                        Fügen Sie in Ihrer CSV-Datei die Spalten <code>image_files</code> und <code>video_files</code> hinzu. Tragen Sie dort die Dateinamen ein (z.B. <code>bild1.jpg|bild2.jpg</code> oder <code>video1.mp4</code>).
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-center">
-                                                    <Button variant="link" className="text-blue-600" onClick={() => {
-                                                        const csvContent = "rating,title,content,customer_name,date\n5,Tolles Produkt,Bin sehr zufrieden!,Max Mustermann,2024-01-01"
-                                                        const blob = new Blob([csvContent], { type: 'text/csv' })
-                                                        const url = window.URL.createObjectURL(blob)
-                                                        const a = document.createElement('a')
-                                                        a.href = url
-                                                        a.download = 'beispiel_bewertungen.csv'
-                                                        a.click()
-                                                    }}>
-                                                        <Download className="h-4 w-4 mr-2" />
-                                                        Beispiel-Datei herunterladen
-                                                    </Button>
                                                 </div>
                                             </div>
                                         )}
@@ -2300,11 +2264,11 @@ function ReviewsPageContent() {
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label>E-Mail (Optional)</Label>
+                                                        <Label>Datum</Label>
                                                         <Input
-                                                            placeholder="max@example.com"
-                                                            value={manualReview.customer_email}
-                                                            onChange={(e) => setManualReview({ ...manualReview, customer_email: e.target.value })}
+                                                            type="date"
+                                                            value={manualReview.date}
+                                                            onChange={(e) => setManualReview({ ...manualReview, date: e.target.value })}
                                                         />
                                                     </div>
                                                 </div>
@@ -2327,24 +2291,6 @@ function ReviewsPageContent() {
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <Label>Datum</Label>
-                                                    <Input
-                                                        type="date"
-                                                        value={manualReview.date}
-                                                        onChange={(e) => setManualReview({ ...manualReview, date: e.target.value })}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Titel (Optional)</Label>
-                                                    <Input
-                                                        placeholder="Tolles Produkt!"
-                                                        value={manualReview.title}
-                                                        onChange={(e) => setManualReview({ ...manualReview, title: e.target.value })}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
                                                     <Label>Inhalt</Label>
                                                     <Textarea
                                                         placeholder="Ich bin sehr zufrieden mit..."
@@ -2360,17 +2306,7 @@ function ReviewsPageContent() {
                                                         onClick={handleManualSubmit}
                                                         disabled={isSubmittingManual}
                                                     >
-                                                        {isSubmittingManual ? (
-                                                            <>
-                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                Speichern...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CheckCircle className="h-4 w-4 mr-2" />
-                                                                Bewertung erstellen
-                                                            </>
-                                                        )}
+                                                        {isSubmittingManual ? 'Speichern...' : 'Bewertung erstellen'}
                                                     </Button>
                                                 </div>
                                             </div>
