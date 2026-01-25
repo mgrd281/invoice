@@ -2102,47 +2102,55 @@ function ReviewsPageContent() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div
-                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-blue-500 ${importSource === 'csv' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
-                                            onClick={() => { setImportSource('csv'); setImportStep(2); }}
-                                        >
-                                            <FileText className="h-8 w-8 text-blue-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">Datei Upload</h3>
-                                            <p className="text-sm text-gray-500">CSV, Excel oder Numbers Datei hochladen</p>
-                                        </div>
-
-                                        <div className="flex flex-col gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {[
+                                            {
+                                                id: 'csv',
+                                                icon: FileText,
+                                                title: 'Datei Upload',
+                                                desc: 'CSV, Excel oder Numbers Datei hochladen',
+                                                action: () => { setImportSource('csv'); setImportStep(2); }
+                                            },
+                                            {
+                                                id: 'url',
+                                                icon: LinkIcon,
+                                                title: 'URL Import',
+                                                desc: 'Produkt wählen & URL eingeben',
+                                                action: () => { setImportSource('url'); setImportStep(2); }
+                                            },
+                                            {
+                                                id: 'bulk',
+                                                icon: Globe,
+                                                title: 'Direkt Import (Bulk)',
+                                                desc: 'Automatische Zuordnung für mehrere URLs',
+                                                action: () => { setImportSource('url'); setImportStep(3); setAutoMapping(true); }
+                                            },
+                                            {
+                                                id: 'manual',
+                                                icon: PenTool,
+                                                title: 'Manuell erstellen',
+                                                desc: 'Schreiben Sie eine Bewertung selbst',
+                                                action: () => { setImportSource('manual'); setImportStep(2); }
+                                            }
+                                        ].map((option) => (
                                             <div
-                                                className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-purple-500 ${importSource === 'url' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
-                                                onClick={() => { setImportSource('url'); setImportStep(2); }}
+                                                key={option.id}
+                                                className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:border-indigo-500 hover:shadow-md hover:-translate-y-1 flex flex-col h-full"
+                                                onClick={option.action}
                                             >
-                                                <LinkIcon className="h-8 w-8 text-purple-600 mb-4" />
-                                                <h3 className="font-semibold mb-2">URL Import (mit Auswahl)</h3>
-                                                <p className="text-xs text-gray-500">Produkt wählen & URL eingeben</p>
+                                                <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center mb-6 group-hover:bg-indigo-100 transition-colors">
+                                                    <option.icon className="h-6 w-6 text-indigo-600" />
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-2">{option.title}</h3>
+                                                <p className="text-sm text-gray-500 mb-6 flex-1">{option.desc}</p>
+                                                <div className="mt-auto">
+                                                    <Button variant="outline" className="w-full justify-between group-hover:border-indigo-500 group-hover:text-indigo-600 transition-colors">
+                                                        Auswählen
+                                                        <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <div
-                                                className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-indigo-500 ${importSource === 'direct_url' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}`}
-                                                onClick={() => {
-                                                    setImportSource('url');
-                                                    setImportStep(3);
-                                                    setAutoMapping(true);
-                                                }}
-                                            >
-                                                <Globe className="h-8 w-8 text-indigo-600 mb-4" />
-                                                <h3 className="font-semibold mb-2">Direkt Import (Bulk)</h3>
-                                                <p className="text-xs text-gray-500">Ohne Auswahl direkt importieren</p>
-                                            </div>
-                                        </div>
-
-                                        <div
-                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-green-500 ${importSource === 'manual' ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}
-                                            onClick={() => { setImportSource('manual'); setImportStep(2); }}
-                                        >
-                                            <PenTool className="h-8 w-8 text-green-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">Manuell erstellen</h3>
-                                            <p className="text-sm text-gray-500">Schreiben Sie eine Bewertung selbst</p>
-                                        </div>
+                                        ))}
                                     </div>
 
                                     <div className="mt-8 pt-8 border-t flex justify-end">
