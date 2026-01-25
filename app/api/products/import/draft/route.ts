@@ -7,8 +7,8 @@ export async function POST(request: NextRequest) {
     try {
         const { url, product, settings } = await request.json()
 
-        if (!product) {
-            return NextResponse.json({ error: 'Product data is required' }, { status: 400 })
+        if (!url && !product) {
+            return NextResponse.json({ error: 'URL or Product data is required' }, { status: 400 })
         }
 
         // 1. Resolve Organization
@@ -16,25 +16,24 @@ export async function POST(request: NextRequest) {
         const organizationId = await getOrganizationIdFromShop(shopSettings.shopDomain)
 
         if (!organizationId) {
-            // Fallback for dev: if local, create a dummy draft or fail?
-            // Since we need to save to DB, we MUST have an org ID.
-            // Let's try to query the "default" organization if we are in dev mode or just fail.
-            // Given the context of "rechnung 6", let's fail gracefully.
             return NextResponse.json({ error: 'Organization not found for current shop' }, { status: 404 })
         }
 
         // 2. Create Draft in DB
+        // If product is provided, status is READY, otherwise PENDING
+        const initialStatus = product ? 'READY' : 'PENDING'
+
         const draft = await prisma.importDraft.create({
             data: {
                 organizationId,
-                sourceUrl: url || product.sourceUrl || 'unknown',
-                data: product,
+                sourceUrl: url || product?.sourceUrl || 'unknown',
+                data: product || {}, // Empty data initially if pending
                 settings: settings || {},
-                status: 'PENDING'
+                status: initialStatus
             }
         })
 
-        return NextResponse.json({ success: true, draftId: draft.id })
+        return NextResponse.json({ success: true, draftId: draft.id, status: initialStatus })
 
     } catch (error) {
         console.error('Error creating import draft:', error)

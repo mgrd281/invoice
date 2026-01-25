@@ -26,6 +26,7 @@ export default function ImportPreviewPage({ params }: PreviewPageProps) {
     const { showToast, ToastContainer } = useToast()
     const [draft, setDraft] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [processing, setProcessing] = useState(false)
     const [importing, setImporting] = useState(false)
     const [collections, setCollections] = useState<any[]>([])
 
@@ -41,8 +42,16 @@ export default function ImportPreviewPage({ params }: PreviewPageProps) {
                 // Load Draft
                 const res = await fetch(`/api/products/import/draft/${params.id}`)
                 if (!res.ok) throw new Error('Draft not found')
+
                 const data = await res.json()
-                setDraft(data.draft)
+                const loadedDraft = data.draft
+                setDraft(loadedDraft)
+
+                // Check Status & Trigger Processing if needed
+                if (loadedDraft.status === 'PENDING') {
+                    triggerProcessing(loadedDraft.id)
+                }
+
             } catch (error) {
                 console.error(error)
                 showToast("Fehler beim Laden der Vorschau", "error")
@@ -52,6 +61,33 @@ export default function ImportPreviewPage({ params }: PreviewPageProps) {
         }
         loadData()
     }, [params.id])
+
+    const triggerProcessing = async (draftId: string) => {
+        setProcessing(true)
+        try {
+            const res = await fetch(`/api/products/import/draft/${draftId}/process`, {
+                method: 'POST'
+            })
+
+            if (!res.ok) throw new Error('Processing failed')
+
+            const result = await res.json()
+            if (result.success && result.product) {
+                // Update local state with processed data
+                setDraft(prev => ({
+                    ...prev,
+                    data: result.product,
+                    status: 'READY'
+                }))
+                showToast("Produkt erfolgreich analysiert", "success")
+            }
+        } catch (error) {
+            console.error("Processing error", error)
+            showToast("Fehler bei der Analyse des Produkts", "error")
+        } finally {
+            setProcessing(false)
+        }
+    }
 
     const handleUpdateDraft = async (newData: any, newSettings?: any) => {
         // Optimistic update
@@ -102,7 +138,33 @@ export default function ImportPreviewPage({ params }: PreviewPageProps) {
         <div className="min-h-screen flex items-center justify-center">
             <div className="text-center">
                 <h1 className="text-xl font-bold">Entwurf nicht gefunden</h1>
-                <Button onClick={() => router.back()} className="mt-4">Zurück</Button>
+                <p className="text-slate-500 mt-2 text-sm">Der angeforderte Entwurf existiert nicht oder wurde gelöscht.</p>
+                <div className="flex justify-center gap-3 mt-6">
+                    <Button onClick={() => router.back()} variant="outline">Zurück</Button>
+                    <Button onClick={() => router.push('/products/import')} variant="default">Neuer Import</Button>
+                </div>
+            </div>
+        </div>
+    )
+
+    // Show Processing State
+    if (processing || draft.status === 'PENDING') return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center space-y-6 max-w-md p-8 bg-white rounded-3xl shadow-xl shadow-violet-100 border border-violet-50">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-violet-100/50 rounded-full animate-ping opacity-20"></div>
+                    <div className="w-20 h-20 bg-violet-50 rounded-full flex items-center justify-center mx-auto relative z-10 text-violet-600">
+                        <RefreshCw className="w-10 h-10 animate-spin" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-slate-900">Analysiere Produkt...</h2>
+                    <p className="text-slate-500">Wir extrahieren Daten, Bilder und optimieren den Content mit AI.</p>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-violet-500 animate-progress w-full origin-left-right"></div>
+                </div>
+                <p className="text-xs text-slate-400">Dies kann einige Sekunden dauern</p>
             </div>
         </div>
     )
@@ -124,7 +186,7 @@ export default function ImportPreviewPage({ params }: PreviewPageProps) {
                         <div>
                             <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <span className="text-slate-400">Import /</span>
-                                {product.title.substring(0, 30)}...
+                                {product?.title ? (product.title.length > 30 ? product.title.substring(0, 30) + '...' : product.title) : 'Unbenanntes Produkt'}
                             </h1>
                         </div>
                         <Badge variant="outline" className="ml-2 bg-amber-50 text-amber-600 border-amber-200">

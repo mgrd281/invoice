@@ -268,100 +268,36 @@ export default function ProductImportPage() {
         setPreviewData(null)
 
         try {
-            // For single URL, show preview
+            // For single URL, create draft and redirect
             if (validUrls.length === 1) {
-                setIsLoadingPreview(true)
-                const response = await fetch('/api/products/import/external', {
+                // 1. Create Draft (PENDING)
+                const draftRes = await fetch('/api/products/import/draft', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: validUrls[0] })
+                    body: JSON.stringify({
+                        url: validUrls[0],
+                        settings: settings
+                    })
                 })
 
-                if (!response.ok) {
-                    const errorData = await response.json()
-                    throw new Error(errorData.error || 'Failed to import product')
+                const draftData = await draftRes.json()
+
+                if (!draftRes.ok || !draftData.draftId) {
+                    throw new Error(draftData.error || 'Failed to create draft')
                 }
 
-                setImportStep('importing')
-                const data = await response.json()
-                const product = data.product
+                // 2. Redirect to Preview (which will handle processing)
+                router.push(`/products/import/preview/${draftData.draftId}`)
+                return
 
-                // Add source tracking
-                product.sourceUrl = validUrls[0]
-                product.sourceDomain = extractDomain(validUrls[0])
-
-                // AI Enhancement
-                try {
-                    showToast("Analysiere Produktdaten mit AI...", "info")
-                    await new Promise(resolve => setTimeout(resolve, 1500))
-
-                    const aiRes = await fetch('/api/ai/enhance-product', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ product })
-                    })
-
-                    if (aiRes.ok) {
-                        const aiData = await aiRes.json()
-                        if (aiData.enhancedText) product.description = aiData.enhancedText
-                        if (aiData.newTitle) product.title = aiData.newTitle
-                        if (aiData.tags) product.tags = Array.isArray(aiData.tags) ? aiData.tags.join(', ') : aiData.tags
-                        if (aiData.handle) product.handle = aiData.handle
-                        if (aiData.metaTitle) product.metaTitle = aiData.metaTitle
-                        if (aiData.metaDescription) product.metaDescription = aiData.metaDescription
-                        showToast("AI-Optimierung erfolgreich!", "success")
-                    }
-                } catch (aiError) {
-                    console.error('AI Enhancement failed:', aiError)
-                }
-
-                // Apply price multiplier
-                const multiplier = parseFloat(settings.priceMultiplier) || 1
-                if (product.price && multiplier !== 1) {
-                    product.price = (parseFloat(product.price) * multiplier).toFixed(2)
-                }
-
-                setPreviewData(product)
-                setImportStep('complete')
-                setIsLoadingPreview(false)
-                showToast("Produktdaten erfolgreich geladen", "success")
-
-                // Create Draft and Redirect
-                try {
-                    const draftRes = await fetch('/api/products/import/draft', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            url: validUrls[0],
-                            product: product,
-                            settings: settings
-                        })
-                    })
-
-                    if (!draftRes.ok) throw new Error('Failed to create preview draft')
-
-                    const draftData = await draftRes.json()
-                    router.push(`/products/import/preview/${draftData.draftId}`)
-                    return
-                } catch (e) {
-                    console.error('Draft creation failed', e)
-                    showToast('Fehler beim Erstellen der Vorschau', 'error')
-                    setImportStep('idle')
-                }
             } else {
-                // Bulk import - Collect previews
-                // For now, let's keep bulk import as is or handle it later. 
-                // User requirement specifically mentioned "Import Starten" -> "Review Page".
-                // Assuming single URL for the intense review flow first.
-                // Or we could create multiple drafts?
-                // Let's stick to the single URL logic enhancement first as requested.
-                // But wait, the user said "Import Starten" (generic).
-                // If multiple URLs, we probably need a "Bulk Review" page or just handle one.
-                // Let's keep the existing logic for bulk for now to avoid breaking it, 
-                // OR loop through and create drafts?
-                // Let's focus on the single active flow the user described.
+                // Bulk import - Keep existing logic or refactor later
+                // For now, let's keep it as is (client-side scraping) to avoid breaking it,
+                // OR we could loop create drafts?
+                // The task was specific to "Redirect -> Draft not found". Bulk doesn't redirect?
+                // If bulk is used, it stays on page. So we only touch Single URL flow.
 
-                // ... keep existing bulk logic for now ...
+                // ... keep existing bulk logic ...
                 setImportStep('importing')
                 setIsLoadingPreview(true)
                 const previews = []
