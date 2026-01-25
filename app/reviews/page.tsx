@@ -44,7 +44,8 @@ import {
     LayoutGrid,
     Globe,
     ShoppingBag,
-    Info
+    Info,
+    Home
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
