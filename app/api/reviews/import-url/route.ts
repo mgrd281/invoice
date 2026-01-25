@@ -17,9 +17,10 @@ export async function POST(request: NextRequest) {
         let source = 'unknown'
         if (url.includes('aliexpress.com')) source = 'aliexpress'
         if (url.includes('amazon.')) source = 'amazon'
+        if (url.includes('vercel.app')) source = 'vercel'
 
         if (source === 'unknown') {
-            return NextResponse.json({ error: 'Only AliExpress and Amazon URLs are supported currently.' }, { status: 400 })
+            return NextResponse.json({ error: 'Unsupported URL source. Supported: AliExpress, Amazon, Vercel.' }, { status: 400 })
         }
 
         let targetUrl = url
@@ -134,7 +135,9 @@ export async function POST(request: NextRequest) {
                     const ratingStars = $(cells[1]).find('span').length || $(cells[1]).text().split('★').length - 1 || 5
                     const title = $(cells[2]).text().trim()
                     const content = $(cells[3]).text().trim()
-                    const name = $(cells[4]).text().trim().split('\n')[0] // Take first line of name
+                    const nameFull = $(cells[4]).text().trim()
+                    const nameParts = nameFull.split('\n').map(s => s.trim()).filter(Boolean)
+                    const name = nameParts[0] || 'Anonymer Kunde'
                     const dateRaw = $(cells[5]).text().trim()
 
                     let date = new Date()
