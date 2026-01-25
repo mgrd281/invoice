@@ -41,7 +41,9 @@ import {
     Video,
     ArrowLeft,
     Home,
-    RefreshCw
+    RefreshCw,
+    LayoutGrid,
+    Globe
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
