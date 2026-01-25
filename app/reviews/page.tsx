@@ -424,6 +424,8 @@ function ReviewsPageContent() {
     const [importSource, setImportSource] = useState<'csv' | 'url' | 'manual' | null>(null)
     const [importUrl, setImportUrl] = useState('')
     const [productImportSearch, setProductImportSearch] = useState('')
+    const [bulkImportResults, setBulkImportResults] = useState<any[]>([])
+    const [autoMapping, setAutoMapping] = useState(true)
 
     // Filter and Group Products for Import
     const filteredImportProducts = products.filter(p => {
@@ -1027,6 +1029,55 @@ function ReviewsPageContent() {
         } catch (error) {
             console.error('Import error:', error)
             toast.error('Fehler beim Importieren der URL')
+        } finally {
+            setIsImportingUrl(false)
+        }
+    }
+
+    const handleBulkUrlImport = async () => {
+        if (!importUrl.trim()) {
+            toast.error('Bitte geben Sie mindestens eine URL ein')
+            return
+        }
+
+        const urls = importUrl.split('\n').map(u => u.trim()).filter(Boolean)
+        if (urls.length === 0) {
+            toast.error('Gültige URLs sind erforderlich')
+            return
+        }
+
+        setIsImportingUrl(true)
+        setBulkImportResults([])
+
+        try {
+            const res = await authenticatedFetch('/api/reviews/bulk-import-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    urls,
+                    autoMapping: true // Always use auto-mapping for bulk for now
+                })
+            })
+
+            const data = await res.json()
+
+            if (data.success) {
+                setBulkImportResults(data.results)
+                const successCount = data.results.filter((r: any) => r.success).length
+                toast.success(`${successCount} von ${urls.length} Quellen erfolgreich verarbeitet!`)
+
+                // If any success, refresh the list
+                if (successCount > 0) {
+                    fetchAllReviews()
+                    fetchStats()
+                    fetchProductStats()
+                }
+            } else {
+                toast.error(data.error || 'Fehler beim Bulk-Import')
+            }
+        } catch (error) {
+            console.error('Bulk Import error:', error)
+            toast.error('Fehler beim Ausführen des Bulk-Imports')
         } finally {
             setIsImportingUrl(false)
         }
@@ -2165,17 +2216,40 @@ function ReviewsPageContent() {
                                     {/* Source Content */}
                                     <div className="">
                                         {importSource === 'url' && (
-                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        placeholder="https://aliexpress.com/item/..."
-                                                        value={importUrl}
-                                                        onChange={(e) => setImportUrl(e.target.value)}
-                                                    />
+                                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="is-bulk"
+                                                            checked={autoMapping}
+                                                            onChange={(e) => setAutoMapping(e.target.checked)}
+                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        <Label htmlFor="is-bulk" className="text-sm font-medium">Bulk-Modus (Auto-Mapping)</Label>
+                                                    </div>
+                                                    <Badge variant="outline" className="text-[10px] py-0">Neu</Badge>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {autoMapping ? (
+                                                        <Textarea
+                                                            placeholder="Geben Sie hier mehrere URLs ein (eine pro Zeile)..."
+                                                            className="min-h-[120px] font-mono text-xs"
+                                                            value={importUrl}
+                                                            onChange={(e) => setImportUrl(e.target.value)}
+                                                        />
+                                                    ) : (
+                                                        <Input
+                                                            placeholder="https://aliexpress.com/item/..."
+                                                            value={importUrl}
+                                                            onChange={(e) => setImportUrl(e.target.value)}
+                                                        />
+                                                    )}
+
                                                     <Button
-                                                        className="bg-purple-600 hover:bg-purple-700"
-                                                        onClick={handleUrlImport}
-                                                        disabled={isImportingUrl}
+                                                        className="w-full bg-purple-600 hover:bg-purple-700"
+                                                        onClick={autoMapping ? handleBulkUrlImport : handleUrlImport}
+                                                        disabled={isImportingUrl || !importUrl.trim()}
                                                     >
                                                         {isImportingUrl ? (
                                                             <>
@@ -2183,12 +2257,51 @@ function ReviewsPageContent() {
                                                                 Importiere...
                                                             </>
                                                         ) : (
-                                                            'Importieren'
+                                                            <>
+                                                                <Globe className="h-4 w-4 mr-2" />
+                                                                {autoMapping ? 'Bulk-Import starten' : 'Importieren'}
+                                                            </>
                                                         )}
                                                     </Button>
                                                 </div>
-                                                <p className="text-sm text-gray-500">
-                                                    Unterstützt AliExpress, Amazon und Vercel Produkt-URLs.
+
+                                                {bulkImportResults.length > 0 && (
+                                                    <div className="mt-4 border rounded-lg overflow-hidden bg-gray-50/50">
+                                                        <div className="bg-gray-100 px-3 py-2 border-b text-xs font-bold flex justify-between">
+                                                            <span>Import-Bericht</span>
+                                                            <span>{bulkImportResults.filter((r: any) => r.success).length} Erfolgreich</span>
+                                                        </div>
+                                                        <div className="max-h-[200px] overflow-y-auto">
+                                                            <table className="w-full text-xs">
+                                                                <thead className="bg-white border-b sticky top-0">
+                                                                    <tr>
+                                                                        <th className="text-left p-2 font-medium">Quelle</th>
+                                                                        <th className="text-left p-2 font-medium">Produkt</th>
+                                                                        <th className="text-right p-2 font-medium">Status</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {bulkImportResults.map((res: any, idx: number) => (
+                                                                        <tr key={idx} className="border-b bg-white last:border-0">
+                                                                            <td className="p-2 truncate max-w-[150px]" title={res.url}>{res.url}</td>
+                                                                            <td className="p-2 font-medium">{res.product || '-'}</td>
+                                                                            <td className="p-2 text-right">
+                                                                                {res.success ? (
+                                                                                    <span className="text-green-600 font-bold">{res.count} Reviews</span>
+                                                                                ) : (
+                                                                                    <span className="text-red-500" title={res.error}>Fehler</span>
+                                                                                )}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                    <Info className="h-3 w-3" />
+                                                    Unterstützt AliExpress, Amazon und Vercel. Im Bulk-Modus werden Produkte automatisch zugeordnet.
                                                 </p>
                                             </div>
                                         )}
