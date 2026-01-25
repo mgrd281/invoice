@@ -40,10 +40,11 @@ import {
     Sparkles,
     Video,
     ArrowLeft,
-    Home,
     RefreshCw,
     LayoutGrid,
-    Globe
+    Globe,
+    ShoppingBag,
+    Info
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -96,7 +97,6 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ShoppingBag, Globe, Info } from 'lucide-react'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 
 function timeAgo(dateString: string) {
