@@ -143,36 +143,45 @@ export async function POST(request: NextRequest) {
 
                 // Deduplicate and Save
                 let newCount = 0
-                for (const review of reviewsFound) {
-                    // Check existence
-                    const existing = await prisma.review.findFirst({
-                        where: {
-                            organizationId,
-                            productId,
-                            content: review.content,
-                            customerName: review.customerName
-                        }
-                    })
-
-                    if (!existing) {
-                        await prisma.review.create({
-                            data: {
-                                organizationId,
-                                productId,
-                                productTitle: sourceItem.productTitle,
-                                customerName: review.customerName,
-                                customerEmail: `import@${type}.com`,
-                                rating: review.rating,
-                                title: review.title,
-                                content: review.content,
-                                source: review.source,
-                                status: 'APPROVED',
-                                createdAt: review.date,
-                                isVerified: true
-                            }
-                        })
-                        newCount++
+                const existingReviews = await prisma.review.findMany({
+                    where: {
+                        organizationId,
+                        productId: String(productId),
+                        source: sourceItem.type
+                    },
+                    select: {
+                        content: true,
+                        customerName: true
                     }
+                })
+
+                const existingSet = new Set(existingReviews.map(r => `${r.customerName}|${(r.content || '').substring(0, 50)}`))
+
+                const newReviews = reviewsFound.filter(review => {
+                    const key = `${review.customerName}|${(review.content || '').substring(0, 50)}`
+                    if (existingSet.has(key)) return false
+                    existingSet.add(key)
+                    return true
+                })
+
+                if (newReviews.length > 0) {
+                    await prisma.review.createMany({
+                        data: newReviews.map(review => ({
+                            organizationId,
+                            productId: String(productId),
+                            productTitle: sourceItem.productTitle,
+                            customerName: review.customerName,
+                            customerEmail: `import@${sourceItem.type}.com`,
+                            rating: review.rating,
+                            title: review.title,
+                            content: review.content,
+                            source: review.source,
+                            status: 'APPROVED',
+                            createdAt: review.date,
+                            isVerified: true
+                        }))
+                    })
+                    newCount = newReviews.length
                 }
 
                 // Update source last sync

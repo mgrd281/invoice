@@ -238,11 +238,33 @@ export async function POST(request: NextRequest) {
                     } catch (sourceErr) {
                         console.error('Failed to save review source:', sourceErr)
                     }
-                    for (const review of reviewsFound) {
-                        await prisma.review.create({
-                            data: {
+                    const existingReviews = await prisma.review.findMany({
+                        where: {
+                            organizationId,
+                            productId: String(productId),
+                            source: source
+                        },
+                        select: {
+                            content: true,
+                            customerName: true
+                        }
+                    })
+
+                    // Create a set for faster lookup
+                    const existingSet = new Set(existingReviews.map(r => `${r.customerName}|${r.content.substring(0, 50)}`))
+
+                    const newReviews = reviewsFound.filter(review => {
+                        const key = `${review.customerName}|${review.content.substring(0, 50)}`
+                        if (existingSet.has(key)) return false
+                        existingSet.add(key) // Avoid duplicates within the import itself
+                        return true
+                    })
+
+                    if (newReviews.length > 0) {
+                        await prisma.review.createMany({
+                            data: newReviews.map(review => ({
                                 organizationId,
-                                productId: String(targetProductIds[0]),
+                                productId: String(productId),
                                 productTitle: matchedProduct.title,
                                 customerName: review.customerName,
                                 customerEmail: `import@${source}.com`,
@@ -253,10 +275,11 @@ export async function POST(request: NextRequest) {
                                 status: 'APPROVED',
                                 createdAt: review.date,
                                 isVerified: true
-                            }
+                            }))
                         })
-                        savedCount++
+                        savedCount = newReviews.length
                     }
+                    console.log(`Saved ${savedCount} new reviews`)
                     results.push({ url, success: true, count: savedCount, product: matchedProduct.title })
                 } else {
                     results.push({ url, error: 'No target product selected' })
