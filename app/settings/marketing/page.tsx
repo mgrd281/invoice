@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Gift, Save, Loader2, History, Mail } from 'lucide-react'
+import { ArrowLeft, Home, Gift, Save, Loader2, History, Mail } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
@@ -105,17 +105,32 @@ export default function MarketingSettingsPage() {
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-6">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-3">
                             <Link href="/settings">
-                                <Button variant="ghost" size="sm" className="mr-4">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Zurück
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
+                                    title="Zurück"
+                                >
+                                    <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
                                 </Button>
                             </Link>
-                            <Gift className="h-8 w-8 text-pink-600 mr-3" />
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                Marketing & Automatisierung
-                            </h1>
+                            <Link href="/dashboard">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
+                                    title="Dashboard"
+                                >
+                                    <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                                </Button>
+                            </Link>
+                            <div className="ml-1">
+                                <h1 className="text-2xl font-bold text-gray-900">
+                                    Marketing & Automatisierung
+                                </h1>
+                            </div>
                         </div>
                         <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
                             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}

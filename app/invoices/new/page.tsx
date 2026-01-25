@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  FileText, ArrowLeft, Plus, Trash2, Save, Calculator, Bookmark, Download, QrCode,
+  FileText, ArrowLeft, Home, Plus, Trash2, Save, Calculator, Bookmark, Download, QrCode,
   MoreHorizontal, Calendar, Search, Settings
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
@@ -56,6 +57,7 @@ interface ItemTemplate {
 import { InvoicePreviewDialog } from '@/components/invoice-preview-dialog'
 
 export default function NewInvoicePage() {
+  const router = useRouter()
   const { user, isAuthenticated } = useAuth()
   const { navigate } = useSafeNavigation()
   const authenticatedFetch = useAuthenticatedFetch()
@@ -435,9 +437,29 @@ export default function NewInvoicePage() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <BackButton fallbackUrl="/dashboard" label="" />
-              <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => router.back()}
+                className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
+                title="Zurück"
+              >
+                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+              </Button>
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
+                  title="Dashboard"
+                >
+                  <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                </Button>
+              </Link>
+              <div className="ml-1">
+                <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
+              </div>
               <div className="flex items-center gap-2 ml-4">
                 <Switch
                   checked={isERechnung}

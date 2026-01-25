@@ -8,7 +8,7 @@ import { BackButton } from '@/components/navigation/back-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Plus, ArrowLeft, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square, User, Filter, ArrowUpDown, MoreHorizontal, Tag } from 'lucide-react'
+import { Users, Plus, ArrowLeft, Home, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square, User, Filter, ArrowUpDown, MoreHorizontal, Tag } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
@@ -302,9 +302,27 @@ function CustomersPageContent() {
       <header className="bg-white border-b sticky top-0 z-30 backdrop-blur-xl bg-white/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-4">
-              <BackButton fallbackUrl="/dashboard" variant="ghost" className="rounded-full" />
-              <div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => router.back()}
+                className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                title="Zurück"
+              >
+                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+              </Button>
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                  title="Dashboard"
+                >
+                  <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                </Button>
+              </Link>
+              <div className="ml-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Kunden
                   <Badge variant="secondary" className="rounded-full px-2.5">{customers.length}</Badge>

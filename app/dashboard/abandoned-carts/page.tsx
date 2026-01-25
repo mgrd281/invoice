@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor, TrendingUp, History, Sparkles, MapPin, User, Zap, Package, Filter } from 'lucide-react'
+import { ShoppingBag, Mail, Clock, CheckCircle, XCircle, ArrowLeft, Home, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, ChevronDown, ChevronUp, Smartphone, Monitor, TrendingUp, History, Sparkles, MapPin, User, Zap, Package, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { de } from 'date-fns/locale'
@@ -48,6 +49,7 @@ interface AbandonedCart {
 }
 
 export default function AbandonedCartsPage() {
+    const router = useRouter()
     // State
     const [carts, setCarts] = useState<AbandonedCart[]>([])
     const [loading, setLoading] = useState(true)
@@ -329,18 +331,35 @@ export default function AbandonedCartsPage() {
             )}
 
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
                 <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 flex items-center mb-2">
-                            <ArrowLeft className="w-4 h-4 mr-1" /> Zurück zum Dashboard
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => router.back()}
+                            className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
+                            title="Zurück"
+                        >
+                            <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                        </Button>
+                        <Link href="/dashboard">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 rounded-full border-slate-200 bg-white shadow-sm transition-all"
+                                title="Dashboard"
+                            >
+                                <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                            </Button>
                         </Link>
-                        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                            <div className="bg-emerald-100 p-2 rounded-lg">
-                                <ShoppingBag className="w-8 h-8 text-emerald-600" />
-                            </div>
-                            Warenkorb Wiederherstellung
-                        </h1>
+                        <div className="ml-1">
+                            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg">
+                                    <ShoppingBag className="w-8 h-8 text-emerald-600" />
+                                </div>
+                                Warenkorb Wiederherstellung
+                            </h1>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">

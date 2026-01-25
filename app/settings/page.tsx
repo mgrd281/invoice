@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Building2, Shield, Save, Loader2, ArrowLeft, Settings, Trash2, Database, Download } from 'lucide-react'
+import { Building2, Shield, Save, Loader2, ArrowLeft, Home, Settings, Trash2, Database, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { setCompanySettingsClient } from '@/lib/company-settings'
 
@@ -284,12 +284,31 @@ export default function SettingsPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <BackButton fallbackUrl="/dashboard" className="mr-4" />
-              <Settings className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">
-                Einstellungen
-              </h1>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => router.back()}
+                className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                title="Zurück"
+              >
+                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+              </Button>
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                  title="Dashboard"
+                >
+                  <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                </Button>
+              </Link>
+              <div className="ml-1">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  Einstellungen
+                </h1>
+              </div>
             </div>
             <Button
               onClick={handleSave}
