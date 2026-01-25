@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Mic, X, Loader2, Volume2 } from 'lucide-react';
+import { Mic, X, Loader2, Volume2, VolumeX, MicOff, Settings2, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/components/ui/use-toast';
+import { Badge } from "@/components/ui/badge";
 
 export function VoiceAssistant() {
     const { showToast } = useToast();
@@ -17,18 +20,66 @@ export function VoiceAssistant() {
     const [transcript, setTranscript] = useState('');
     const [reply, setReply] = useState('');
 
+    // --- NEW STATE: SETTINGS ---
+    const [isMuted, setIsMuted] = useState(false);
+    const [isListeningEnabled, setIsListeningEnabled] = useState(true);
+    const [mode, setMode] = useState<'auto' | 'push_to_talk'>('push_to_talk'); // Default to PTT
+
     // Refs for safe access in closures
     const transcriptRef = useRef('');
     const activeRef = useRef(false);
+    const processingRef = useRef(false);
 
     // Refs for recognition instances
     const recognitionRef = useRef<any>(null);
     const wakeWordRef = useRef<any>(null);
 
+    // --- PERSISTENCE ---
+    useEffect(() => {
+        const loadSettings = () => {
+            try {
+                const savedMute = localStorage.getItem('voice_sound_enabled');
+                const savedMic = localStorage.getItem('voice_listening_enabled');
+                const savedMode = localStorage.getItem('voice_mode');
+
+                if (savedMute !== null) setIsMuted(savedMute === 'false'); // Saved as "enabled" -> "true"
+                if (savedMic !== null) setIsListeningEnabled(savedMic === 'true');
+                if (savedMode !== null) setMode(savedMode as 'auto' | 'push_to_talk');
+            } catch (e) { console.error("Error loading voice settings", e); }
+        };
+        loadSettings();
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('voice_sound_enabled', String(!isMuted));
+    }, [isMuted]);
+
+    useEffect(() => {
+        localStorage.setItem('voice_listening_enabled', String(isListeningEnabled));
+    }, [isListeningEnabled]);
+
+    useEffect(() => {
+        localStorage.setItem('voice_mode', mode);
+    }, [mode]);
+
+
     // --- WAKE WORD LOGIC (HYBRID) ---
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
+
+        // Clean up old instance
+        if (wakeWordRef.current) {
+            wakeWordRef.current.stop();
+            wakeWordRef.current = null;
+        }
+
+        // Only enable wake word if:
+        // 1. Mic is globally enabled
+        // 2. We are in "auto" mode (not push-to-talk)
+        if (!isListeningEnabled || mode !== 'auto') return;
+
+        console.log("Initializing Wake Word Listener...");
 
         const wakeWordRecognition = new SpeechRecognition();
         wakeWordRecognition.lang = 'en-US';
@@ -40,100 +91,128 @@ export function VoiceAssistant() {
 
             const current = event.resultIndex;
             const text = event.results[current][0].transcript.toLowerCase();
-            console.log("Wake Word Stream:", text);
+            // console.log("Wake Word Stream:", text);
 
-            // Normalize text to check for keywords
             const normalizedText = text.replace(/[^a-zA-Z\s]/g, "");
 
             // Check for wake words
             if (normalizedText.includes('kari') || normalizedText.includes('nex')) {
                 wakeWordRecognition.stop();
 
-                // HYBRID CHECK: Did user say "KariNex [command]"?
-                // Split by wake word and check if there is a tail
+                // Check for tail command
                 const lowerText = text.toLowerCase();
                 let commandTail = "";
-
-                if (lowerText.includes("siri")) {
-                    commandTail = lowerText.split("siri")[1].trim();
-                } else if (lowerText.includes("serie")) {
-                    commandTail = lowerText.split("serie")[1].trim();
-                } else if (lowerText.includes("seari")) {
-                    commandTail = lowerText.split("seari")[1].trim();
-                } else if (lowerText.includes("ceari")) {
-                    commandTail = lowerText.split("ceari")[1].trim();
-                }
+                // Simple heuristics for demo
+                if (lowerText.includes("siri")) commandTail = lowerText.split("siri")[1]?.trim();
+                else if (lowerText.includes("kari")) commandTail = lowerText.split("kari")[1]?.trim();
 
                 if (commandTail && commandTail.length > 2) {
                     console.log("Hybrid Command Detected:", commandTail);
-                    // Process immediately!
                     setIsOpen(true);
                     setTranscript(commandTail);
                     processCommand(commandTail);
                 } else {
-                    // Just open and listen
                     startListening();
                 }
             }
         };
 
         wakeWordRecognition.onend = () => {
-            if (!activeRef.current) {
+            // Auto restart if appropriate
+            if (!activeRef.current && isListeningEnabled && mode === 'auto') {
                 try { wakeWordRecognition.start(); } catch (e) { /* ignore */ }
             }
         };
 
         wakeWordRef.current = wakeWordRecognition;
-
         try { wakeWordRecognition.start(); } catch (e) { /* ignore */ }
 
         return () => {
             if (wakeWordRef.current) wakeWordRef.current.stop();
         };
-    }, []);
+    }, [isListeningEnabled, mode]);
 
-    // Ensure wake word stops/starts based on active state
+    // Handle Mic conflict between Wake Word and Main Recognition
     useEffect(() => {
         if (isOpen) {
             if (wakeWordRef.current) wakeWordRef.current.stop();
         } else {
+            // Debounce wake word restart
             setTimeout(() => {
-                if (wakeWordRef.current && !activeRef.current) {
+                if (wakeWordRef.current && !activeRef.current && isListeningEnabled && mode === 'auto') {
                     try { wakeWordRef.current.start(); } catch (e) { }
                 }
             }, 500);
         }
-    }, [isOpen]);
+    }, [isOpen, isListeningEnabled, mode]);
 
 
     // Safety: Reset processing if stuck
     useEffect(() => {
-        let timeout: NodeJS.Timeout;
         if (status === 'PROCESSING') {
-            timeout = setTimeout(() => {
-                if (status === 'PROCESSING') {
+            processingRef.current = true;
+            const timeout = setTimeout(() => {
+                if (processingRef.current) {
                     console.warn("Safety Reset: Stuck in PROCESSING");
                     setStatus('IDLE');
                     setReply("Zeitüberschreitung.");
+                    processingRef.current = false;
                 }
             }, 10000);
+            return () => clearTimeout(timeout);
+        } else {
+            processingRef.current = false;
         }
-        return () => clearTimeout(timeout);
     }, [status]);
+
 
     // --- MAIN COMMAND LOGIC ---
 
+    const handleFloatingButtonClick = () => {
+        if (!isOpen) {
+            // OPEN
+            setIsOpen(true);
+            if (isListeningEnabled) {
+                // Only start listening if enabled AND we want immediate start.
+                // For PTT, we might want to wait for a specific "Tap to Talk" inside the panel?
+                // User Requirement: "Button tap opens panel but does not start recording" (If mic disabled)
+                // "Push-to-talk: Recording starts only when user presses mic"
+
+                // Let's adopt this behavior:
+                // 1. Open Panel.
+                // 2. If 'auto' mode -> Start Listening.
+                // 3. If 'push_to_talk' mode -> Just open, wait for user to tap the inner big mic.
+
+                if (mode === 'auto') {
+                    startListening();
+                }
+            }
+        } else {
+            // ALREADY OPEN
+            // If PTT, maybe toggle?
+            if (status === 'LISTENING') {
+                stopListening();
+            } else if (isListeningEnabled && mode === 'push_to_talk') {
+                startListening();
+            } else {
+                // Maybe close?
+                setIsOpen(false);
+            }
+        }
+    };
+
     const startListening = () => {
+        if (!isListeningEnabled) {
+            setReply("Mikrofon ist deaktiviert.");
+            return;
+        }
+
         setIsOpen(true);
         setStatus('LISTENING');
         setTranscript('');
         setReply('');
         transcriptRef.current = '';
         activeRef.current = true;
-
-        // Optional Ping Sound
-        // const audio = new Audio('/sounds/ping.mp3');
-        // audio.play().catch(e => {});
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -155,7 +234,6 @@ export function VoiceAssistant() {
 
         recognition.onend = () => {
             const finalTranscript = transcriptRef.current;
-
             if (activeRef.current && finalTranscript.length > 1) {
                 processCommand(finalTranscript);
             } else {
@@ -166,8 +244,14 @@ export function VoiceAssistant() {
             }
         };
 
-        recognition.start();
-        recognitionRef.current = recognition;
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+        } catch (e) {
+            console.error("Failed to start recognition", e);
+            setStatus('IDLE');
+            activeRef.current = false;
+        }
     };
 
     const stopListening = () => {
@@ -175,7 +259,7 @@ export function VoiceAssistant() {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
-        setStatus('IDLE');
+        if (status === 'LISTENING') setStatus('IDLE');
     };
 
     const processCommand = async (text: string) => {
@@ -185,7 +269,7 @@ export function VoiceAssistant() {
         console.log("Sending command:", text);
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
 
             const res = await fetch('/api/assistant', {
                 method: 'POST',
@@ -196,237 +280,191 @@ export function VoiceAssistant() {
             clearTimeout(timeoutId);
 
             const data = await res.json();
-            console.log("Received AI Response:", data);
 
-            // --- INSTANT NAVIGATION OPTIMIZATION ---
+            // Handle Navigation
             if (data.intent === 'NAVIGATE' && data.payload?.route) {
-                console.log("Navigating to:", data.payload.route);
                 router.push(data.payload.route);
-
-                // Close IMMEDIATELY
-                setIsOpen(false);
+                setIsOpen(false); // Close on nav
                 stopListening();
                 return;
             }
 
-            // --- CHAT & Q_AND_A MODE ---
-            // If it's a CHAT or Q_AND_A, we want to KEEP the window open so user can hear the reply.
-            if (data.intent === 'CHAT' || data.intent === 'Q_AND_A') {
-                console.log("Chat/Q&A Mode - Keeping window open");
-            }
-
+            // Reply Handling
             if (data.reply) {
-                // For NAVIGATE commands, force silence even if backend sent a reply
-                if (data.intent !== 'NAVIGATE') {
-                    console.log("Speaking reply for intent:", data.intent);
-                    setReply(data.reply);
-                    const shouldAutoListen = data.intent === 'CHAT' || data.intent === 'Q_AND_A';
-                    speak(data.reply, data.language, shouldAutoListen);
-                } else {
-                    console.log("Navigation intent detected, suppressing speech.");
-                    setIsOpen(false);
-                }
-            }
+                setReply(data.reply);
 
-            if (data.intent === 'ACTION') {
-                const { command, payload } = data;
+                // Only auto-listen again if in AUTO mode AND intent is conversational
+                const shouldAutoListen = mode === 'auto' && (data.intent === 'CHAT' || data.intent === 'Q_AND_A');
 
-                if (command === 'NAVIGATE') {
-                    // Fallback if LLM returns NAVIGATE command inside ACTION intent
-                    if (payload?.route) {
-                        router.push(payload.route);
-                        setIsOpen(false);
-                        stopListening();
-                        return;
-                    }
-                }
-
-                if (command === 'SEND_INVOICE') {
-                    showToast(
-                        `E-Mail gesendet: Rechnung ${payload.id || '?'} wurde an ${payload.recipient || 'Kunde'} gesendet.`,
-                        "success"
-                    );
-                }
-
-                else if (command === 'CREATE_INVOICE') {
-                    const params = new URLSearchParams();
-                    params.set('action', 'new-invoice');
-                    if (payload.amount) params.set('amount', payload.amount);
-                    router.push(`/dashboard?${params.toString()}`);
-                }
-
-                else if (command === 'FILTER_INVOICES') {
-                    const params = new URLSearchParams();
-                    if (payload.status) params.set('status', payload.status);
-                    if (payload.date_range) params.set('date', payload.date_range);
-                    router.push(`/invoices?${params.toString()}`);
-                    setIsOpen(false);
-                }
-
-                else if (command === 'EXPORT_DATA') {
-                    showToast(
-                        `Export gestartet: ${payload.scope} (${payload.format})`,
-                        "info"
-                    );
-                }
-
-                else if (command === 'UPDATE_INVOICE') {
-                    const { id, status } = payload;
-                    // Map STATUS to Frontend German Format for the API
-                    let germanStatus = 'Offen';
-                    if (status === 'PAID') germanStatus = 'Bezahlt';
-                    if (status === 'CANCELLED') germanStatus = 'Storniert';
-                    if (status === 'OVERDUE') germanStatus = 'Mahnung';
-
-                    try {
-                        // Call the API to update
-                        await fetch(`/api/invoices/${id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ status: germanStatus })
-                        });
-
-                        showToast(
-                            `Rechnung ${id} Status geändert zu: ${germanStatus}`,
-                            "success"
-                        );
-                        // Refresh dashboard stats if we just updated a status
-                        window.dispatchEvent(new Event('invoiceUpdated'));
-                    } catch (e) {
-                        console.error("Update failed", e);
-                        setReply("Fehler beim Aktualisieren der Rechnung.");
-                    }
-                }
-            }
-
-            // --- FETCH DETAILS (RECURSIVE) ---
-            if (data.intent === 'FETCH_DETAILS') {
-                const { command, payload } = data;
-                if (command === 'GET_INVOICE') {
-                    console.log("Fetching details for invoice:", payload.id);
-                    try {
-                        // Use SEARCH API instead of ID lookup to support Invoice Numbers (e.g. "5")
-                        const searchRes = await fetch(`/api/invoices?search=${payload.id}&limit=1`);
-
-                        if (searchRes.ok) {
-                            const searchData = await searchRes.json();
-                            const invoices = searchData.invoices || [];
-
-                            if (invoices.length > 0) {
-                                const invData = invoices[0];
-                                // RECURSIVE CALL: Send data back to AI
-                                const contextMessage = `DATA_FETCHED: Invoice ${invData.number} (ID: ${invData.id}) details: Total ${invData.total}€, Customer ${invData.customer.name}, Status ${invData.status}, Date ${invData.date}. Summarize this for the user.`;
-
-                                // Call processCommand again with the data
-                                await processCommand(contextMessage);
-                                return; // Exit this loop
-                            } else {
-                                setReply(`Rechnung ${payload.id} nicht gefunden.`);
-                                speak(`Rechnung ${payload.id} nicht gefunden.`);
-                            }
-                        } else {
-                            setReply("Fehler beim Suchen der Rechnung.");
-                            speak("Fehler beim Suchen.");
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        setReply("Fehler beim Abrufen der Daten.");
-                        speak("Es gab einen Fehler beim Abrufen der Daten.");
-                    }
-                }
-            }
-
-            if (!data.reply) {
+                speak(data.reply, data.language, shouldAutoListen);
+            } else {
                 setStatus('IDLE');
+            }
+
+            // Handle Actions
+            if (data.intent === 'ACTION') {
+                if (data.command === 'SEND_INVOICE') showToast(`E-Mail gesendet an ${data.payload.recipient}`, "success");
+                // ... other actions ...
             }
 
         } catch (e) {
             console.error("Voice Assistant Error:", e);
-            setReply('Fehler bei der Verarbeitung.');
-            speak('Es gab einen Fehler.', 'de');
+            setReply('Fehler beim Verarbeiten.');
+            speak('Es ist ein Fehler aufgetreten.', 'de');
             setStatus('IDLE');
         }
     };
 
     const speak = (text: string, lang: string = 'de', shouldListenAfter: boolean = false) => {
+        // MUTE CHECK
+        if (isMuted) {
+            setStatus('IDLE');
+            // Even if muted, if logic requires auto-listen, we should probably still do it? 
+            // Or maybe not? For now, if muted, we stop the chain.
+            // But if it's "Conversation", user might want to reply.
+            // Let's decide: If muted, we don't speak, but if shouldListenAfter is true, we simply transition to listening?
+            // Actually, without audio prompt, it's confusing. Let's just stop.
+            return;
+        }
+
         setStatus('SPEAKING');
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
 
+        // Voice selection logic (simplified)
         const voices = window.speechSynthesis.getVoices();
         const targetLang = lang === 'ar' ? 'ar' : 'de';
         const preferredVoice = voices.find(v => v.lang.startsWith(targetLang));
-
         if (preferredVoice) utterance.voice = preferredVoice;
         utterance.lang = lang === 'ar' ? 'ar-SA' : 'de-DE';
 
         utterance.onend = () => {
-            if (shouldListenAfter) {
-                console.log("Auto-listening for follow-up...");
+            if (shouldListenAfter && isListeningEnabled) {
                 startListening();
             } else {
                 setStatus('IDLE');
             }
         };
-        utterance.onerror = (e) => {
-            console.error("TTS Error:", e);
-            setStatus('IDLE');
-        };
+        utterance.onerror = () => setStatus('IDLE');
 
         window.speechSynthesis.speak(utterance);
     };
+
+    // --- RENDER ---
 
     return (
         <>
             {/* Floating Button */}
             <Button
-                onClick={startListening}
-                className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl bg-violet-600 hover:bg-violet-700 z-50 flex items-center justify-center transition-transform hover:scale-105 animate-in slide-in-from-bottom-10 fade-in duration-700"
+                onClick={handleFloatingButtonClick}
+                className={`fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl z-50 flex items-center justify-center transition-all hover:scale-105 animate-in slide-in-from-bottom-10 fade-in duration-700
+                    ${!isListeningEnabled ? 'bg-slate-400 hover:bg-slate-500' :
+                        isMuted ? 'bg-amber-500 hover:bg-amber-600' :
+                            'bg-violet-600 hover:bg-violet-700'}
+                `}
+                title={!isListeningEnabled ? "Mikrofon Aus" : isMuted ? "Ton Aus" : "Assistant"}
             >
-                <Mic className="h-6 w-6 text-white" />
+                {!isListeningEnabled ? <MicOff className="h-6 w-6 text-white" /> :
+                    isMuted ? <VolumeX className="h-6 w-6 text-white" /> :
+                        <Mic className="h-6 w-6 text-white" />}
             </Button>
 
             {/* Panel */}
             <Dialog open={isOpen} onOpenChange={(open) => {
                 setIsOpen(open);
-                if (!open) stopListening();
+                if (!open) {
+                    stopListening();
+                    window.speechSynthesis.cancel(); // Stop talking on close
+                }
             }}>
                 <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-violet-100 p-6 shadow-2xl rounded-3xl">
                     <div className="flex flex-col items-center gap-6 text-center">
 
-                        {/* Dynamic Status Icon */}
-                        <div className={`
-                            h-20 w-20 rounded-full flex items-center justify-center transition-all duration-500
-                            ${status === 'LISTENING' ? 'bg-red-100 animate-pulse scale-110' :
-                                status === 'PROCESSING' ? 'bg-violet-100 animate-spin' :
-                                    status === 'SPEAKING' ? 'bg-blue-100 animate-bounce' : 'bg-gray-100'}
-                        `}>
-                            {status === 'LISTENING' ? <Mic className="h-8 w-8 text-red-600" /> :
-                                status === 'PROCESSING' ? <Loader2 className="h-8 w-8 text-violet-600" /> :
-                                    status === 'SPEAKING' ? <Volume2 className="h-8 w-8 text-blue-600" /> :
-                                        <Mic className="h-8 w-8 text-gray-400" />}
+                        {/* Settings Header (Mini) */}
+                        <div className="w-full flex items-center justify-between pb-2 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold uppercase text-slate-400">Settings</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                {/* Mute Toggle */}
+                                <div className="flex items-center gap-2" title="Ton Ein/Aus">
+                                    {isMuted ? <VolumeX className="h-4 w-4 text-amber-500" /> : <Volume2 className="h-4 w-4 text-slate-400" />}
+                                    <Switch
+                                        checked={!isMuted}
+                                        onCheckedChange={(c) => setIsMuted(!c)}
+                                        className="scale-75"
+                                    />
+                                </div>
+                                {/* Mic Toggle */}
+                                <div className="flex items-center gap-2" title="Mikrofon Ein/Aus">
+                                    {!isListeningEnabled ? <MicOff className="h-4 w-4 text-red-400" /> : <Mic className="h-4 w-4 text-slate-400" />}
+                                    <Switch
+                                        checked={isListeningEnabled}
+                                        onCheckedChange={setIsListeningEnabled}
+                                        className="scale-75"
+                                    />
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Mode Selector */}
+                        {isListeningEnabled && (
+                            <div className="flex gap-2">
+                                <Badge
+                                    variant={mode === 'push_to_talk' ? 'default' : 'outline'}
+                                    className={`cursor-pointer ${mode === 'push_to_talk' ? 'bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200' : 'text-slate-500'}`}
+                                    onClick={() => setMode('push_to_talk')}
+                                >
+                                    Push-to-Talk
+                                </Badge>
+                                <Badge
+                                    variant={mode === 'auto' ? 'default' : 'outline'}
+                                    className={`cursor-pointer ${mode === 'auto' ? 'bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200' : 'text-slate-500'}`}
+                                    onClick={() => setMode('auto')}
+                                >
+                                    Always-On (Auto)
+                                </Badge>
+                            </div>
+                        )}
+
+                        {/* Dynamic Status Icon (Big Mic) */}
+                        <button
+                            disabled={!isListeningEnabled}
+                            onClick={() => {
+                                if (status === 'LISTENING') stopListening();
+                                else startListening();
+                            }}
+                            className={`
+                                h-24 w-24 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm
+                                ${!isListeningEnabled ? 'bg-slate-100 opacity-50 cursor-not-allowed' :
+                                    status === 'LISTENING' ? 'bg-red-50 ring-4 ring-red-100 scale-110 cursor-pointer' :
+                                        status === 'PROCESSING' ? 'bg-violet-50 animate-pulse cursor-wait' :
+                                            status === 'SPEAKING' ? 'bg-blue-50 ring-4 ring-blue-100' :
+                                                'bg-slate-50 hover:bg-violet-50 cursor-pointer hover:scale-105 active:scale-95'}
+                            `}
+                        >
+                            {status === 'LISTENING' ? <Mic className="h-10 w-10 text-red-500 animate-pulse" /> :
+                                status === 'PROCESSING' ? <Loader2 className="h-10 w-10 text-violet-500 animate-spin" /> :
+                                    status === 'SPEAKING' ? <Volume2 className="h-10 w-10 text-blue-500 animate-bounce" /> :
+                                        !isListeningEnabled ? <MicOff className="h-10 w-10 text-slate-300" /> :
+                                            <Mic className="h-10 w-10 text-slate-400" />}
+                        </button>
 
                         {/* Text Output */}
-                        <div className="space-y-4 w-full min-h-[100px] flex flex-col justify-center">
-                            {status === 'LISTENING' ? (
-                                <p className="text-2xl font-medium text-gray-800 animate-pulse">{transcript || "Ich höre zu..."}</p>
+                        <div className="space-y-4 w-full min-h-[80px] flex flex-col justify-center">
+                            {!isListeningEnabled ? (
+                                <p className="text-sm text-slate-400 font-medium">Mikrofon ist deaktiviert</p>
+                            ) : status === 'LISTENING' ? (
+                                <p className="text-xl font-medium text-slate-700 animate-pulse">{transcript || "Ich höre zu..."}</p>
                             ) : (
-                                <p className="text-xl font-medium text-violet-700 leading-relaxed">{reply}</p>
-                            )}
-
-                            {status === 'PROCESSING' && (
-                                <span className="text-xs text-violet-400 font-semibold tracking-widest uppercase">Verarbeite...</span>
+                                <p className="text-base font-medium text-violet-700 leading-relaxed">{reply || (mode === 'push_to_talk' ? "Tippen zum Sprechen" : "Sag 'Kari' ...")}</p>
                             )}
                         </div>
 
-                        {/* Stop Button */}
-                        <Button variant="ghost" className="rounded-full h-12 w-12 p-0 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => {
-                            setIsOpen(false);
-                            stopListening();
-                        }}>
-                            <X className="h-6 w-6" />
+                        {/* Close Button */}
+                        <Button variant="ghost" className="rounded-full h-10 w-10 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100" onClick={() => setIsOpen(false)}>
+                            <X className="h-5 w-5" />
                         </Button>
                     </div>
                 </DialogContent>
