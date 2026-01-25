@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield, AlertTriangle, Calculator, Loader2, ArrowRight, FileSpreadsheet } from 'lucide-react'
+import { Upload, CheckCircle, XCircle, FileText, ArrowLeft, Download, Save, Trash2, Edit2, Check, Eye, Shield, AlertTriangle, Calculator, Loader2, ArrowRight, FileSpreadsheet, Receipt } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -56,7 +56,7 @@ export default function UploadPage() {
   const [companySettings, setCompanySettings] = useState<any>(null)
 
   // Import Options
-  const [importTarget, setImportTarget] = useState<'invoices' | 'accounting' | 'both'>('invoices')
+  const [importTarget, setImportTarget] = useState<'invoices' | 'accounting' | 'purchase-invoices' | 'both'>('invoices')
   const [accountingType, setAccountingType] = useState<'income' | 'expense' | 'other'>('income')
 
   // Progress State
@@ -203,6 +203,7 @@ export default function UploadPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('importTarget', importTarget)
 
       const response = await authenticatedFetch('/api/upload', {
         method: 'POST',
@@ -612,23 +613,23 @@ export default function UploadPage() {
                 {/* Import Target Cards */}
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Importieren als:</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div
-                      onClick={() => setImportTarget(importTarget === 'accounting' ? 'both' : 'invoices')}
+                      onClick={() => setImportTarget('invoices')}
                       className={cn(
                         "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
-                        importTarget === 'invoices' || importTarget === 'both' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
+                        importTarget === 'invoices' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
                       )}
                     >
                       <div className="flex items-start gap-4 relative z-10">
-                        <div className={cn("p-2.5 rounded-xl", importTarget === 'invoices' || importTarget === 'both' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
+                        <div className={cn("p-2.5 rounded-xl", importTarget === 'invoices' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
                           <FileText className="h-5 w-5" />
                         </div>
                         <div>
-                          <h3 className={cn("font-semibold", importTarget === 'invoices' || importTarget === 'both' ? "text-blue-900" : "text-gray-900")}>Rechnungen</h3>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Importieren Sie Rechnungen mit allen Positionen und Kundendaten.</p>
+                          <h3 className={cn("font-semibold", importTarget === 'invoices' ? "text-blue-900" : "text-gray-900")}>Verkäufe</h3>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Shopify-Verkäufe importieren und Rechnungen generieren.</p>
                         </div>
-                        {(importTarget === 'invoices' || importTarget === 'both') && (
+                        {importTarget === 'invoices' && (
                           <div className="absolute top-4 right-4 text-blue-600">
                             <CheckCircle className="h-5 w-5" />
                           </div>
@@ -637,21 +638,44 @@ export default function UploadPage() {
                     </div>
 
                     <div
-                      onClick={() => setImportTarget(importTarget === 'invoices' ? 'both' : 'accounting')}
+                      onClick={() => setImportTarget('purchase-invoices')}
                       className={cn(
                         "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
-                        importTarget === 'accounting' || importTarget === 'both' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
+                        importTarget === 'purchase-invoices' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
                       )}
                     >
                       <div className="flex items-start gap-4 relative z-10">
-                        <div className={cn("p-2.5 rounded-xl", importTarget === 'accounting' || importTarget === 'both' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
+                        <div className={cn("p-2.5 rounded-xl", importTarget === 'purchase-invoices' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
+                          <Receipt className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className={cn("font-semibold", importTarget === 'purchase-invoices' ? "text-blue-900" : "text-gray-900")}>Einkaufsrechnungen</h3>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Lieferantenrechnungen und Ausgaben importieren.</p>
+                        </div>
+                        {importTarget === 'purchase-invoices' && (
+                          <div className="absolute top-4 right-4 text-blue-600">
+                            <CheckCircle className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setImportTarget('accounting')}
+                      className={cn(
+                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
+                        importTarget === 'accounting' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
+                      )}
+                    >
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className={cn("p-2.5 rounded-xl", importTarget === 'accounting' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
                           <Calculator className="h-5 w-5" />
                         </div>
                         <div>
-                          <h3 className={cn("font-semibold", importTarget === 'accounting' || importTarget === 'both' ? "text-blue-900" : "text-gray-900")}>Buchhaltung</h3>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Erfassen Sie Einnahmen oder Ausgaben direkt in der Buchhaltung.</p>
+                          <h3 className={cn("font-semibold", importTarget === 'accounting' ? "text-blue-900" : "text-gray-900")}>Buchhaltung</h3>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Einnahmen/Ausgaben direkt in die Buchhaltung erfassen.</p>
                         </div>
-                        {(importTarget === 'accounting' || importTarget === 'both') && (
+                        {importTarget === 'accounting' && (
                           <div className="absolute top-4 right-4 text-blue-600">
                             <CheckCircle className="h-5 w-5" />
                           </div>

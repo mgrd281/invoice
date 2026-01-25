@@ -172,41 +172,54 @@ export async function POST(request: NextRequest) {
                                 organizationId: org.id,
                                 expenseNumber: invoice.number || `EXP-${Date.now()}`,
                                 date: new Date(invoice.date),
-                                category: 'IMPORT', // Or allow user to select?
+                                category: 'IMPORT',
                                 description: invoice.items?.[0]?.description || 'Importierte Ausgabe',
                                 supplier: invoice.customerName || 'Unbekannt',
                                 netAmount: invoice.subtotal,
-                                taxRate: 19, // Default
+                                taxRate: 19,
                                 taxAmount: invoice.taxAmount,
                                 totalAmount: invoice.total
                             }
                         })
                     } else {
-                        // Create Additional Income (Income or Other)
-                        // Create Additional Income (Income or Other)
-
-                        // Filter out non-paid items (Refunded, Cancelled, Open, etc.)
-                        // Only import if status is explicitly 'paid'/'bezahlt' or if no status is provided (legacy/fallback)
                         const normalizedStatus = invoice.status?.toLowerCase() || ''
                         if (normalizedStatus && !['bezahlt', 'paid', 'completed', 'gutschrift'].some(s => normalizedStatus.includes(s))) {
                             console.log(`Skipping non-paid income: ${invoice.number} (${invoice.status})`)
-                            continue
+                        } else {
+                            const baseDescription = invoice.items?.[0]?.description || (accountingType === 'income' ? 'Importierte Einnahme' : 'Sonstiges')
+                            const description = invoice.number ? `[Order #${invoice.number}] ${baseDescription}` : baseDescription
+
+                            await prisma.additionalIncome.create({
+                                data: {
+                                    organizationId: org.id,
+                                    date: new Date(invoice.date),
+                                    description: description,
+                                    amount: invoice.total,
+                                    type: accountingType === 'income' ? 'INCOME' : 'OTHER'
+                                }
+                            })
                         }
-
-                        const baseDescription = invoice.items?.[0]?.description || (accountingType === 'income' ? 'Importierte Einnahme' : 'Sonstiges')
-                        // Prepend order number if available to preserve it
-                        const description = invoice.number ? `[Order #${invoice.number}] ${baseDescription}` : baseDescription
-
-                        await prisma.additionalIncome.create({
-                            data: {
-                                organizationId: org.id,
-                                date: new Date(invoice.date),
-                                description: description,
-                                amount: invoice.total,
-                                type: accountingType === 'income' ? 'INCOME' : 'OTHER'
-                            }
-                        })
                     }
+                }
+
+                // 3. Handle Purchase Invoice Creation
+                if (importTarget === 'purchase-invoices') {
+                    // @ts-ignore - Handle possible delays in types regeneration
+                    await prisma.purchaseInvoice.create({
+                        data: {
+                            organizationId: org.id,
+                            supplierName: invoice.customerName || invoice.supplierName || 'Unbekannt',
+                            invoiceNumber: invoice.number || `PUR-${Date.now()}`,
+                            invoiceDate: new Date(invoice.date),
+                            dueDate: invoice.dueDate ? new Date(invoice.dueDate) : null,
+                            netAmount: parseFloat(invoice.subtotal || invoice.netAmount || 0),
+                            taxAmount: parseFloat(invoice.taxAmount || 0),
+                            grossAmount: parseFloat(invoice.total || invoice.grossAmount || 0),
+                            category: invoice.category || 'Import',
+                            status: (invoice.status?.toLowerCase() === 'paid' || invoice.status === DocumentStatus.BEZAHLT) ? 'PAID' : 'PENDING',
+                            currency: invoice.currency || 'EUR'
+                        }
+                    })
                 }
 
                 createdCount++

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         if (search) {
             where.OR = [
                 { invoiceNumber: { contains: search, mode: 'insensitive' } },
-                { vendorName: { contains: search, mode: 'insensitive' } },
+                { supplierName: { contains: search, mode: 'insensitive' } },
             ]
         }
 
@@ -39,13 +39,13 @@ export async function GET(req: NextRequest) {
         // Calculate stats
         const allInvoices = await prisma.purchaseInvoice.findMany({
             where: { ...where, status: undefined }, // Total stats regardless of filter
-            select: { totalGross: true, status: true }
+            select: { grossAmount: true, status: true }
         })
 
         const stats = {
-            totalAmount: allInvoices.reduce((sum: number, inv: any) => sum + Number(inv.totalGross), 0),
-            paidAmount: allInvoices.filter((i: any) => i.status === 'PAID').reduce((sum: number, inv: any) => sum + Number(inv.totalGross), 0),
-            openAmount: allInvoices.filter((i: any) => i.status === 'PENDING').reduce((sum: number, inv: any) => sum + Number(inv.totalGross), 0),
+            totalAmount: allInvoices.reduce((sum: number, inv: any) => sum + Number(inv.grossAmount), 0),
+            paidAmount: allInvoices.filter((i: any) => i.status === 'PAID').reduce((sum: number, inv: any) => sum + Number(inv.grossAmount), 0),
+            openAmount: allInvoices.filter((i: any) => i.status === 'PENDING').reduce((sum: number, inv: any) => sum + Number(inv.grossAmount), 0),
             count: allInvoices.length,
             paidCount: allInvoices.filter((i: any) => i.status === 'PAID').length,
             openCount: allInvoices.filter((i: any) => i.status === 'PENDING').length,
@@ -87,19 +87,17 @@ export async function POST(req: NextRequest) {
         const invoice = await prisma.purchaseInvoice.create({
             data: {
                 invoiceNumber: body.invoiceNumber,
-                vendorName: body.vendorName,
-                vendorTaxId: body.vendorTaxId,
+                supplierName: body.supplierName || body.vendorName,
                 invoiceDate: new Date(body.invoiceDate || body.date),
                 dueDate: body.dueDate ? new Date(body.dueDate) : null,
                 currency: body.currency || 'EUR',
-                totalNet: body.totalNet || body.subtotal || 0,
-                totalTax: body.totalTax || body.taxTotal || 0,
-                totalGross: body.totalGross || body.total || 0,
-                taxRate: body.taxRate || 19,
-                status: body.status || 'PENDING',
+                netAmount: parseFloat(body.netAmount || body.totalNet || body.subtotal || 0),
+                taxAmount: parseFloat(body.taxAmount || body.totalTax || body.taxTotal || 0),
+                grossAmount: parseFloat(body.grossAmount || body.totalGross || body.total || 0),
                 category: body.category || 'General',
                 notes: body.notes || '',
                 fileUrl: body.fileUrl || null,
+                status: body.status || 'PENDING',
                 organization: {
                     connect: { id: orgId }
                 }

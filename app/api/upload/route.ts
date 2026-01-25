@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const type = formData.get('type') as string
+    const importTarget = formData.get('importTarget') as string || 'invoices'
 
     // Local storage for parsed data
     const invoices: any[] = []
@@ -353,13 +354,15 @@ export async function POST(request: NextRequest) {
           'Shipping Name', 'Liefername',
           'Customer Name', 'Kundenname',
           'Name', 'Customer',
-          'Kunde', 'Vorname', 'Nachname', 'First Name', 'Last Name'
+          'Kunde', 'Vorname', 'Nachname', 'First Name', 'Last Name',
+          'Lieferant', 'Anbieter', 'Vendor', 'Firma'
         ]);
 
         const rawUnitPrice = getColumnValue(record, [
           'Lineitem price', 'Einzelpreis',
           'Price', 'Preis',
-          'Unit Price', 'Stückpreis'
+          'Unit Price', 'Stückpreis',
+          'Netto', 'Subtotal', 'Netto-Betrag'
         ]);
 
         const rawTotalPrice = getColumnValue(record, [
@@ -367,7 +370,7 @@ export async function POST(request: NextRequest) {
           'Amount', 'Betrag',
           'Line Total', 'Zeilensumme',
           'Total Price', 'Gesamtpreis',
-          'Umsatz'
+          'Umsatz', 'Brutto', 'Bruttobetrag', 'Zahlbetrag'
         ]);
 
         // Warn if critical fields are missing
@@ -380,8 +383,8 @@ export async function POST(request: NextRequest) {
         }
 
         const order: ShopifyOrder = {
-          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order', 'Auftragsnummer', 'Bestellung']) || `ORD-${Date.now()}-${i}`,
-          customerName: rawCustomerName || 'Unbekannter Kunde',
+          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order', 'Auftragsnummer', 'Bestellung', 'Rechnungsnummer', 'Invoice Number', 'Belegnummer']) || `ORD-${Date.now()}-${i}`,
+          customerName: rawCustomerName || 'Unbekannt',
           customerCompany: getColumnValue(record, [
             'Company', 'Firma', 'Unternehmen',
             'Billing Company', 'Rechnungsfirma',

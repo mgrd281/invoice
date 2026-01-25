@@ -109,14 +109,13 @@ function ManualFormContent() {
             const res = await authenticatedFetch('/api/purchase-invoices', {
                 method: 'POST',
                 body: JSON.stringify({
-                    vendorName: formData.supplierName,
+                    supplierName: formData.supplierName,
                     invoiceNumber: formData.invoiceNumber,
                     invoiceDate: formData.invoiceDate,
                     dueDate: formData.dueDate || null,
-                    totalNet: parseFloat(formData.netAmount) || 0,
-                    totalTax: (parseFloat(formData.grossAmount) || 0) - (parseFloat(formData.netAmount) || 0),
-                    totalGross: parseFloat(formData.grossAmount) || 0,
-                    taxRate: parseFloat(formData.taxRate),
+                    netAmount: parseFloat(formData.netAmount) || 0,
+                    taxAmount: (parseFloat(formData.grossAmount) || 0) - (parseFloat(formData.netAmount) || 0),
+                    grossAmount: parseFloat(formData.grossAmount) || 0,
                     status: formData.status,
                     category: formData.category,
                     notes: formData.notes,
@@ -129,7 +128,9 @@ function ManualFormContent() {
                 toast.success("Einkaufsrechnung erfolgreich gespeichert!")
                 router.push('/purchase-invoices')
             } else {
-                toast.error(data.error || "Fehler beim Speichern.")
+                const errorText = data.error || "Fehler beim Speichern."
+                toast.error(errorText)
+                console.error('API Error:', data)
             }
         } catch (error) {
             console.error('Save error:', error)
