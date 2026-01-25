@@ -102,15 +102,28 @@ export async function POST(req: NextRequest) {
         // Fallback Geo-IP for local/non-proxy development
         if (!city && ip !== '0.0.0.0' && !ip.startsWith('127.') && !ip.startsWith('192.168.')) {
             try {
-                const geoResp = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,countryCode,regionName,city`);
-                const geoData = await geoResp.json();
-                if (geoData.status === 'success') {
-                    city = geoData.city;
-                    region = geoData.regionName;
-                    country = geoData.countryCode;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+
+                const geoResp = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,countryCode,regionName,city`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (geoResp.ok) {
+                    const text = await geoResp.text();
+                    if (text && text.startsWith('{')) {
+                        const geoData = JSON.parse(text);
+                        if (geoData.status === 'success') {
+                            city = geoData.city;
+                            region = geoData.regionName;
+                            country = geoData.countryCode;
+                        }
+                    }
                 }
             } catch (e) {
-                console.error('[Geo Fallback] Failed:', e);
+                // Silently fail for geo fallback to avoid log spam
+                // console.error('[Geo Fallback] Failed:', e); 
             }
         }
 
