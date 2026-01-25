@@ -140,20 +140,58 @@ export async function POST(request: NextRequest) {
                         }
                     })
                 } else if (source === 'vercel') {
-                    // Reuse Vercel JS logic if possible... 
-                    // To keep it simple, we'll use the table scraper here
-                    $('table tbody tr').each((i, el) => {
-                        const cells = $(el).find('td')
-                        if (cells.length >= 5) {
-                            const ratingStars = $(cells[1]).find('span').length || 5
-                            const title = $(cells[2]).text().trim()
-                            const content = $(cells[3]).text().trim()
-                            const name = $(cells[4]).text().trim()
-                            if (content || title) {
-                                reviewsFound.push({ rating: ratingStars, title, content: content || title, customerName: name, date: new Date().toISOString(), source: 'vercel' })
+                    // Fix: Vercel reviews are in a JS file
+                    // 1. Find the script tag
+                    const scriptSrc = $('script[src^="reviews_data_"]').attr('src')
+                    if (scriptSrc) {
+                        try {
+                            const jsUrl = new URL(scriptSrc, targetUrl).href
+                            const jsRes = await fetch(jsUrl)
+                            if (jsRes.ok) {
+                                const jsContent = await jsRes.text()
+                                // Extract JSON: const REVIEWS_DATA = [...]
+                                const jsonMatch = jsContent.match(/const REVIEWS_DATA\s*=\s*(\[[\s\S]*?\]);/)
+                                if (jsonMatch && jsonMatch[1]) {
+                                    const reviewsData = JSON.parse(jsonMatch[1]) // This might fail if simpler JS obj, but for now assume JSON-like
+
+                                    reviewsData.forEach((r: any) => {
+                                        if (reviewsFound.length >= 20) return
+                                        // Clean date
+                                        let date = new Date().toISOString()
+                                        if (r.date) date = new Date(r.date).toISOString()
+
+                                        reviewsFound.push({
+                                            rating: r.rating || 5,
+                                            title: r.title || '',
+                                            content: r.content || '',
+                                            customerName: r.customer_name || 'Vercel Customer',
+                                            date: date,
+                                            source: 'vercel'
+                                        })
+                                    })
+                                }
                             }
+                        } catch (e) {
+                            console.error('Error parsing Vercel JS:', e)
                         }
-                    })
+                    }
+
+                    // Fallback to table if JS fails (or for older pages)
+                    if (reviewsFound.length === 0) {
+                        $('table tbody tr').each((i, el) => {
+                            // ... existing table logic (kept as fallback)
+                            const cells = $(el).find('td')
+                            if (cells.length >= 5) {
+                                const ratingStars = $(cells[1]).find('span').length || 5
+                                const title = $(cells[2]).text().trim()
+                                const content = $(cells[3]).text().trim()
+                                const name = $(cells[4]).text().trim()
+                                if (content || title) {
+                                    reviewsFound.push({ rating: ratingStars, title, content: content || title, customerName: name, date: new Date().toISOString(), source: 'vercel' })
+                                }
+                            }
+                        })
+                    }
                 }
 
                 if (reviewsFound.length === 0) {

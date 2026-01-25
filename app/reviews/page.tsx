@@ -2111,13 +2111,27 @@ function ReviewsPageContent() {
                                             <p className="text-sm text-gray-500">CSV, Excel oder Numbers Datei hochladen</p>
                                         </div>
 
-                                        <div
-                                            className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-purple-500 ${importSource === 'url' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
-                                            onClick={() => { setImportSource('url'); setImportStep(2); }}
-                                        >
-                                            <LinkIcon className="h-8 w-8 text-purple-600 mb-4" />
-                                            <h3 className="font-semibold mb-2">URL Import</h3>
-                                            <p className="text-sm text-gray-500">AliExpress, Amazon oder Vercel URLs</p>
+                                        <div className="flex flex-col gap-3">
+                                            <div
+                                                className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-purple-500 ${importSource === 'url' ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}`}
+                                                onClick={() => { setImportSource('url'); setImportStep(2); }}
+                                            >
+                                                <LinkIcon className="h-8 w-8 text-purple-600 mb-4" />
+                                                <h3 className="font-semibold mb-2">URL Import (mit Auswahl)</h3>
+                                                <p className="text-xs text-gray-500">Produkt wählen & URL eingeben</p>
+                                            </div>
+                                            <div
+                                                className={`border-2 rounded-xl p-6 cursor-pointer transition-all hover:border-indigo-500 ${importSource === 'direct_url' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}`}
+                                                onClick={() => {
+                                                    setImportSource('url');
+                                                    setImportStep(3);
+                                                    setAutoMapping(true);
+                                                }}
+                                            >
+                                                <Globe className="h-8 w-8 text-indigo-600 mb-4" />
+                                                <h3 className="font-semibold mb-2">Direkt Import (Bulk)</h3>
+                                                <p className="text-xs text-gray-500">Ohne Auswahl direkt importieren</p>
+                                            </div>
                                         </div>
 
                                         <div
