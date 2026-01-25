@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
                 // Scraper part... (simplified for now to basic Amazon/Vercel)
                 if (source === 'amazon') {
                     $('div[data-hook="review"]').each((i, el) => {
-                        if (reviewsFound.length >= 20) return
+                        // Limit removed
                         const ratingText = $(el).find('i[data-hook="review-star-rating"] span').text() || $(el).find('i[data-hook="cmps-review-star-rating"] span').text()
                         const rating = parseInt(ratingText.split(' ')[0]) || 5
                         const title = $(el).find('a[data-hook="review-title"]').text().trim() || $(el).find('span[data-hook="review-title"]').text().trim()
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
                                     const reviewsData = JSON.parse(jsonMatch[1]) // This might fail if simpler JS obj, but for now assume JSON-like
 
                                     reviewsData.forEach((r: any) => {
-                                        if (reviewsFound.length >= 20) return
+                                        // Limit removed
                                         // Clean date
                                         let date = new Date().toISOString()
                                         if (r.date) date = new Date(r.date).toISOString()

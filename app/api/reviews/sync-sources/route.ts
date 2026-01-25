@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
                                     const reviewsData = JSON.parse(jsonMatch[1])
 
                                     reviewsData.forEach((r: any) => {
-                                        if (reviewsFound.length >= 20) return
+                                        // Limit removed
                                         let date = new Date().toISOString()
                                         if (r.date) date = new Date(r.date).toISOString()
 
