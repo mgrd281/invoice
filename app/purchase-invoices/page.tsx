@@ -1,3 +1,5 @@
+'use client'
+
 import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'

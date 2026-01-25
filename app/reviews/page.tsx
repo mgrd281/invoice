@@ -1,3 +1,5 @@
+'use client'
+
 import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect, useCallback, Suspense } from 'react'
 // ...
