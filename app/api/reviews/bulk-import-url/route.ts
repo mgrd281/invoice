@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
                     })
 
                     // Create a set for faster lookup
-                    const existingSet = new Set(existingReviews.map(r => `${r.customerName}|${r.content.substring(0, 50)}`))
+                    const existingSet = new Set(existingReviews.map(r => `${r.customerName}|${(r.content || '').substring(0, 50)}`))
 
                     const newReviews = reviewsFound.filter(review => {
                         const key = `${review.customerName}|${review.content.substring(0, 50)}`
@@ -260,24 +260,31 @@ export async function POST(request: NextRequest) {
                         return true
                     })
 
+
                     if (newReviews.length > 0) {
-                        await prisma.review.createMany({
-                            data: newReviews.map(review => ({
-                                organizationId,
-                                productId: String(productId),
-                                productTitle: matchedProduct.title,
-                                customerName: review.customerName,
-                                customerEmail: `import@${source}.com`,
-                                rating: review.rating,
-                                title: review.title,
-                                content: review.content,
-                                source: review.source,
-                                status: 'APPROVED',
-                                createdAt: review.date,
-                                isVerified: true
-                            }))
-                        })
-                        savedCount = newReviews.length
+                        try {
+                            await prisma.review.createMany({
+                                data: newReviews.map(review => ({
+                                    organizationId,
+                                    productId: String(productId),
+                                    productTitle: matchedProduct.title,
+                                    customerName: review.customerName,
+                                    customerEmail: `import@${source}.com`,
+                                    rating: review.rating,
+                                    title: review.title,
+                                    content: review.content,
+                                    source: review.source,
+                                    status: 'APPROVED',
+                                    createdAt: review.date,
+                                    isVerified: true
+                                }))
+                            })
+                            savedCount = newReviews.length
+                        } catch (dbError) {
+                            console.error('Database Batch Insert Error:', dbError)
+                            results.push({ url, error: 'Database error during batch insert' })
+                            continue
+                        }
                     }
                     console.log(`Saved ${savedCount} new reviews`)
                     results.push({ url, success: true, count: savedCount, product: matchedProduct.title })
