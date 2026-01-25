@@ -115,9 +115,18 @@ export async function POST(request: NextRequest) {
             let finalValue = value
 
             if (type === 'rich_text_field') {
-                // Ensure value is a string and handle HTML-like content by stripping or wrapping
-                // For Shopify Rich Text, we must provide it as a JSON string of the content tree
-                const textValue = typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : String(value)
+                // Ensure value is a string and handle HTML-like content by preserving line breaks
+                const strValue = typeof value === 'string' ? value : String(value)
+
+                // Replace HTML breaks/paragraphs with newlines BEFORE stripping other tags
+                const preservedText = strValue
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<\/p>/gi, '\n')
+                    .replace(/<[^>]*>/g, '') // Strip remaining tags (strong, em, etc.)
+                    .trim()
+
+                // Shopify Rich Text expects a specific JSON structure
+                // We wrap the content in a root > paragraph > text node
                 finalValue = JSON.stringify({
                     type: "root",
                     children: [
@@ -126,14 +135,19 @@ export async function POST(request: NextRequest) {
                             children: [
                                 {
                                     type: "text",
-                                    value: textValue
+                                    value: preservedText
                                 }
                             ]
                         }
                     ]
                 })
             } else if (type === 'multi_line_text_field') {
-                finalValue = typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').trim() : String(value)
+                const strValue = typeof value === 'string' ? value : String(value)
+                finalValue = strValue
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<\/p>/gi, '\n')
+                    .replace(/<[^>]*>/g, '')
+                    .trim()
             } else {
                 finalValue = String(value).substring(0, 255)
             }
@@ -147,30 +161,32 @@ export async function POST(request: NextRequest) {
         }
 
         // Map product metadata fields using the new formatter
+        // We use 'custom' namespace for most fields to ensure they are visible in Shopify Admin > Custom Data
         const superMetafields = [
-            formatMetafield('mpn', product.google_mpn || product.sku, 'single_line_text_field', 'google'),
-            formatMetafield('condition', product.google_condition || 'new', 'single_line_text_field', 'google'),
-            formatMetafield('gender', product.google_gender || 'unisex', 'single_line_text_field', 'google'),
-            formatMetafield('age_group', product.google_age_group || 'adult', 'single_line_text_field', 'google'),
-            formatMetafield('size_type', product.google_size_type, 'single_line_text_field', 'google'),
-            formatMetafield('size_system', product.google_size_system, 'single_line_text_field', 'google'),
-            formatMetafield('custom_label_0', product.google_custom_label_0, 'single_line_text_field', 'google'),
-            formatMetafield('custom_label_1', product.google_custom_label_1, 'single_line_text_field', 'google'),
-            formatMetafield('custom_label_2', product.google_custom_label_2, 'single_line_text_field', 'google'),
-            formatMetafield('custom_label_3', product.google_custom_label_3, 'single_line_text_field', 'google'),
-            formatMetafield('custom_label_4', product.google_custom_label_4, 'single_line_text_field', 'google'),
-            formatMetafield('custom_product', product.google_custom_product, 'single_line_text_field', 'google'),
-            formatMetafield('customs_item_description', product.dhl_customs_item_description || product.dhl_custom_description || product.title?.slice(0, 50), 'single_line_text_field', 'dhl'),
-            formatMetafield('versandkosten', product.shipping_costs || product.versandkosten || '0.00', 'single_line_text_field', 'custom'),
-            formatMetafield('shipping_date_time', product.shipping_date_time, 'single_line_text_field', 'custom'),
-            formatMetafield('collapsible_row_content_1', product.collapsible_row_1_content, 'rich_text_field', 'custom'),
-            formatMetafield('collapsible_row_heading_1', product.collapsible_row_1_heading || 'Details', 'single_line_text_field', 'custom'),
-            formatMetafield('collapsible_row_content_2', product.collapsible_row_2_content, 'rich_text_field', 'custom'),
-            formatMetafield('collapsible_row_heading_2', product.collapsible_row_2_heading || 'Lieferung', 'single_line_text_field', 'custom'),
-            formatMetafield('collapsible_row_content_3', product.collapsible_row_3_content, 'rich_text_field', 'custom'),
-            formatMetafield('collapsible_row_heading_3', product.collapsible_row_3_heading || 'Garantie', 'single_line_text_field', 'custom'),
-            formatMetafield('emoji_benefits', product.emoji_benefits, 'multi_line_text_field', 'custom'),
-            formatMetafield('product_boosts', product.product_boosts, 'multi_line_text_field', 'custom'),
+            formatMetafield('mpn', product.google_mpn || product.sku, 'single_line_text_field', 'custom'),
+            formatMetafield('condition', product.google_condition || 'new', 'single_line_text_field', 'custom'),
+            formatMetafield('gender', product.google_gender || 'unisex', 'single_line_text_field', 'custom'),
+            formatMetafield('age_group', product.google_age_group || 'adult', 'single_line_text_field', 'custom'),
+            formatMetafield('size_type', product.google_size_type, 'single_line_text_field', 'custom'),
+            formatMetafield('size_system', product.google_size_system, 'single_line_text_field', 'custom'),
+            formatMetafield('google_product_category', product.google_custom_product, 'single_line_text_field', 'custom'),
+            formatMetafield('customs_description', product.dhl_customs_item_description || product.dhl_custom_description || product.title?.slice(0, 50), 'single_line_text_field', 'custom'),
+            formatMetafield('shipping_cost', product.shipping_costs || product.versandkosten || '0.00', 'single_line_text_field', 'custom'),
+            formatMetafield('shipping_time', product.shipping_date_time, 'single_line_text_field', 'custom'),
+
+            // Collapsible Rows (Rich Text)
+            formatMetafield('details_content', product.collapsible_row_1_content, 'rich_text_field', 'custom'),
+            formatMetafield('details_heading', product.collapsible_row_1_heading || 'Details', 'single_line_text_field', 'custom'),
+
+            formatMetafield('shipping_content', product.collapsible_row_2_content, 'rich_text_field', 'custom'),
+            formatMetafield('shipping_heading', product.collapsible_row_2_heading || 'Lieferung', 'single_line_text_field', 'custom'),
+
+            formatMetafield('warranty_content', product.collapsible_row_3_content, 'rich_text_field', 'custom'),
+            formatMetafield('warranty_heading', product.collapsible_row_3_heading || 'Garantie', 'single_line_text_field', 'custom'),
+
+            formatMetafield('benefits', product.emoji_benefits, 'multi_line_text_field', 'custom'),
+
+            // Global SEO fields
             formatMetafield('title_tag', product.metaTitle || product.title, 'single_line_text_field', 'global'),
             formatMetafield('description_tag', product.metaDescription || (product.description?.replace(/<[^>]*>/g, '').slice(0, 160)), 'multi_line_text_field', 'global')
         ].filter(m => m !== null) as any[]
