@@ -688,436 +688,441 @@ export default function NewInvoicePage() {
                         <Settings className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block px-1">Datum</Label>
-                          <Input
-                            type="date"
-                            value={invoiceData.date}
-                            onChange={(e) => setInvoiceData(prev => ({ ...prev, date: e.target.value }))}
-                            className="h-11 border-slate-200/60 bg-white rounded-xl"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block px-1">Lieferdatum</Label>
-                          <Input
-                            type="date"
-                            value={invoiceData.deliveryDate}
-                            onChange={(e) => setInvoiceData(prev => ({ ...prev, deliveryDate: e.target.value }))}
-                            className="h-11 border-slate-200/60 bg-white rounded-xl"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block px-1">Zahlungsziel</Label>
-                        <div className="flex flex-col gap-3">
-                          <Input
-                            type="date"
-                            value={invoiceData.dueDate}
-                            onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
-                            className="h-11 border-slate-200/60 bg-white rounded-xl"
-                          />
-                          <div className="flex items-center gap-1.5 overflow-hidden">
-                            {[7, 14, 30].map(days => (
-                              <button
-                                key={days}
-                                onClick={() => {
-                                  const d = new Date(invoiceData.date || Date.now())
-                                  d.setDate(d.getDate() + days)
-                                  setInvoiceData(prev => ({ ...prev, dueDate: d.toISOString().split('T')[0] }))
-                                }}
-                                className="px-3 py-1 bg-slate-100/80 hover:bg-slate-200 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-tighter transition-all"
-                              >
-                                {days} Tage
-                              </button>
-                            ))}
-                            <button
-                              onClick={() => {
-                                setInvoiceData(prev => ({ ...prev, dueDate: prev.date }))
-                              }}
-                              className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-blue-100 transition-all"
-                            >Sofort</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* SECTION: POSITIONEN */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-                        <Layout className="w-5 h-5" />
-                      </div>
-                      <h2 className="text-lg font-bold">Positionen</h2>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowApplyTemplateDialog(true)}
-                        className="rounded-full border-slate-200 text-slate-600 font-bold text-[11px] uppercase tracking-wider px-4"
-                      >
-                        <Bookmark className="w-3.5 h-3.5 mr-1.5" /> Vorlagen
-                      </Button>
-                      <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200/50">
-                        <button
-                          onClick={() => setSummaryMode('gross')}
-                          className={cn("px-4 py-1 text-[10px] font-black rounded-full transition-all uppercase tracking-tighter", summaryMode === 'gross' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
-                        >Brutto</button>
-                        <button
-                          onClick={() => setSummaryMode('net')}
-                          className={cn("px-4 py-1 text-[10px] font-black rounded-full transition-all uppercase tracking-tighter", summaryMode === 'net' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
-                        >Netto</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* STICKY MINI HEADER */}
-                    <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 rounded-xl border border-slate-100/50 mx-1">
-                      <div className="col-span-5">Produkt / Service</div>
-                      <div className="col-span-2 text-center">Menge</div>
-                      <div className="col-span-2 text-right">Einzelpreis</div>
-                      <div className="col-span-1 text-center">USt.</div>
-                      <div className="col-span-2 text-right">Gesamt</div>
-                    </div>
-
-                    {/* ITEM ROWS */}
-                    <div className="space-y-3">
-                      {items.map((item, idx) => (
-                        <div key={item.id} className="group relative bg-white rounded-[16px] border border-slate-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:border-blue-400/50 hover:shadow-[0_8px_20px_rgba(0,0,0,0.04)] transition-all duration-300">
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center">
-                            <div className="col-span-1 md:col-span-5 relative">
-                              <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-black text-slate-300 w-4">{idx + 1}.</span>
-                                <div className="relative flex-1">
-                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                                  <Input
-                                    value={item.description}
-                                    onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                                    placeholder="Was wurde verkauft?"
-                                    className="pl-9 bg-transparent border-none focus:ring-0 font-medium placeholder:text-slate-300 text-sm h-10"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="col-span-1 md:col-span-2 flex items-center justify-center gap-2">
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                className="w-16 h-9 text-center bg-slate-50 border-slate-200/60 rounded-lg font-bold text-sm"
-                              />
-                              <Select value={item.unit} onValueChange={(v) => updateItem(item.id, 'unit', v)}>
-                                <SelectTrigger className="w-20 h-9 bg-slate-50 border-slate-200/60 rounded-lg text-xs font-bold text-slate-500">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  {['Stk', 'Std', 'Tag', 'Psch', 'm²'].map(u => (
-                                    <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="col-span-1 md:col-span-2 relative">
-                              <Input
-                                type="number"
-                                value={item.unitPrice}
-                                onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                className="h-10 text-right pr-7 bg-slate-50 border-slate-200/60 rounded-xl font-mono font-bold text-sm"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">€</span>
-                            </div>
-
-                            <div className="col-span-1 md:col-span-1 flex flex-col items-center justify-center gap-1">
-                              <div className="relative w-full px-2">
-                                <Select value={String(item.vat)} onValueChange={(v) => updateItem(item.id, 'vat', parseFloat(v))}>
-                                  <SelectTrigger className="h-7 border-none bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black p-0 justify-center">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {[19, 7, 0].map(v => (
-                                      <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-
-                            <div className="col-span-1 md:col-span-2 text-right">
-                              <div className="flex flex-col items-end">
-                                <span className="text-sm font-black text-slate-900">{item.total.toFixed(2)} €</span>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Betrag</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-500 hover:text-white pointer-events-auto z-10"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                      <Button
-                        onClick={addItem}
-                        variant="ghost"
-                        className="text-blue-600 hover:bg-blue-50 font-bold rounded-xl px-6 py-6 border-2 border-dashed border-blue-100 hover:border-blue-400 transition-all h-auto"
-                      >
-                        <Plus className="w-5 h-5 mr-2" /> Neue Position hinzufügen
-                      </Button>
-
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          onClick={() => setShowSaveTemplateDialog(true)}
-                          className="text-slate-400 hover:text-slate-600 font-bold text-xs"
-                        >
-                          Als Vorlage speichern
-                        </Button>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
-                {/* SECTION: TEXTE & TEMPLATES */}
-                {/* I will use the one already in the file if it's correct, but I'll overwrite to be sure */}
-                <Card className="border-none shadow-[0_1px_3px_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)] bg-white rounded-[16px] overflow-hidden">
-                  <CardHeader className="pb-4 pt-6 px-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <h2 className="text-lg font-bold">Kopf- & Fußtexte</h2>
-                      </div>
-                      <Select value={selectedTemplate?.id} onValueChange={(id) => {
-                        const t = invoiceTemplates.find(x => x.id === id)
-                        if (t) setSelectedTemplate(t)
-                      }}>
-                        <SelectTrigger className="w-48 h-9 border-slate-200 bg-slate-50 rounded-lg text-xs font-bold">
-                          <SelectValue placeholder="Textvorlage wählen" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl shadow-xl">
-                          {invoiceTemplates.map(t => (
-                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-6 pb-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Betreffzeile</Label>
+                      <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block px-1">Datum</Label>
                       <Input
-                        value={invoiceData.headerSubject}
-                        onChange={(e) => setInvoiceData(prev => ({ ...prev, headerSubject: e.target.value }))}
-                        className="h-11 border-slate-200/60 bg-slate-50/50 rounded-xl focus:bg-white transition-all font-bold"
+                        type="date"
+                        value={invoiceData.date}
+                        onChange={(e) => setInvoiceData(prev => ({ ...prev, date: e.target.value }))}
+                        className="h-11 border-slate-200/60 bg-white rounded-xl"
                       />
                     </div>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Einleitungstext</Label>
-                          <span className="text-[10px] font-bold text-slate-300">Variablen: [%NAME%], [%DATUM%]</span>
-                        </div>
-                        <Textarea
-                          value={invoiceData.headerText}
-                          onChange={(e) => setInvoiceData(prev => ({ ...prev, headerText: e.target.value }))}
-                          className="min-h-[100px] border-slate-200/60 bg-slate-50/50 rounded-xl focus:bg-white transition-all text-sm leading-relaxed"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Schlusstext</Label>
-                          <div className="flex gap-1">
-                            <button className="px-2 py-0.5 bg-slate-100 text-[9px] font-black rounded uppercase text-slate-400 hover:text-blue-500">[%ZAHLUNGSZIEL%]</button>
-                            <button className="px-2 py-0.5 bg-slate-100 text-[9px] font-black rounded uppercase text-slate-400 hover:text-blue-500">[%KONTAKTPERSON%]</button>
-                          </div>
-                        </div>
-                        <Textarea
-                          value={invoiceData.footerText}
-                          onChange={(e) => setInvoiceData(prev => ({ ...prev, footerText: e.target.value }))}
-                          className="min-h-[100px] border-slate-200/60 bg-slate-50/50 rounded-xl focus:bg-white transition-all text-sm leading-relaxed"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block px-1">Lieferdatum</Label>
+                      <Input
+                        type="date"
+                        value={invoiceData.deliveryDate}
+                        onChange={(e) => setInvoiceData(prev => ({ ...prev, deliveryDate: e.target.value }))}
+                        className="h-11 border-slate-200/60 bg-white rounded-xl"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* SECTION: STEUER & WEITERE OPTIONEN */}
-                <div className="space-y-6">
-                  <Card className="border-none shadow-[0_1px_3px_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)] bg-white rounded-[16px]">
-                    <CardHeader className="pb-3 px-6 pt-6">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Umsatzsteuer-Regelung</h3>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {[
-                          { id: 'In Deutschland', label: 'Deutschland', desc: 'Standard 19%/7%' },
-                          { id: 'EU-Ausland', label: 'EU-Ausland', desc: 'Reverse-Charge' },
-                          { id: 'Außerhalb EU', label: 'Drittland', desc: 'Steuerfrei gem. §4' }
-                        ].map(opt => (
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block px-1">Zahlungsziel</Label>
+                    <div className="flex flex-col gap-3">
+                      <Input
+                        type="date"
+                        value={invoiceData.dueDate}
+                        onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
+                        className="h-11 border-slate-200/60 bg-white rounded-xl"
+                      />
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        {[7, 14, 30].map(days => (
                           <button
-                            key={opt.id}
-                            onClick={() => setVatRegulation(opt.id)}
-                            className={cn(
-                              "flex flex-col items-start p-4 rounded-xl border-2 text-left transition-all group",
-                              vatRegulation === opt.id ? "border-blue-500 bg-blue-50/30 shadow-sm" : "border-slate-100 hover:border-slate-200 hover:bg-slate-50/50"
-                            )}
+                            key={days}
+                            type="button"
+                            onClick={() => {
+                              const d = new Date(invoiceData.date || Date.now())
+                              d.setDate(d.getDate() + days)
+                              setInvoiceData(prev => ({ ...prev, dueDate: d.toISOString().split('T')[0] }))
+                            }}
+                            className="px-3 py-1 bg-slate-100/80 hover:bg-slate-200 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-tighter transition-all"
                           >
-                            <div className="flex items-center justify-between w-full mb-1">
-                              <span className={cn("text-xs font-bold", vatRegulation === opt.id ? "text-blue-700" : "text-slate-600 group-hover:text-slate-900")}>{opt.label}</span>
-                              {vatRegulation === opt.id && <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>}
-                            </div>
-                            <span className="text-[10px] text-slate-400 group-hover:text-slate-500 leading-tight">{opt.desc}</span>
+                            {days} Tage
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInvoiceData(prev => ({ ...prev, dueDate: prev.date }))
+                          }}
+                          className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-blue-100 transition-all"
+                        >Sofort</button>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                  <div className="px-2">
+            {/* SECTION: POSITIONEN */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <Layout className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-lg font-bold">Positionen</h2>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowApplyTemplateDialog(true)}
+                    className="rounded-full border-slate-200 text-slate-600 font-bold text-[11px] uppercase tracking-wider px-4"
+                  >
+                    <Bookmark className="w-3.5 h-3.5 mr-1.5" /> Vorlagen
+                  </Button>
+                  <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200/50">
                     <button
-                      onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
-                      className="flex items-center gap-2 text-slate-400 hover:text-blue-500 font-bold text-xs transition-colors uppercase tracking-widest"
-                    >
-                      {isOptionsExpanded ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <Plus className="w-3.5 h-3.5" />}
-                      Weitere Optionen {isOptionsExpanded ? 'ausblenden' : 'anzeigen'}
-                    </button>
+                      onClick={() => setSummaryMode('gross')}
+                      className={cn("px-4 py-1 text-[10px] font-black rounded-full transition-all uppercase tracking-tighter", summaryMode === 'gross' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
+                    >Brutto</button>
+                    <button
+                      onClick={() => setSummaryMode('net')}
+                      className={cn("px-4 py-1 text-[10px] font-black rounded-full transition-all uppercase tracking-tighter", summaryMode === 'net' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
+                    >Netto</button>
+                  </div>
+                </div>
+              </div>
 
-                    {isOptionsExpanded && (
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="space-y-2 bg-white p-4 rounded-xl border border-slate-200/50">
-                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Währung & Skonto</Label>
-                          <div className="flex gap-2 mt-2">
-                            <Select value={currency} onValueChange={setCurrency}>
-                              <SelectTrigger className="h-9 border-slate-200 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl"><SelectItem value="EUR">EUR (€)</SelectItem><SelectItem value="USD">USD ($)</SelectItem></SelectContent>
-                            </Select>
-                            <div className="flex-1 flex gap-1">
-                              <Input placeholder="Tage" value={skonto.days} onChange={e => setSkonto({ ...skonto, days: parseInt(e.target.value) || 0 })} className="h-9 text-center text-xs" />
-                              <Input placeholder="%" value={skonto.percent} onChange={e => setSkonto({ ...skonto, percent: parseFloat(e.target.value) || 0 })} className="h-9 text-center text-xs" />
+              <div className="space-y-3">
+                {/* STICKY MINI HEADER */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 rounded-xl border border-slate-100/50 mx-1">
+                  <div className="col-span-5">Produkt / Service</div>
+                  <div className="col-span-2 text-center">Menge</div>
+                  <div className="col-span-2 text-right">Einzelpreis</div>
+                  <div className="col-span-1 text-center">USt.</div>
+                  <div className="col-span-2 text-right">Gesamt</div>
+                </div>
+
+                {/* ITEM ROWS */}
+                <div className="space-y-3">
+                  {items.map((item, idx) => (
+                    <div key={item.id} className="group relative bg-white rounded-[16px] border border-slate-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:border-blue-400/50 hover:shadow-[0_8px_20px_rgba(0,0,0,0.04)] transition-all duration-300">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center">
+                        <div className="col-span-1 md:col-span-5 relative">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black text-slate-300 w-4">{idx + 1}.</span>
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                              <Input
+                                value={item.description}
+                                onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                                placeholder="Was wurde verkauft?"
+                                className="pl-9 bg-transparent border-none focus:ring-0 font-medium placeholder:text-slate-300 text-sm h-10"
+                              />
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-2 bg-white p-4 rounded-xl border border-slate-200/50">
-                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Zahlungsart & Konto</Label>
-                          <div className="flex flex-col gap-2 mt-2">
-                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                              <SelectTrigger className="h-9 border-slate-200 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl"><SelectItem value="Überweisung">Überweisung</SelectItem><SelectItem value="Bar">Bar</SelectItem></SelectContent>
+
+                        <div className="col-span-1 md:col-span-2 flex items-center justify-center gap-2">
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                            className="w-16 h-9 text-center bg-slate-50 border-slate-200/60 rounded-lg font-bold text-sm"
+                          />
+                          <Select value={item.unit} onValueChange={(v) => updateItem(item.id, 'unit', v)}>
+                            <SelectTrigger className="w-20 h-9 bg-slate-50 border-slate-200/60 rounded-lg text-xs font-bold text-slate-500">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {['Stk', 'Std', 'Tag', 'Psch', 'm²'].map(u => (
+                                <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="col-span-1 md:col-span-2 relative">
+                          <Input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className="h-10 text-right pr-7 bg-slate-50 border-slate-200/60 rounded-xl font-mono font-bold text-sm"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">€</span>
+                        </div>
+
+                        <div className="col-span-1 md:col-span-1 flex flex-col items-center justify-center gap-1">
+                          <div className="relative w-full px-2">
+                            <Select value={String(item.vat)} onValueChange={(v) => updateItem(item.id, 'vat', parseFloat(v))}>
+                              <SelectTrigger className="h-7 border-none bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black p-0 justify-center">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[19, 7, 0].map(v => (
+                                  <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
+                                ))}
+                              </SelectContent>
                             </Select>
-                            <Input placeholder="Erlöskonto (Optional)" value={revenueAccount} onChange={e => setRevenueAccount(e.target.value)} className="h-9 text-xs" />
+                          </div>
+                        </div>
+
+                        <div className="col-span-1 md:col-span-2 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-black text-slate-900">{item.total.toFixed(2)} €</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Betrag</span>
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
+
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-500 hover:text-white pointer-events-auto z-10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              </div>
 
-              {/* RIGHT: SMART SUMMARY */}
-              <div className="lg:col-span-4 sticky top-24 space-y-6 hidden lg:block animate-in fade-in slide-in-from-right-4 duration-500 delay-150">
-                <Card className="border-none shadow-2xl shadow-slate-200/50 bg-white rounded-[24px] overflow-hidden">
-                  <div className="p-8 space-y-8">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Zusammenfassung</h3>
-                      <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/30">
-                        <button
-                          onClick={() => setSummaryMode('net')}
-                          className={cn("px-3 py-1 text-[9px] font-black rounded-md transition-all", summaryMode === 'net' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
-                        >NET</button>
-                        <button
-                          onClick={() => setSummaryMode('gross')}
-                          className={cn("px-3 py-1 text-[9px] font-black rounded-md transition-all", summaryMode === 'gross' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
-                        >BRUT</button>
-                      </div>
-                    </div>
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <Button
+                    onClick={addItem}
+                    variant="ghost"
+                    className="text-blue-600 hover:bg-blue-50 font-bold rounded-xl px-6 py-6 border-2 border-dashed border-blue-100 hover:border-blue-400 transition-all h-auto"
+                  >
+                    <Plus className="w-5 h-5 mr-2" /> Neue Position hinzufügen
+                  </Button>
 
-                    <div className="space-y-4">
-                      <div className="flex justify-between text-sm font-medium text-slate-500">
-                        <span>Zwischensumme</span>
-                        <span className="font-mono">{netTotal.toFixed(2)} €</span>
-                      </div>
-                      <div className="flex justify-between text-sm font-medium text-emerald-600 bg-emerald-50/50 px-3 py-2 rounded-xl border border-emerald-100/50">
-                        <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Rabatte</span>
-                        <span className="font-mono">-{((items.reduce((ac, it) => ac + (it.unitPrice * it.quantity), 0)) - netTotal).toFixed(2)} €</span>
-                      </div>
-                      <div className="flex flex-col gap-2 pt-2">
-                        <div className="flex justify-between text-xs font-medium text-slate-400">
-                          <span>Umsatzsteuer ({invoiceData.taxRate}%)</span>
-                          <span className="font-mono">{totalVat.toFixed(2)} €</span>
-                        </div>
-                        <div className="h-[1px] bg-slate-100 w-full" />
-                      </div>
-                      <div className="flex justify-between items-end pt-4">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black uppercase tracking-tighter text-blue-600">Gesamtbetrag</span>
-                          <span className="text-3xl font-black text-slate-900 tracking-tight">{grossTotal.toFixed(2)} <span className="text-lg text-slate-400">€</span></span>
-                        </div>
-                        <div className="flex flex-col items-end pb-1">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Fällig bis</span>
-                          <span className="text-xs font-black text-slate-700">{invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString('de-DE') : '--'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/50 space-y-4">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Quick Checks
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between group">
-                            <span className="text-xs font-bold text-slate-600">Empfänger angelegt</span>
-                            {customer.name ? <Check className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />}
-                          </div>
-                          <div className="flex items-center justify-between group">
-                            <span className="text-xs font-bold text-slate-600">Positionen erfasst</span>
-                            {items.filter(i => i.description).length > 0 ? <Check className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />}
-                          </div>
-                          <div className="flex items-center justify-between group">
-                            <span className="text-xs font-bold text-slate-600">Bankdaten gültig</span>
-                            <Check className="w-4 h-4 text-emerald-500" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
+                  <div className="flex gap-2">
                     <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="w-full py-7 rounded-[20px] bg-blue-600 hover:bg-blue-700 text-white font-black shadow-xl shadow-blue-500/20 text-base flex flex-col items-center justify-center h-auto group overflow-hidden relative"
+                      variant="ghost"
+                      onClick={() => setShowSaveTemplateDialog(true)}
+                      className="text-slate-400 hover:text-slate-600 font-bold text-xs"
                     >
-                      <span className="relative z-10">Rechnung Senden</span>
-                      <span className="text-[10px] text-blue-200 font-bold uppercase tracking-widest relative z-10 group-hover:translate-y-px transition-transform">Sofort per E-Mail & Post</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                      Als Vorlage speichern
                     </Button>
                   </div>
-                </Card>
-
-                <div className="bg-indigo-600 rounded-[20px] p-6 text-white shadow-xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                    <Info className="w-16 h-16 rotate-12" />
-                  </div>
-                  <h4 className="text-xs font-black uppercase tracking-widest mb-1">Experten-Tipp</h4>
-                  <p className="text-[11px] text-indigo-100 leading-relaxed font-medium">
-                    Standardisierte Rechnungen mit einem klaren Zahlungsziel von 14 Tagen werden im Durchschnitt 4 Tage schneller bezahlt.
-                  </p>
                 </div>
               </div>
+            </div>
+
+            {/* SECTION: TEXTE & TEMPLATES */}
+            {/* I will use the one already in the file if it's correct, but I'll overwrite to be sure */}
+            <Card className="border-none shadow-[0_1px_3px_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)] bg-white rounded-[16px] overflow-hidden">
+              <CardHeader className="pb-4 pt-6 px-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-lg font-bold">Kopf- & Fußtexte</h2>
+                  </div>
+                  <Select value={selectedTemplate?.id} onValueChange={(id) => {
+                    const t = invoiceTemplates.find(x => x.id === id)
+                    if (t) setSelectedTemplate(t)
+                  }}>
+                    <SelectTrigger className="w-48 h-9 border-slate-200 bg-slate-50 rounded-lg text-xs font-bold">
+                      <SelectValue placeholder="Textvorlage wählen" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl shadow-xl">
+                      {invoiceTemplates.map(t => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-8 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Betreffzeile</Label>
+                  <Input
+                    value={invoiceData.headerSubject}
+                    onChange={(e) => setInvoiceData(prev => ({ ...prev, headerSubject: e.target.value }))}
+                    className="h-11 border-slate-200/60 bg-slate-50/50 rounded-xl focus:bg-white transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Einleitungstext</Label>
+                      <span className="text-[10px] font-bold text-slate-300">Variablen: [%NAME%], [%DATUM%]</span>
+                    </div>
+                    <Textarea
+                      value={invoiceData.headerText}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, headerText: e.target.value }))}
+                      className="min-h-[100px] border-slate-200/60 bg-slate-50/50 rounded-xl focus:bg-white transition-all text-sm leading-relaxed"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Schlusstext</Label>
+                      <div className="flex gap-1">
+                        <button className="px-2 py-0.5 bg-slate-100 text-[9px] font-black rounded uppercase text-slate-400 hover:text-blue-500">[%ZAHLUNGSZIEL%]</button>
+                        <button className="px-2 py-0.5 bg-slate-100 text-[9px] font-black rounded uppercase text-slate-400 hover:text-blue-500">[%KONTAKTPERSON%]</button>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={invoiceData.footerText}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, footerText: e.target.value }))}
+                      className="min-h-[100px] border-slate-200/60 bg-slate-50/50 rounded-xl focus:bg-white transition-all text-sm leading-relaxed"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SECTION: STEUER & WEITERE OPTIONEN */}
+            <div className="space-y-6">
+              <Card className="border-none shadow-[0_1px_3px_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)] bg-white rounded-[16px]">
+                <CardHeader className="pb-3 px-6 pt-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Umsatzsteuer-Regelung</h3>
+                </CardHeader>
+                <CardContent className="px-6 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      { id: 'In Deutschland', label: 'Deutschland', desc: 'Standard 19%/7%' },
+                      { id: 'EU-Ausland', label: 'EU-Ausland', desc: 'Reverse-Charge' },
+                      { id: 'Außerhalb EU', label: 'Drittland', desc: 'Steuerfrei gem. §4' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setVatRegulation(opt.id)}
+                        className={cn(
+                          "flex flex-col items-start p-4 rounded-xl border-2 text-left transition-all group",
+                          vatRegulation === opt.id ? "border-blue-500 bg-blue-50/30 shadow-sm" : "border-slate-100 hover:border-slate-200 hover:bg-slate-50/50"
+                        )}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className={cn("text-xs font-bold", vatRegulation === opt.id ? "text-blue-700" : "text-slate-600 group-hover:text-slate-900")}>{opt.label}</span>
+                          {vatRegulation === opt.id && <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></div>}
+                        </div>
+                        <span className="text-[10px] text-slate-400 group-hover:text-slate-500 leading-tight">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="px-2">
+                <button
+                  onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
+                  className="flex items-center gap-2 text-slate-400 hover:text-blue-500 font-bold text-xs transition-colors uppercase tracking-widest"
+                >
+                  {isOptionsExpanded ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <Plus className="w-3.5 h-3.5" />}
+                  Weitere Optionen {isOptionsExpanded ? 'ausblenden' : 'anzeigen'}
+                </button>
+
+                {isOptionsExpanded && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2 bg-white p-4 rounded-xl border border-slate-200/50">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Währung & Skonto</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Select value={currency} onValueChange={setCurrency}>
+                          <SelectTrigger className="h-9 border-slate-200 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="EUR">EUR (€)</SelectItem><SelectItem value="USD">USD ($)</SelectItem></SelectContent>
+                        </Select>
+                        <div className="flex-1 flex gap-1">
+                          <Input placeholder="Tage" value={skonto.days} onChange={e => setSkonto({ ...skonto, days: parseInt(e.target.value) || 0 })} className="h-9 text-center text-xs" />
+                          <Input placeholder="%" value={skonto.percent} onChange={e => setSkonto({ ...skonto, percent: parseFloat(e.target.value) || 0 })} className="h-9 text-center text-xs" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2 bg-white p-4 rounded-xl border border-slate-200/50">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Zahlungsart & Konto</Label>
+                      <div className="flex flex-col gap-2 mt-2">
+                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                          <SelectTrigger className="h-9 border-slate-200 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="Überweisung">Überweisung</SelectItem><SelectItem value="Bar">Bar</SelectItem></SelectContent>
+                        </Select>
+                        <Input placeholder="Erlöskonto (Optional)" value={revenueAccount} onChange={e => setRevenueAccount(e.target.value)} className="h-9 text-xs" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* RIGHT: SMART SUMMARY */}
+          <div className="lg:col-span-4 sticky top-24 space-y-6 hidden lg:block animate-in fade-in slide-in-from-right-4 duration-500 delay-150">
+            <Card className="border-none shadow-2xl shadow-slate-200/50 bg-white rounded-[24px] overflow-hidden">
+              <div className="p-8 space-y-8">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Zusammenfassung</h3>
+                  <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/30">
+                    <button
+                      onClick={() => setSummaryMode('net')}
+                      className={cn("px-3 py-1 text-[9px] font-black rounded-md transition-all", summaryMode === 'net' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+                    >NET</button>
+                    <button
+                      onClick={() => setSummaryMode('gross')}
+                      className={cn("px-3 py-1 text-[9px] font-black rounded-md transition-all", summaryMode === 'gross' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+                    >BRUT</button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm font-medium text-slate-500">
+                    <span>Zwischensumme</span>
+                    <span className="font-mono">{netTotal.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-medium text-emerald-600 bg-emerald-50/50 px-3 py-2 rounded-xl border border-emerald-100/50">
+                    <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Rabatte</span>
+                    <span className="font-mono">-{((items.reduce((ac, it) => ac + (it.unitPrice * it.quantity), 0)) - netTotal).toFixed(2)} €</span>
+                  </div>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div className="flex justify-between text-xs font-medium text-slate-400">
+                      <span>Umsatzsteuer ({invoiceData.taxRate}%)</span>
+                      <span className="font-mono">{totalVat.toFixed(2)} €</span>
+                    </div>
+                    <div className="h-[1px] bg-slate-100 w-full" />
+                  </div>
+                  <div className="flex justify-between items-end pt-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase tracking-tighter text-blue-600">Gesamtbetrag</span>
+                      <span className="text-3xl font-black text-slate-900 tracking-tight">{grossTotal.toFixed(2)} <span className="text-lg text-slate-400">€</span></span>
+                    </div>
+                    <div className="flex flex-col items-end pb-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Fällig bis</span>
+                      <span className="text-xs font-black text-slate-700">{invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString('de-DE') : '--'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/50 space-y-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Quick Checks
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between group">
+                        <span className="text-xs font-bold text-slate-600">Empfänger angelegt</span>
+                        {customer.name ? <Check className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />}
+                      </div>
+                      <div className="flex items-center justify-between group">
+                        <span className="text-xs font-bold text-slate-600">Positionen erfasst</span>
+                        {items.filter(i => i.description).length > 0 ? <Check className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />}
+                      </div>
+                      <div className="flex items-center justify-between group">
+                        <span className="text-xs font-bold text-slate-600">Bankdaten gültig</span>
+                        <Check className="w-4 h-4 text-emerald-500" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full py-7 rounded-[20px] bg-blue-600 hover:bg-blue-700 text-white font-black shadow-xl shadow-blue-500/20 text-base flex flex-col items-center justify-center h-auto group overflow-hidden relative"
+                >
+                  <span className="relative z-10">Rechnung Senden</span>
+                  <span className="text-[10px] text-blue-200 font-bold uppercase tracking-widest relative z-10 group-hover:translate-y-px transition-transform">Sofort per E-Mail & Post</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                </Button>
+              </div>
+            </Card>
+
+            <div className="bg-indigo-600 rounded-[20px] p-6 text-white shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                <Info className="w-16 h-16 rotate-12" />
+              </div>
+              <h4 className="text-xs font-black uppercase tracking-widest mb-1">Experten-Tipp</h4>
+              <p className="text-[11px] text-indigo-100 leading-relaxed font-medium">
+                Standardisierte Rechnungen mit einem klaren Zahlungsziel von 14 Tagen werden im Durchschnitt 4 Tage schneller bezahlt.
+              </p>
+            </div>
+          </div>
+        </div>
       </main >
 
       {/* MODALS */}
