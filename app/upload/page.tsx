@@ -613,75 +613,78 @@ export default function UploadPage() {
                 {/* Import Target Cards */}
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Importieren als:</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div
-                      onClick={() => setImportTarget('invoices')}
-                      className={cn(
-                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
-                        importTarget === 'invoices' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
-                      )}
-                    >
-                      <div className="flex items-start gap-4 relative z-10">
-                        <div className={cn("p-2.5 rounded-xl", importTarget === 'invoices' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className={cn("font-semibold", importTarget === 'invoices' ? "text-blue-900" : "text-gray-900")}>Verkäufe</h3>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Shopify-Verkäufe importieren und Rechnungen generieren.</p>
-                        </div>
-                        {importTarget === 'invoices' && (
-                          <div className="absolute top-4 right-4 text-blue-600">
-                            <CheckCircle className="h-5 w-5" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {[
+                      {
+                        id: 'invoices',
+                        title: 'Verkäufe',
+                        description: 'Shopify-Verkäufe importieren und Rechnungen generieren.',
+                        icon: FileText
+                      },
+                      {
+                        id: 'purchase-invoices',
+                        title: 'Einkaufsrechnungen',
+                        description: 'Lieferantenrechnungen und Ausgaben importieren.',
+                        icon: Receipt
+                      },
+                      {
+                        id: 'accounting',
+                        title: 'Buchhaltung',
+                        description: 'Einnahmen/Ausgaben direkt in die Buchhaltung erfassen.',
+                        icon: Calculator
+                      }
+                    ].map((option) => {
+                      const isSelected = importTarget === option.id
+                      const Icon = option.icon
 
-                    <div
-                      onClick={() => setImportTarget('purchase-invoices')}
-                      className={cn(
-                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
-                        importTarget === 'purchase-invoices' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
-                      )}
-                    >
-                      <div className="flex items-start gap-4 relative z-10">
-                        <div className={cn("p-2.5 rounded-xl", importTarget === 'purchase-invoices' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
-                          <Receipt className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className={cn("font-semibold", importTarget === 'purchase-invoices' ? "text-blue-900" : "text-gray-900")}>Einkaufsrechnungen</h3>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Lieferantenrechnungen und Ausgaben importieren.</p>
-                        </div>
-                        {importTarget === 'purchase-invoices' && (
-                          <div className="absolute top-4 right-4 text-blue-600">
-                            <CheckCircle className="h-5 w-5" />
+                      return (
+                        <div
+                          key={option.id}
+                          onClick={() => setImportTarget(option.id as any)}
+                          className={cn(
+                            "group relative cursor-pointer rounded-2xl border p-6 transition-all duration-300 ease-in-out h-full flex flex-col items-center justify-center text-center",
+                            isSelected
+                              ? "border-blue-600 bg-blue-50/20 shadow-[0_0_0_1px_rgba(37,99,235,1)]"
+                              : "border-gray-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:-translate-y-[2px]"
+                          )}
+                          role="radio"
+                          aria-checked={isSelected}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setImportTarget(option.id as any)
+                            }
+                          }}
+                        >
+                          <div className={cn(
+                            "mb-4 p-3 rounded-full transition-colors flex items-center justify-center h-12 w-12",
+                            isSelected
+                              ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                              : "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-200"
+                          )}>
+                            <Icon className="h-6 w-6" />
                           </div>
-                        )}
-                      </div>
-                    </div>
 
-                    <div
-                      onClick={() => setImportTarget('accounting')}
-                      className={cn(
-                        "cursor-pointer rounded-xl border-2 p-4 transition-all hover:border-blue-200 relative overflow-hidden",
-                        importTarget === 'accounting' ? "border-blue-600 bg-blue-50/30" : "border-gray-200 bg-white"
-                      )}
-                    >
-                      <div className="flex items-start gap-4 relative z-10">
-                        <div className={cn("p-2.5 rounded-xl", importTarget === 'accounting' ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-gray-100 text-gray-500")}>
-                          <Calculator className="h-5 w-5" />
+                          <h3 className={cn(
+                            "font-bold text-lg mb-2 transition-colors",
+                            isSelected ? "text-blue-900" : "text-gray-900"
+                          )}>
+                            {option.title}
+                          </h3>
+
+                          <p className="text-sm text-gray-500 leading-relaxed max-w-[200px]">
+                            {option.description}
+                          </p>
+
+                          {isSelected && (
+                            <div className="absolute top-4 right-4 text-blue-600 animate-in zoom-in spin-in-90 duration-300">
+                              <CheckCircle className="h-6 w-6 fill-blue-50" />
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <h3 className={cn("font-semibold", importTarget === 'accounting' ? "text-blue-900" : "text-gray-900")}>Buchhaltung</h3>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Einnahmen/Ausgaben direkt in die Buchhaltung erfassen.</p>
-                        </div>
-                        {importTarget === 'accounting' && (
-                          <div className="absolute top-4 right-4 text-blue-600">
-                            <CheckCircle className="h-5 w-5" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      )
+                    })}
                   </div>
 
                   {/* Accounting Type Selection */}
