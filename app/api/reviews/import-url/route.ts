@@ -125,41 +125,113 @@ export async function POST(request: NextRequest) {
             $('.feedback-item').each((i, el) => {
                 // ... implementation would go here
             })
-        } else if (url.includes('vercel.app')) {
+        } else if (source === 'vercel') {
             // Scraper for bewertungen.vercel.app
-            $('table tbody tr').each((i, el) => {
-                const cells = $(el).find('td')
-                if (cells.length >= 5) {
-                    // Column mapping based on screenshot: 
-                    // 0: #, 1: Rating, 2: Title, 3: Content, 4: Name, 5: Date
-                    const ratingStars = $(cells[1]).find('span').length || $(cells[1]).text().split('★').length - 1 || 5
-                    const title = $(cells[2]).text().trim()
-                    const content = $(cells[3]).text().trim()
-                    const nameFull = $(cells[4]).text().trim()
-                    const nameParts = nameFull.split('\n').map(s => s.trim()).filter(Boolean)
-                    const name = nameParts[0] || 'Anonymer Kunde'
-                    const dateRaw = $(cells[5]).text().trim()
-
-                    let date = new Date()
-                    if (dateRaw) {
-                        const parts = dateRaw.split('.')
-                        if (parts.length === 3) {
-                            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
-                        }
-                    }
-
-                    if (content || title) {
-                        reviews.push({
-                            rating: ratingStars,
-                            title,
-                            content: content || title,
-                            customerName: name || 'Anonymer Kunde',
-                            date: date.toISOString(),
-                            source: 'vercel'
-                        })
-                    }
+            // Check if there is a data script (e.g., reviews_data_fc26.js)
+            const scripts = $('script')
+            let dataUrl: string | null = null
+            scripts.each((i, el) => {
+                const src = $(el).attr('src')
+                if (src && src.includes('reviews_data_') && src.endsWith('.js')) {
+                    // Make it an absolute URL
+                    const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1)
+                    dataUrl = src.startsWith('http') ? src : baseUrl + src
                 }
             })
+
+            if (dataUrl) {
+                try {
+                    const dataResponse = await fetch(dataUrl)
+                    if (dataResponse.ok) {
+                        const jsContent = await dataResponse.text()
+                        // Extract REVIEWS_DATA = [ ... ];
+                        const match = jsContent.match(/const\s+REVIEWS_DATA\s*=\s*(\[[\s\S]*?\]);/)
+                        if (match && match[1]) {
+                            let jsonString = match[1].trim()
+                            // Basic conversion from JS object literal to JSON
+                            // 1. Double quote unquoted keys
+                            jsonString = jsonString.replace(/(\s*)(\w+):(\s*)/g, '$1"$2":$3')
+
+                            // 2. Convert single quote values to double quotes, but be careful with nested quotes
+                            // This looks for 'value' and replaces with "value", handling some escaping
+                            jsonString = jsonString.replace(/:(\s*)'([^']*)'/g, ':$1"$2"')
+
+                            // 3. Remove trailing commas
+                            jsonString = jsonString.replace(/,(\s*[\]\}])/g, '$1')
+
+                            try {
+                                const jsonData = JSON.parse(jsonString)
+                                if (Array.isArray(jsonData)) {
+                                    jsonData.forEach(item => {
+                                        reviews.push({
+                                            rating: item.rating || 5,
+                                            title: item.title || '',
+                                            content: item.content || item.title || '',
+                                            customerName: item.customer_name || 'Anonymer Kunde',
+                                            date: new Date(item.date || Date.now()).toISOString(),
+                                            source: 'vercel'
+                                        })
+                                    })
+                                }
+                            } catch (jsonErr) {
+                                console.error('JSON parse failed for Vercel data:', jsonErr)
+                                // Final fallback: try to extract with a very loose regex if JSON.parse still fails
+                                const entryRegex = /\{\s*rating:\s*(\d+),\s*title:\s*["'](.*?)["'],\s*content:\s*["'](.*?)["'],\s*customer_name:\s*["'](.*?)["'],\s*date:\s*["'](.*?)["']\s*\}/g
+                                let entryMatch
+                                while ((entryMatch = entryRegex.exec(match[1])) !== null) {
+                                    reviews.push({
+                                        rating: parseInt(entryMatch[1]),
+                                        title: entryMatch[2],
+                                        content: entryMatch[3],
+                                        customerName: entryMatch[4],
+                                        date: new Date(entryMatch[5]).toISOString(),
+                                        source: 'vercel'
+                                    })
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch/parse Vercel JS data:', e)
+                }
+            }
+
+            // Fallback to table scraping if no JS data or it failed
+            if (reviews.length === 0) {
+                $('table tbody tr').each((i, el) => {
+                    const cells = $(el).find('td')
+                    if (cells.length >= 5) {
+                        // Column mapping based on structure: 
+                        // 0: #, 1: Rating, 2: Title, 3: Content, 4: Name, 5: Date
+                        const ratingStars = $(cells[1]).find('span').length || $(cells[1]).text().split('★').length - 1 || 5
+                        const title = $(cells[2]).text().trim()
+                        const content = $(cells[3]).text().trim()
+                        const nameFull = $(cells[4]).text().trim()
+                        const nameParts = nameFull.split('\n').map(s => s.trim()).filter(Boolean)
+                        const name = nameParts[0] || 'Anonymer Kunde'
+                        const dateRaw = $(cells[5]).text().trim()
+
+                        let date = new Date()
+                        if (dateRaw) {
+                            const parts = dateRaw.split('.')
+                            if (parts.length === 3) {
+                                date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+                            }
+                        }
+
+                        if (content || title) {
+                            reviews.push({
+                                rating: ratingStars,
+                                title,
+                                content: content || title,
+                                customerName: name || 'Anonymer Kunde',
+                                date: date.toISOString(),
+                                source: 'vercel'
+                            })
+                        }
+                    }
+                })
+            }
         }
 
         if (reviews.length === 0) {
