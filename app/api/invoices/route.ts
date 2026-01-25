@@ -29,7 +29,8 @@ export async function GET(req: Request) {
       where.OR = [
         { invoiceNumber: { contains: search, mode: 'insensitive' } },
         { customer: { name: { contains: search, mode: 'insensitive' } } },
-        { customer: { email: { contains: search, mode: 'insensitive' } } }
+        { customer: { email: { contains: search, mode: 'insensitive' } } },
+        { customer: { tags: { has: search } } }
       ]
     }
 

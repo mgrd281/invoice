@@ -73,6 +73,17 @@ export const DEFAULT_FEATURES = [
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
     },
     {
+        id: 'kaufland',
+        href: '/invoices?search=Kaufland',
+        title: 'Kaufland',
+        description: 'Kaufland Bestellungen & Rechnungen',
+        icon: Store,
+        iconBg: 'bg-gradient-to-r from-blue-400 to-cyan-500',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50',
+        badge: 'NEW',
+        badgeClass: 'bg-blue-100 text-blue-700'
+    },
+    {
         id: 'buchhaltung',
         href: '/buchhaltung',
         title: 'Buchhaltung',

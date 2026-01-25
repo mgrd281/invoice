@@ -355,7 +355,8 @@ export async function POST(request: NextRequest) {
           'Customer Name', 'Kundenname',
           'Name', 'Customer',
           'Kunde', 'Vorname', 'Nachname', 'First Name', 'Last Name',
-          'Lieferant', 'Anbieter', 'Vendor', 'Firma'
+          'Lieferant', 'Anbieter', 'Vendor', 'Firma',
+          'buyer_first_name', 'buyer_last_name', 'shipping_first_name', 'shipping_last_name'
         ]);
 
         const rawUnitPrice = getColumnValue(record, [
@@ -383,18 +384,20 @@ export async function POST(request: NextRequest) {
         }
 
         const order: ShopifyOrder = {
-          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order', 'Auftragsnummer', 'Bestellung', 'Rechnungsnummer', 'Invoice Number', 'Belegnummer']) || `ORD-${Date.now()}-${i}`,
+          orderNumber: getColumnValue(record, ['Bestellnummer', 'Order Number', 'Name', 'Order', 'Auftragsnummer', 'Bestellung', 'Rechnungsnummer', 'Invoice Number', 'Belegnummer', 'id_order', 'order_id']) || `ORD-${Date.now()}-${i}`,
           customerName: rawCustomerName || 'Unbekannt',
           customerCompany: getColumnValue(record, [
             'Company', 'Firma', 'Unternehmen',
             'Billing Company', 'Rechnungsfirma',
-            'Shipping Company', 'Lieferfirma'
+            'Shipping Company', 'Lieferfirma',
+            'shipping_company' // Kaufland specific
           ]) || '',
           customerEmail: getColumnValue(record, [
             'Email', 'E-Mail',
             'Customer Email', 'Kunden-E-Mail',
             'Billing Email', 'Rechnungs-E-Mail',
-            'Shipping Email', 'Liefer-E-Mail'
+            'Shipping Email', 'Liefer-E-Mail',
+            'buyer_email', 'email'
           ]) || `kunde${i}@example.com`,
           customerAddress: getColumnValue(record, [
             'Billing Address1', 'Rechnungsadresse',
@@ -429,7 +432,8 @@ export async function POST(request: NextRequest) {
             'Lineitem name', 'Produktname',
             'Product', 'Produkt',
             'Item', 'Artikel',
-            'Product Name', 'Description', 'Beschreibung'
+            'Product Name', 'Description', 'Beschreibung',
+            'item_title', 'title'
           ]) || 'Produkt',
           quantity: parseInt(getColumnValue(record, [
             'Lineitem quantity', 'Menge',
