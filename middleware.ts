@@ -57,6 +57,11 @@ export async function middleware(request: NextRequest) {
     const isProtectedPage = protectedRoutes.some(route => pathname.startsWith(route))
     const isProtectedApi = protectedApiRoutes.some(route => pathname.startsWith(route))
 
+    // Webhooks Exception (Always Public)
+    if (pathname.startsWith('/api/shopify/webhooks')) {
+        return NextResponse.next()
+    }
+
     if (!isProtectedPage && !isProtectedApi) {
         return NextResponse.next()
     }
