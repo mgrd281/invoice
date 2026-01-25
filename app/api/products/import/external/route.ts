@@ -504,17 +504,66 @@ export async function POST(request: NextRequest) {
         // DETECTION & FETCHING
         if (url.includes('amazon') || url.includes('otto.de')) {
             const vendor = url.includes('otto.de') ? 'Otto' : 'Amazon'
-            // [Proxy logic remains mostly same but using enhanced parser]
-            if (ZENROWS_API_KEY) {
+            let html = ''
+
+            // Strategy 1: ZenRows (Premium)
+            if (ZENROWS_API_KEY && !html) {
                 try {
                     const zenRowsUrl = `https://api.zenrows.com/v1/?apikey=${ZENROWS_API_KEY}&url=${encodeURIComponent(url)}&js_render=true&antibot=true&premium_proxy=true`
-                    const response = await fetchWithTimeout(zenRowsUrl, {}, 20000)
-                    if (response.ok) {
-                        const html = await response.text()
-                        const productData = parseProductData(cheerio.load(html), vendor, url)
-                        if (productData.title) return NextResponse.json({ product: productData })
-                    }
-                } catch (e) { }
+                    const response = await fetchWithTimeout(zenRowsUrl, {}, 25000)
+                    if (response.ok) html = await response.text()
+                } catch (e) { console.error('ZenRows failed:', e) }
+            }
+
+            // Strategy 2: ScrapingAnt (Backup)
+            if (SCRAPINGANT_API_KEY && !html) {
+                try {
+                    // Basic scrapingant request
+                    const saUrl = `https://api.scrapingant.com/v2/general?x-api-key=${SCRAPINGANT_API_KEY}&url=${encodeURIComponent(url)}`
+                    const response = await fetchWithTimeout(saUrl, {}, 25000)
+                    if (response.ok) html = await response.text()
+                } catch (e) { console.error('ScrapingAnt failed:', e) }
+            }
+
+            // Strategy 3: ScraperAPI (Backup)
+            if (SCRAPERAPI_KEY && !html) {
+                try {
+                    const sUrl = `http://api.scraperapi.com?api_key=${SCRAPERAPI_KEY}&url=${encodeURIComponent(url)}`
+                    const response = await fetchWithTimeout(sUrl, {}, 25000)
+                    if (response.ok) html = await response.text()
+                } catch (e) { console.error('ScraperAPI failed:', e) }
+            }
+
+            // Strategy 4: Direct Fetch with Enhanced Headers (Last Resort)
+            if (!html) {
+                const enhancedHeaders = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Referer': 'https://www.google.com/',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'cross-site',
+                    'Sec-Fetch-User': '?1'
+                }
+                try {
+                    const response = await fetchWithTimeout(url, { headers: enhancedHeaders }, 10000)
+                    if (response.ok) html = await response.text()
+                } catch (e) { console.error('Direct fetch failed:', e) }
+            }
+
+            if (html) {
+                // Check for Captcha
+                if (html.includes('api-services-support@amazon.com') || html.includes('alt="Dogs of Amazon"')) {
+                    console.warn('Amazon CAPTCHA detected')
+                    // Continue to try parsing, but it implies failure usually
+                }
+
+                const productData = parseProductData(cheerio.load(html), vendor, url)
+                if (productData.title) return NextResponse.json({ product: productData })
             }
         }
 
