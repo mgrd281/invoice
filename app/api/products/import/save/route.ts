@@ -290,6 +290,11 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Publish to ALL Sales Channels (Google, TikTok, etc.)
+        if (createdProduct && createdProduct.id) {
+            await api.publishProductToAllChannels(createdProduct.id)
+        }
+
         // Add to collection if specified
         if (settings.collection && createdProduct.id) {
             // Check if collection is an ID (numeric) or title (string)

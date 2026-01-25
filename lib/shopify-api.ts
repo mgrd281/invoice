@@ -1012,7 +1012,114 @@ export class ShopifyAPI {
       return null
     }
   }
+  /**
+   * Make authenticated GraphQL request to Shopify
+   */
+  async makeGraphQLRequest(query: string, variables: any = {}): Promise<any> {
+    const url = `https://${this.settings.shopDomain}/admin/api/${this.settings.apiVersion}/graphql.json`
+
+    console.log(`🔗 Making Shopify GraphQL request to: ${url}`)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': this.settings.accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, variables })
+    })
+
+    const result = await response.json()
+
+    if (result.errors) {
+      console.error('❌ GraphQL Errors:', JSON.stringify(result.errors, null, 2))
+      throw new Error(`GraphQL Error: ${result.errors[0].message}`)
+    }
+
+    return result.data
+  }
+
+  /**
+   * Get all active publications (Sales Channels)
+   */
+  async getPublications(): Promise<any[]> {
+    const query = `
+      query getPublications {
+        publications(first: 20) {
+          edges {
+            node {
+              id
+              name
+              catalog {
+                title
+              }
+            }
+          }
+        }
+      }
+    `
+    try {
+      const data = await this.makeGraphQLRequest(query)
+      return data.publications.edges.map((edge: any) => edge.node)
+    } catch (error) {
+      console.error('Error fetching publications:', error)
+      return []
+    }
+  }
+
+  /**
+   * Publish a product to ALL available sales channels
+   */
+  async publishProductToAllChannels(productId: string | number): Promise<void> {
+    try {
+      // 1. Get all publications
+      const publications = await this.getPublications()
+      if (publications.length === 0) {
+        console.warn('⚠️ No publications found to publish to.')
+        return
+      }
+
+      console.log(`📢 Publishing product ${productId} to ${publications.length} channels...`)
+
+      // 2. Prepare GID
+      const productGid = productId.toString().startsWith('gid://')
+        ? productId
+        : `gid://shopify/Product/${productId}`
+
+      // 3. Construct Mutation Input
+      // mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) 
+      const input = publications.map(pub => ({ publicationId: pub.id }))
+
+      const mutation = `
+        mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
+          publishablePublish(id: $id, input: $input) {
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `
+
+      // 4. Execute
+      const data = await this.makeGraphQLRequest(mutation, {
+        id: productGid,
+        input: input
+      })
+
+      if (data.publishablePublish?.userErrors?.length > 0) {
+        console.error('❌ Publish errors:', data.publishablePublish.userErrors)
+      } else {
+        console.log(`✅ Product ${productId} successfully published to ${publications.length} channels (${publications.map(p => p.name).join(', ')})!`)
+      }
+
+    } catch (error) {
+      console.error(`❌ Failed to publish product ${productId} to channels:`, error)
+      // Don't throw, just log. This is an enhancement, not critical.
+    }
+  }
 }
+
 
 // ========================================
 // UTILITY FUNCTIONS
