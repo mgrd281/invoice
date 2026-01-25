@@ -97,6 +97,7 @@ model Organization {
   widgetSettings          WidgetSettings?
   pageAnalytics           PageAnalytics[]
   goalTracking            GoalTracking[]
+  purchaseInvoices        PurchaseInvoice[]
 }
 
 model WidgetSettings {
@@ -1110,4 +1111,45 @@ enum UploadStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum PurchaseInvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model PurchaseInvoice {
+  id              String                @id @default(uuid())
+  organizationId  String
+  supplierName    String
+  invoiceNumber   String
+  invoiceDate     DateTime
+  dueDate         DateTime?
+  paymentDate     DateTime?
+  
+  netAmount       Float
+  taxAmount       Float
+  grossAmount     Float
+  currency        String                @default("EUR")
+  
+  category        String?
+  status          PurchaseInvoiceStatus @default(PENDING)
+  
+  fileUrl         String?
+  mimeType        String?
+  
+  notes           String?
+  productImportId String?
+  
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([supplierName])
 }
