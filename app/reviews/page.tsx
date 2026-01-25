@@ -1796,16 +1796,34 @@ function ReviewsPageContent() {
                                             const now = new Date()
                                             const sevenDaysAgo = new Date()
                                             sevenDaysAgo.setDate(now.getDate() - 7)
-
+                                            
                                             const sortByDate = (a: any, b: any) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime()
 
-                                            const recentProducts = filteredProducts
-                                                .filter(p => new Date(p.lastReviewDate) > sevenDaysAgo)
-                                                .sort(sortByDate)
+                                            // Helper to get category
+                                            const getCategory = (stat: any) => {
+                                                const product = shopifyProducts.find(p => String(p.id) === String(stat.productId))
+                                                if (product?.product_type) return product.product_type
+                                                if (product?.tags) {
+                                                    const tags = typeof product.tags === 'string' ? product.tags.split(',') : product.tags
+                                                    if (Array.isArray(tags) && tags.length > 0) return tags[0].trim()
+                                                }
+                                                return "Ohne Kategorie"
+                                            }
 
-                                            const otherProducts = filteredProducts
-                                                .filter(p => new Date(p.lastReviewDate) <= sevenDaysAgo)
-                                                .sort(sortByDate)
+                                            // Grouping
+                                            const grouped: Record<string, any[]> = {}
+                                            filteredProducts.forEach(stat => {
+                                                const cat = getCategory(stat)
+                                                if (!grouped[cat]) grouped[cat] = []
+                                                grouped[cat].push(stat)
+                                            })
+
+                                            // Sort categories
+                                            const categories = Object.keys(grouped).sort((a, b) => {
+                                                if (a === "Ohne Kategorie") return 1
+                                                if (b === "Ohne Kategorie") return -1
+                                                return a.localeCompare(b)
+                                            })
 
                                             const ProductCard = ({ stat, isRecent }: { stat: any, isRecent: boolean }) => {
                                                 const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
@@ -1827,7 +1845,7 @@ function ReviewsPageContent() {
                                                                 <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-0.5 shadow-sm">Neu</Badge>
                                                             </div>
                                                         )}
-
+                                                        
                                                         <div className="h-[72px] w-[72px] rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
                                                             {productImage ? (
                                                                 <img src={productImage} alt={stat.productTitle} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -1852,7 +1870,7 @@ function ReviewsPageContent() {
                                                                 </div>
                                                             </div>
                                                         </div>
-
+                                                        
                                                         {/* Chevron */}
                                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                                                             <Button
@@ -1868,41 +1886,60 @@ function ReviewsPageContent() {
                                             }
 
                                             return (
-                                                <div className="space-y-10">
-                                                    {/* Section 1: Recent */}
-                                                    {recentProducts.length > 0 && (
-                                                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                            <div className="flex items-center gap-2 mb-4">
-                                                                <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-                                                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Zuletzt aktualisiert</h3>
-                                                                <span className="text-xs text-gray-400 font-medium ml-1">({recentProducts.length})</span>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                                                {recentProducts.map(stat => <ProductCard key={stat.productId} stat={stat} isRecent={true} />)}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                <div className="space-y-16">
+                                                    {categories.map((category) => {
+                                                        const catProducts = grouped[category]
+                                                        const recentProducts = catProducts
+                                                            .filter(p => new Date(p.lastReviewDate) > sevenDaysAgo)
+                                                            .sort(sortByDate)
+                                                        const otherProducts = catProducts
+                                                            .filter(p => new Date(p.lastReviewDate) <= sevenDaysAgo)
+                                                            .sort(sortByDate)
 
-                                                    {recentProducts.length > 0 && otherProducts.length > 0 && (
-                                                        <div className="h-px bg-gray-100 w-full" />
-                                                    )}
+                                                        return (
+                                                            <div key={category} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                                <div className="flex items-center justify-between mb-6 border-b pb-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                                            <LayoutGrid className="h-4 w-4 text-gray-500" />
+                                                                        </div>
+                                                                        <div>
+                                                                            <h2 className="text-xl font-bold text-gray-900">{category}</h2>
+                                                                            <p className="text-sm text-gray-500">{catProducts.length} Produkte</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
-                                                    {/* Section 2: All Others */}
-                                                    {otherProducts.length > 0 && (
-                                                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-                                                            <div className="flex items-center gap-2 mb-4">
-                                                                <LayoutGrid className="h-4 w-4 text-gray-400" />
-                                                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Alle Produkte</h3>
-                                                                <span className="text-xs text-gray-400 font-medium ml-1">({otherProducts.length})</span>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                                                {otherProducts.map(stat => <ProductCard key={stat.productId} stat={stat} isRecent={false} />)}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                                <div className="space-y-8 pl-2">
+                                                                    {recentProducts.length > 0 && (
+                                                                        <div>
+                                                                            <div className="flex items-center gap-2 mb-4">
+                                                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                                                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Zuletzt aktualisiert</h3>
+                                                                            </div>
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                                                                {recentProducts.map(stat => <ProductCard key={stat.productId} stat={stat} isRecent={true} />)}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
 
-                                                    {/* Empty handling embedded */}
-                                                    {recentProducts.length === 0 && otherProducts.length === 0 && (
+                                                                    {otherProducts.length > 0 && (
+                                                                        <div>
+                                                                            {recentProducts.length > 0 && <div className="h-8" />}
+                                                                            <div className="flex items-center gap-2 mb-4">
+                                                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Alle Produkte</h3>
+                                                                            </div>
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                                                                {otherProducts.map(stat => <ProductCard key={stat.productId} stat={stat} isRecent={false} />)}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })}
+
+                                                    {categories.length === 0 && (
                                                         <div className="text-center py-10 text-gray-500">
                                                             Keine Produkte gefunden.
                                                         </div>
