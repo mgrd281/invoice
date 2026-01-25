@@ -100,6 +100,7 @@ model Organization {
   widgetSettings          WidgetSettings?
   reviewSources           ReviewSource[]
   importDrafts            ImportDraft[]
+  securitySettings        SecuritySettings?
 }
 
 model ReviewSource {
@@ -210,6 +211,9 @@ model BlockedUser {
   reason         String?
   blockedBy      String?
   blockedAt      DateTime     @default(now())
+  type           String       @default("PERMANENT") // "PERMANENT" | "TEMPORARY"
+  expiresAt      DateTime?
+  notes          String?
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, email])
@@ -222,10 +226,26 @@ model BlockedIp {
   ipAddress      String
   reason         String?
   createdAt      DateTime     @default(now())
+  type           String       @default("PERMANENT") // "PERMANENT" | "TEMPORARY"
+  expiresAt      DateTime?
+  notes          String?
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, ipAddress])
   @@index([ipAddress])
+}
+
+model SecuritySettings {
+  id                    String       @id @default(uuid())
+  organizationId        String       @unique
+  blockFailedAttempts   Boolean      @default(false)
+  maxFailedAttempts     Int          @default(5)
+  blockSuspiciousDomains Boolean     @default(false)
+  autoUnblock           Boolean      @default(false)
+  autoUnblockDuration   Int          @default(24) // hours
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id])
 }
 
 model BlockedUserAttempt {

@@ -45,7 +45,10 @@ export function ProductPreviewModal({ isOpen, onClose, draftId, onSuccess }: Pro
                 if (colData.success) setCollections(colData.collections)
 
                 // Load Draft
+                console.log('[Frontend] Fetching draft:', draftId)
                 const res = await fetch(`/api/products/import/draft/${draftId}`)
+                console.log('[Frontend] Fetch response:', res.status)
+
                 if (!res.ok) throw new Error('Draft not found')
 
                 const data = await res.json()
