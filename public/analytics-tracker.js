@@ -10,8 +10,30 @@
     const TRACKER_ENDPOINT = baseOrigin ? `${baseOrigin}/api/analytics/track` : '/api/analytics/track';
 
     // Organization ID should be injected when this script is served, or fetched.
-    let organizationId = window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id') || '';
+    let organizationId = window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id') || document.querySelector('meta[name="organization-id"]')?.content || '';
     let isReturning = false;
+    let isInit = false;
+
+    // Async Init Helper
+    const initTracker = async () => {
+        if (organizationId) {
+            isInit = true;
+            return true;
+        }
+        try {
+            const res = await fetch(`${baseOrigin}/api/analytics/init`);
+            const data = await res.json();
+            if (data.success && data.organizationId) {
+                organizationId = data.organizationId;
+                console.log('[Analytics] Initialized via API with Org ID:', organizationId);
+                isInit = true;
+                return true;
+            }
+        } catch (e) {
+            console.warn('[Analytics] Failed to fetch init config');
+        }
+        return false;
+    };
 
     const getCookie = (name) => {
         const value = `; ${document.cookie}`;
@@ -145,10 +167,13 @@
     };
 
     const track = async (event, metadata = {}) => {
+        if (!isInit) {
+            await initTracker();
+        }
+
         if (!organizationId) {
-            // Robust check for Org ID
-            const scriptTag = document.currentScript || Array.from(document.getElementsByTagName('script')).find(s => s.src.includes('analytics-tracker.js'));
-            organizationId = scriptTag?.getAttribute('data-org-id') || document.querySelector('meta[name="organization-id"]')?.content || window.STORE_ORG_ID;
+            // Retry one more time from DOM in case it appeared late
+            organizationId = window.STORE_ORG_ID || document.querySelector('meta[name="organization-id"]')?.content || '';
             if (!organizationId) return;
         }
 
