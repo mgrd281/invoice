@@ -285,17 +285,22 @@ export default function ProductImportPage() {
                     })
                 })
 
+                if (!draftRes.ok) {
+                    const err = await draftRes.json()
+                    throw new Error(err.message || err.error || 'Import-Service nicht erreichbar')
+                }
+
                 const draftData = await draftRes.json()
 
-                if (!draftRes.ok || !draftData.draftId) {
-                    throw new Error(draftData.error || 'Failed to create draft')
+                // STRICT CHECK: Only open if we have a valid ID
+                if (!draftData.draftId) {
+                    throw new Error('Keine Entwurf-ID erhalten. Import abgebrochen.')
                 }
 
                 // 2. Open Modal (No Redirect)
-                if (draftData.draftId) {
-                    setCurrentDraftId(draftData.draftId)
-                    setIsPreviewOpen(true)
-                }
+                console.log('Draft created:', draftData.draftId)
+                setCurrentDraftId(draftData.draftId)
+                setIsPreviewOpen(true)
                 return
 
             } else {

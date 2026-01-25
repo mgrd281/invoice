@@ -43,6 +43,18 @@ export async function POST(request: NextRequest) {
             }
         })
 
+        // 3. Analytics (Non-blocking)
+        // User Requirement: This MUST be wrapped in try/catch to prevent 500s 
+        // if the visitor/organization link fails (FK Constraint).
+        try {
+            // Placeholder: If you have a trackVisitor() function, call it here.
+            // await trackVisitor(request, 'draft_created', { draftId: draft.id });
+            console.log('Draft created for org:', organizationId)
+        } catch (analyticsError) {
+            // Critical: Do NOT fail the request if analytics fails
+            console.error('Analytics tracking failed (non-fatal):', analyticsError)
+        }
+
         return NextResponse.json({ success: true, draftId: draft.id, status: initialStatus })
 
     } catch (error) {
