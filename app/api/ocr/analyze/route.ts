@@ -74,45 +74,33 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer())
 
         if (file.type === 'application/pdf') {
-            // pdf-parse disabled due to stability issues (Status 500)
-            // Returning graceful fallback immediately
-            return NextResponse.json({
-                success: true,
-                data: {
-                    ai_status: 'WARNING',
-                    error_reason: 'PDF_PARSING_DISABLED',
-                    debug_text: 'PDF parsing is temporarily disabled for stability. Please check data manually.'
-                }
-            })
-            /*
             try {
-                // Move require inside try to catch module load errors
                 // @ts-ignore
                 const pdf = require('pdf-parse');
 
                 // Set a timeout for PDF parsing
-                const parsePromise = pdf(buffer, { max: 5 });
+                const parsePromise = pdf(buffer);
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PDF parse timeout')), 5000));
 
                 const data: any = await Promise.race([parsePromise, timeoutPromise]);
                 text = data.text
 
-                if (!text || text.trim().length < 10) {
-                    throw new Error('PDF has no text (scanned?)');
+                if (!text || text.trim().length < 5) {
+                    throw new Error('PDF has no extractable text (likely a scan)');
                 }
             } catch (e: any) {
                 console.error('PDF parse error:', e)
-                // Graceful fallback for scanned PDFs
+                // Fallback to image-style OCR if we can't extract text from PDF
+                // For now, return error as GPT-4o Vision doesn't handle PDF bytes directly without conversion
                 return NextResponse.json({
                     success: true,
                     data: {
                         ai_status: 'ERROR',
-                        error_reason: 'SCANNED_PDF_COMPLEX',
-                        debug_text: `PDF seems to be a scan or encrypted. Please enter data manually. (Error: ${e.message})`
+                        error_reason: 'SCANNED_PDF',
+                        debug_text: `PDF seems to be a scan. Please enter data manually or upload an image. (Error: ${e.message})`
                     }
                 })
             }
-            */
         } else if (file.type.startsWith('image/')) {
             // Use Google Cloud Vision for OCR
             try {

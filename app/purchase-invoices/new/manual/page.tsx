@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from 'sonner'
+import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
     ArrowLeft,
     Home,
@@ -22,13 +24,14 @@ import {
     Receipt,
     Tag,
     Info,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react'
-import { useToast } from '@/components/ui/toast'
 
-export default function ManualPurchaseInvoicePage() {
+function ManualFormContent() {
     const router = useRouter()
-    const { showToast, ToastContainer } = useToast()
+    const searchParams = useSearchParams()
+    const authenticatedFetch = useAuthenticatedFetch()
     const [isSaving, setIsSaving] = useState(false)
 
     const [formData, setFormData] = useState({
@@ -41,8 +44,39 @@ export default function ManualPurchaseInvoicePage() {
         grossAmount: '',
         category: 'einkauf',
         status: 'PENDING',
-        notes: ''
+        notes: '',
+        fileUrl: ''
     })
+
+    // Pre-fill from OCR data if available
+    useEffect(() => {
+        const ocrDataStr = searchParams.get('ocrData')
+        if (ocrDataStr) {
+            try {
+                const ocrData = JSON.parse(decodeURIComponent(ocrDataStr))
+                setFormData(prev => ({
+                    ...prev,
+                    supplierName: ocrData.supplier || '',
+                    invoiceNumber: ocrData.invoiceNumber || '',
+                    invoiceDate: ocrData.date ? ocrData.date.split('T')[0] : prev.invoiceDate,
+                    grossAmount: ocrData.totalAmount?.toString() || '',
+                    notes: `AI-Extraktion: ${ocrData.description || ''}`,
+                    fileUrl: ocrData.fileUrl || ''
+                }))
+
+                // Recalculate net if gross is provided
+                if (ocrData.totalAmount) {
+                    const gross = parseFloat(ocrData.totalAmount)
+                    const net = (gross / 1.19).toFixed(2)
+                    setFormData(prev => ({ ...prev, netAmount: net }))
+                }
+
+                toast.success('Daten erfolgreich aus Beleg extrahiert!')
+            } catch (e) {
+                console.error('Failed to parse OCR data:', e)
+            }
+        }
+    }, [searchParams])
 
     // Auto-calculate gross or net
     const handleAmountChange = (field: string, value: string) => {
@@ -66,20 +100,40 @@ export default function ManualPurchaseInvoicePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.supplierName || !formData.grossAmount) {
-            showToast("Bitte füllen Sie alle Pflichtfelder aus.", "error")
+            toast.error("Bitte füllen Sie alle Pflichtfelder aus.")
             return
         }
 
         setIsSaving(true)
         try {
-            // Mock API call for now (due to DB issues)
-            console.log('Saving Purchase Invoice:', formData)
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            const res = await authenticatedFetch('/api/purchase-invoices', {
+                method: 'POST',
+                body: JSON.stringify({
+                    vendorName: formData.supplierName,
+                    invoiceNumber: formData.invoiceNumber,
+                    invoiceDate: formData.invoiceDate,
+                    dueDate: formData.dueDate || null,
+                    totalNet: parseFloat(formData.netAmount) || 0,
+                    totalTax: (parseFloat(formData.grossAmount) || 0) - (parseFloat(formData.netAmount) || 0),
+                    totalGross: parseFloat(formData.grossAmount) || 0,
+                    taxRate: parseFloat(formData.taxRate),
+                    status: formData.status,
+                    category: formData.category,
+                    notes: formData.notes,
+                    fileUrl: formData.fileUrl
+                })
+            })
 
-            showToast("Einkaufsrechnung erfolgreich gespeichert!", "success")
-            router.push('/purchase-invoices')
+            const data = await res.json()
+            if (data.success) {
+                toast.success("Einkaufsrechnung erfolgreich gespeichert!")
+                router.push('/purchase-invoices')
+            } else {
+                toast.error(data.error || "Fehler beim Speichern.")
+            }
         } catch (error) {
-            showToast("Fehler beim Speichern.", "error")
+            console.error('Save error:', error)
+            toast.error("Ein Netzwerkfehler ist aufgetreten.")
         } finally {
             setIsSaving(false)
         }
@@ -87,7 +141,6 @@ export default function ManualPurchaseInvoicePage() {
 
     return (
         <div className="container mx-auto p-6 max-w-4xl space-y-8 pb-32">
-            <ToastContainer />
 
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -112,8 +165,8 @@ export default function ManualPurchaseInvoicePage() {
                         </Button>
                     </Link>
                     <div className="ml-1">
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Beleg manuell erfassen</h1>
-                        <p className="text-sm text-slate-500">Geben Sie die Rechnungsdaten händisch ein</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Beleg erfassen</h1>
+                        <p className="text-sm text-slate-500">Geben Sie die Rechnungsdaten ein oder verifizieren Sie die AI-Ergebnisse</p>
                     </div>
                 </div>
             </div>
@@ -139,6 +192,7 @@ export default function ManualPurchaseInvoicePage() {
                                         value={formData.supplierName}
                                         onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })}
                                         className="bg-slate-50 border-slate-200 focus:bg-white"
+                                        required
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -169,6 +223,7 @@ export default function ManualPurchaseInvoicePage() {
                                             value={formData.invoiceDate}
                                             onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
                                             className="pl-9 bg-slate-50 border-slate-200"
+                                            required
                                         />
                                     </div>
                                 </div>
@@ -238,6 +293,7 @@ export default function ManualPurchaseInvoicePage() {
                                             value={formData.grossAmount}
                                             onChange={(e) => handleAmountChange('grossAmount', e.target.value)}
                                             className="bg-slate-50 border-slate-200 font-bold text-lg"
+                                            required
                                         />
                                     </div>
                                 </div>
@@ -318,7 +374,7 @@ export default function ManualPurchaseInvoicePage() {
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-lg font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
                             disabled={isSaving}
                         >
-                            {isSaving ? <Plus className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                            {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                             Speichern
                         </Button>
                         <Button
@@ -334,12 +390,20 @@ export default function ManualPurchaseInvoicePage() {
                     <Card className="border-none bg-blue-50 text-blue-700">
                         <CardContent className="p-4 flex gap-3 text-xs">
                             <Info className="h-4 w-4 shrink-0" />
-                            <p>Manuell erfasste Belege können später mit CSV-Exporten für Ihren Steuerberater (DATEV) exportiert werden.</p>
+                            <p>Manuell erfasste Belege werden sicher in der Datenbank gespeichert und können jederzeit für die Buchhaltung exportiert werden.</p>
                         </CardContent>
                     </Card>
                 </div>
 
             </form>
         </div>
+    )
+}
+
+export default function ManualPurchaseInvoicePage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center p-12"><Loader2 className="animate-spin h-8 w-8" /></div>}>
+            <ManualFormContent />
+        </Suspense>
     )
 }

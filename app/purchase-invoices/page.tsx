@@ -1,12 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { toast } from 'sonner'
+import { useAuthenticatedFetch } from '@/lib/api-client'
 import {
     FileText,
     ArrowLeft,
@@ -15,26 +17,56 @@ import {
     Upload,
     Search,
     Filter,
-    MoreHorizontal,
-    Download,
+    X,
     Calendar,
     Euro,
     CheckCircle,
     Clock,
-    AlertCircle
+    AlertCircle,
+    Loader2,
+    CalendarDays
 } from 'lucide-react'
-
-// Mock Data for UI Dev
-const MOCK_INVOICES = [
-    { id: '1', supplier: 'Adobe Systems', number: 'INV-2024-001', date: '2024-01-15', amount: 29.99, status: 'PAID', category: 'Software' },
-    { id: '2', supplier: 'Google Cloud', number: 'G-778899', date: '2024-01-12', amount: 145.50, status: 'PENDING', category: 'Hosting' },
-    { id: '3', supplier: 'Amazon Basics', number: 'DE-998877', date: '2024-01-10', amount: 45.20, status: 'PAID', category: 'Office' },
-    { id: '4', supplier: 'Apple Store', number: 'R998877', date: '2023-12-28', amount: 1299.00, status: 'PAID', category: 'Hardware' },
-]
 
 export default function PurchaseInvoicesPage() {
     const router = useRouter()
+    const authenticatedFetch = useAuthenticatedFetch()
+
+    const [invoices, setInvoices] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState<any>(null)
     const [searchQuery, setSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState('all')
+
+    const fetchInvoices = useCallback(async () => {
+        setLoading(true)
+        try {
+            const params = new URLSearchParams({
+                search: searchQuery,
+                status: statusFilter,
+                limit: '50'
+            })
+            const res = await authenticatedFetch(`/api/purchase-invoices?${params.toString()}`)
+            const data = await res.json()
+            if (data.success) {
+                setInvoices(data.data)
+                setStats(data.stats)
+            } else {
+                toast.error('Fehler beim Laden der Rechnungen')
+            }
+        } catch (error) {
+            console.error('Failed to fetch invoices:', error)
+            toast.error('Ein Fehler ist aufgetreten')
+        } finally {
+            setLoading(false)
+        }
+    }, [authenticatedFetch, searchQuery, statusFilter])
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchInvoices()
+        }, 300) // Debounce search
+        return () => clearTimeout(timer)
+    }, [fetchInvoices])
 
     return (
         <div className="container mx-auto p-6 max-w-7xl space-y-8 pb-32">
@@ -68,9 +100,11 @@ export default function PurchaseInvoicesPage() {
                 </div>
 
                 <div className="flex gap-2">
-                    <Button variant="outline" className="gap-2">
-                        <Upload className="h-4 w-4" /> Import (CSV)
-                    </Button>
+                    <Link href="/upload">
+                        <Button variant="outline" className="gap-2">
+                            <Upload className="h-4 w-4" /> Import (CSV)
+                        </Button>
+                    </Link>
                     <Link href="/purchase-invoices/new">
                         <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                             <Plus className="h-4 w-4" /> Neue Rechnung
@@ -85,7 +119,9 @@ export default function PurchaseInvoicesPage() {
                     <CardContent className="p-6 flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-slate-500">Offene Rechnungen</p>
-                            <h3 className="text-2xl font-bold text-slate-900 mt-1">145,50 €</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 mt-1">
+                                {stats ? `${stats.openAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €` : '0,00 €'}
+                            </h3>
                         </div>
                         <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
                             <Clock className="h-5 w-5 text-orange-600" />
@@ -95,8 +131,10 @@ export default function PurchaseInvoicesPage() {
                 <Card className="shadow-sm border-slate-200 bg-gradient-to-br from-white to-slate-50">
                     <CardContent className="p-6 flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-slate-500">Diesen Monat bezahlt</p>
-                            <h3 className="text-2xl font-bold text-slate-900 mt-1">1.374,19 €</h3>
+                            <p className="text-sm font-medium text-slate-500">Bezahlt (Gesamt)</p>
+                            <h3 className="text-2xl font-bold text-slate-900 mt-1">
+                                {stats ? `${stats.paidAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €` : '0,00 €'}
+                            </h3>
                         </div>
                         <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
                             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -106,8 +144,10 @@ export default function PurchaseInvoicesPage() {
                 <Card className="shadow-sm border-slate-200 bg-gradient-to-br from-white to-slate-50">
                     <CardContent className="p-6 flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-slate-500">Ausgaben Gesamt (YTD)</p>
-                            <h3 className="text-2xl font-bold text-slate-900 mt-1">4.250,00 €</h3>
+                            <p className="text-sm font-medium text-slate-500">Ausgaben Gesamt</p>
+                            <h3 className="text-2xl font-bold text-slate-900 mt-1">
+                                {stats ? `${stats.totalAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €` : '0,00 €'}
+                            </h3>
                         </div>
                         <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <Euro className="h-5 w-5 text-blue-600" />
@@ -128,11 +168,26 @@ export default function PurchaseInvoicesPage() {
                     />
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
-                    <Button variant="outline" size="sm" className="gap-2">
-                        <Filter className="h-4 w-4" /> Filter
+                    <Button
+                        variant={statusFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('all')}
+                    >
+                        Alle
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2">
-                        <Calendar className="h-4 w-4" /> Zeitraum
+                    <Button
+                        variant={statusFilter === 'PENDING' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('PENDING')}
+                    >
+                        Offen
+                    </Button>
+                    <Button
+                        variant={statusFilter === 'PAID' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('PAID')}
+                    >
+                        Bezahlt
                     </Button>
                 </div>
             </div>
@@ -140,7 +195,7 @@ export default function PurchaseInvoicesPage() {
             {/* Invoices List */}
             <Card className="shadow-sm border-slate-200">
                 <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-                    <CardTitle className="text-lg">Letzte Rechnungen</CardTitle>
+                    <CardTitle className="text-lg">Rechnungsübersicht</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
@@ -148,7 +203,7 @@ export default function PurchaseInvoicesPage() {
                             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-6 py-3 font-medium">Beleg #</th>
-                                    <th className="px-6 py-3 font-medium">Lieferant</th>
+                                    <th className="px-6 py-3 font-medium">Lieفرant</th>
                                     <th className="px-6 py-3 font-medium">Datum</th>
                                     <th className="px-6 py-3 font-medium">Kategorie</th>
                                     <th className="px-6 py-3 font-medium">Status</th>
@@ -157,39 +212,78 @@ export default function PurchaseInvoicesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {MOCK_INVOICES.map((inv) => (
-                                    <tr key={inv.id} className="bg-white hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4 font-medium text-slate-900 group-hover:text-blue-600">
-                                            {inv.number}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-600">
-                                            {inv.supplier}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-500">
-                                            {new Date(inv.date).toLocaleDateString('de-DE')}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <Badge variant="secondary" className="font-normal">
-                                                {inv.category}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {inv.status === 'PAID' ? (
-                                                <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200">Bezahlt</Badge>
-                                            ) : (
-                                                <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200">Offen</Badge>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-semibold text-slate-900">
-                                            {inv.amount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                                            </Button>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-12 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                                                <p className="text-slate-500">Lade Rechnungen...</p>
+                                            </div>
                                         </td>
                                     </tr>
-                                ))}
+                                ) : invoices.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-12 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <FileText className="h-8 w-8 text-slate-300" />
+                                                <p className="text-slate-500">Keine Rechnungen gefunden</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    invoices.map((inv) => (
+                                        <tr key={inv.id} className="bg-white hover:bg-slate-50 transition-colors group">
+                                            <td className="px-6 py-4 font-medium text-slate-900 group-hover:text-blue-600">
+                                                {inv.invoiceNumber}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600">
+                                                {inv.vendorName}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500">
+                                                {new Date(inv.invoiceDate).toLocaleDateString('de-DE')}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <Badge variant="secondary" className="font-normal">
+                                                    {inv.category}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {inv.status === 'PAID' ? (
+                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200">Bezahlt</Badge>
+                                                ) : (
+                                                    <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200">Offen</Badge>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-semibold text-slate-900">
+                                                {Number(inv.totalGross).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-slate-400 hover:text-red-600 transition-colors"
+                                                    onClick={async () => {
+                                                        if (confirm('Möchten Sie diese Rechnung wirklich löschen?')) {
+                                                            try {
+                                                                const res = await authenticatedFetch(`/api/purchase-invoices/${inv.id}`, { method: 'DELETE' })
+                                                                if (res.ok) {
+                                                                    toast.success('Rechnung gelöscht')
+                                                                    fetchInvoices()
+                                                                } else {
+                                                                    toast.error('Fehler beim Löschen')
+                                                                }
+                                                            } catch (e) {
+                                                                toast.error('Netzwerkfehler')
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

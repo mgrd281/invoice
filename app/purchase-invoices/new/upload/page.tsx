@@ -20,11 +20,13 @@ import {
     AlertCircle,
     ArrowRight
 } from 'lucide-react'
-import { useToast } from '@/components/ui/toast'
+import { toast } from 'sonner'
+import { useAuthenticatedFetch } from '@/lib/api-client'
 
 export default function PurchaseInvoiceUploadPage() {
     const router = useRouter()
-    const { showToast, ToastContainer } = useToast()
+    const authenticatedFetch = useAuthenticatedFetch()
+
     const [isDragging, setIsDragging] = useState(false)
     const [file, setFile] = useState<File | null>(null)
     const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'analyzing' | 'complete'>('idle')
@@ -47,43 +49,76 @@ export default function PurchaseInvoiceUploadPage() {
         if (droppedFile && (droppedFile.type === 'application/pdf' || droppedFile.type.startsWith('image/'))) {
             setFile(droppedFile)
         } else {
-            showToast("Bitte nur PDF oder Bilder hochladen.", "error")
+            toast.error("Bitte nur PDF oder Bilder hochladen.")
         }
-    }, [showToast])
+    }, [])
 
     const startUpload = async () => {
         if (!file) return
 
         setUploadStep('uploading')
-        setProgress(20)
+        setProgress(10)
 
-        // Mock Upload & OCR
         try {
-            await new Promise(resolve => setTimeout(resolve, 800))
-            setProgress(60)
+            // 1. Upload file to server storage
+            const uploadFormData = new FormData()
+            uploadFormData.append('file', file)
+            uploadFormData.append('type', 'purchase-invoice')
+
+            const uploadRes = await authenticatedFetch('/api/upload', {
+                method: 'POST',
+                body: uploadFormData
+            })
+
+            if (!uploadRes.ok) throw new Error('Upload fehlgeschlagen')
+            const uploadData = await uploadRes.json()
+            const fileUrl = uploadData.url
+
+            setProgress(40)
             setUploadStep('analyzing')
 
-            await new Promise(resolve => setTimeout(resolve, 1500))
+            // 2. Run AI OCR Analysis
+            const ocrFormData = new FormData()
+            ocrFormData.append('file', file)
+
+            const ocrRes = await authenticatedFetch('/api/ocr/analyze', {
+                method: 'POST',
+                body: ocrFormData
+            })
+
+            if (!ocrRes.ok) throw new Error('OCR Analyse fehlgeschlagen')
+            const ocrResult = await ocrRes.json()
+
             setProgress(100)
             setUploadStep('complete')
 
-            showToast("Beleg erfolgreich analysiert!", "success")
+            if (ocrResult.success) {
+                toast.success("Beleg erfolgreich analysiert!")
 
-            // Redirect to a preview/edit page with extracted data
-            // For now, let's redirect to manual with dummy params or just back
-            setTimeout(() => {
-                router.push('/purchase-invoices/new/manual?from=ocr')
-            }, 1000)
+                // Add the file URL to the OCR results
+                const finalData = {
+                    ...ocrResult.data,
+                    fileUrl
+                }
 
-        } catch (error) {
-            showToast("Fehler bei der AI-Analyse.", "error")
+                // Redirect to manual edit page with extracted data
+                const encodedData = encodeURIComponent(JSON.stringify(finalData))
+                router.push(`/purchase-invoices/new/manual?ocrData=${encodedData}`)
+            } else {
+                toast.warning("Analyse unvollständig. Bitte Daten manuell prüfen.")
+                router.push(`/purchase-invoices/new/manual?from=upload&fileUrl=${encodeURIComponent(fileUrl)}`)
+            }
+
+        } catch (error: any) {
+            console.error('OCR/Upload Error:', error)
+            toast.error(error.message || "Fehler bei der Analyse.")
             setUploadStep('idle')
+            setProgress(0)
         }
     }
 
     return (
         <div className="container mx-auto p-6 max-w-4xl space-y-8 pb-32">
-            <ToastContainer />
 
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
