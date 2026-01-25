@@ -7,6 +7,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
     try {
+        if (process.env.DISABLE_ANALYTICS === 'true') {
+            return NextResponse.json({ success: true, message: 'Analytics disabled' });
+        }
         const body = await req.json();
         const {
             event,

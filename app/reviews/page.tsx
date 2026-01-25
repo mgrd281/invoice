@@ -39,7 +39,8 @@ import {
     X,
     Sparkles,
     Video,
-    ArrowLeft
+    ArrowLeft,
+    Home
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -1196,12 +1197,31 @@ function ReviewsPageContent() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <BackButton fallbackUrl="/dashboard" />
-                            <span className="text-gray-300">/</span>
-                            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                                Produktbewertungen
-                            </h1>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => router.back()}
+                                className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                                title="Zurück"
+                            >
+                                <ArrowLeft className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                            </Button>
+                            <Link href="/dashboard">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 rounded-full border-slate-200 bg-white/50 hover:bg-slate-50 shadow-sm transition-all"
+                                    title="Dashboard"
+                                >
+                                    <Home className="h-[18px] w-[18px] text-slate-600" strokeWidth={2} />
+                                </Button>
+                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
+                                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                                    Produktbewertungen
+                                </h1>
+                            </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <Button variant="outline" onClick={() => setActiveTab('widgets')}>

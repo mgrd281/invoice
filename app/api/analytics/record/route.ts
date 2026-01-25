@@ -5,6 +5,11 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
     try {
+        if (process.env.DISABLE_SESSION_RECORDING === 'true') {
+            console.log('[Recording API] Session recording is disabled via environment variable.');
+            return NextResponse.json({ success: true, message: 'Disabled' });
+        }
+
         const { sessionId: rawSessionId, organizationId, events } = await req.json();
 
         if (!rawSessionId || !events || events.length === 0) {
