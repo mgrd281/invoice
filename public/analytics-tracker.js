@@ -182,14 +182,26 @@
 
         // Auto-enrich with cart snapshot for relevant events
         if (isCommerce && event !== 'view_product') {
-            const cartData = await fetchCart();
-            if (cartData) {
-                metadata.cart = cartData;
-                // Proactively record snapshot
+            // ONLY fetch if not already provided (Fix for stale data on removals)
+            if (!metadata.cart) {
+                const cartData = await fetchCart();
+                if (cartData) {
+                    metadata.cart = cartData;
+                    // Proactively record snapshot
+                    try {
+                        fetch(`${baseOrigin}/api/analytics/sessions/${sessionId}/cart`, {
+                            method: 'POST',
+                            body: JSON.stringify({ ...cartData, action: event.toUpperCase() }),
+                            keepalive: true
+                        });
+                    } catch (e) { }
+                }
+            } else {
+                // Even if provided, we might want to sync snapshot alongside event
                 try {
                     fetch(`${baseOrigin}/api/analytics/sessions/${sessionId}/cart`, {
                         method: 'POST',
-                        body: JSON.stringify({ ...cartData, action: event.toUpperCase() }),
+                        body: JSON.stringify({ ...metadata.cart, action: event.toUpperCase() }),
                         keepalive: true
                     });
                 } catch (e) { }
@@ -840,27 +852,51 @@
 
                         if (allRemovals.length > 0) {
                             console.log('[Analytics] 🔴 Detected removed items:', allRemovals);
+
+                            // Prepare authoritative cart snapshot from the response
+                            const authoritativeCart = {
+                                itemsCount: cartAfter.item_count,
+                                totalValue: cartAfter.total_price / 100,
+                                currency: cartAfter.currency,
+                                items: cartAfter.items.map(item => ({
+                                    id: item.variant_id,
+                                    product_id: item.product_id,
+                                    variant_id: item.variant_id,
+                                    title: item.product_title,
+                                    variant_title: item.variant_title,
+                                    qty: item.quantity,
+                                    price: item.price / 100,
+                                    image: item.image,
+                                    url: item.url
+                                }))
+                            };
+
                             track('remove_from_cart', {
                                 removedItems: allRemovals,
-                                cartSnapshotAfter: {
-                                    itemsCount: cartAfter.item_count,
-                                    totalValue: cartAfter.total_price / 100,
-                                    currency: cartAfter.currency,
-                                    items: cartAfter.items.map(item => ({
-                                        id: item.variant_id,
-                                        product_id: item.product_id,
-                                        variant_id: item.variant_id,
-                                        title: item.product_title,
-                                        variant_title: item.variant_title,
-                                        quantity: item.quantity,
-                                        price: item.price / 100,
-                                        image: item.image,
-                                        url: item.url
-                                    }))
-                                }
+                                cart: authoritativeCart // Pass explicit cart state to avoid re-fetch of stale data
                             });
                         } else {
-                            track('update_cart');
+                            // Prepare authoritative cart snapshot from the response
+                            const authoritativeCart = {
+                                itemsCount: cartAfter.item_count,
+                                totalValue: cartAfter.total_price / 100,
+                                currency: cartAfter.currency,
+                                items: cartAfter.items.map(item => ({
+                                    id: item.variant_id,
+                                    product_id: item.product_id,
+                                    variant_id: item.variant_id,
+                                    title: item.product_title,
+                                    variant_title: item.variant_title,
+                                    qty: item.quantity,
+                                    price: item.price / 100,
+                                    image: item.image,
+                                    url: item.url
+                                }))
+                            };
+
+                            track('update_cart', {
+                                cart: authoritativeCart // Pass explicit cart state
+                            });
                         }
                     }
 
@@ -915,5 +951,4 @@
     });
 
     window.Analytics = { track };
-};
-}) ();
+})();
