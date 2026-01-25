@@ -574,13 +574,18 @@
             window.rrweb.record({
                 emit(event) {
                     rrwebEvents.push(event);
-                    // Ultra-Live Flush: Every 10 events (reduced from 50)
-                    if (event.type === 2 || rrwebEvents.length >= 10) {
-                        console.log(`[Analytics] Fast Flush: ${rrwebEvents.length} events`);
+                    // Optimized Flush: Every 100 events or 5 seconds (Time-based flush loop handles the rest)
+                    if (rrwebEvents.length >= 100) {
+                        console.log(`[Analytics] Buffer Full Flush: ${rrwebEvents.length} events`);
                         flushEvents();
                     }
                 },
+                checkoutEveryNms: 60 * 1000, // Full snapshot every 60s
             });
+            // Time-based flush
+            setInterval(() => {
+                if (rrwebEvents.length > 0) flushEvents();
+            }, 5000);
         } catch (e) {
             console.error('[Analytics] rrweb record error:', e);
         }

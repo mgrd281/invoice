@@ -415,11 +415,15 @@ function LiveAnalyticsContent() {
     };
 
     useEffect(() => {
-        fetchLiveData();
-        fetchSessions();
+        // Initial fetch
+        if (activeTab === 'live') fetchLiveData();
+        if (activeTab === 'history') fetchSessions();
+        if (activeTab === 'visitors') fetchVisitors();
+
         const interval = setInterval(() => {
-            fetchLiveData();
-            fetchSessions();
+            if (activeTab === 'live') fetchLiveData();
+            // Optional: Don't poll history/visitors aggressively to save egress
+            // if (activeTab === 'history') fetchSessions(); 
         }, 5000);
 
         if (filterType) {
@@ -427,7 +431,7 @@ function LiveAnalyticsContent() {
         }
 
         return () => clearInterval(interval);
-    }, [filterType, historySearch]);
+    }, [filterType, historySearch, activeTab]);
 
     useEffect(() => {
         if (liveData) setLoading(false);

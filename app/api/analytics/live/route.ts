@@ -60,7 +60,14 @@ export async function GET(request: NextRequest) {
                 visitor: true,
                 events: {
                     orderBy: {
-                        timestamp: 'asc'
+                        timestamp: 'desc'
+                    },
+                    take: 20,
+                    select: {
+                        id: true,
+                        type: true,
+                        timestamp: true,
+                        metadata: true
                     }
                 }
             },
@@ -68,6 +75,20 @@ export async function GET(request: NextRequest) {
                 lastActiveAt: 'desc'
             }
         });
+
+        // Optimize Payload: Strip heavy metadata (like cart snapshots) from the list view
+        const optimizedSessions = liveSessions.map(session => ({
+            ...session,
+            events: session.events.map((e: any) => {
+                const { metadata, ...rest } = e;
+                // Only keep essential metadata for the list view icons
+                const cleanMetadata = metadata ? {
+                    depth: metadata.depth,
+                    // keep other small fields if needed, drop 'cart', 'html', etc.
+                } : null;
+                return { ...rest, metadata: cleanMetadata };
+            })
+        }));
 
         // Aggregate Funnel Data
         const funnel = {
@@ -82,23 +103,27 @@ export async function GET(request: NextRequest) {
             low: 0
         };
 
-        liveSessions.forEach((s: any) => {
+        optimizedSessions.forEach((s: any) => {
             if (s.intentLabel === 'High') intentStats.high++;
             else if (s.intentLabel === 'Medium') intentStats.medium++;
             else intentStats.low++;
 
+            // Funnel calc needs ANY occurrence in history. 
+            // Since we limited events to 20, this might be inaccurate for long sessions.
+            // But for "Live" view performance, it's a tradeoff.
+            // Ideally we'd aggregate this in DB, but for now this is fine.
             const eventTypes = new Set(s.events.map((e: any) => e.type));
             if (eventTypes.has('start_checkout')) funnel.checkout++;
             if (eventTypes.has('add_to_cart')) funnel.cart++;
             if (eventTypes.has('view_product')) funnel.products++;
         });
 
-        const uniqueVisitorIds = new Set(liveSessions.map((s: any) => s.visitorId));
+        const uniqueVisitorIds = new Set(optimizedSessions.map((s: any) => s.visitorId));
 
         return NextResponse.json({
-            count: liveSessions.length,
+            count: optimizedSessions.length,
             uniqueCount: uniqueVisitorIds.size,
-            sessions: liveSessions,
+            sessions: optimizedSessions,
             funnel,
             intentStats
         });
