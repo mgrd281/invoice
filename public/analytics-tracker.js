@@ -696,11 +696,12 @@
     track('page_view');
     loadRRWeb();
 
-    // Heartbeat every 15 seconds
+    // Heartbeat every 5 seconds (High Frequency for Stability)
     setInterval(() => {
         track('heartbeat');
         localStorage.setItem('s_last_active', Date.now().toString());
-    }, 15000);
+        // console.log('[Analytics] ❤️ Heartbeat Sent');
+    }, 5000);
 
     // Visibility / Activity Tracking
     document.addEventListener('visibilitychange', () => {
