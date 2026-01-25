@@ -28,10 +28,16 @@ async function extractProductTitle(html: string, source: string): Promise<string
 
 // Simple string similarity (Levenshtein would be better but this is a start)
 function calculateSimilarity(str1: string, str2: string): number {
-    const s1 = str1.toLowerCase()
-    const s2 = str2.toLowerCase()
+    const s1 = str1.toLowerCase().replace(/[()]/g, '')
+    const s2 = str2.toLowerCase().replace(/[()]/g, '')
 
-    if (s1.includes(s2) || s2.includes(s1)) return 0.8
+    if (s1.includes(s2) || s2.includes(s1)) return 0.9
+
+    // Check for matching numbers (IDs, SKUs) - Strong signal
+    const nums1 = s1.match(/\d{4,}/g) || []
+    const nums2 = (s2.match(/\d{4,}/g) || []) as string[]
+    const commonNums = nums1.filter(n => nums2.includes(n))
+    if (commonNums.length > 0) return 0.95
 
     // Split into words and check overlap
     const words1 = s1.split(/\s+/).filter(w => w.length > 2)
@@ -40,7 +46,9 @@ function calculateSimilarity(str1: string, str2: string): number {
     if (words1.length === 0 || words2.length === 0) return 0
 
     const intersection = words1.filter(w => words2.includes(w))
-    return intersection.length / Math.max(words1.length, words2.length)
+    const score = intersection.length / Math.max(words1.length, words2.length)
+
+    return score
 }
 
 async function findMatchedProduct(extractedTitle: string, shopifyProducts: any[]) {
