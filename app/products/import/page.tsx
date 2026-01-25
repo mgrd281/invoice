@@ -6,13 +6,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/box-checkbox"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Download, Package, ShoppingCart, Search, Filter, Eye, Edit, Trash2, ArrowLeft, Globe, Plus, RefreshCw, Sparkles, ArrowRight, CheckCircle, Info, Settings as SettingsIcon, CheckCircle2, FileText, Tag, Zap, Box, Clock, XCircle, DollarSign, Upload } from "lucide-react"
 import Link from 'next/link'
-import { ToastContainer, showToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast'
 
 interface ImportedProduct {
     id: string
@@ -30,6 +30,7 @@ interface ImportedProduct {
 
 export default function ProductImportPage() {
     const router = useRouter()
+    const { showToast, ToastContainer } = useToast()
     const [activeTab, setActiveTab] = useState<'import' | 'store'>('import')
 
     // Import State
@@ -535,10 +536,10 @@ export default function ProductImportPage() {
                                 </div>
                                 <Separator />
                                 <div className="space-y-3">
-                                    <div className="flex items-center justify-between"><Label>Sofort Aktivieren</Label><Checkbox checked={settings.isActive} onCheckedChange={(c) => setSettings({ ...settings, isActive: !!c })} /></div>
-                                    <div className="flex items-center justify-between"><Label>Bestandsverfolgung</Label><Checkbox checked={settings.trackQuantity} onCheckedChange={(c) => setSettings({ ...settings, trackQuantity: !!c })} /></div>
-                                    <div className="flex items-center justify-between"><Label>Steuer erheben</Label><Checkbox checked={settings.chargeTax} onCheckedChange={(c) => setSettings({ ...settings, chargeTax: !!c })} /></div>
-                                    <div className="flex items-center justify-between"><Label>Terms akzeptieren</Label><Checkbox checked={settings.acceptTerms} onCheckedChange={(c) => setSettings({ ...settings, acceptTerms: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Sofort Aktivieren</Label><Checkbox checked={settings.isActive} onCheckedChange={(c: boolean) => setSettings({ ...settings, isActive: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Bestandsverfolgung</Label><Checkbox checked={settings.trackQuantity} onCheckedChange={(c: boolean) => setSettings({ ...settings, trackQuantity: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Steuer erheben</Label><Checkbox checked={settings.chargeTax} onCheckedChange={(c: boolean) => setSettings({ ...settings, chargeTax: !!c })} /></div>
+                                    <div className="flex items-center justify-between"><Label>Terms akzeptieren</Label><Checkbox checked={settings.acceptTerms} onCheckedChange={(c: boolean) => setSettings({ ...settings, acceptTerms: !!c })} /></div>
                                 </div>
                             </CardContent>
                         </Card>
