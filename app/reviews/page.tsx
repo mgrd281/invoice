@@ -2342,7 +2342,7 @@ function ReviewsPageContent() {
                                                                                 {res.success ? (
                                                                                     <span className="text-green-600 font-bold">{res.count} Reviews</span>
                                                                                 ) : (
-                                                                                    <span className="text-red-500" title={res.error}>Fehler</span>
+                                                                                    <span className="text-red-500 font-medium">{res.error || 'Fehler'}</span>
                                                                                 )}
                                                                             </td>
                                                                         </tr>

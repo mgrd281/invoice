@@ -37,12 +37,7 @@ export async function POST(req: NextRequest) {
         } = body;
 
         if (!organizationId || !visitorToken || !sessionId || !event) {
-            console.warn('[Analytics Tracker] Missing fields:', {
-                hasOrg: !!organizationId,
-                hasVisitor: !!visitorToken,
-                hasSession: !!sessionId,
-                event
-            });
+            // Quietly ignore missing fields to reduce noise
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
