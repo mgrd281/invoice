@@ -207,8 +207,9 @@
 .interactive-orb {
   position: absolute;
   border-radius: 50%;
-  pointer-events: auto;
-  cursor: pointer;
+  border-radius: 50%;
+  pointer-events: none;
+  cursor: default;
   transition: all 0.3s ease;
   animation: orbFloat 8s ease-in-out infinite;
   -webkit-backdrop-filter: blur(5px);

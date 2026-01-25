@@ -504,7 +504,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay>
+              <DragOverlay dropAnimation={null} zIndex={100} style={{ pointerEvents: 'none' }}>
                 {activeId ? (
                   <SortableFeature feature={features.find(f => f.id === activeId)!} />
                 ) : null}
@@ -665,10 +665,13 @@ function SortableFeature({ feature }: { feature: any }) {
   const Icon = feature.icon
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="h-full touch-none">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="h-full touch-none select-none">
       <Link href={feature.href} onClick={(e) => {
-        // Prevent navigation if we are dragging
-        if (isDragging) e.preventDefault()
+        // Prevent navigation if we are dragging or if the drag just finished
+        if (isDragging) {
+          e.preventDefault()
+          e.stopPropagation()
+        }
       }}>
         <Card className={`${feature.cardClass} h-full`}>
           <CardHeader>

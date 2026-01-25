@@ -359,15 +359,13 @@ export function VoiceAssistant() {
             <Button
                 onClick={handleFloatingButtonClick}
                 className={`fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl z-50 flex items-center justify-center transition-all hover:scale-105 animate-in slide-in-from-bottom-10 fade-in duration-700
-                    ${!isListeningEnabled ? 'bg-slate-400 hover:bg-slate-500' :
-                        isMuted ? 'bg-amber-500 hover:bg-amber-600' :
-                            'bg-violet-600 hover:bg-violet-700'}
+                    ${(!isListeningEnabled || isMuted)
+                        ? 'bg-gray-200 hover:bg-gray-300 hover:ring-4 hover:ring-black/5'
+                        : 'bg-[#0B0D12] hover:bg-black hover:ring-4 hover:ring-black/10'}
                 `}
-                title={!isListeningEnabled ? "Mikrofon Aus" : isMuted ? "Ton Aus" : "Assistant"}
+                title={!isListeningEnabled ? "Mikrofon aus" : isMuted ? "Ton aus" : "Assistant"}
             >
-                {!isListeningEnabled ? <MicOff className="h-6 w-6 text-white" /> :
-                    isMuted ? <VolumeX className="h-6 w-6 text-white" /> :
-                        <Mic className="h-6 w-6 text-white" />}
+                <Mic className={`h-6 w-6 ${(!isListeningEnabled || isMuted) ? 'text-gray-500' : 'text-white'}`} />
             </Button>
 
             {/* Panel */}

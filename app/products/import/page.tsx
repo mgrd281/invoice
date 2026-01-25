@@ -15,6 +15,7 @@ import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
 import ProductPreview from '@/components/product-preview'
 import { cn } from '@/lib/utils'
+import { ProductPreviewModal } from '@/components/products/product-preview-modal'
 
 interface ImportedProduct {
     id: string
@@ -67,6 +68,10 @@ export default function ProductImportPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [sourceFilter, setSourceFilter] = useState<string>('all')
     const [uniqueSources, setUniqueSources] = useState<string[]>([])
+
+    // Modal State
+    const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
     // Extract domain from URL or Tag
     const extractDomain = (urlOrTag: string) => {
@@ -286,9 +291,10 @@ export default function ProductImportPage() {
                     throw new Error(draftData.error || 'Failed to create draft')
                 }
 
-                // 2. Redirect to Preview (which will handle processing)
+                // 2. Open Modal (No Redirect)
                 if (draftData.draftId) {
-                    router.push(`/products/import/preview/${draftData.draftId}`)
+                    setCurrentDraftId(draftData.draftId)
+                    setIsPreviewOpen(true)
                 }
                 return
 
@@ -394,6 +400,17 @@ export default function ProductImportPage() {
     return (
         <div className="container mx-auto p-6 max-w-6xl space-y-8 pb-32">
             <ToastContainer />
+
+            <ProductPreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                draftId={currentDraftId}
+                onSuccess={() => {
+                    setActiveTab('store')
+                    loadImportedProducts()
+                    setUrls([''])
+                }}
+            />
 
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

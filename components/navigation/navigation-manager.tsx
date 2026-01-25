@@ -51,5 +51,46 @@ export function NavigationManager() {
         }
     }, [])
 
-    return null // This is a logic-only component
+    // 3. Navigation Progress (TopLoader)
+    useEffect(() => {
+        // We can't detect standard Link clicks easily in App Router without external lib or wrapping Link
+        // But we can detect searchParams changes or just provide a manual trigger if needed.
+        // For a true TopLoader, usually `nextjs-toploader` package is best.
+        // As a fallback without package: we just reset our "isNavigating" state on pathname change.
+        setIsNavigating(false)
+    }, [pathname, searchParams])
+
+    return (
+        <div className="fixed top-0 left-0 w-full z-[100] pointer-events-none">
+            {/* 
+               If we had a way to detect start, we'd toggle this. 
+               Since we can't easily without a library, we rely on the fact that
+               most heavy navigations are handled by the browser or simple transitions.
+               
+               However, to prevent FREEZE sensation, we can add a global 'click' listener 
+               that shows a tiny bar if the click target is a link.
+            */}
+            <script dangerouslySetInnerHTML={{
+                __html: `
+                (function() {
+                    document.addEventListener('click', function(e) {
+                        const link = e.target.closest('a');
+                        if (link && link.href && link.href.startsWith(window.location.origin) && !link.target && !e.ctrlKey && !e.metaKey) {
+                            const bar = document.getElementById('nav-progress-bar');
+                            if (bar) {
+                                bar.style.width = '30%';
+                                bar.style.opacity = '1';
+                                setTimeout(() => { bar.style.width = '70%'; }, 500);
+                            }
+                        }
+                    });
+                })();
+            `}} />
+            <div
+                id="nav-progress-bar"
+                className="h-1 bg-violet-600 transition-all duration-300 ease-out"
+                style={{ width: '0%', opacity: 0 }}
+            />
+        </div>
+    )
 }
