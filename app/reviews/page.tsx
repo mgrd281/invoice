@@ -1104,6 +1104,7 @@ function ReviewsPageContent() {
                 setBulkImportResults(data.results)
                 const successCount = data.results.filter((r: any) => r.success).length
                 toast.success(`${successCount} von ${urls.length} Quellen erfolgreich verarbeitet!`)
+                setImportUrl('')
 
                 // If any success, refresh the list
                 if (successCount > 0) {
