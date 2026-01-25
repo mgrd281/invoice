@@ -1789,85 +1789,124 @@ function ReviewsPageContent() {
                                             )}
                                         </div>
                                     ) : filteredProducts.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {filteredProducts
-                                                .map((stat) => {
-                                                    const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
-                                                    const productImage = shopifyProduct?.images?.[0]?.src || stat.productImage
+                                        (() => {
+                                            const now = new Date()
+                                            const sevenDaysAgo = new Date()
+                                            sevenDaysAgo.setDate(now.getDate() - 7)
 
-                                                    return (
-                                                        <div
-                                                            key={stat.productId}
-                                                            className="group bg-white rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:scale-[1.02] transition-all duration-300 cursor-pointer p-5 flex items-center gap-5 relative overflow-hidden"
-                                                            onClick={() => {
-                                                                setSelectedProductStat({
-                                                                    ...stat,
-                                                                    productImage: productImage
-                                                                })
-                                                                setViewMode('details')
-                                                            }}
-                                                        >
-                                                            {/* Hover Highlight Line */}
-                                                            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                            const sortByDate = (a: any, b: any) => new Date(b.lastReviewDate).getTime() - new Date(a.lastReviewDate).getTime()
 
-                                                            {/* Product Image */}
-                                                            <div className="h-[80px] w-[80px] rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm bg-white relative group-hover:shadow-md transition-shadow">
-                                                                {productImage ? (
-                                                                    <img
-                                                                        src={productImage}
-                                                                        alt={stat.productTitle}
-                                                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-300">
-                                                                        <ImageIcon className="h-8 w-8" />
-                                                                    </div>
-                                                                )}
+                                            const recentProducts = filteredProducts
+                                                .filter(p => new Date(p.lastReviewDate) > sevenDaysAgo)
+                                                .sort(sortByDate)
+
+                                            const otherProducts = filteredProducts
+                                                .filter(p => new Date(p.lastReviewDate) <= sevenDaysAgo)
+                                                .sort(sortByDate)
+
+                                            const ProductCard = ({ stat, isRecent }: { stat: any, isRecent: boolean }) => {
+                                                const shopifyProduct = shopifyProducts.find(p => String(p.id) === String(stat.productId))
+                                                const productImage = shopifyProduct?.images?.[0]?.src || stat.productImage
+
+                                                return (
+                                                    <div
+                                                        className="group bg-white rounded-[16px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer p-5 flex items-center gap-5 relative overflow-hidden h-full"
+                                                        onClick={() => {
+                                                            setSelectedProductStat({
+                                                                ...stat,
+                                                                productImage: productImage
+                                                            })
+                                                            setViewMode('details')
+                                                        }}
+                                                    >
+                                                        {isRecent && (
+                                                            <div className="absolute top-3 right-3">
+                                                                <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-0.5 shadow-sm">Neu</Badge>
                                                             </div>
+                                                        )}
 
-                                                            {/* Product Info */}
-                                                            <div className="flex-1 min-w-0 py-1">
-                                                                <h4 className="text-[17px] font-bold text-gray-900 leading-snug mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                                                    {stat.productTitle}
-                                                                </h4>
+                                                        <div className="h-[72px] w-[72px] rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                                                            {productImage ? (
+                                                                <img src={productImage} alt={stat.productTitle} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                            ) : (
+                                                                <ImageIcon className="h-6 w-6 text-gray-300" />
+                                                            )}
+                                                        </div>
 
-                                                                <div className="space-y-1.5">
-                                                                    {/* Rating & Count */}
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-md border border-yellow-100">
-                                                                            <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-                                                                            <span className="font-bold text-gray-900 text-sm">{stat.averageRating.toFixed(1)}</span>
-                                                                        </div>
-                                                                        <span className="text-gray-500 text-sm font-medium">({stat.reviewCount})</span>
-                                                                    </div>
-
-                                                                    {/* Last Review Date */}
-                                                                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400">
-                                                                        <Clock className="h-3.5 w-3.5" />
-                                                                        <span>{new Date(stat.lastReviewDate).toLocaleDateString()}</span>
-                                                                    </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-bold text-gray-900 leading-snug mb-2 line-clamp-1 text-[15px] group-hover:text-blue-600 transition-colors">
+                                                                {stat.productTitle}
+                                                            </h4>
+                                                            <div className="flex items-center gap-3 text-sm">
+                                                                <div className="flex items-center gap-1.5 text-yellow-600 font-bold bg-yellow-50 px-2 py-0.5 rounded-md">
+                                                                    <Star className="h-3.5 w-3.5 fill-current" />
+                                                                    {stat.averageRating.toFixed(1)}
+                                                                </div>
+                                                                <div className="flex items-center text-gray-400 text-xs">
+                                                                    <span>({stat.reviewCount})</span>
+                                                                    <span className="mx-2">•</span>
+                                                                    <span>{new Date(stat.lastReviewDate).toLocaleDateString()}</span>
                                                                 </div>
                                                             </div>
+                                                        </div>
 
-                                                            {/* Chevron and Delete for affordance */}
-                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        setDeletingProductStat(stat)
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                                <ArrowRight className="h-5 w-5 text-gray-300" />
+                                                        {/* Chevron */}
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                                                            >
+                                                                <ArrowRight className="h-5 w-5" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }
+
+                                            return (
+                                                <div className="space-y-10">
+                                                    {/* Section 1: Recent */}
+                                                    {recentProducts.length > 0 && (
+                                                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                                                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Zuletzt aktualisiert</h3>
+                                                                <span className="text-xs text-gray-400 font-medium ml-1">({recentProducts.length})</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                                                {recentProducts.map(stat => <ProductCard key={stat.productId} stat={stat} isRecent={true} />)}
                                                             </div>
                                                         </div>
-                                                    )
-                                                })}
-                                        </div>
+                                                    )}
+
+                                                    {recentProducts.length > 0 && otherProducts.length > 0 && (
+                                                        <div className="h-px bg-gray-100 w-full" />
+                                                    )}
+
+                                                    {/* Section 2: All Others */}
+                                                    {otherProducts.length > 0 && (
+                                                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <LayoutGrid className="h-4 w-4 text-gray-400" />
+                                                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Alle Produkte</h3>
+                                                                <span className="text-xs text-gray-400 font-medium ml-1">({otherProducts.length})</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                                                {otherProducts.map(stat => <ProductCard key={stat.productId} stat={stat} isRecent={false} />)}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Empty handling embedded */}
+                                                    {recentProducts.length === 0 && otherProducts.length === 0 && (
+                                                        <div className="text-center py-10 text-gray-500">
+                                                            Keine Produkte gefunden.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })()
                                     ) : (
                                         <div className="flex flex-col items-center justify-center py-20 text-center">
                                             <div className="h-20 w-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
