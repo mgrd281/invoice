@@ -166,6 +166,36 @@ export async function POST(request: NextRequest) {
                 const targetProductIds = matchedProduct ? [matchedProduct.id] : [] // In bulk we usually assume 1:1 for URL:Product
 
                 if (targetProductIds.length > 0) {
+                    const productId = targetProductIds[0]
+
+                    // NEW: Save source for auto-sync
+                    try {
+                        await prisma.reviewSource.upsert({
+                            where: {
+                                organizationId_url: {
+                                    organizationId,
+                                    url
+                                }
+                            },
+                            create: {
+                                organizationId,
+                                productId: String(productId),
+                                productTitle: matchedProduct.title,
+                                url,
+                                type: source,
+                                isActive: true,
+                                lastSyncAt: new Date()
+                            },
+                            update: {
+                                productId: String(productId),
+                                productTitle: matchedProduct.title,
+                                isActive: true,
+                                lastSyncAt: new Date()
+                            }
+                        })
+                    } catch (sourceErr) {
+                        console.error('Failed to save review source:', sourceErr)
+                    }
                     for (const review of reviewsFound) {
                         await prisma.review.create({
                             data: {

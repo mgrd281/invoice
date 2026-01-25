@@ -40,7 +40,8 @@ import {
     Sparkles,
     Video,
     ArrowLeft,
-    Home
+    Home,
+    RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -426,6 +427,44 @@ function ReviewsPageContent() {
     const [productImportSearch, setProductImportSearch] = useState('')
     const [bulkImportResults, setBulkImportResults] = useState<any[]>([])
     const [autoMapping, setAutoMapping] = useState(true)
+    const [reviewSources, setReviewSources] = useState<any[]>([])
+    const [isSyncingValues, setIsSyncingValues] = useState(false)
+
+    useEffect(() => {
+        fetchReviewSources()
+    }, [])
+
+    const fetchReviewSources = async () => {
+        try {
+            const res = await authenticatedFetch('/api/reviews/sync-sources')
+            const data = await res.json()
+            if (data.success) {
+                setReviewSources(data.sources)
+            }
+        } catch (error) {
+            console.error('Failed to fetch review sources')
+        }
+    }
+
+    const handleSyncSources = async () => {
+        setIsSyncingValues(true)
+        try {
+            const res = await authenticatedFetch('/api/reviews/sync-sources', { method: 'POST' })
+            const data = await res.json()
+            if (data.success) {
+                const totalNew = data.results.reduce((acc: number, curr: any) => acc + (curr.newReviews || 0), 0)
+                toast.success(`${totalNew} neue Bewertungen synchronisiert!`)
+                fetchReviewSources()
+                fetchAllReviews()
+            } else {
+                toast.error('Fehler bei der Synchronisierung')
+            }
+        } catch (error) {
+            toast.error('Synchronisierung fehlgeschlagen')
+        } finally {
+            setIsSyncingValues(false)
+        }
+    }
 
     // Filter and Group Products for Import
     const filteredImportProducts = products.filter(p => {
@@ -2303,6 +2342,57 @@ function ReviewsPageContent() {
                                                     <Info className="h-3 w-3" />
                                                     Unterstützt AliExpress, Amazon und Vercel. Im Bulk-Modus werden Produkte automatisch zugeordnet.
                                                 </p>
+
+                                                {reviewSources.length > 0 && (
+                                                    <div className="mt-8 border-t pt-6">
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div>
+                                                                <h4 className="text-sm font-semibold">Verbundene Quellen (Auto-Sync)</h4>
+                                                                <p className="text-xs text-gray-500">Diese Quellen werden automatisch aktualisiert.</p>
+                                                            </div>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={handleSyncSources}
+                                                                disabled={isSyncingValues}
+                                                            >
+                                                                {isSyncingValues ? (
+                                                                    <>
+                                                                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                                                        Sync...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <RefreshCw className="h-3 w-3 mr-2" />
+                                                                        Jetzt synchronisieren
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </div>
+                                                        <div className="border rounded-md overflow-hidden text-xs">
+                                                            <table className="w-full">
+                                                                <thead className="bg-gray-50 border-b">
+                                                                    <tr>
+                                                                        <th className="text-left p-2 font-medium">Produkt</th>
+                                                                        <th className="text-left p-2 font-medium">URL</th>
+                                                                        <th className="text-right p-2 font-medium">Letzter Sync</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y">
+                                                                    {reviewSources.map((source: any) => (
+                                                                        <tr key={source.id} className="bg-white">
+                                                                            <td className="p-2 font-medium">{source.productTitle || 'Unbekannt'}</td>
+                                                                            <td className="p-2 truncate max-w-[150px] text-gray-500">{source.url}</td>
+                                                                            <td className="p-2 text-right text-gray-400">
+                                                                                {source.lastSyncAt ? new Date(source.lastSyncAt).toLocaleDateString() : '-'}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 

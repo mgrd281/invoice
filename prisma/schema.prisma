@@ -98,6 +98,24 @@ model Organization {
   visitorSessions         VisitorSession[]          @relation("OrganizationToVisitorSessions")
   vorkasseSettings        VorkasseSettings?
   widgetSettings          WidgetSettings?
+  reviewSources           ReviewSource[]
+}
+
+model ReviewSource {
+  id             String       @id @default(uuid())
+  organizationId String
+  productId      String
+  productTitle   String?
+  url            String
+  type           String       @default("unknown")
+  isActive       Boolean      @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  @@unique([organizationId, url])
+  @@index([productId])
 }
 
 model WidgetSettings {
