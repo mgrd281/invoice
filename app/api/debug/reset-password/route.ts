@@ -42,6 +42,10 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            error: error.message,
+            stack: error.stack
+        }, { status: 200 });
     }
 }
