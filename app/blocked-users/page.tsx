@@ -3,14 +3,21 @@
 import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { ShieldCheck, Zap, History, Globe, ShieldAlert } from "lucide-react"
-import { PageHeader } from "@/components/layout/page-header"
+import { Shield, Zap, History, Globe, ShieldAlert } from "lucide-react"
+import { GlobalHeader } from "@/components/layout/global-header"
 import { SecurityKpis } from "@/components/security/security-kpis"
 import { IpManagement } from "@/components/security/ip-management"
 import { LiveEventsFeed } from "@/components/security/live-events-feed"
 import { SecurityRuleBuilder } from "@/components/security/security-rule-builder"
 import { AuditLogTable } from "@/components/security/audit-log-table"
 import { useToast } from "@/components/ui/toast"
+
+const sectionMeta = {
+    title: 'Sicherheit & IP-Sperren',
+    icon: Shield,
+    color: '#DC2626',
+    description: 'Enterprise Security Monitoring & Access Control'
+}
 
 export default function SecurityPage() {
     const [stats, setStats] = useState({
@@ -38,22 +45,18 @@ export default function SecurityPage() {
         <div className="space-y-8 pb-12">
             <ToastContainer />
 
-            {/* Top Zone: Header & Status */}
-            <PageHeader
-                title="Sicherheit & IP-Sperren"
-                subtitle="Enterprise High-Level Security Monitoring & Access Control."
-                actions={
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Echtzeitschutz Aktiv</span>
-                        </div>
-                        <Button className="bg-slate-900 text-white font-bold h-10 px-6">+ Sperre hinzufügen</Button>
-                    </div>
-                }
-            />
+            {/* Global Navigation Header */}
+            <GlobalHeader sectionMeta={sectionMeta} />
 
             <div className="max-w-7xl mx-auto px-6 space-y-8">
+                {/* Actions Bar */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Echtzeitschutz Aktiv</span>
+                    </div>
+                    <Button className="bg-slate-900 text-white font-bold h-10 px-6">+ Sperre hinzufügen</Button>
+                </div>
                 {/* Dashboard: KPIs */}
                 <SecurityKpis stats={stats} />
 
