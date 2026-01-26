@@ -237,54 +237,131 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session || !session.user) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
     const body = await req.json()
+    const organizationId = (session.user as any).organizationId
 
-    // Create invoice in DB
+    if (!organizationId) {
+      return new NextResponse('Organization context missing', { status: 400 })
+    }
+
+    // 1. Resolve Template (use default if not specified)
+    let templateId = body.templateId
+    if (!templateId) {
+      const defaultTemplate = await prisma.invoiceTemplate.findFirst({
+        where: { organizationId, isDefault: true }
+      })
+      templateId = defaultTemplate?.id
+    }
+
+    if (!templateId) {
+      const anyTemplate = await prisma.invoiceTemplate.findFirst({
+        where: { organizationId }
+      })
+      templateId = anyTemplate?.id
+    }
+
+    if (!templateId) {
+      return new NextResponse('Kein Rechnungs-Template gefunden. Bitte erst ein Template erstellen.', { status: 400 })
+    }
+
+    // 2. Customer UPSERT (identity resolution)
+    let customerId = body.customerId
+
+    if (!customerId) {
+      const email = body.customer.email?.toLowerCase().trim()
+      const name = body.customer.name.trim()
+      const zip = body.customer.zipCode || ''
+      const city = body.customer.city || ''
+
+      // Look for existing customer
+      let existingCustomer = null
+
+      if (email) {
+        existingCustomer = await prisma.customer.findFirst({
+          where: { organizationId, email }
+        })
+      }
+
+      if (!existingCustomer) {
+        // Fallback search by name + zip + city
+        existingCustomer = await prisma.customer.findFirst({
+          where: {
+            organizationId,
+            name: { equals: name, mode: 'insensitive' },
+            zipCode: zip,
+            city: { equals: city, mode: 'insensitive' }
+          }
+        })
+      }
+
+      if (existingCustomer) {
+        // Update customer if data changed
+        const updatedCustomer = await prisma.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            name: name || existingCustomer.name,
+            email: email || existingCustomer.email,
+            phone: body.customer.phone || existingCustomer.phone,
+            address: body.customer.address || existingCustomer.address,
+            zipCode: zip || existingCustomer.zipCode,
+            city: city || existingCustomer.city,
+            taxId: body.customer.taxId || existingCustomer.taxId,
+            status: 'ACTIVE'
+          }
+        })
+        customerId = updatedCustomer.id
+      } else {
+        // Create new customer
+        const newCustomer = await prisma.customer.create({
+          data: {
+            organizationId,
+            name,
+            email,
+            phone: body.customer.phone || '',
+            address: body.customer.address || '',
+            zipCode: zip,
+            city,
+            country: body.customer.country || 'DE',
+            taxId: body.customer.taxId || '',
+            status: 'ACTIVE'
+          }
+        })
+        customerId = newCustomer.id
+      }
+    }
+
+    // 3. Create invoice matched to customer
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber: body.invoiceNumber,
         issueDate: new Date(body.date),
-        dueDate: body.dueDate ? new Date(body.dueDate) : new Date(), // Fallback to now if null
+        dueDate: body.dueDate ? new Date(body.dueDate) : new Date(),
         status: (body.status || 'DRAFT') as InvoiceStatus,
         totalNet: body.subtotal,
         totalTax: body.taxTotal,
         totalGross: body.total,
         currency: body.currency || 'EUR',
-        // notes: body.notes, // Removed as it doesn't exist
-        organization: {
-          connect: { id: 'default-org-id' } // Placeholder
-        },
-        template: {
-          connect: { id: 'default-template-id' } // Placeholder
-        },
-        customer: {
-          create: {
-            name: body.customer.name,
-            email: body.customer.email,
-            address: body.customer.address,
-            phone: body.customer.phone,
-            // Add required fields with defaults if missing
-            zipCode: body.customer.zipCode || '',
-            city: body.customer.city || '',
-            organization: {
-              connect: { id: 'default-org-id' }
-            }
-          }
-        },
+        paymentMethod: body.paymentMethod || 'Überweisung',
+        orderNumber: body.orderNumber,
+        organization: { connect: { id: organizationId } },
+        template: { connect: { id: templateId } },
+        customer: { connect: { id: customerId } },
         items: {
           create: body.items.map((item: any) => ({
             description: item.description,
             ean: item.ean || '',
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            grossAmount: item.total, // Mapped total to grossAmount
-            netAmount: item.total, // Assuming net = gross for now or calc properly
-            taxAmount: 0, // Default
-            taxRateId: 'default-tax-rate' // Placeholder
+            grossAmount: item.total,
+            netAmount: item.netAmount || item.total,
+            taxAmount: item.taxAmount || 0,
+            taxRate: {
+              connect: { id: item.taxRateId || 'default-tax-rate' }
+            }
           }))
         }
       },
@@ -294,7 +371,7 @@ export async function POST(req: Request) {
       }
     })
 
-    return NextResponse.json(invoice)
+    return NextResponse.json({ ok: true, data: invoice })
 
   } catch (error) {
     console.error('Error creating invoice:', error)
