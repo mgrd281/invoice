@@ -1,107 +1,90 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, Zap, Shield, BarChart3 } from "lucide-react"
+import { ShieldCheck, Zap, TrendingUp, AlertTriangle } from "lucide-react"
 
-interface RulesPerformanceProps {
-    settings: any
-    onUpdate: (settings: any) => void
-}
-
-export function RulesPerformance({ settings, onUpdate }: RulesPerformanceProps) {
-
+export function RulesPerformance({ settings, onUpdate }: any) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-slate-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-amber-500" />
-                        Automation Rules
-                    </CardTitle>
-                    <CardDescription>Intelligente Regeln für den Mahnprozess.</CardDescription>
+        <div className="space-y-6">
+            <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="bg-slate-50/50 border-b py-4">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900">Recovery Strategy</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Mahnwesen aktiv</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Automatische E-Mails senden.
-                            </p>
-                        </div>
-                        <Switch
-                            checked={settings.enabled}
-                            onCheckedChange={(checked) => onUpdate({ ...settings, enabled: checked })}
+                <CardContent className="p-6 space-y-6">
+                    <div className="space-y-4">
+                        <StrategyToggle
+                            title="VIP Protection"
+                            description="Flow für VIP-Kunden pausieren."
+                            status="ACTIVE"
+                        />
+                        <StrategyToggle
+                            title="Small Amount Skip"
+                            description="Überspringe Flow bei Beträgen < 10€."
+                            status="ACTIVE"
+                        />
+                        <StrategyToggle
+                            title="Auto-Stop on Payment"
+                            description="Automation bei Zahlungseingang stornieren."
+                            status="FIXED"
                         />
                     </div>
+                </CardContent>
+            </Card>
 
-                    <div className="flex items-center justify-between opacity-50">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Bagatellgrenze</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Keine Mahnung unter 5,00 €
-                            </p>
+            <Card className="border-slate-900 bg-slate-900 text-white shadow-xl">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Monthly Performance</p>
+                            <h3 className="text-xl font-black mt-1">Recovery Rate</h3>
                         </div>
-                        <Switch disabled checked={true} />
+                        <Badge className="bg-emerald-500 text-white border-none font-black">+14.2%</Badge>
                     </div>
 
-                    <div className="flex items-center justify-between opacity-50">
-                        <div className="space-y-0.5">
-                            <Label className="text-base">Wochenende pausieren</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Keine E-Mails Sa/So senden.
-                            </p>
-                        </div>
-                        <Switch disabled />
+                    <div className="h-24 flex items-end gap-1.5 px-2">
+                        {[40, 60, 45, 80, 55, 90, 75, 85, 95].map((h, i) => (
+                            <div key={i} className="flex-1 bg-white/10 rounded-t hover:bg-white/30 transition-colors relative group" style={{ height: `${h}%` }}>
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {h}%
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
-                    <div className="rounded-lg bg-amber-50 p-3 mt-4 flex gap-2 items-start text-xs text-amber-800">
-                        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        Weitere smarte Regeln (z.B. Kundengruppen-Logik) sind in Ihrem aktuellen Plan noch nicht freigeschaltet.
+                    <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-emerald-400" />
+                            <span className="text-xs font-bold text-slate-400">Best Step: 1. Erinnerung</span>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
-            <Card className="border-slate-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-indigo-500" />
-                        Performance Optimierung
-                    </CardTitle>
-                    <CardDescription>Analysen zur Verbesserung der Zahlungsquote.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-slate-700">Bester Zeitpunkt</span>
-                                <Badge variant="secondary">Dienstag, 10:00</Badge>
-                            </div>
-                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                                <div className="bg-indigo-500 h-full w-[70%]"></div>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">
-                                E-Mails am Dienstagmorgen haben eine 20% höhere Öffnungsrate.
-                            </p>
-                        </div>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex gap-3 text-amber-800">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-tight">Anwalts-Info</p>
+                    <p className="text-[10px] mt-0.5 leading-relaxed font-medium">Beachten Sie die legalen Fristen für Verzugszinsen in Ihrer Region.</p>
+                </div>
+            </div>
+        </div>
+    )
+}
 
-                        <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-slate-700">Effektivste Stufe</span>
-                                <Badge variant="secondary">1. Erinnerung</Badge>
-                            </div>
-                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                                <div className="bg-emerald-500 h-full w-[45%]"></div>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">
-                                45% der Zahlungen erfolgen nach der ersten freundlichen Erinnerung.
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+function StrategyToggle({ title, description, status }: any) {
+    return (
+        <div className="flex items-center justify-between group">
+            <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{title}</span>
+                    {status === 'FIXED' && <Badge className="bg-indigo-50 text-indigo-600 border-indigo-100 text-[8px] h-4 px-1">SYSTEM</Badge>}
+                </div>
+                <p className="text-[10px] font-medium text-slate-500">{description}</p>
+            </div>
+            <Switch defaultChecked={status === 'ACTIVE' || status === 'FIXED'} disabled={status === 'FIXED'} />
         </div>
     )
 }

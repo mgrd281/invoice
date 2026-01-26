@@ -35,8 +35,11 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
         articleNumber: false,
         foldMarks: true
     })
-    const [selectedLayout, setSelectedLayout] = useState(1)
+    const [selectedLayout, setSelectedLayout] = useState<'classic' | 'modern' | 'minimal' | 'bold'>('classic')
     const [localCompanySettings, setLocalCompanySettings] = useState<any>(null)
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Mock colors
     const colors = [
@@ -59,10 +62,60 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
     useEffect(() => {
         if (settings.companySettings) {
             setLocalCompanySettings(settings.companySettings)
+        } else {
+            // Fetch real settings if not provided
+            fetch('/api/company-settings')
+                .then(res => res.json())
+                .then(data => setLocalCompanySettings(data))
+                .catch(err => console.error('Error fetching settings:', err))
         }
     }, [settings.companySettings])
 
     const cs = localCompanySettings || {}
+
+    // Live Preview Sync (Debounced)
+    useEffect(() => {
+        if (!open || !localCompanySettings) return
+
+        const timer = setTimeout(async () => {
+            setLoading(true)
+            try {
+                const response = await fetch('/api/invoices/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        invoiceData,
+                        customer,
+                        items,
+                        organization: localCompanySettings,
+                        layout: selectedLayout,
+                        primaryColor: selectedColor,
+                        logoSize: logoSize,
+                        showSettings,
+                        subtotal: netTotal,
+                        taxAmount: vatTotal,
+                        total: grossTotal
+                    })
+                })
+
+                if (!response.ok) throw new Error('Preview generation failed')
+
+                const blob = await response.blob()
+                const url = URL.createObjectURL(blob)
+
+                // Cleanup old URL
+                if (pdfUrl) URL.revokeObjectURL(pdfUrl)
+                setPdfUrl(url)
+                setLoading(false)
+            } catch (err) {
+                console.error(err)
+                setError('Vorschau konnte nicht geladen werden')
+                setLoading(false)
+            }
+        }, 500)
+
+        return () => clearTimeout(timer)
+    }, [open, localCompanySettings, invoiceData, customer, items, selectedLayout, selectedColor, logoSize, showSettings])
 
     // Calculate totals
     const netTotal = items.reduce((sum: number, item: any) => sum + item.total, 0)
@@ -139,196 +192,39 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                     </div>
 
                     {/* Scrollable Canvas Container */}
-                    <div className="flex-1 overflow-auto p-8 flex justify-center items-start">
-                        <div
-                            className="bg-white shadow-2xl transition-transform origin-top"
-                            style={{
-                                width: '210mm',
-                                minHeight: '297mm',
-                                transform: `scale(${zoom / 100})`,
-                                marginBottom: '50px'
-                            }}
-                        >
-                            {/* INVOICE CONTENT */}
-                            <div className="p-[20mm] h-full flex flex-col relative">
-
-                                {/* Fold Marks */}
-                                {showSettings.foldMarks && (
-                                    <>
-                                        <div className="absolute left-0 top-[105mm] w-[5mm] border-t border-black"></div>
-                                        <div className="absolute left-0 top-[210mm] w-[5mm] border-t border-black"></div>
-                                        <div className="absolute left-[10mm] top-[50%] h-[5mm] border-l border-black hidden"></div>
-                                    </>
-                                )}
-
-                                {/* Header / Logo */}
-                                <div className={`flex justify-between items-start mb-12 ${selectedLayout === 2 ? 'flex-row-reverse' : ''} ${selectedLayout === 3 ? 'flex-col items-center text-center' : ''}`}>
-                                    <div className={`text-xs text-gray-400 underline decoration-gray-300 underline-offset-4 mb-2 ${selectedLayout === 3 ? 'order-2 mt-4' : ''}`}>
-                                        {/* Sender line above address */}
-                                        {cs.companyName} • {cs.address} • {cs.postalCode} {cs.city}
-                                    </div>
-                                    <div className={`w-1/3 flex ${selectedLayout === 2 ? 'justify-start' : selectedLayout === 3 ? 'justify-center w-full' : 'justify-end'}`}>
-                                        {/* Logo Placeholder or Image */}
-                                        {cs.logoPath ? (
-                                            <img
-                                                src={cs.logoPath.startsWith('http') ? cs.logoPath : `/uploads/${cs.logoPath}`}
-                                                alt="Company Logo"
-                                                style={{ width: `${logoSize * 2}px`, maxHeight: `${logoSize}px`, objectFit: 'contain' }}
-                                            />
-                                        ) : (
-                                            <div
-                                                className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs"
-                                                style={{ width: `${logoSize * 2}px`, height: `${logoSize}px` }}
-                                            >
-                                                Logo
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Address Block */}
-                                <div className={`mb-16 text-sm leading-relaxed ${selectedLayout === 3 ? 'text-center' : ''}`}>
-                                    <div className="font-bold">{customer.companyName}</div>
-                                    {customer.type === 'person' && <div>{customer.name}</div>}
-                                    <div>{customer.address}</div>
-                                    <div>{customer.zipCode} {customer.city}</div>
-                                    <div>{customer.country}</div>
-                                </div>
-
-                                {/* Info Block (Right side) */}
-                                <div className="flex justify-end mb-8">
-                                    <div className="w-1/2 grid grid-cols-2 gap-y-1 text-sm">
-                                        <div className="text-gray-500">Rechnungs-Nr.</div>
-                                        <div className="text-right font-medium">{invoiceData.invoiceNumber}</div>
-
-                                        <div className="text-gray-500">Rechnungsdatum</div>
-                                        <div className="text-right">{new Date(invoiceData.date).toLocaleDateString('de-DE')}</div>
-
-                                        <div className="text-gray-500">Lieferdatum</div>
-                                        <div className="text-right">{new Date(invoiceData.deliveryDate).toLocaleDateString('de-DE')}</div>
-
-                                        {showSettings.customerNumber && (
-                                            <>
-                                                <div className="text-gray-500">Kundennummer</div>
-                                                <div className="text-right">KD-{(customer.name || '000').substring(0, 3).toUpperCase()}</div>
-                                            </>
-                                        )}
-
-                                        {showSettings.contactPerson && settings.internalContact && (
-                                            <>
-                                                <div className="text-gray-500">Ansprechpartner</div>
-                                                <div className="text-right">{settings.internalContact}</div>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Subject & Intro */}
-                                <div className="mb-8">
-                                    <h1 className="text-xl font-bold mb-4" style={{ color: selectedColor }}>
-                                        {invoiceData.headerSubject || `Rechnung Nr. ${invoiceData.invoiceNumber}`}
-                                    </h1>
-                                    <p className="text-sm whitespace-pre-wrap">{invoiceData.headerText}</p>
-                                </div>
-
-                                {/* Items Table */}
-                                <div className="mb-8">
-                                    <table className="w-full text-sm">
-                                        <thead className="border-b-2 border-gray-100">
-                                            <tr>
-                                                {showSettings.articleNumber && <th className="py-2 text-left font-semibold text-gray-600">Art-Nr.</th>}
-                                                <th className="py-2 text-left font-semibold text-gray-600">Pos.</th>
-                                                <th className="py-2 text-left font-semibold text-gray-600">Beschreibung</th>
-                                                <th className="py-2 text-right font-semibold text-gray-600">Menge</th>
-                                                <th className="py-2 text-right font-semibold text-gray-600">Preis</th>
-                                                {showSettings.vatPerItem && <th className="py-2 text-right font-semibold text-gray-600">USt.</th>}
-                                                <th className="py-2 text-right font-semibold text-gray-600">Gesamt</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-50">
-                                            {items.map((item: any, index: number) => (
-                                                <tr key={item.id || index}>
-                                                    {showSettings.articleNumber && <td className="py-3 text-gray-500">{item.ean}</td>}
-                                                    <td className="py-3 text-gray-500">{index + 1}</td>
-                                                    <td className="py-3">
-                                                        <div className="font-medium text-gray-900">{item.description}</div>
-                                                    </td>
-                                                    <td className="py-3 text-right">{item.quantity} {item.unit}</td>
-                                                    <td className="py-3 text-right">{Number(item.unitPrice).toFixed(2)} €</td>
-                                                    {showSettings.vatPerItem && <td className="py-3 text-right">{item.vat}%</td>}
-                                                    <td className="py-3 text-right font-medium">{Number(item.total).toFixed(2)} €</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Totals */}
-                                <div className="flex justify-end mb-12">
-                                    <div className="w-1/2 border-t border-gray-200 pt-4 space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">Netto</span>
-                                            <span>{netTotal.toFixed(2)} €</span>
-                                        </div>
-                                        {vatGroups.map((group: any) => (
-                                            <div key={group.rate} className="flex justify-between text-sm">
-                                                <span className="text-gray-600">Umsatzsteuer {group.rate}%</span>
-                                                <span>{group.vat.toFixed(2)} €</span>
-                                            </div>
-                                        ))}
-                                        <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2" style={{ color: selectedColor }}>
-                                            <span>Gesamtbetrag</span>
-                                            <span>{grossTotal.toFixed(2)} €</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* QR Codes Area */}
-                                {(showSettings.qrCode || showSettings.epcQrCode) && (
-                                    <div className="flex gap-8 mb-8 justify-end">
-                                        {showSettings.qrCode && (
-                                            <div className="text-center">
-                                                <QRCodeSVG value={`https://example.com/pay/${invoiceData.invoiceNumber}`} size={80} />
-                                                <div className="text-[10px] text-gray-500 mt-1">Bezahlen</div>
-                                            </div>
-                                        )}
-                                        {showSettings.epcQrCode && cs.iban && (
-                                            <div className="text-center">
-                                                <QRCodeSVG value={generateGiroCode()} size={80} />
-                                                <div className="text-[10px] text-gray-500 mt-1">GiroCode</div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Footer Text */}
-                                <div className="mt-auto text-sm text-gray-600 whitespace-pre-wrap">
-                                    {invoiceData.footerText}
-                                </div>
-
-                                {/* Footer Info (Bank, etc) */}
-                                <div className="mt-8 pt-8 border-t border-gray-200 grid grid-cols-3 gap-4 text-[10px] text-gray-500">
-                                    <div>
-                                        <div className="font-bold text-gray-700 mb-1">Anschrift</div>
-                                        {cs.companyName}<br />
-                                        {cs.address}<br />
-                                        {cs.postalCode} {cs.city}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-gray-700 mb-1">Kontakt</div>
-                                        {cs.phone && <>Telefon: {cs.phone}<br /></>}
-                                        {cs.email && <>Email: {cs.email}<br /></>}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-gray-700 mb-1">Bankverbindung</div>
-                                        IBAN: {cs.iban}<br />
-                                        BIC: {cs.bic}<br />
-                                        Bank: {cs.bankName}
-                                    </div>
-                                </div>
-
+                    <div className="flex-1 overflow-auto p-4 flex justify-center items-start bg-gray-200/50">
+                        {loading && !pdfUrl && (
+                            <div className="flex flex-col items-center justify-center h-full gap-4">
+                                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm text-gray-500 font-medium">PDF wird generiert...</p>
                             </div>
-                        </div>
+                        )}
+
+                        {pdfUrl ? (
+                            <div
+                                className="relative shadow-2xl bg-white w-full max-w-[1000px] h-full transition-transform origin-top flex flex-col"
+                                style={{ transform: `scale(${zoom / 100})`, height: 'calc(100% - 2rem)' }}
+                            >
+                                {loading && (
+                                    <div className="absolute top-0 right-0 p-4 z-20">
+                                        <div className="bg-white/90 backdrop-blur rounded-lg px-3 py-1.5 shadow-sm border flex items-center gap-2">
+                                            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktualisiere...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <iframe
+                                    src={`${pdfUrl}#toolbar=0&navpanes=0`}
+                                    className="w-full h-full border-none"
+                                    title="Invoice Preview"
+                                />
+                            </div>
+                        ) : error ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                <p className="text-red-500 font-bold mb-2">{error}</p>
+                                <Button onClick={() => window.location.reload()} variant="outline">Neu laden</Button>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 
@@ -402,24 +298,28 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
                                 <ChevronDown className="h-4 w-4 text-gray-400" />
                             </div>
                             <div className="grid grid-cols-3 gap-3">
-                                {[1, 2, 3, 4, 5, 6].map(i => (
+                                {[
+                                    { id: 'classic', name: 'Classic' },
+                                    { id: 'modern', name: 'Modern' },
+                                    { id: 'minimal', name: 'Minimal' },
+                                    { id: 'bold', name: 'Bold Header' },
+                                ].map((layout) => (
                                     <div
-                                        key={i}
-                                        className={`aspect-[3/4] border rounded-lg p-2 cursor-pointer transition-all bg-gray-50 flex flex-col gap-1 ${selectedLayout === i ? 'border-blue-500 ring-2 ring-blue-200' : 'hover:border-blue-300'}`}
-                                        onClick={() => setSelectedLayout(i)}
+                                        key={layout.id}
+                                        className={`aspect-[3/4] border rounded-xl p-3 cursor-pointer transition-all bg-gray-50 flex flex-col gap-2 relative overflow-hidden group ${selectedLayout === layout.id ? 'border-blue-500 ring-2 ring-blue-100 bg-white' : 'hover:border-blue-300'}`}
+                                        onClick={() => setSelectedLayout(layout.id as any)}
                                     >
-                                        <div className="h-2 w-full bg-gray-200 rounded-sm" />
-                                        <div className="h-1 w-2/3 bg-gray-200 rounded-sm" />
-                                        <div className="mt-2 space-y-1">
-                                            <div className="h-0.5 w-full bg-gray-200" />
-                                            <div className="h-0.5 w-full bg-gray-200" />
-                                            <div className="h-0.5 w-full bg-gray-200" />
+                                        <div className="h-2 w-full bg-gray-200 rounded-full group-hover:bg-blue-100 transition-colors" />
+                                        <div className="h-1.5 w-2/3 bg-gray-100 rounded-full" />
+                                        <div className="mt-2 space-y-1.5">
+                                            <div className="h-1 w-full bg-gray-50" />
+                                            <div className="h-1 w-full bg-gray-50" />
+                                            <div className="h-1 w-full bg-gray-50" />
                                         </div>
-                                        {selectedLayout === i && (
-                                            <div className="mt-auto self-end text-blue-500">
-                                                <Check className="h-3 w-3" />
-                                            </div>
-                                        )}
+                                        <div className="mt-auto flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{layout.name}</span>
+                                            {selectedLayout === layout.id && <Check className="h-4 w-4 text-blue-500" />}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

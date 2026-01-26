@@ -32,6 +32,19 @@ interface InvoiceData {
   templateId?: string
   templateName?: string
   templateType?: string
+  // Layout & Styling
+  layout?: 'classic' | 'modern' | 'minimal' | 'bold'
+  primaryColor?: string
+  logoSize?: number
+  showSettings?: {
+    qrCode: boolean
+    epcQrCode: boolean
+    customerNumber: boolean
+    contactPerson: boolean
+    vatPerItem: boolean
+    articleNumber: boolean
+    foldMarks: boolean
+  }
   // QR-Code payment settings
   qrCodeSettings?: {
     enabled: boolean
@@ -62,6 +75,8 @@ interface InvoiceData {
     bankName: string
     iban: string
     bic: string
+    email?: string
+    phone?: string
   }
   items: Array<{
     description: string
@@ -69,6 +84,8 @@ interface InvoiceData {
     unitPrice: number
     total: number
     ean?: string
+    unit?: string
+    vat?: number
   }>
 }
 
@@ -217,504 +234,344 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
   // ========================================
   // INVOICE RENDERING (with template support)
   // ========================================
-  const renderDefault = () => {
+  // ========================================
+  // LAYOUT: CLASSIC
+  // ========================================
+  const renderClassic = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
     // Set font
     doc.setFont('helvetica')
+    const cs = invoice.organization
 
     // Header Background - Pure white across full width
     doc.setFillColor(255, 255, 255)
     doc.rect(0, 0, 210, 50, 'F')
 
-    // Company Logo - Support custom logo or fallback to company name
+    // Company Logo
     const logoX = 20
     const logoY = 18
-    const logoW = 60  // Much smaller and more proportional
-    const logoH = 14  // Compact height
+    const logoSizeFactor = (invoice.logoSize || 50) / 100
+    const logoW = 60 * logoSizeFactor
+    const logoH = 14 * logoSizeFactor
 
     const logoUrl = companySettings.logoUrl || companySettings.logo
-    const displayCompanyName = companySettings.companyName || companySettings.name || 'KARNEX'
+    const displayCompanyName = companySettings.companyName || companySettings.name || 'UNTERNEHMEN'
 
-    if (logoUrl && typeof window !== 'undefined') {
-      // Try to load custom logo (client-side only)
-      try {
-        // For now, show company name as text logo
-        // TODO: Implement actual image loading for logos
-        doc.setFillColor(76, 130, 106) // Default green color
-        doc.rect(logoX, logoY, logoW, logoH, 'F')
-
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(12)
-        doc.setTextColor(255, 255, 255)
-
-        const textWidth = doc.getTextWidth(displayCompanyName)
-        const textX = logoX + (logoW - textWidth) / 2
-        const textY = logoY + logoH / 2 + 2.5
-
-        doc.text(displayCompanyName, textX, textY)
-      } catch (error) {
-        console.warn('Could not load custom logo, using text fallback')
-      }
-    } else {
-      // Fallback to company name as text logo
-      doc.setFillColor(76, 130, 106) // Default green color
-      doc.rect(logoX, logoY, logoW, logoH, 'F')
-
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(12)
-      doc.setTextColor(255, 255, 255)
-
-      const textWidth = doc.getTextWidth(displayCompanyName)
-      const textX = logoX + (logoW - textWidth) / 2
-      const textY = logoY + logoH / 2 + 2.5
-
-      doc.text(displayCompanyName, textX, textY)
-    }
+    // Text Fallback for Logo
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.rect(logoX, logoY, logoW, logoH, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10 * logoSizeFactor)
+    doc.setTextColor(255, 255, 255)
+    const textWidth = doc.getTextWidth(displayCompanyName)
+    doc.text(displayCompanyName, logoX + (logoW - textWidth) / 2, logoY + logoH / 2 + (3 * logoSizeFactor))
 
     // Reset colors
     doc.setTextColor(0, 0, 0)
     doc.setFont('helvetica', 'normal')
 
-    // Company Info (Left side) - Simple and clean
-    doc.setFontSize(8)
-    doc.setTextColor(100, 100, 100)
-    let yPos = 45
-    const senderCompanyName = companySettings.companyName || companySettings.name
-    const senderZipCode = companySettings.zip || companySettings.zipCode
-    const senderLine = `${senderCompanyName} • ${companySettings.address} • ${senderZipCode} ${companySettings.city}`
-    doc.text(senderLine, 20, yPos)
+    // Company Info Line (Small text above address)
+    doc.setFontSize(7)
+    doc.setTextColor(150, 150, 150)
+    const senderLine = `${cs.name} • ${cs.address} • ${cs.zipCode} ${cs.city}`
+    doc.text(senderLine, 20, 45)
 
-    // Invoice Info Box (Right side) - Simple and clean
-    const boxX = 130
-    const boxY = 35
-    const boxW = 65
-    const boxH = 35
-
-    // Simple light green background
-    doc.setFillColor(240, 248, 244) // Light green tint
-    doc.rect(boxX, boxY, boxW, boxH, 'F')
-
-    // Simple border
-    doc.setDrawColor(76, 130, 106) // KARNEX Green border
-    doc.setLineWidth(0.5)
-    doc.rect(boxX, boxY, boxW, boxH, 'S')
-
-    doc.setFontSize(9)
+    // Address Block
+    doc.setFontSize(10)
     doc.setTextColor(0, 0, 0)
-    doc.setFont('helvetica', 'bold')
-
-    // Document title based on type
-    let title = 'Rechnung'
-    if (invoice.document_kind === DocumentKind.CANCELLATION) {
-      title = 'Stornorechnung'
-      // Only append reference number if it exists and user wants it in title
-      // Based on user request, they want "Stornorechnung" as the main title
-      if (invoice.reference_number) {
-        // Optional: title = `Stornorechnung zu Rechnung Nr. ${invoice.reference_number}`
-        // Keeping it simple as per request "Stornorechnung"
-      }
-    } else if (invoice.document_kind === DocumentKind.CREDIT_NOTE) {
-      title = 'Gutschrift'
-    } else if (invoice.document_kind === DocumentKind.REFUND_FULL) {
-      title = 'Gutschrift'
-    } else if (invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
-      title = 'Teil-Gutschrift'
+    let yPosAddress = 55
+    if (invoice.customer.companyName) {
+      doc.setFont('helvetica', 'bold')
+      doc.text(invoice.customer.companyName, 20, yPosAddress)
+      yPosAddress += 5
+    }
+    doc.setFont('helvetica', 'normal')
+    doc.text(invoice.customer.name, 20, yPosAddress)
+    yPosAddress += 5
+    doc.text(invoice.customer.address, 20, yPosAddress)
+    yPosAddress += 5
+    doc.text(`${invoice.customer.zipCode} ${invoice.customer.city}`, 20, yPosAddress)
+    if (invoice.customer.country !== 'DE') {
+      yPosAddress += 5
+      doc.text(invoice.customer.country, 20, yPosAddress)
     }
 
-    // Simple title
-    doc.text(title, boxX + 5, boxY + 8)
-
-    doc.setFontSize(8)
-
-    yPos = boxY + 12
-    doc.text(`Beleg-Nr.`, boxX + 5, yPos)
-    doc.text(invoice.number.replace(/^#/, ''), boxX + 35, yPos)
-
-    yPos += 4
-    doc.text(`Kunden-Nr.`, boxX + 5, yPos)
-    doc.text(invoice.id.substring(0, 6), boxX + 35, yPos)
-
-    yPos += 4
-    doc.text(`Datum`, boxX + 5, yPos)
-    doc.text(new Date(invoice.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }), boxX + 35, yPos)
-
-    yPos += 4
-    doc.text(`E-Mail`, boxX + 5, yPos)
-
-    // Handle email display in same line with smaller font
-    const email = invoice.customer.email || ''
-    // Use smaller font for email (8pt instead of 9pt)
-    doc.setFontSize(8)
-    doc.text(email, boxX + 20, yPos)
-    doc.setFontSize(9) // Reset font size
-
-    yPos += 5
-
-    if (invoice.document_kind === DocumentKind.INVOICE && invoice.dueDate) {
-      doc.text(`Lieferdatum`, boxX + 5, yPos)
-      doc.text(new Date(invoice.dueDate).toLocaleDateString('de-DE'), boxX + 35, yPos)
-    } else if (invoice.original_invoice_date) {
-      doc.text(`Orig. Datum`, boxX + 5, yPos)
-      doc.text(new Date(invoice.original_invoice_date).toLocaleDateString('de-DE'), boxX + 35, yPos)
-    } else if (invoice.reference_number) {
-      doc.text(`Referenz`, boxX + 5, yPos)
-      doc.text(invoice.reference_number, boxX + 35, yPos)
-    }
-
-    // Customer Info - Enhanced: separate person name and company name
-    yPos = 55
-
-    // Get person name and company name from separate fields
-    const personName = (invoice.customer.name || '').toString().trim()
-    const companyName = (invoice.customer.companyName || '').toString().trim()
-
-    // Display person name (same as address format)
-    if (personName) {
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(100, 100, 100)
-      doc.text(personName, 20, yPos)
-      yPos += 4
-    }
-
-    // Display company name (same as address format)
-    if (companyName) {
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(100, 100, 100)
-      doc.text(companyName, 20, yPos)
-      yPos += 4
-    }
-
-    // Address information (normal font)
-    doc.setFontSize(8)
+    // Info Block (Right side)
+    const boxX = 130
+    const boxY = 55
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100, 100, 100)
 
-    const address1Line = (invoice.customer.address || '').toString().trim()
-    const address2Line = (invoice.customer as any).address2 ? String((invoice.customer as any).address2).trim() : ''
-    const zipCityLine = `${(invoice.customer.zipCode || '').toString().trim()} ${(invoice.customer.city || '').toString().trim()}`.trim()
-    let countryLine = (invoice.customer.country || '').toString().trim()
-    // Convert country codes to display names
-    if (countryLine === 'DE' || countryLine.toLowerCase() === 'germany' || countryLine.toLowerCase() === 'deutschland') {
-      countryLine = 'DE'
-    } else if (countryLine === 'AT' || countryLine.toLowerCase() === 'austria' || countryLine.toLowerCase() === 'österreich') {
-      countryLine = 'Österreich'
-    } else if (countryLine === 'CH' || countryLine.toLowerCase() === 'switzerland' || countryLine.toLowerCase() === 'schweiz') {
-      countryLine = 'Schweiz'
+    const infoFields = [
+      { label: 'Rechnungs-Nr.', value: invoice.number },
+      { label: 'Datum', value: new Date(invoice.date).toLocaleDateString('de-DE') },
+      { label: 'Lieferdatum', value: new Date(invoice.dueDate).toLocaleDateString('de-DE') }
+    ]
+
+    if (invoice.showSettings?.customerNumber) {
+      infoFields.push({ label: 'Kundennummer', value: `KD-${invoice.id.substring(0, 6).toUpperCase()}` })
     }
 
-    const addressLines: string[] = []
-    if (address1Line) addressLines.push(address1Line)
-    if (address2Line) addressLines.push(address2Line)
-    if (zipCityLine) addressLines.push(zipCityLine)
-    if (countryLine) addressLines.push(countryLine)
-
-    addressLines.forEach((line) => {
-      // Filter out "Order #" lines as requested
-      if (line.trim().startsWith('Order #') || line.trim().startsWith('Bestellnummer')) return
-
-      // Filter out Payment method lines if they appear in address
-      const lowerLine = line.trim().toLowerCase()
-      if (lowerLine.startsWith('payment method') ||
-        lowerLine.startsWith('zahlungsmethode') ||
-        lowerLine.startsWith('zahlung') ||
-        lowerLine.includes('payment via')) return
-
-      doc.text(line, 20, yPos)
-      yPos += 4
+    infoFields.forEach((field, i) => {
+      doc.text(field.label, boxX, boxY + (i * 5))
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(0, 0, 0)
+      doc.text(field.value, boxX + 35, boxY + (i * 5), { align: 'right' })
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(100, 100, 100)
     })
 
-    // Invoice Title - Simple and clean
-    yPos = 110
+    // Subject & Intro
+    let yPos = 110
     doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(0, 0, 0)
-    doc.text(title, 20, yPos)
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.text(invoice.number, 20, yPos) // Simple Subject
 
-    // Intro/thank you message (German)
-    yPos += 8
-    doc.setFontSize(8)
+    yPos += 10
+    doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(100, 100, 100)
-
-    let thankYouMessage = 'Vielen Dank für Ihren Auftrag. Wir berechnen Ihnen folgende Lieferung bzw. Leistung:'
-    if (invoice.document_kind === DocumentKind.CANCELLATION) {
-      thankYouMessage = 'Hiermit stornieren wir folgende Rechnung:'
-    } else if (invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL) {
-      thankYouMessage = 'Hiermit erstatten wir Ihnen folgende Beträge:'
-    } else if (invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
-      thankYouMessage = 'Hiermit erstatten wir Ihnen anteilig folgende Beträge:'
-    }
-
-    // Left-align for German
-    doc.text(thankYouMessage, 20, yPos)
+    doc.setTextColor(0, 0, 0)
+    const splitIntro = doc.splitTextToSize('Vielen Dank für Ihren Auftrag. Wir berechnen Ihnen folgende Leistungen:', 170)
+    doc.text(splitIntro, 20, yPos)
 
     // Items Table
-    yPos += 12
-
-    // Table Header
-    doc.setFillColor(240, 248, 244) // Light green tint
-    doc.rect(20, yPos - 5, 170, 8, 'F')
-    doc.setDrawColor(76, 130, 106) // KARNEX Green
-    doc.line(20, yPos - 5, 190, yPos - 5)
-    doc.line(20, yPos + 3, 190, yPos + 3)
-
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(0, 0, 0)
-
-    doc.text('Bezeichnung', 25, yPos)
-    doc.text('EAN', 110, yPos, { align: 'center' })
-    doc.text('Menge', 125, yPos)
-    doc.text('MwSt.', 145, yPos)
-    doc.text('Preis', 165, yPos)
-    doc.text('Gesamt', 182, yPos)
-
-    // Table Items
-    yPos += 10
-    doc.setFont('helvetica', 'normal')
-
-    invoice.items.forEach((item, index) => {
-      // Split long descriptions into two lines
-      const maxLineLength = 35 // Maximum characters per line
-      let descriptionLines: string[] = []
-
-      if (item.description.length > maxLineLength) {
-        // Try to split at word boundaries
-        const words = item.description.split(' ')
-        let currentLine = ''
-
-        words.forEach(word => {
-          if ((currentLine + ' ' + word).length <= maxLineLength) {
-            currentLine += (currentLine ? ' ' : '') + word
-          } else {
-            if (currentLine) {
-              descriptionLines.push(currentLine)
-              currentLine = word
-            } else {
-              // Word is too long, split it
-              descriptionLines.push(word.substring(0, maxLineLength))
-              currentLine = word.substring(maxLineLength)
-            }
-          }
-        })
-
-        if (currentLine) {
-          descriptionLines.push(currentLine)
-        }
-
-        // Limit to 2 lines maximum
-        descriptionLines = descriptionLines.slice(0, 2)
-      } else {
-        descriptionLines = [item.description]
-      }
-
-      // Print description lines
-      descriptionLines.forEach((line, lineIndex) => {
-        doc.text(line, 25, yPos + (lineIndex * 4))
-      })
-
-      // Print other columns aligned with first line - prioritize SKU as EAN source
-      const eanValue = (item as any).sku || (item as any).ean || ''
-      const eanText = eanValue ? String(eanValue) : '-'
-
-      // Debug: Show what data we have
-      console.log('PDF Debug - Item:', {
-        description: item.description,
-        sku: (item as any).sku,
-        ean: (item as any).ean,
-        eanValue,
-        eanText
-      })
-
-      doc.text(eanText, 110, yPos, { align: 'center' })
-      doc.text(`${item.quantity} Stk.`, 125, yPos)
-
-      // Fix undefined% issue by defaulting to 19 if taxRate is missing or 0
-      const taxRate = invoice.taxRate || 19
-      doc.text(`${taxRate}%`, 145, yPos)
-
-      const unitPrice = Math.abs(item.unitPrice)
-      const total = Math.abs(item.total)
-
-      if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
-        doc.text(`-${unitPrice.toFixed(2)}`, 165, yPos)
-        doc.text(`-${total.toFixed(2)}`, 182, yPos)
-      } else {
-        doc.text(`${unitPrice.toFixed(2)}`, 165, yPos)
-        doc.text(`${total.toFixed(2)}`, 182, yPos)
-      }
-
-      // Adjust yPos based on number of description lines
-      yPos += Math.max(6, descriptionLines.length * 4 + 2)
-    })
-
-    // Totals Section
-    yPos += 10
-
-    // Subtotal
-    // Add line before Summe netto with more space
-    doc.setDrawColor(76, 130, 106) // KARNEX Green
-    doc.line(140, yPos - 5, 190, yPos - 5)
-
-    doc.setFontSize(8)
-    doc.text('Summe netto', 140, yPos)
-    const subtotal = Math.abs(invoice.subtotal)
-    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
-      doc.text(`-${subtotal.toFixed(2)}`, 180, yPos)
-    } else {
-      doc.text(`${subtotal.toFixed(2)}`, 180, yPos)
-    }
-
-    yPos += 6
-    const finalTaxRate = invoice.taxRate || 19
-    doc.text(`MwSt. ${finalTaxRate}%`, 140, yPos)
-    const taxAmount = Math.abs(invoice.taxAmount)
-    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
-      doc.text(`-${taxAmount.toFixed(2)}`, 180, yPos)
-    } else {
-      doc.text(`${taxAmount.toFixed(2)}`, 180, yPos)
-    }
-
-    // Total
-    yPos += 6
+    yPos += 15
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
-    doc.text('Gesamt', 140, yPos)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Pos.', 20, yPos)
+    doc.text('Beschreibung', 30, yPos)
+    doc.text('Menge', 120, yPos, { align: 'right' })
+    doc.text('Preis', 150, yPos, { align: 'right' })
+    doc.text('Gesamt', 190, yPos, { align: 'right' })
 
-    const total = Math.abs(invoice.total)
-    if (invoice.document_kind === DocumentKind.CANCELLATION || invoice.document_kind === DocumentKind.CREDIT_NOTE || invoice.document_kind === DocumentKind.REFUND_FULL || invoice.document_kind === DocumentKind.REFUND_PARTIAL) {
-      doc.text(`-${total.toFixed(2)}`, 180, yPos)
-    } else {
-      doc.text(`${total.toFixed(2)}`, 180, yPos)
-    }
+    yPos += 3
+    doc.setDrawColor(230, 230, 230)
+    doc.line(20, yPos, 190, yPos)
 
-    doc.setDrawColor(76, 130, 106) // KARNEX Green
-    doc.line(140, yPos + 2, 190, yPos + 2)
+    yPos += 7
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
 
-    // Footer Message
+    invoice.items.forEach((item, i) => {
+      doc.text(`${i + 1}`, 20, yPos)
+      const desc = doc.splitTextToSize(item.description, 80)
+      doc.text(desc, 30, yPos)
+
+      const lineCount = desc.length
+      doc.text(`${item.quantity} ${item.unit || 'Stk'}`, 120, yPos, { align: 'right' })
+      doc.text(`${item.unitPrice.toFixed(2)} €`, 150, yPos, { align: 'right' })
+      doc.text(`${item.total.toFixed(2)} €`, 190, yPos, { align: 'right' })
+
+      yPos += (lineCount * 5) + 2
+    })
+
+    // Totals
+    yPos += 10
+    doc.line(130, yPos, 190, yPos)
+    yPos += 7
+    doc.text('Netto', 130, yPos)
+    doc.text(`${invoice.subtotal.toFixed(2)} €`, 190, yPos, { align: 'right' })
+    yPos += 5
+    doc.text(`USt. ${invoice.taxRate}%`, 130, yPos)
+    doc.text(`${invoice.taxAmount.toFixed(2)} €`, 190, yPos, { align: 'right' })
+    yPos += 8
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.text('Gesamtbetrag', 130, yPos)
+    doc.text(`${invoice.total.toFixed(2)} €`, 190, yPos, { align: 'right' })
+
+    // Footer
+    renderFooter(doc, invoice, cs)
+  }
+
+  const renderMinimal = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
+    const cs = invoice.organization
+    doc.setFont('helvetica')
+
+    // No header background, just logo
+    const logoSizeFactor = (invoice.logoSize || 50) / 100
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16 * logoSizeFactor)
+    doc.text(cs.name, 20, 25)
+
+    // Layout info
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    doc.text(`${cs.address} | ${cs.zipCode} ${cs.city}`, 20, 32)
+
+    // Address & Info in one line
+    let yPos = 55
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    doc.text(invoice.customer.name, 20, yPos)
+    doc.text(invoice.number, 190, yPos, { align: 'right' })
+
+    yPos += 5
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    doc.text(invoice.customer.address, 20, yPos)
+    doc.text(new Date(invoice.date).toLocaleDateString('de-DE'), 190, yPos, { align: 'right' })
+
+    // Simple Table
+    yPos += 20
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
+    doc.text('Leistung', 20, yPos)
+    doc.text('Gesamt', 190, yPos, { align: 'right' })
+    doc.line(20, yPos + 2, 190, yPos + 2)
+
+    yPos += 10
+    doc.setFont('helvetica', 'normal')
+    invoice.items.forEach(item => {
+      doc.text(item.description, 20, yPos)
+      doc.text(`${item.total.toFixed(2)} €`, 190, yPos, { align: 'right' })
+      yPos += 6
+    })
+
+    // Total only
+    yPos += 10
+    doc.setFont('helvetica', 'bold')
+    doc.text('Gesamtbetrag', 140, yPos)
+    doc.text(`${invoice.total.toFixed(2)} €`, 190, yPos, { align: 'right' })
+
+    renderFooter(doc, invoice, cs)
+  }
+
+  const renderModern = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
+    const cs = invoice.organization
+    doc.setFont('helvetica')
+
+    // Sidebar Header
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.rect(0, 0, 210, 40, 'F')
+
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    doc.text('RECHNUNG', 20, 25)
+
+    doc.setFontSize(10)
+    doc.text(invoice.number, 190, 25, { align: 'right' })
+
+    // Content
+    doc.setTextColor(0, 0, 0)
+    let yPos = 60
+    doc.setFontSize(12)
+    doc.text('Empfänger', 20, yPos)
+    yPos += 7
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(invoice.customer.name, 20, yPos)
+    doc.text(invoice.customer.address, 20, yPos + 5)
+    doc.text(`${invoice.customer.zipCode} ${invoice.customer.city}`, 20, yPos + 10)
+
+    // Table with colored header
+    yPos = 100
+    doc.setFillColor(245, 245, 245)
+    doc.rect(20, yPos, 170, 10, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.text('Bezeichnung', 25, yPos + 7)
+    doc.text('Betrag', 185, yPos + 7, { align: 'right' })
+
     yPos += 15
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(100, 100, 100)
+    invoice.items.forEach(item => {
+      doc.text(item.description, 25, yPos)
+      doc.text(`${item.total.toFixed(2)} €`, 185, yPos, { align: 'right' })
+      yPos += 8
+    })
 
-    // Thank you message section without background
+    // Right aligned totals
+    yPos += 10
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(60, 60, 60) // Dark gray text
+    doc.text('Gesamt', 140, yPos)
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.text(`${invoice.total.toFixed(2)} €`, 185, yPos, { align: 'right' })
 
-    // Use custom footer text if available, otherwise default
-    const footerText = companySettings.footerText || 'Wir bedanken uns für Ihren Auftrag und freuen uns auf die weitere Zusammenarbeit.'
-    doc.text(footerText, 20, yPos)
+    renderFooter(doc, invoice, cs)
+  }
 
+  const renderBold = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
+    const cs = invoice.organization
+    doc.setFont('helvetica')
+
+    // Massive Colored Block at start
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.rect(0, 0, 210, 80, 'F')
+
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(40)
+    doc.setFont('helvetica', 'bold')
+    doc.text(cs.name, 20, 50)
+
+    doc.setFontSize(12)
+    doc.text(`Nr. ${invoice.number}`, 190, 50, { align: 'right' })
+    doc.text(new Date(invoice.date).toLocaleDateString('de-DE'), 190, 58, { align: 'right' })
+
+    // Rest is classic
+    renderClassic(doc, { ...invoice, layout: 'classic' }, primaryColor)
+  }
+
+  const renderFooter = (doc: jsPDF, invoice: InvoiceData, cs: any) => {
+    const yPad = 270
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
     doc.setFont('helvetica', 'normal')
-    doc.text('Sie haben Fragen oder wünschen weitere Informationen? Rufen Sie uns an', 20, yPos + 6)
-    doc.text('wir sind für Sie da.', 20, yPos + 10)
+    doc.line(20, yPad - 5, 190, yPad - 5)
 
-    // Show reason if available
-    if (invoice.grund) {
-      doc.setTextColor(220, 38, 38)
-      doc.text(`Grund: ${invoice.grund}`, 20, yPos + 14)
-    }
+    doc.text(cs.name, 20, yPad)
+    doc.text(cs.address, 20, yPad + 4)
+    doc.text(`${cs.zipCode} ${cs.city}`, 20, yPad + 8)
 
-    yPos += 20
+    doc.text(`IBAN: ${cs.iban}`, 80, yPad)
+    doc.text(`BIC: ${cs.bic}`, 80, yPad + 4)
+    doc.text(cs.bankName, 80, yPad + 8)
 
-    // Company Footer
-    yPos = 270
-    doc.setFillColor(240, 248, 244) // Light green tint
-    doc.rect(0, yPos - 5, 210, 25, 'F')
+    doc.text(`USt-IdNr: ${cs.taxId}`, 150, yPad)
+    doc.text(cs.email || '', 150, yPad + 4)
+    doc.text(cs.phone || '', 150, yPad + 8)
+  }
 
-    doc.setFontSize(7)
-    doc.setTextColor(100, 100, 100)
-
-    // Left column - Use new field names with fallback
-    const footerCompanyName = companySettings.companyName || companySettings.name
-    const footerZipCode = companySettings.zip || companySettings.zipCode
-
-    doc.text(footerCompanyName, 20, yPos)
-    yPos += 3
-    doc.text(companySettings.address, 20, yPos)
-    yPos += 3
-    doc.text(`${footerZipCode} ${companySettings.city}`, 20, yPos)
-    yPos += 3
-    doc.text(companySettings.country, 20, yPos)
-
-    // Middle column - Use dynamic values
-    yPos = 270
-    doc.text(`Geschäftsführer: ${footerCompanyName}`, 80, yPos)
-    yPos += 3
-    if (companySettings.phone) {
-      doc.text(`Telefon: ${companySettings.phone}`, 80, yPos)
-      yPos += 3
-    }
-    if (companySettings.email) {
-      doc.text(`E-Mail: ${companySettings.email}`, 80, yPos)
-    }
-
-    // Right column
-    yPos = 270
-    doc.text('Bankverbindungen', 140, yPos)
-    yPos += 3
-    doc.text(`${companySettings.bankName}`, 140, yPos)
-    yPos += 3
-    doc.text(`IBAN: ${companySettings.iban}`, 140, yPos)
-    yPos += 3
-    doc.text(`BIC: ${companySettings.bic}`, 140, yPos)
-
-    // Tax info - positioned under each other
-    yPos += 8
-    const taxNumber = companySettings.taxNumber || companySettings.taxId
-    if (taxNumber) {
-      doc.text(`Steuernummer: ${taxNumber}`, 80, yPos)
-      yPos += 3
-    }
-    // Use the same tax number for USt-IdNr if available
-    if (taxNumber) {
-      doc.text(`USt.-IdNr.: ${taxNumber}`, 80, yPos)
-    }
-  } // End of renderDefault function
-
-  // Helper: run custom user code (if enabled)
-  const runCustomCode = (code: string) => {
-    try {
-      const api = { renderDefault }
-      const fn = new Function('doc', 'invoice', 'settings', 'jsPDF', 'api', code)
-      fn(doc, invoice as any, companySettings as any, jsPDF, api)
-      return true
-    } catch (e) {
-      console.error('Custom PDF code error:', e)
-      return false
-    }
+  const addFoldMarks = (doc: jsPDF) => {
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.1)
+    doc.line(0, 105, 5, 105) // Top fold
+    doc.line(0, 148.5, 7, 148.5) // Center mark
+    doc.line(0, 210, 5, 210) // Bottom fold
   }
 
   // ========================================
   // PDF GENERATION EXECUTION
   // ========================================
 
-  // Get custom template settings
-  const customEnabled = (companySettings as any).pdfTemplateEnabled
-  const customMode = (companySettings as any).pdfTemplateMode || 'custom_only'
-  const customCode = (companySettings as any).pdfTemplateCode || ''
+  // Choose rendering based on layout
+  const layout = invoice.layout || 'classic'
 
-  // Step 1: Render default invoice content (now with template support)
-  renderDefault()
+  // Render content
+  if (layout === 'minimal') {
+    renderMinimal(doc, invoice, primaryColor)
+  } else if (layout === 'modern') {
+    renderModern(doc, invoice, primaryColor)
+  } else if (layout === 'bold') {
+    renderBold(doc, invoice, primaryColor)
+  } else {
+    renderClassic(doc, invoice, primaryColor)
+  }
 
-  // Step 2: Add document-specific stamps and watermarks (including template watermarks)
+  // Step 2: Add document-specific stamps and watermarks
   const totalPages = doc.getNumberOfPages()
   for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
     doc.setPage(pageNum)
+    if (invoice.showSettings?.foldMarks !== false) {
+      addFoldMarks(doc)
+    }
     addDocumentStamps(doc, invoice.document_kind)
-
-    // Add template-specific watermark if configured
-    // TODO: Implement template watermarks in future update
-    // if (template.settings.watermarkText) {
-    //   const watermarkColor = hexToRgb(template.settings.watermarkColor || '#10b981')
-    //   addWatermark(doc, template.settings.watermarkText, watermarkColor)
-    // }
-  }
-
-  // Step 3: Apply custom code overlay (if enabled)
-  if (customEnabled && customCode && customMode === 'custom_after') {
-    runCustomCode(customCode)
   }
 
   // Step 4: Add QR-Code for payment (if enabled)
