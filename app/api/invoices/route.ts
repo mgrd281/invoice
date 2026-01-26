@@ -334,7 +334,10 @@ export async function POST(req: Request) {
       }
     }
 
+
     // 3. Create invoice matched to customer
+    const design = body.design || {}
+
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber: body.invoiceNumber,
@@ -350,6 +353,10 @@ export async function POST(req: Request) {
         organization: { connect: { id: organizationId } },
         template: { connect: { id: templateId } },
         customer: { connect: { id: customerId } },
+        settings: {
+          design: design,
+          paymentMethod: body.paymentMethod
+        },
         items: {
           create: body.items.map((item: any) => ({
             description: item.description,

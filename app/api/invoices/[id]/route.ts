@@ -63,7 +63,24 @@ export async function GET(
 
     console.log('Rechnung gefunden:', invoice.invoiceNumber)
 
+
     // Format for frontend
+    const settings = (invoice.settings as any) || {}
+    const design = settings.design || {
+      templateId: 'classic',
+      themeColor: '#1e293b',
+      logoScale: 1.0,
+      showSettings: {
+        qrCode: false,
+        epcQrCode: false,
+        customerNumber: true,
+        contactPerson: true,
+        vatPerItem: false,
+        articleNumber: false,
+        foldMarks: true
+      }
+    }
+
     const formattedInvoice = {
       id: invoice.id,
       number: invoice.invoiceNumber,
@@ -105,8 +122,8 @@ export async function GET(
       headerText: invoice.headerText || null,
       footerText: invoice.footerText || null,
       serviceDate: invoice.serviceDate ? invoice.serviceDate.toISOString().split('T')[0] : null,
-      // QR Code settings - not in schema yet, return null or default
-      qrCodeSettings: null,
+      // Design & Layout
+      design: design,
       // Order details
       order: invoice.order ? {
         id: invoice.order.id,
@@ -176,11 +193,13 @@ export async function PUT(
     if (updatedData.total) updateData.totalGross = updatedData.total
     if (updatedData.taxAmount) updateData.totalTax = updatedData.taxAmount
 
-    if (updatedData.paymentMethod) {
+
+    if (updatedData.paymentMethod || updatedData.design) {
       const currentSettings = (existingInvoice.settings as any) || {}
       updateData.settings = {
         ...currentSettings,
-        paymentMethod: updatedData.paymentMethod
+        design: updatedData.design || currentSettings.design,
+        paymentMethod: updatedData.paymentMethod || currentSettings.paymentMethod
       }
     }
 

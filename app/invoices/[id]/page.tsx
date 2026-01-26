@@ -475,10 +475,41 @@ export default function InvoiceViewPage() {
         </div>
       </main>
 
+
       <InvoicePreviewDialog
         open={showPreview}
         onOpenChange={setShowPreview}
-        invoice={invoice}
+        design={invoice.settings?.design}
+        onDesignChange={async (newDesign) => {
+          // Update local state immediately
+          setInvoice(prev => prev ? {
+            ...prev,
+            settings: { ...prev.settings, design: newDesign }
+          } : null)
+
+          // Persist to server
+          try {
+            await fetch(`/api/invoices/${invoice.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ design: newDesign })
+            })
+          } catch (err) {
+            console.error('Failed to save design:', err)
+          }
+        }}
+        data={{
+          customer: invoice.customer,
+          invoiceData: {
+            invoiceNumber: invoice.number,
+            date: invoice.date,
+            dueDate: invoice.dueDate,
+          },
+          items: invoice.items,
+          settings: {
+            companySettings: invoice.organization
+          }
+        }}
       />
       <ToastContainer />
     </div>

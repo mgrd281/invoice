@@ -37,8 +37,11 @@ export async function GET(
       )
     }
 
+
     // Map Prisma invoice to InvoiceData for PDF generator
     const companySettings = getCompanySettings()
+    const settings = (invoice.settings as any) || {}
+    const design = settings.design || {}
 
     const invoiceData = {
       id: invoice.id,
@@ -55,6 +58,11 @@ export async function GET(
       grund: invoice.reason || undefined,
       original_invoice_date: invoice.originalDate?.toISOString(),
       refund_amount: invoice.refundAmount ? Number(invoice.refundAmount) : undefined,
+      // Design settings
+      layout: design.templateId || 'classic',
+      primaryColor: design.themeColor || undefined,
+      logoSize: design.logoScale ? design.logoScale * 100 : undefined,
+      showSettings: design.showSettings || undefined,
       customer: {
         name: invoice.customer.name,
         companyName: '', // Add to schema if needed
@@ -82,7 +90,13 @@ export async function GET(
         total: Number(item.grossAmount),
         ean: item.ean || undefined
       })),
-      qrCodeSettings: null // Or fetch if stored
+      qrCodeSettings: design.showSettings?.qrCode || design.showSettings?.epcQrCode ? {
+        enabled: true,
+        paymentMethod: 'sepa',
+        iban: companySettings.iban,
+        bic: companySettings.bic,
+        recipientName: companySettings.companyName || companySettings.name
+      } : null
     }
 
     // Generate PDF

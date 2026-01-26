@@ -11,9 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ZoomIn, ZoomOut, X, Upload, ChevronDown, ChevronRight, Check } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 
+
 interface InvoicePreviewDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    design?: any
+    onDesignChange?: (design: any) => void
     data: {
         customer: any
         invoiceData: any
@@ -22,11 +25,14 @@ interface InvoicePreviewDialogProps {
     }
 }
 
-export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePreviewDialogProps) {
+
+export function InvoicePreviewDialog({ open, onOpenChange, data, design, onDesignChange }: InvoicePreviewDialogProps) {
     const [zoom, setZoom] = useState(100)
-    const [logoSize, setLogoSize] = useState(50)
-    const [selectedColor, setSelectedColor] = useState('#1e293b') // Default slate-900
-    const [showSettings, setShowSettings] = useState({
+
+    // Initialize from design prop if available, else defaults
+    const [logoSize, setLogoSize] = useState(design?.logoScale ? design.logoScale * 100 : 50)
+    const [selectedColor, setSelectedColor] = useState(design?.themeColor || '#1e293b')
+    const [showSettings, setShowSettings] = useState(design?.showSettings || {
         qrCode: false,
         epcQrCode: false,
         customerNumber: true,
@@ -35,11 +41,23 @@ export function InvoicePreviewDialog({ open, onOpenChange, data }: InvoicePrevie
         articleNumber: false,
         foldMarks: true
     })
-    const [selectedLayout, setSelectedLayout] = useState<'classic' | 'modern' | 'minimal' | 'bold'>('classic')
+    const [selectedLayout, setSelectedLayout] = useState<'classic' | 'modern' | 'minimal' | 'bold'>(design?.templateId || 'classic')
+
     const [localCompanySettings, setLocalCompanySettings] = useState<any>(null)
     const [pdfUrl, setPdfUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    // Notify parent of changes to design settings
+    useEffect(() => {
+        if (!onDesignChange) return
+        onDesignChange({
+            templateId: selectedLayout,
+            themeColor: selectedColor,
+            logoScale: logoSize / 100,
+            showSettings
+        })
+    }, [selectedLayout, selectedColor, logoSize, showSettings])
 
     // Mock colors
     const colors = [

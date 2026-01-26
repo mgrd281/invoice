@@ -132,6 +132,20 @@ export default function NewInvoicePage() {
   // Item Template management (for invoice items)
   const [itemTemplates, setItemTemplates] = useState<ItemTemplate[]>([])
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
+  const [invoiceDesign, setInvoiceDesign] = useState({
+    templateId: 'classic',
+    themeColor: '#1e293b',
+    logoScale: 1.0,
+    showSettings: {
+      qrCode: false,
+      epcQrCode: false,
+      customerNumber: true,
+      contactPerson: true,
+      vatPerItem: false,
+      articleNumber: false,
+      foldMarks: true
+    }
+  })
   const [showApplyTemplateDialog, setShowApplyTemplateDialog] = useState(false)
   const [templateName, setTemplateName] = useState('')
 
@@ -411,7 +425,8 @@ export default function NewInvoicePage() {
         documentKind: documentKind,
         originalInvoiceDate: originalInvoiceDate,
         reason: reason,
-        refundAmount: refundAmount
+        refundAmount: refundAmount,
+        design: invoiceDesign
       }
 
       const response = await authenticatedFetch('/api/invoices', {
@@ -1100,6 +1115,8 @@ export default function NewInvoicePage() {
       < InvoicePreviewDialog
         open={showPreview}
         onOpenChange={setShowPreview}
+        design={invoiceDesign}
+        onDesignChange={setInvoiceDesign}
         data={{
           customer,
           invoiceData,
