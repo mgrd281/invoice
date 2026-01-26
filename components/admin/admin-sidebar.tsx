@@ -10,7 +10,8 @@ import {
     Lock,
     Activity,
     Settings,
-    LogOut
+    LogOut,
+    MapPin
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -44,6 +45,12 @@ const sidebarItems = [
         href: "/admin/audit",
         icon: Activity,
         matcher: (pathname: string) => pathname.startsWith("/admin/audit")
+    },
+    {
+        title: "Kundenkarte",
+        href: "/admin/map",
+        icon: MapPin,
+        matcher: (pathname: string) => pathname.startsWith("/admin/map")
     },
     {
         title: "Einstellungen",
