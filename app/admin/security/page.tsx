@@ -17,20 +17,26 @@ export default function AdminSecurityPage() {
     const [blocklist, setBlocklist] = useState<{ users: any[], ips: any[] }>({ users: [], ips: [] })
     const [liveEvents, setLiveEvents] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [blockingEnabled, setBlockingEnabled] = useState(true)
 
     const loadData = useCallback(async () => {
         try {
-            const [statsRes, feedRes, blocklistRes, liveRes] = await Promise.all([
+            const [statsRes, feedRes, blocklistRes, liveRes, settingsRes] = await Promise.all([
                 fetch('/api/admin/security/stats'),
                 fetch('/api/admin/security/feed'),
                 fetch('/api/admin/security/blocklist'),
-                fetch('/api/admin/security/live')
+                fetch('/api/admin/security/live'),
+                fetch('/api/admin/security/settings')
             ])
 
             if (statsRes.ok) setStats(await statsRes.json())
             if (feedRes.ok) setFeed(await feedRes.json())
             if (blocklistRes.ok) setBlocklist(await blocklistRes.json())
             if (liveRes.ok) setLiveEvents(await liveRes.json())
+            if (settingsRes.ok) {
+                const settings = await settingsRes.json()
+                setBlockingEnabled(settings.storefrontBlockingEnabled)
+            }
 
         } catch (error) {
             console.error('Failed to load security data', error)
@@ -38,6 +44,20 @@ export default function AdminSecurityPage() {
             setLoading(false)
         }
     }, [])
+
+    const toggleStorefrontBlocking = async () => {
+        const newValue = !blockingEnabled;
+        try {
+            const res = await fetch('/api/admin/security/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ storefrontBlockingEnabled: newValue })
+            });
+            if (res.ok) setBlockingEnabled(newValue);
+        } catch (e) {
+            alert('Aktion fehlgeschlagen');
+        }
+    }
 
     const handleUnblock = async (id: string, type: 'ip' | 'user') => {
         if (!confirm(`Möchten Sie dieses ${type === 'ip' ? 'IP' : 'Kunden'} wirklich entsperren?`)) return;
@@ -49,7 +69,30 @@ export default function AdminSecurityPage() {
         }
     }
 
+    const toggleIpStatus = async (id: string, currentStatus: string) => {
+        const status = currentStatus === 'active' ? 'disabled' : 'active';
+        try {
+            const res = await fetch('/api/admin/security/blocklist', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, type: 'ip', status })
+            });
+            if (res.ok) loadData();
+        } catch (e) {
+            alert('Status-Update fehlgeschlagen');
+        }
+    }
+
     const handleBlockIp = async (ip: string) => {
+        // Safety: Check if user is trying to block themselves
+        try {
+            const res = await fetch('https://api64.ipify.org?format=json');
+            const data = await res.json();
+            if (data.ip === ip) {
+                if (!confirm(`WARNUNG: Dies ist Ihre aktuelle IP-Adresse (${ip}). Möchten Sie sich wirklich selbst aussperren?`)) return;
+            }
+        } catch (e) { }
+
         const reason = prompt(`Grund für die Sperre von ${ip}:`, 'Suspicious Activity');
         if (!reason) return;
         try {
@@ -76,10 +119,31 @@ export default function AdminSecurityPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-            <SecurityHeader
-                riskLevel={stats?.riskLevel || 'Low'}
-                onBlockUser={() => { }}
-            />
+            <div className="flex justify-between items-start">
+                <SecurityHeader
+                    riskLevel={stats?.riskLevel || 'Low'}
+                    onBlockUser={() => { }}
+                />
+                <Card className={`border-2 ${blockingEnabled ? 'border-emerald-500 bg-emerald-50' : 'border-red-500 bg-red-50'} transition-all max-w-[300px]`}>
+                    <CardContent className="p-4 flex flex-col items-center gap-2 text-center">
+                        <div className={`p-2 rounded-full ${blockingEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                            <Shield className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-slate-900">Storefront Blocking</p>
+                            <p className="text-xs text-slate-500">{blockingEnabled ? 'Aktive Überwachung' : 'Aussperrung deaktiviert'}</p>
+                        </div>
+                        <Button
+                            variant={blockingEnabled ? "destructive" : "default"}
+                            size="sm"
+                            className="w-full mt-1"
+                            onClick={toggleStorefrontBlocking}
+                        >
+                            {blockingEnabled ? 'Deaktivieren (NOT-AUS)' : 'Aktivieren'}
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
 
             <ThreatDashboard stats={stats} feed={feed} />
 
@@ -109,7 +173,7 @@ export default function AdminSecurityPage() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {blocklist.users.map((user: any) => (
-                                    <Card key={user.id} className="border-slate-200 shadow-sm">
+                                    <Card key={user.id} className="border-slate-200 shadow-sm transition-opacity">
                                         <CardContent className="p-5">
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex items-center gap-3">
@@ -118,8 +182,8 @@ export default function AdminSecurityPage() {
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-slate-900 line-clamp-1">{user.email}</p>
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
-                                                            Risk Score: High
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600">
+                                                            Kunde Gesperrt
                                                         </span>
                                                     </div>
                                                 </div>
@@ -130,29 +194,28 @@ export default function AdminSecurityPage() {
                                                     <span className="font-medium text-slate-700">{user.reason || 'Sicherheitsverstoß'}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span>Seit:</span>
+                                                    <span>Zeitpunkt:</span>
                                                     <span>{formatDistanceToNow(new Date(user.blockedAt), { locale: de, addSuffix: true })}</span>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 pt-2 border-t border-slate-100">
-                                                <Button variant="ghost" size="sm" className="w-full text-slate-600">Details</Button>
-                                                <Button variant="ghost" size="sm" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleUnblock(user.id, 'user')}>Entsperren</Button>
+                                                <Button variant="ghost" size="sm" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleUnblock(user.id, 'user')}>Löschen</Button>
                                             </div>
                                         </CardContent>
                                     </Card>
                                 ))}
                                 {blocklist.ips.map((ip: any) => (
-                                    <Card key={ip.id} className="border-slate-200 shadow-sm">
+                                    <Card key={ip.id} className={`border-slate-200 shadow-sm transition-all ${ip.status === 'disabled' ? 'opacity-50' : 'opacity-100'}`}>
                                         <CardContent className="p-5">
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ip.status === 'active' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
                                                         <Shield className="w-5 h-5" />
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-slate-900">{ip.ipAddress}</p>
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-600">
-                                                            IP Blocked
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ip.status === 'active' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
+                                                            {ip.status === 'active' ? 'Enforcement: AN' : 'Enforcement: AUS'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -168,7 +231,9 @@ export default function AdminSecurityPage() {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 pt-2 border-t border-slate-100">
-                                                <Button variant="ghost" size="sm" className="w-full text-slate-600">Details</Button>
+                                                <Button variant="ghost" size="sm" className="w-full text-slate-600" onClick={() => toggleIpStatus(ip.id, ip.status)}>
+                                                    {ip.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
+                                                </Button>
                                                 <Button variant="ghost" size="sm" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleUnblock(ip.id, 'ip')}>Entsperren</Button>
                                             </div>
                                         </CardContent>
@@ -185,16 +250,16 @@ export default function AdminSecurityPage() {
                                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold tracking-wider">
                                         <tr>
                                             <th className="px-6 py-3">IP Adresse</th>
-                                            <th className="px-6 py-3">Seite / Event</th>
-                                            <th className="px-6 py-3">Zeitpunkt</th>
-                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3">Aktueller Pfad</th>
+                                            <th className="px-6 py-3">Besuche</th>
+                                            <th className="px-6 py-3">Zuletzt Aktiv</th>
                                             <th className="px-6 py-3 text-right">Aktion</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {liveEvents.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-400">Keine Live-Events gefunden</td>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-400">Keine Storefront-Aktivität gefunden</td>
                                             </tr>
                                         ) : (
                                             liveEvents.map((event) => (
@@ -203,31 +268,25 @@ export default function AdminSecurityPage() {
                                                         <span className="font-mono font-medium text-slate-900">{event.ip}</span>
                                                     </td>
                                                     <td className="px-6 py-4 text-slate-600">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium truncate max-w-[200px]">{event.page}</span>
-                                                            <span className="text-[10px] opacity-50 uppercase">{event.type}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
-                                                        {formatDistanceToNow(new Date(event.time), { locale: de, addSuffix: true })}
+                                                        <span className="truncate max-w-[200px] block font-medium">{event.path || '/'}</span>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${event.status === 'BLOCKED' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
-                                                            }`}>
-                                                            {event.status === 'BLOCKED' ? 'Gesperrt' : 'Aktiv'}
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-bold text-slate-600">
+                                                            {event.hitCount || 1} hits
                                                         </span>
                                                     </td>
+                                                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
+                                                        {formatDistanceToNow(new Date(event.lastSeen || event.time), { locale: de, addSuffix: true })}
+                                                    </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        {event.status !== 'BLOCKED' && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                onClick={() => handleBlockIp(event.ip)}
-                                                            >
-                                                                IP Sperren
-                                                            </Button>
-                                                        )}
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            className="bg-slate-900 text-white hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100"
+                                                            onClick={() => handleBlockIp(event.ip)}
+                                                        >
+                                                            IP Sperren
+                                                        </Button>
                                                     </td>
                                                 </tr>
                                             ))

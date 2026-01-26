@@ -18,36 +18,20 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'No organization found' }, { status: 404 });
         }
 
-        // Fetch recent session events for "Live Events"
-        // We want: IP | Page | Time | Status
-        // We can get this from SessionEvent joined with VisitorSession
-        const events = await prisma.sessionEvent.findMany({
-            where: {
-                session: {
-                    organizationId: user.organizationId
-                }
-            },
+        // Fetch recent Storefront visits for "Live Events"
+        const visits = await prisma.storefrontVisit.findMany({
+            where: { organizationId: user.organizationId },
             take: 50,
-            orderBy: { timestamp: 'desc' },
-            include: {
-                session: {
-                    select: {
-                        ipv4: true,
-                        ipv6: true,
-                        ipMasked: true,
-                        status: true
-                    }
-                }
-            }
+            orderBy: { lastSeen: 'desc' }
         });
 
-        const formattedEvents = events.map(event => ({
-            id: event.id,
-            ip: event.session.ipv4 || event.session.ipv6 || event.session.ipMasked || 'Unknown',
-            page: event.path || event.url,
-            time: event.timestamp,
-            status: event.session.status, // ACTIVE, ENDED, BLOCKED
-            type: event.type
+        const formattedEvents = visits.map(visit => ({
+            id: visit.id,
+            ip: visit.ip,
+            path: visit.path,
+            time: visit.lastSeen,
+            hitCount: visit.hitCount,
+            userAgent: visit.userAgent
         }));
 
         return NextResponse.json(formattedEvents);

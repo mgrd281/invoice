@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
             blockedToday,
             failedLogins,
             totalBlockedIps,
-            totalBlockedEmails
+            totalBlockedEmails,
+            securitySettings,
+            totalStorefrontVisits
         ] = await Promise.all([
             prisma.blockedUserAttempt.count({
                 where: {
@@ -48,7 +50,11 @@ export async function GET(request: NextRequest) {
                 }
             }),
             prisma.blockedIp.count({ where: whereClause }),
-            prisma.blockedUser.count({ where: whereClause })
+            prisma.blockedUser.count({ where: whereClause }),
+            organizationId ? prisma.securitySettings.findUnique({
+                where: { organizationId }
+            }) : null,
+            prisma.storefrontVisit.count({ where: whereClause })
         ])
 
         let riskLevel = 'Low'
@@ -60,7 +66,9 @@ export async function GET(request: NextRequest) {
             blockedToday,
             failedLogins,
             riskLevel,
-            totalBlocked: totalBlockedIps + totalBlockedEmails
+            totalBlocked: totalBlockedIps + totalBlockedEmails,
+            storefrontBlockingEnabled: securitySettings?.storefrontBlockingEnabled ?? true,
+            totalStorefrontVisits
         })
     } catch (error) {
         console.error('Security stats error:', error)

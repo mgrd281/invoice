@@ -269,6 +269,8 @@ model BlockedIp {
   organizationId String
   ipAddress      String
   reason         String?
+  status         String       @default("active") // "active" | "disabled"
+  createdBy      String?
   createdAt      DateTime     @default(now())
   type           String       @default("PERMANENT") // "PERMANENT" | "TEMPORARY"
   expiresAt      DateTime?
@@ -287,6 +289,7 @@ model SecuritySettings {
   blockSuspiciousDomains Boolean     @default(false)
   autoUnblock           Boolean      @default(false)
   autoUnblockDuration   Int          @default(24) // hours
+  storefrontBlockingEnabled Boolean  @default(true)
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   organization          Organization @relation(fields: [organizationId], references: [id])
@@ -1151,6 +1154,21 @@ model GoalTracking {
   @@index([organizationId])
   @@index([sessionId])
   @@index([goalType])
+}
+
+model StorefrontVisit {
+  id             String       @id @default(uuid())
+  organizationId String
+  ip             String
+  path           String
+  userAgent      String?
+  lastSeen       DateTime     @default(now())
+  hitCount       Int          @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([ip])
+  @@index([lastSeen])
 }
 
 model PurchaseInvoice {
