@@ -37,21 +37,21 @@ export async function GET(request: NextRequest) {
         const [dbCustomers, dbInvoices] = await Promise.all([
             prisma.customer.findMany({
                 where: { organizationId },
-                include: { 
-                    invoices: { 
-                        select: { 
-                            totalGross: true, 
-                            status: true, 
+                include: {
+                    invoices: {
+                        select: {
+                            totalGross: true,
+                            status: true,
                             issueDate: true,
                             documentKind: true,
                             refundAmount: true
-                        } 
-                    } 
+                        }
+                    }
                 }
             }),
             prisma.invoice.findMany({
-                where: { 
-                    organizationId, 
+                where: {
+                    organizationId,
                     issueDate: { gte: startDate, lte: endDate },
                     status: 'PAID'
                 },
@@ -73,17 +73,17 @@ export async function GET(request: NextRequest) {
 
         // Process DB Customers
         dbCustomers.forEach(c => {
-            const validInvoices = c.invoices.filter(inv => 
-                inv.status === 'PAID' && 
-                inv.documentKind !== 'CANCELLED' && 
+            const validInvoices = c.invoices.filter(inv =>
+                inv.status === 'PAID' &&
+                inv.documentKind !== 'CANCELLED' &&
                 (!inv.refundAmount || Number(inv.refundAmount) === 0)
             );
 
-            const refundedInvoices = c.invoices.filter(inv => 
+            const refundedInvoices = c.invoices.filter(inv =>
                 inv.status === 'REFUNDED' || (inv.refundAmount && Number(inv.refundAmount) > 0)
             );
 
-            const cancelledInvoices = c.invoices.filter(inv => 
+            const cancelledInvoices = c.invoices.filter(inv =>
                 inv.status === 'CANCELLED' || inv.status === 'VOID'
             );
 
@@ -180,6 +180,7 @@ export async function GET(request: NextRequest) {
                 segment: c.isRefunded ? 'Rückerstattung' : c.revenue > 500 ? 'VIP' : c.orders <= 1 ? 'Neukunde' : 'Standard'
             })),
             segments,
+            insights,
             timeline: [] // Simplified for now
         });
     } catch (error: any) {
