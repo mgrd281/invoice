@@ -45,7 +45,7 @@ const publicRoutes = [
     '/api/analytics/record', // Public recording storage
 ]
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Allow public routes
