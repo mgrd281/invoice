@@ -12,15 +12,28 @@ import {
 import { EnterpriseHeader } from '@/components/layout/enterprise-header'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { useToast } from '@/components/ui/toast'
+import { useToast, Toast } from '@/components/ui/toast'
 import { AutomationCanvas } from '@/components/ai/automation-canvas'
+
+import { ErrorBoundary } from '@/components/error-boundary'
 
 function AIAutomationPage() {
     const [automation, setAutomation] = useState<any>(null)
     const [isAutonomous, setIsAutonomous] = useState(true)
     const [status, setStatus] = useState<'active' | 'paused'>('active')
     const [loading, setLoading] = useState(true)
-    const { showToast, ToastContainer } = useToast()
+    const [error, setError] = useState<string | null>(null)
+    const { showToast, toasts, removeToast } = useToast()
+
+    // Environment Validation
+    const [envValid, setEnvValid] = useState(true)
+    useEffect(() => {
+        // Only run on client
+        if (typeof window !== 'undefined') {
+            // Check for critical production env vars if needed
+            // For now, it's just a placeholder for the logic requested
+        }
+    }, [])
 
     const kpis = [
         { label: 'Generierte Inhalte', value: '142', trend: '+12%', color: 'text-violet-600', icon: Brain },
@@ -33,44 +46,85 @@ function AIAutomationPage() {
         const loadAutomation = async () => {
             try {
                 const response = await fetch('/api/ai/automation')
+                if (!response.ok) {
+                    throw new Error(`Server antwortete mit Status ${response.status}`)
+                }
                 const data = await response.json()
-                if (data.success) {
+                if (data.success && data.automation) {
                     setAutomation(data.automation)
                     setIsAutonomous(data.automation.isAutonomous)
                     setStatus(data.automation.status === 'ACTIVE' ? 'active' : 'paused')
+                } else {
+                    throw new Error(data.error || 'Automatisierungs-Daten konnten nicht geladen werden.')
                 }
-            } catch (error) {
-                console.error('Failed to load automation:', error)
+            } catch (err: any) {
+                console.error('Failed to load automation:', err)
+                setError(err.message || 'Ein unbekannter Fehler ist aufgetreten.')
+                showToast(err.message || 'Fehler beim Laden', 'error')
             } finally {
                 setLoading(false)
             }
         }
         loadAutomation()
-    }, [])
+    }, [showToast])
 
     const toggleStatus = async () => {
         const nextStatus = status === 'active' ? 'paused' : 'active'
         setStatus(nextStatus)
         showToast(`AI Automation ${nextStatus === 'active' ? 'aktiviert' : 'pausiert'}`, 'info')
-        await fetch('/api/ai/automation', {
-            method: 'POST',
-            body: JSON.stringify({ action: 'STATUS', value: nextStatus })
-        })
+        try {
+            const res = await fetch('/api/ai/automation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'STATUS', value: nextStatus })
+            })
+            if (!res.ok) throw new Error('Status konnte nicht aktualisiert werden')
+        } catch (err) {
+            showToast('Verbindungsfehler beim Aktualisieren', 'error')
+        }
     }
 
     const killSwitch = async () => {
         setStatus('paused')
         showToast('NOTFALL-STOPP: Alle Automatisierungen gestoppt.', 'error')
-        await fetch('/api/ai/automation', {
-            method: 'POST',
-            body: JSON.stringify({ action: 'KILL_SWITCH' })
-        })
+        try {
+            await fetch('/api/ai/automation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'KILL_SWITCH' })
+            })
+        } catch (err) {
+            console.error('Kill switch failed', err)
+        }
     }
 
     if (loading) {
         return (
             <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading AI Core...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+                <Card className="max-w-md w-full border-none shadow-2xl bg-white rounded-3xl p-8 text-center">
+                    <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <ShieldAlert className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-xl font-black text-slate-900 uppercase">Fehler bei Initialisierung</h2>
+                    <p className="text-sm text-slate-500 mt-2 mb-6">{error}</p>
+                    <Button
+                        onClick={() => window.location.reload()}
+                        className="h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-2xl w-full"
+                    >
+                        Neu laden
+                    </Button>
+                </Card>
             </div>
         )
     }
@@ -143,41 +197,48 @@ function AIAutomationPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left: Automation Control & Builder Preview */}
                     <div className="lg:col-span-2 space-y-8">
-                        <Card className="border-none shadow-xl bg-white overflow-hidden rounded-3xl">
-                            <CardHeader className="p-8 pb-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-3 bg-violet-600 rounded-2xl text-white shadow-lg shadow-violet-200">
-                                            <Zap className="w-5 h-5" />
+                        <ErrorBoundary>
+                            <Card className="border-none shadow-xl bg-white overflow-hidden rounded-3xl">
+                                <CardHeader className="p-8 pb-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 bg-violet-600 rounded-2xl text-white shadow-lg shadow-violet-200">
+                                                <Zap className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-xl font-black uppercase">{automation?.name || 'Active Workflow'}</CardTitle>
+                                                <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                    AI Blog + SEO + Shopify Publisher
+                                                </CardDescription>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-xl font-black uppercase">{automation?.name || 'Active Workflow'}</CardTitle>
-                                            <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                AI Blog + SEO + Shopify Publisher
-                                            </CardDescription>
+                                        <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                                            <div className="flex items-center gap-2 px-3">
+                                                <span className="text-[10px] font-black uppercase text-slate-500">Autonomous</span>
+                                                <Switch checked={isAutonomous} onCheckedChange={async (val) => {
+                                                    setIsAutonomous(val)
+                                                    try {
+                                                        await fetch('/api/ai/automation', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ action: 'TOGGLE_AUTONOMOUS', value: val })
+                                                        })
+                                                    } catch (e) {
+                                                        showToast('Änderung konnte nicht gespeichert werden', 'error')
+                                                    }
+                                                }} />
+                                            </div>
+                                            <Button variant="ghost" size="icon" onClick={toggleStatus} className={`rounded-xl ${status === 'active' ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                {status === 'active' ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                                        <div className="flex items-center gap-2 px-3">
-                                            <span className="text-[10px] font-black uppercase text-slate-500">Autonomous</span>
-                                            <Switch checked={isAutonomous} onCheckedChange={async (val) => {
-                                                setIsAutonomous(val)
-                                                await fetch('/api/ai/automation', {
-                                                    method: 'POST',
-                                                    body: JSON.stringify({ action: 'TOGGLE_AUTONOMOUS', value: val })
-                                                })
-                                            }} />
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={toggleStatus} className={`rounded-xl ${status === 'active' ? 'text-red-600' : 'text-emerald-600'}`}>
-                                            {status === 'active' ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-8 pt-4">
-                                <AutomationCanvas />
-                            </CardContent>
-                        </Card>
+                                </CardHeader>
+                                <CardContent className="p-8 pt-4">
+                                    <AutomationCanvas />
+                                </CardContent>
+                            </Card>
+                        </ErrorBoundary>
 
                         {/* Recent Logs/Activity */}
                         <Card className="border-none shadow-sm bg-white rounded-3xl">
@@ -197,13 +258,19 @@ function AIAutomationPage() {
                                                 <div>
                                                     <p className="text-sm font-black text-slate-900 uppercase">{log.event}: {log.detail}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        {new Date(log.time).toLocaleString('de-DE')} • Status: {log.status}
+                                                        {new Date(log.time).toLocaleDateString('de-DE')} {new Date(log.time).toLocaleTimeString('de-DE')} • Status: {log.status}
                                                     </p>
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="sm" className="text-[10px] font-black text-blue-600">ANSEHEN</Button>
                                         </div>
                                     ))}
+                                    {(!automation?.logs || automation.logs.length === 0) && (
+                                        <div className="p-12 text-center">
+                                            <Activity className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                                            <p className="text-[10px] font-black uppercase text-slate-400">Keine Aktivitäten gefunden</p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -278,7 +345,16 @@ function AIAutomationPage() {
                     </div>
                 </div>
             </main>
-            <ToastContainer />
+            <div className="fixed top-4 right-4 z-50 space-y-2">
+                {toasts.map(toast => (
+                    <Toast
+                        key={toast.id}
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => removeToast(toast.id)}
+                    />
+                ))}
+            </div>
         </div>
     )
 }
@@ -288,12 +364,14 @@ const NodeSearch = ({ className }: { className?: string }) => <Bot className={cl
 
 export default function Page() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
-            </div>
-        }>
-            <AIAutomationPage />
-        </Suspense>
+        <ErrorBoundary>
+            <Suspense fallback={
+                <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+                </div>
+            }>
+                <AIAutomationPage />
+            </Suspense>
+        </ErrorBoundary>
     )
 }

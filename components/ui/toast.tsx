@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, X, Info, AlertTriangle } from 'lucide-react'
 
@@ -80,21 +82,29 @@ export function useToast() {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }
 
-  const ToastContainer = () => (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map(toast => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
-    </div>
-  )
-
   return {
     showToast,
-    ToastContainer
+    toasts,
+    removeToast
   }
+}
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const { toasts, removeToast, showToast } = useToast()
+
+  return (
+    <>
+      {children}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
+    </>
+  )
 }

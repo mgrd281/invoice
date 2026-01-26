@@ -14,12 +14,16 @@ import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Rechnungs-Generator',
   description: 'Professionelle deutsche Rechnungserstellung aus Shopify-Bestellungen',
 }
+
+import { ToastProvider } from '@/components/ui/toast'
 
 export default async function RootLayout({
   children,
@@ -31,7 +35,7 @@ export default async function RootLayout({
   // 1. Try NextAuth Session
   try {
     const session = await getServerSession(authOptions)
-    if ((session?.user as any)?.organizationId) {
+    if (session && (session?.user as any)?.organizationId) {
       organizationId = (session.user as any).organizationId
     }
   } catch (e) {
@@ -75,11 +79,13 @@ export default async function RootLayout({
         <ThemeProvider defaultTheme="light">
           <CustomAuthProvider>
             <AuthProvider>
-              <Suspense fallback={null}>
-                <NavigationManager />
-              </Suspense>
-              {children}
-              <VoiceAssistant />
+              <ToastProvider>
+                <Suspense fallback={null}>
+                  <NavigationManager />
+                </Suspense>
+                {children}
+                <VoiceAssistant />
+              </ToastProvider>
             </AuthProvider>
           </CustomAuthProvider>
         </ThemeProvider>
