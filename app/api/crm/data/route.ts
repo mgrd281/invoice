@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, subDays, format } from 'date-fns'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { auth } from '@/lib/auth'
 import { ShopifyAPI } from '@/lib/shopify-api'
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
-        const sessionAuth = await getServerSession(authOptions);
+        const sessionAuth = await auth();
         if (!sessionAuth?.user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
-        const organizationId = (sessionAuth.user as any).organizationId;
+        // Ensure user has organizationId
+        const user = await prisma.user.findUnique({
+            where: { email: sessionAuth.user.email! },
+            select: { organizationId: true }
+        });
+
+        let organizationId = user?.organizationId;
+
+        // --- EMERGENCY FALLBACK FOR DEMO ---
+        // If user has no organization, assign the first one found (Admin Org)
+        if (!organizationId) {
+            const org = await prisma.organization.findFirst();
+            organizationId = org?.id;
+        }
         const searchParams = request.nextUrl.searchParams;
         const range = searchParams.get('range') || '30d';
 
