@@ -80,9 +80,9 @@ export default function CustomersPage() {
               </Badge>
             </div>
             <h1 className="text-4xl font-black tracking-tight text-slate-900 uppercase italic">
-              CRM & Kundenintelligenz
+              CRM & INTELLIGENCE HUB
             </h1>
-            <p className="text-slate-500 font-medium mt-1 uppercase tracking-widest text-[11px]">Shopify CRM, Verhaltensanalyse & KI-Einblicke in Echtzeit</p>
+            <p className="text-slate-500 font-medium mt-1 uppercase tracking-widest text-[11px]">REAL-TIME SHOPIFY CRM, BEHAVIOR TRACKING & AI INSIGHTS</p>
           </div>
 
           <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
@@ -243,32 +243,63 @@ function OverviewTab({ data, setInsightsOpen }: any) {
                 <Tooltip
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 900 }}
                 />
-                <Area type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" />
+                <Area type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={4} fillOpacity={0} fill="url(#colorValue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <div className="space-y-8">
-          {/* COMPACT AI INSIGHTS */}
-          <Card className="border-none shadow-xl bg-slate-900 text-white rounded-[2.5rem] p-8 h-[200px] flex flex-col justify-between relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Sparkles className="w-20 h-20 text-blue-400" />
+          {/* CRM AI INSIGHTS PANEL */}
+          <Card className="border-none shadow-xl bg-slate-900 text-white rounded-[2.5rem] p-8 h-auto min-h-[400px] flex flex-col relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-10 opacity-10">
+              <Sparkles className="w-32 h-32 text-blue-400" />
             </div>
-            <div className="relative z-10">
-              <h3 className="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-3 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5" /> KI-Insights
+
+            <div className="relative z-10 mb-8">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-2 flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5" /> CRM AI Insights
               </h3>
-              <p className="text-sm font-bold leading-tight line-clamp-2 pr-10">
-                {data.insights[0]?.text || "Lade Einblicke..."}
-              </p>
+              <p className="text-2xl font-black italic tracking-tight">KUNDEN INTELLIGENZ</p>
             </div>
-            <Button
-              onClick={() => setInsightsOpen(true)}
-              className="relative z-10 w-full bg-white/10 hover:bg-white/20 border-none text-white font-black text-[9px] uppercase tracking-widest h-10 rounded-xl"
-            >
-              Alle anzeigen <ChevronRight className="w-3 h-3 ml-2" />
-            </Button>
+
+            <div className="relative z-10 space-y-4 flex-1">
+              {/* Insight 1: Top Kunde */}
+              <div className="p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-1.5 bg-blue-500/20 rounded-lg text-blue-400">
+                    <Users className="w-3 h-3" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Top Kunde des Monats</span>
+                </div>
+                <p className="font-bold text-lg">Max Mustermann</p>
+                <p className="text-[10px] text-slate-400 mt-1">Höchster CLV • 12 Bestellungen</p>
+              </div>
+
+              {/* Insight 2: Kaufpotenzial */}
+              <div className="p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400">
+                    <TrendingUp className="w-3 h-3" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Hohes Kaufpotenzial</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-lg">12 Kunden</p>
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-none text-[9px] uppercase">Aktiv</Badge>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Warenkorb-Abbrecher &lt; 24h</p>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-8">
+              <Button
+                onClick={() => setInsightsOpen(true)}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest h-12 rounded-xl border border-blue-500/50 shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02]"
+              >
+                Alle Analysen öffnen <ChevronRight className="w-3 h-3 ml-2" />
+              </Button>
+            </div>
           </Card>
 
           <Card className="border-none shadow-sm bg-white rounded-[2.5rem] p-8">
