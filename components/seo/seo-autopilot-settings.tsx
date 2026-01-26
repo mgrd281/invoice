@@ -70,21 +70,21 @@ export function SeoAutopilotSettings({ config, onUpdateConfig, onEmergencyStop }
                                     key={m}
                                     onClick={() => update({ mode: m })}
                                     className={cn(
-                                        "flex-1 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                        "flex-1 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                                         localConfig.mode === m ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
                                     )}
                                 >
-                                    {m}
+                                    {m === 'off' ? 'Deaktiviert' : m === 'draft' ? 'Nur Drafts' : 'Vollautomatisch'}
                                 </button>
                             ))}
                         </div>
                         {localConfig.mode === 'auto' && (
                             <Button
                                 variant="destructive"
-                                className="h-12 rounded-2xl font-black text-xs tracking-widest uppercase shadow-lg shadow-red-900/20"
+                                className="h-12 rounded-2xl font-black text-xs tracking-widest uppercase shadow-lg shadow-red-900/20 animate-pulse"
                                 onClick={onEmergencyStop}
                             >
-                                EMERGENCY STOP
+                                NOT-STOPP AUSLÖSEN
                             </Button>
                         )}
                     </div>

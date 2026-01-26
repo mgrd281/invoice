@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 
+import { AIAutoFixEngine } from '@/lib/seo-fix-engine'
+
 export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
@@ -9,31 +11,36 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
         }
 
+        const organizationId = (session.user as any).organizationId
         const body = await req.json()
-        const { issueId } = body
+        const { issueId, resourceId, type, currentTitle, description } = body
 
-        if (!issueId) {
-            return NextResponse.json({ success: false, error: 'Issue ID is required' }, { status: 400 })
+        if (!issueId || !resourceId) {
+            return NextResponse.json({ success: false, error: 'Issue ID and Resource ID are required' }, { status: 400 })
         }
 
-        // Mocking applying the fix
-        console.log(`[SEO-FIX] Applying fix for issue: ${issueId}`)
+        const engine = new AIAutoFixEngine(organizationId)
+        let success = false
+        let message = ''
 
-        // Simulate background delay
-        await new Promise(resolve => setTimeout(resolve, 800))
+        // Simple routing based on fix type
+        if (type === 'title') {
+            success = await engine.optimizeProductTitle(resourceId, currentTitle, description || '')
+            message = success ? 'SEO-Titel erfolgreich optimiert' : 'Fehler bei der Titel-Optimierung'
+        } else if (type === 'alt') {
+            const count = await engine.fixMissingAltTexts(resourceId, currentTitle)
+            success = count > 0
+            message = success ? `${count} Alt-Texte erfolgreich generiert` : 'Keine fehlenden Alt-Texte gefunden'
+        }
 
         return NextResponse.json({
-            success: true,
-            message: 'Fix applied successfully',
-            fix: {
-                id: `fix_${Math.random().toString(36).substr(2, 9)}`,
-                issueId,
-                appliedAt: new Date().toISOString(),
-                appliedBy: 'user'
-            }
+            success,
+            message,
+            appliedAt: new Date().toISOString()
         })
 
     } catch (error: any) {
+        console.error('[SEO-FIX] Error applying fix:', error)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 }

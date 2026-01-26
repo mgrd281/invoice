@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import {
     Search, Filter, ArrowUpDown, ChevronRight,
     Zap, ExternalLink, Trash2, Info, Eye,
-    ChevronDown, CheckCircle2, AlertCircle
+    ChevronDown, CheckCircle2, AlertCircle, Sparkles, Box, X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SeoIssue, SeoSeverity, SeoCategory } from '@/types/seo-types'
@@ -39,24 +39,26 @@ export function SeoIssueCenter({ issues, onFixIssue, onBulkFix }: SeoIssueCenter
     }
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500 h-[calc(100vh-250px)]">
+        <div className="flex flex-col lg:flex-row gap-8 animate-in fade-in duration-500 h-auto min-h-[600px]">
             {/* Left Sidebar Filters */}
-            <div className="w-full lg:w-64 space-y-6">
+            <div className="w-full lg:w-72 space-y-8 flex-shrink-0">
                 <div className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Filter nach Priorität</h3>
-                    <div className="space-y-1">
+                    <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em] px-2 flex items-center gap-2">
+                        <Filter className="w-3 h-3" /> PRIORITÄT
+                    </h3>
+                    <div className="space-y-1.5">
                         {['All', 'Critical', 'High', 'Medium', 'Low'].map((sev) => (
                             <button
                                 key={sev}
                                 onClick={() => setFilterSeverity(sev as any)}
                                 className={cn(
-                                    "w-full flex items-center justify-between px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-                                    filterSeverity === sev ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-white hover:text-slate-900"
+                                    "w-full flex items-center justify-between px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all",
+                                    filterSeverity === sev ? "bg-slate-900 text-white shadow-xl translate-x-1" : "text-slate-500 hover:bg-white hover:shadow-sm"
                                 )}
                             >
-                                <span>{sev === 'Critical' ? 'Kritisch' : sev}</span>
+                                <span>{sev === 'All' ? 'Alle anzeigen' : sev === 'Critical' ? 'Kritisch' : sev}</span>
                                 <Badge variant="outline" className={cn(
-                                    "text-[9px] border-none",
+                                    "text-[9px] border-none font-black h-5 px-2",
                                     filterSeverity === sev ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400"
                                 )}>
                                     {sev === 'All' ? issues.length : issues.filter(i => i.severity === sev).length}
@@ -67,116 +69,125 @@ export function SeoIssueCenter({ issues, onFixIssue, onBulkFix }: SeoIssueCenter
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Kategorie</h3>
-                    <div className="space-y-2 px-2">
+                    <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em] px-2">Kategorien</h3>
+                    <div className="grid grid-cols-1 gap-2 px-2">
                         {['Technical', 'On-Page', 'Content', 'Performance'].map((cat) => (
-                            <label key={cat} className="flex items-center gap-2 cursor-pointer group">
-                                <div className="w-4 h-4 rounded border border-slate-200 group-hover:border-slate-400" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{cat}</span>
-                            </label>
+                            <div key={cat} className="flex items-center gap-3 p-3 bg-white/50 rounded-xl hover:bg-white transition-all cursor-pointer border border-transparent hover:border-slate-100 group">
+                                <div className="w-5 h-5 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                    <Info className="w-3 h-3" />
+                                </div>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-900">{cat}</span>
+                            </div>
                         ))}
                     </div>
                 </div>
             </div>
 
             {/* Main Content: Table */}
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden flex-1 flex flex-col">
-                    <CardHeader className="p-6 border-b border-slate-50 flex flex-row items-center justify-between bg-white sticky top-0 z-10">
-                        <div className="flex items-center gap-4 flex-1 max-w-md">
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-[600px]">
+                <Card className="border-none shadow-sm bg-white rounded-[2.5rem] overflow-hidden flex-1 flex flex-col">
+                    <CardHeader className="px-10 py-8 border-b border-slate-50 flex flex-row items-center justify-between bg-white sticky top-0 z-10">
+                        <div className="flex items-center gap-4 flex-1 max-w-xl">
                             <div className="relative w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <Input
-                                    className="pl-10 h-10 bg-slate-50 border-none rounded-xl text-xs font-medium"
-                                    placeholder="Suche nach URLs oder Problemen..."
+                                    className="h-12 pl-12 bg-slate-50 border-none rounded-2xl text-[11px] font-bold shadow-inner focus:ring-slate-900/5 transition-all"
+                                    placeholder="Suche nach URLs oder SEO-Problemen..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                         </div>
                         {selectedRows.length > 0 && (
-                            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-2">
-                                <span className="text-[10px] font-black text-slate-400 uppercase">{selectedRows.length} ausgewählt</span>
+                            <div className="flex items-center gap-4 animate-in fade-in slide-in-from-right-4">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedRows.length} Markiert</span>
                                 <Button
                                     size="sm"
-                                    className="bg-emerald-600 text-white font-black text-[10px] uppercase h-8 px-4 rounded-lg"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase h-10 px-6 rounded-2xl shadow-xl shadow-emerald-50 transition-all"
                                     onClick={() => onBulkFix(selectedRows)}
                                 >
-                                    Bulk Auto-Fix
+                                    <Zap className="w-3 h-3 mr-2" /> Markierte Bulk-Fixen
                                 </Button>
                             </div>
                         )}
                     </CardHeader>
                     <div className="flex-1 overflow-y-auto">
                         <table className="w-full text-left border-collapse">
-                            <thead className="sticky top-0 bg-slate-50/80 backdrop-blur-md z-10">
-                                <tr className="border-b border-slate-100">
-                                    <th className="px-6 py-3 w-10">
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-slate-200"
-                                            onChange={(e) => setSelectedRows(e.target.checked ? filteredIssues.map(i => i.id) : [])}
-                                            checked={selectedRows.length === filteredIssues.length && filteredIssues.length > 0}
-                                        />
+                            <thead className="sticky top-0 bg-slate-50/90 backdrop-blur-xl z-10 transition-all">
+                                <tr>
+                                    <th className="px-10 py-5 w-14">
+                                        <div className="flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-slate-900"
+                                                onChange={(e) => setSelectedRows(e.target.checked ? filteredIssues.map(i => i.id) : [])}
+                                                checked={selectedRows.length === filteredIssues.length && filteredIssues.length > 0}
+                                            />
+                                        </div>
                                     </th>
-                                    <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest">URL / Resource</th>
-                                    <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest">Problem</th>
-                                    <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest">Priorität</th>
-                                    <th className="px-4 py-3 text-[9px] font-black uppercase text-slate-400 tracking-widest">Fix Typ</th>
-                                    <th className="px-6 py-3 text-right"></th>
+                                    <th className="px-5 py-5 text-[9px] font-black uppercase text-slate-400 tracking-widest font-[system-ui]">URL / Resource</th>
+                                    <th className="px-5 py-5 text-[9px] font-black uppercase text-slate-400 tracking-widest font-[system-ui]">SEO Issue Description</th>
+                                    <th className="px-5 py-5 text-[9px] font-black uppercase text-slate-400 tracking-widest font-[system-ui]">Status</th>
+                                    <th className="px-5 py-5 text-[9px] font-black uppercase text-slate-400 tracking-widest font-[system-ui]">Intelligence</th>
+                                    <th className="px-10 py-5 text-right w-14"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-50/50">
                                 {filteredIssues.map((issue) => (
                                     <tr
                                         key={issue.id}
                                         className={cn(
-                                            "group cursor-pointer hover:bg-slate-50 transition-colors",
-                                            selectedIssueId === issue.id && "bg-slate-50/80"
+                                            "group cursor-pointer hover:bg-slate-50/30 transition-all border-l-4 border-l-transparent",
+                                            selectedIssueId === issue.id && "bg-slate-50/80 border-l-emerald-500 shadow-sm"
                                         )}
                                         onClick={() => setSelectedIssueId(issue.id)}
                                     >
-                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-slate-200"
-                                                checked={selectedRows.includes(issue.id)}
-                                                onChange={() => toggleRow(issue.id)}
-                                            />
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex flex-col max-w-[200px]">
-                                                <span className="text-xs font-black text-slate-900 truncate">{issue.url}</span>
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{issue.resourceType}</span>
+                                        <td className="px-10 py-6" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-slate-900"
+                                                    checked={selectedRows.includes(issue.id)}
+                                                    onChange={() => toggleRow(issue.id)}
+                                                />
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <span className="text-xs font-bold text-slate-600 truncate block max-w-[250px]">{issue.title}</span>
+                                        <td className="px-5 py-6">
+                                            <div className="flex flex-col gap-1 max-w-[220px]">
+                                                <span className="text-xs font-black text-slate-900 group-hover:text-emerald-600 transition-colors truncate">{issue.url}</span>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                    <Box className="w-2.5 h-2.5" /> {issue.resourceType}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-6">
+                                            <span className="text-xs font-bold text-slate-600 block max-w-[300px] leading-relaxed group-hover:text-slate-900 transition-colors uppercase italic">{issue.title}</span>
+                                        </td>
+                                        <td className="px-5 py-6">
                                             <Badge className={cn(
-                                                "text-[9px] font-black uppercase border-none",
-                                                issue.severity === 'Critical' ? "bg-red-100 text-red-600" :
+                                                "text-[9px] font-black uppercase border-none px-3 h-6",
+                                                issue.severity === 'Critical' ? "bg-red-100 text-red-600 shadow-sm animate-pulse" :
                                                     issue.severity === 'High' ? "bg-orange-100 text-orange-600" :
-                                                        issue.severity === 'Medium' ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500"
+                                                        issue.severity === 'Medium' ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
                                             )}>
-                                                {issue.severity}
+                                                {issue.severity === 'Critical' ? 'KRITISCH' : issue.severity === 'High' ? 'WARNUNG' : 'OPTIMIERUNG'}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-1.5">
-                                                <div className={cn(
-                                                    "w-1.5 h-1.5 rounded-full",
-                                                    issue.fixType === 'auto' ? "bg-emerald-500" : "bg-orange-500"
-                                                )} />
-                                                <span className="text-[9px] font-black uppercase text-slate-500">{issue.fixType}</span>
+                                        <td className="px-5 py-6">
+                                            <div className="flex items-center gap-2">
+                                                {issue.fixType === 'auto' ? (
+                                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[8px] font-black uppercase h-5">
+                                                        <Sparkles className="w-2.5 h-2.5 mr-1" /> AI Fix Ready
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="bg-slate-50 text-slate-400 border-none text-[8px] font-black uppercase h-5">Manual Fix</Badge>
+                                                )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <ChevronRight className={cn(
-                                                "w-4 h-4 text-slate-300 transition-all",
-                                                selectedIssueId === issue.id && "translate-x-1 text-slate-900"
-                                            )} />
+                                        <td className="px-10 py-6 text-right">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-900 group-hover:text-white">
+                                                <ChevronRight className="w-4 h-4" />
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -186,52 +197,65 @@ export function SeoIssueCenter({ issues, onFixIssue, onBulkFix }: SeoIssueCenter
                 </Card>
             </div>
 
-            {/* Right Details Panel */}
+            {/* Right Details Intelligence Panel */}
             {selectedIssue && (
-                <div className="w-full lg:w-96 animate-in slide-in-from-right-4 duration-300">
-                    <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden sticky top-0 h-fit">
-                        <CardHeader className="bg-slate-900 text-white p-6">
-                            <div className="flex justify-between items-start mb-2">
-                                <Badge className="bg-white/10 text-white border-none text-[9px] font-black uppercase tracking-widest">
-                                    {selectedIssue.category}
+                <div className="w-full lg:w-[450px] animate-in slide-in-from-right-8 duration-500">
+                    <Card className="border-none shadow-[20px_40px_80px_-15px_rgba(0,0,0,0.1)] bg-white rounded-[3rem] overflow-hidden sticky top-0 h-fit border border-slate-100">
+                        <CardHeader className="bg-slate-900 text-white p-10 pb-16 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10" />
+                            <div className="flex justify-between items-start mb-8 relative z-10">
+                                <Badge className="bg-emerald-500 text-white border-none text-[10px] font-black uppercase tracking-[0.2em] px-3 h-6">
+                                    {selectedIssue.category} ANALYSE
                                 </Badge>
-                                <button onClick={() => setSelectedIssueId(null)} className="text-white/40 hover:text-white">
-                                    <X className="w-4 h-4" />
+                                <button onClick={() => setSelectedIssueId(null)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all border border-white/10">
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
-                            <CardTitle className="text-lg font-black uppercase leading-tight">{selectedIssue.title}</CardTitle>
+                            <CardTitle className="text-2xl font-black uppercase leading-tight italic relative z-10">{selectedIssue.title}</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-6">
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Beschreibung</p>
-                                <p className="text-xs text-slate-600 font-medium leading-relaxed">{selectedIssue.issue}</p>
-                            </div>
-
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg">
-                                        <CheckCircle2 className="w-4 h-4" />
-                                    </div>
-                                    <p className="text-[10px] font-black uppercase text-slate-900">Empfohlener Fix</p>
-                                </div>
-                                <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">
-                                    "{selectedIssue.recommendation}"
+                        <CardContent className="p-10 -mt-10 bg-white rounded-t-[3rem] relative z-20 space-y-10">
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2">
+                                    <Eye className="w-3.5 h-3.5" /> Problem-Details
                                 </p>
+                                <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
+                                    <p className="text-[13px] text-slate-600 font-bold leading-relaxed">{selectedIssue.issue}</p>
+                                </div>
                             </div>
 
                             <div className="space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2">
+                                    <Zap className="w-3.5 h-3.5 text-emerald-500" /> K.I. Lösungsvorschlag
+                                </p>
+                                <div className="p-8 bg-emerald-50/30 rounded-[2.5rem] border border-emerald-100/50 space-y-4 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
+                                        <Sparkles className="w-12 h-12 text-emerald-600" />
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-200">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase text-emerald-900 tracking-widest">Optimierungs-Plan</p>
+                                    </div>
+                                    <p className="text-[14px] text-slate-800 font-black leading-relaxed italic uppercase tracking-tight">
+                                        "{selectedIssue.recommendation}"
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-6">
                                 <Button
-                                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-emerald-100 border-none"
+                                    className="w-full h-16 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl shadow-slate-200 border-none hover:scale-[1.02] active:scale-95 transition-all group"
                                     onClick={() => onFixIssue(selectedIssue.id)}
                                 >
-                                    <Zap className="w-4 h-4 mr-2" />
-                                    {selectedIssue.fixType === 'auto' ? 'JETZT AUTO-FIXEN' : 'MANUELL BEHEBEN'}
+                                    <Zap className="w-5 h-5 mr-3 text-emerald-400 group-hover:animate-bounce" />
+                                    {selectedIssue.fixType === 'auto' ? 'JETZT AUTO-OPTIMIEREN' : 'MANUELL BEHEBEN'}
                                 </Button>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" className="flex-1 h-10 border-slate-100 font-black text-[9px] uppercase tracking-widest rounded-xl">
-                                        SHOP-VORSCHAU
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Button variant="outline" className="h-14 border-slate-100 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-slate-50 transition-colors">
+                                        <ExternalLink className="w-3.5 h-3.5 mr-2" /> VORSCHAU
                                     </Button>
-                                    <Button variant="outline" size="sm" className="flex-1 h-10 border-slate-100 font-black text-[9px] uppercase tracking-widest rounded-xl">
+                                    <Button variant="outline" className="h-14 border-slate-100 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-slate-50 transition-colors">
                                         IGNORIEREN
                                     </Button>
                                 </div>
@@ -244,22 +268,3 @@ export function SeoIssueCenter({ issues, onFixIssue, onBulkFix }: SeoIssueCenter
     )
 }
 
-function X(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-        </svg>
-    )
-}

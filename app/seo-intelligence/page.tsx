@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import {
     Activity, Search, Zap, Layout,
-    ListFilter, Settings, Box, CheckCircle2
+    ListFilter, Settings, Box, CheckCircle2,
+    PenTool
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +18,7 @@ import { SeoScanWizard } from '@/components/seo/seo-scan-wizard'
 import { SeoIssueCenter } from '@/components/seo/seo-issue-center'
 import { SeoProductTable } from '@/components/seo/seo-product-table'
 import { SeoAutopilotSettings } from '@/components/seo/seo-autopilot-settings'
+import { SeoContentStrategist } from '@/components/seo/seo-content-strategist'
 
 // Types
 import {
@@ -24,87 +26,18 @@ import {
     SeoStats, AutopilotConfig, SeoScanOptions
 } from '@/types/seo-types'
 
-type SeoTab = 'overview' | 'results' | 'products' | 'autopilot'
+type SeoTab = 'overview' | 'results' | 'products' | 'autopilot' | 'content'
 
 function SEOIntelligencePage() {
     const [activeTab, setActiveTab] = useState<SeoTab>('overview')
     const [isWizardOpen, setIsWizardOpen] = useState(false)
     const [isScanning, setIsScanning] = useState(false)
     const [scanProgress, setScanProgress] = useState<SeoScan | undefined>()
+    const [loading, setLoading] = useState(true)
 
-    const [stats, setStats] = useState<SeoStats>({
-        healthScore: 74,
-        criticalErrors: 12,
-        warnings: 24,
-        opportunities: 42,
-        lastScan: {
-            timestamp: '24. Jan 2026, 14:12',
-            duration: 12400,
-            pagesScanned: 542
-        }
-    })
-
-    const [issues, setIssues] = useState<SeoIssue[]>([
-        {
-            id: 'iss_1',
-            url: '/products/premium-leather-bag',
-            title: 'Titel-Tag zu kurz',
-            issue: 'Titel ist nur 28 Zeichen lang, empfohlen sind 50-60.',
-            resourceType: 'Product',
-            severity: 'High',
-            category: 'On-Page',
-            fixType: 'auto',
-            status: 'pending',
-            impact: 7,
-            recommendation: 'Erweitern Sie den Titel um relevante Keywords.',
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 'iss_2',
-            url: '/collections/spring-2024',
-            title: 'H1 Überschrift fehlt',
-            issue: 'Keine H1 Überschrift auf dieser Kategorieseite gefunden.',
-            resourceType: 'Collection',
-            severity: 'Critical',
-            category: 'Technical',
-            fixType: 'manual',
-            status: 'pending',
-            impact: 10,
-            recommendation: 'Fügen Sie eine aussagekräftige H1 Überschrift hinzu.',
-            createdAt: new Date().toISOString()
-        }
-    ])
-
-    const [products, setProducts] = useState<SeoProductScore[]>([
-        {
-            id: 'p_1',
-            handle: '/products/leather-bag',
-            title: 'Premium Leather Bag',
-            type: 'product',
-            score: 45,
-            titleLength: 28,
-            titleOptimal: false,
-            metaQuality: 'poor',
-            contentDepth: 120,
-            missingAlts: 4,
-            hasSchema: true,
-            lastChecked: new Date().toISOString()
-        },
-        {
-            id: 'p_2',
-            handle: '/products/silk-scarf',
-            title: 'Silk Scarf Limited',
-            type: 'product',
-            score: 88,
-            titleLength: 54,
-            titleOptimal: true,
-            metaQuality: 'good',
-            contentDepth: 450,
-            missingAlts: 0,
-            hasSchema: true,
-            lastChecked: new Date().toISOString()
-        }
-    ])
+    const [stats, setStats] = useState<SeoStats | null>(null)
+    const [issues, setIssues] = useState<SeoIssue[]>([])
+    const [products, setProducts] = useState<SeoProductScore[]>([])
 
     const [autopilotConfig, setAutopilotConfig] = useState<AutopilotConfig>({
         mode: 'off',
@@ -118,38 +51,95 @@ function SEOIntelligencePage() {
 
     const { showToast, toasts, removeToast } = useToast()
 
+    useEffect(() => {
+        loadData()
+    }, [])
+
+    const loadData = async () => {
+        setLoading(true)
+        try {
+            const response = await fetch('/api/seo/issues')
+            const data = await response.json()
+            if (data.success) {
+                setIssues(data.issues)
+                setStats({
+                    healthScore: data.healthScore || 100,
+                    criticalErrors: data.issues.filter((i: any) => i.severity === 'Critical').length,
+                    warnings: data.issues.filter((i: any) => i.severity === 'High' || i.severity === 'Medium').length,
+                    opportunities: data.issues.filter((i: any) => i.severity === 'Low').length,
+                    lastScan: {
+                        timestamp: new Date().toLocaleString('de-DE'),
+                        duration: 0,
+                        pagesScanned: data.total
+                    }
+                })
+            }
+        } catch (err) {
+            console.error('Failed to load SEO data', err)
+            showToast('Fehler beim Laden των SEO البيانات', 'error')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleStartScan = async (options: SeoScanOptions) => {
         setIsScanning(true)
-        // Start polling or simulate progress
-        let progress = 0
-        const interval = setInterval(() => {
-            progress += 5
-            setScanProgress({
-                id: 'scan_live',
-                status: 'running',
-                progress: progress,
-                crawledUrls: Math.floor(progress * 5.4),
-                totalUrls: 542,
-                currentStage: progress < 30 ? 'crawl' : progress < 80 ? 'analyze' : 'score',
-                options,
-                startedAt: new Date().toISOString()
+        try {
+            const res = await fetch('/api/seo/scan', {
+                method: 'POST',
+                body: JSON.stringify(options)
             })
-
-            if (progress >= 100) {
-                clearInterval(interval)
-                setIsScanning(false)
-                setIsWizardOpen(false)
-                setActiveTab('results')
-                showToast('SEO Scan erfolgreich abgeschlossen!', 'success')
+            const data = await res.json()
+            if (data.success) {
+                setScanProgress(data.report)
+                if (data.report.status === 'completed') {
+                    showToast('Scan abgeschlossen!', 'success')
+                    loadData()
+                    setIsWizardOpen(false)
+                }
             }
-        }, 300)
+        } catch (err) {
+            showToast('Scan fehlgeschlagen', 'error')
+        } finally {
+            setIsScanning(false)
+        }
     }
 
     const handleFixIssue = async (issueId: string) => {
-        showToast('Fix wird angewendet...', 'info')
-        await new Promise(r => setTimeout(r, 1000))
-        setIssues(prev => prev.filter(i => i.id !== issueId))
-        showToast('SEO Problem erfolgreich behoben!', 'success')
+        const issue = issues.find(i => i.id === issueId)
+        if (!issue) return
+
+        showToast('AI-Optimierung gestartet...', 'info')
+
+        try {
+            const type = issue.title.toLowerCase().includes('titel') ? 'title' :
+                issue.title.toLowerCase().includes('alt') ? 'alt' : 'manual'
+
+            if (type === 'manual') {
+                showToast('Dieses Problem erfordert manuelles Bearbeiten.', 'warning')
+                return
+            }
+
+            const res = await fetch('/api/seo/fix/apply', {
+                method: 'POST',
+                body: JSON.stringify({
+                    issueId,
+                    resourceId: issue.url.split('/').pop() || '',
+                    type,
+                    currentTitle: issue.resourceType === 'Product' ? (issue.recommendation?.split('"')[1] || '') : '',
+                    description: ''
+                })
+            })
+            const json = await res.json()
+            if (json.success) {
+                setIssues(prev => prev.filter(i => i.id !== issueId))
+                showToast(json.message || 'SEO erfolgreich verbessert!', 'success')
+            } else {
+                showToast(json.error || 'Fehler bei der Optimierung', 'error')
+            }
+        } catch (err) {
+            showToast('API-Fehler bei der Optimierung', 'error')
+        }
     }
 
     const handleBulkFix = async (ids: string[]) => {
@@ -208,7 +198,7 @@ function SEOIntelligencePage() {
 
                 {/* Navigation Tabs */}
                 <div className="flex items-center gap-1 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 w-fit">
-                    {(['overview', 'results', 'products', 'autopilot'] as const).map((tab) => (
+                    {(['overview', 'results', 'products', 'autopilot', 'content'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -223,48 +213,76 @@ function SEOIntelligencePage() {
                             {tab === 'results' && <ListFilter className="w-3.5 h-3.5" />}
                             {tab === 'products' && <Box className="w-3.5 h-3.5" />}
                             {tab === 'autopilot' && <Settings className="w-3.5 h-3.5" />}
+                            {tab === 'content' && <PenTool className="w-3.5 h-3.5" />}
                             {tab === 'overview' ? 'Überblick' :
                                 tab === 'results' ? 'Scan Ergebnisse' :
-                                    tab === 'products' ? 'Produkte & Collections' : 'Einstellungen & Autopilot'}
+                                    tab === 'products' ? 'Produkte & Collections' :
+                                        tab === 'autopilot' ? 'Autopilot' : 'Magazin & Content'}
                         </button>
                     ))}
                 </div>
 
                 {/* Tab Content */}
                 <div className="min-h-[600px]">
-                    {activeTab === 'overview' && (
-                        <SeoOverview
-                            stats={stats}
-                            topIssues={issues.slice(0, 5)}
-                            onFixIssue={handleFixIssue}
-                            onStartScan={() => setIsWizardOpen(true)}
-                        />
-                    )}
+                    {loading && !stats ? (
+                        <div className="flex flex-col items-center justify-center p-20 space-y-4">
+                            <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">SEO Analyse wird geladen...</p>
+                        </div>
+                    ) : (
+                        <>
+                            {activeTab === 'overview' && stats && (
+                                <SeoOverview
+                                    stats={stats}
+                                    topIssues={issues.slice(0, 5)}
+                                    onFixIssue={handleFixIssue}
+                                    onStartScan={() => setIsWizardOpen(true)}
+                                />
+                            )}
 
-                    {activeTab === 'results' && (
-                        <SeoIssueCenter
-                            issues={issues}
-                            onFixIssue={handleFixIssue}
-                            onBulkFix={handleBulkFix}
-                        />
-                    )}
+                            {activeTab === 'results' && (
+                                <SeoIssueCenter
+                                    issues={issues}
+                                    onFixIssue={handleFixIssue}
+                                    onBulkFix={handleBulkFix}
+                                />
+                            )}
 
-                    {activeTab === 'products' && (
-                        <SeoProductTable
-                            products={products}
-                            onUpdateProduct={(id, data) => showToast('Änderung gespeichert', 'success')}
-                        />
-                    )}
+                            {activeTab === 'products' && (
+                                <SeoProductTable
+                                    products={products.length > 0 ? products : issues.map(i => ({
+                                        id: i.id,
+                                        handle: i.url,
+                                        title: i.title,
+                                        type: 'product',
+                                        score: i.severity === 'Critical' ? 20 : 60,
+                                        titleLength: 0,
+                                        titleOptimal: false,
+                                        metaQuality: 'poor',
+                                        contentDepth: 0,
+                                        hasSchema: true,
+                                        lastChecked: i.createdAt,
+                                        missingAlts: 0
+                                    }))}
+                                    onUpdateProduct={(id, data) => showToast('Änderung gespeichert', 'success')}
+                                />
+                            )}
 
-                    {activeTab === 'autopilot' && (
-                        <SeoAutopilotSettings
-                            config={autopilotConfig}
-                            onUpdateConfig={setAutopilotConfig}
-                            onEmergencyStop={() => {
-                                setAutopilotConfig({ ...autopilotConfig, mode: 'off' })
-                                showToast('AI Autopilot Not-Stopp ausgelöst!', 'error')
-                            }}
-                        />
+                            {activeTab === 'autopilot' && (
+                                <SeoAutopilotSettings
+                                    config={autopilotConfig}
+                                    onUpdateConfig={setAutopilotConfig}
+                                    onEmergencyStop={() => {
+                                        setAutopilotConfig({ ...autopilotConfig, mode: 'off' })
+                                        showToast('AI Autopilot Not-Stopp ausgelöst!', 'error')
+                                    }}
+                                />
+                            )}
+
+                            {activeTab === 'content' && (
+                                <SeoContentStrategist />
+                            )}
+                        </>
                     )}
                 </div>
             </main>

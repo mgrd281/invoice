@@ -86,7 +86,7 @@ export interface ShopifyProduct {
   vendor?: string
   status?: string
   body_html?: string
-  images?: Array<{ src: string }>
+  images?: Array<{ id: number, src: string, alt: string | null }>
   variants: Array<{
     id: number
     title: string
@@ -619,19 +619,6 @@ export class ShopifyAPI {
     }
   }
 
-  /**
-   * Get a single product by ID
-   */
-  async getProduct(productId: number | string): Promise<ShopifyProduct | null> {
-    try {
-      const response = await this.makeRequest(`/products/${productId}.json`)
-      const data = await response.json()
-      return data.product || null
-    } catch (error) {
-      console.error(`Error fetching product ${productId}:`, error)
-      return null
-    }
-  }
 
   /**
    * Get collections from Shopify
@@ -749,8 +736,41 @@ export class ShopifyAPI {
       return data.collect
     } catch (error) {
       console.error(`Error adding product ${productId} to collection ${collectionId}:`, error)
-      // Don't throw here, just log error as this is a secondary action
       return null
+    }
+  }
+
+  /**
+   * Get a single product from Shopify
+   */
+  async getProduct(productId: number | string): Promise<ShopifyProduct | null> {
+    try {
+      const response = await this.makeRequest(`/products/${productId}.json`)
+      const data = await response.json()
+      return data.product || null
+    } catch (error) {
+      console.error(`Error fetching product ${productId}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Update a product image in Shopify
+   */
+  async updateImage(productId: number | string, imageId: number | string, imageData: any): Promise<any> {
+    try {
+      console.log(`🔄 Updating image ${imageId} for product ${productId}...`)
+      const response = await this.makeRequest(`/products/${productId}/images/${imageId}.json`, {
+        method: 'PUT',
+        body: JSON.stringify({ image: { id: imageId, ...imageData } })
+      })
+
+      const data = await response.json()
+      console.log('✅ Image updated successfully')
+      return data.image
+    } catch (error) {
+      console.error(`Error updating image ${imageId} for product ${productId}:`, error)
+      throw error
     }
   }
 
@@ -776,7 +796,6 @@ export class ShopifyAPI {
       return data.checkouts || []
     } catch (error) {
       console.error('Error fetching Shopify abandoned checkouts:', error)
-      // Return empty array instead of throwing to prevent breaking the whole dashboard
       return []
     }
   }
@@ -846,7 +865,7 @@ export class ShopifyAPI {
   }): Promise<any> {
     try {
       console.log(`📝 Creating article in blog ${blogId}...`)
-      const response = await this.makeRequest(`/blogs/${blogId}/articles.json`, {
+      const response = await this.makeRequest(`/ blogs / ${blogId}/articles.json`, {
         method: 'POST',
         body: JSON.stringify({ article: articleData })
       })
