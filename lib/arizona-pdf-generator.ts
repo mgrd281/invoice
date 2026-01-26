@@ -237,7 +237,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text(displayCompanyName, logoX + (logoW - logoTextWidth) / 2, logoY + logoH / 2 + (2.5 * logoScale))
 
     // Sender line
-    doc.setTextColor(150, 150, 150)
+    doc.setTextColor(100, 100, 100)
     doc.setFontSize(7)
     const senderZipCode = companySettings.zip || companySettings.zipCode
     const senderLine = `${displayCompanyName} • ${companySettings.address} • ${senderZipCode} ${companySettings.city}`
@@ -246,7 +246,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     // Recipient Block
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
+    doc.setTextColor(0, 0, 0)
     let yPos = 55
     if (invoice.customer.name) {
       doc.text(invoice.customer.name, 20, yPos)
@@ -259,10 +259,14 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text(invoice.customer.address, 20, yPos)
     yPos += 4
     doc.text(`${invoice.customer.zipCode} ${invoice.customer.city}`, 20, yPos)
+    if (invoice.customer.country && invoice.customer.country !== 'DE') {
+      yPos += 4
+      doc.text(invoice.customer.country, 20, yPos)
+    }
 
-    // Info Box
-    const boxX = 130, boxY = 35, boxW = 65, boxH = 35
-    doc.setFillColor(245, 245, 245) // Light gray bg
+    // Info Box (Top Right)
+    const boxX = 130, boxY = 35, boxW = 65, boxH = 40
+    doc.setFillColor(255, 255, 255) // White background like in image
     doc.rect(boxX, boxY, boxW, boxH, 'F')
     doc.setDrawColor(...primaryColorRGB)
     doc.setLineWidth(0.5)
@@ -274,7 +278,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text('Rechnung', boxX + 5, boxY + 8)
 
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
+    doc.setFontSize(8.5)
     const info = [
       ['Beleg-Nr.', invoice.number.replace(/^#/, '')],
       ['Kunden-Nr.', (invoice as any).customerNumber || invoice.id.substring(0, 6).toUpperCase()],
@@ -284,12 +288,20 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     ]
     info.forEach((row, i) => {
       doc.setFont('helvetica', 'bold')
-      doc.text(row[0], boxX + 5, boxY + 15 + (i * 4))
+      doc.text(row[0], boxX + 5, boxY + 16 + (i * 5))
       doc.setFont('helvetica', 'normal')
-      doc.text(String(row[1]), boxX + 28, boxY + 15 + (i * 4))
+      doc.text(String(row[1]), boxX + boxW - 5, boxY + 16 + (i * 5), { align: 'right' })
     })
 
-    renderItemsTable(120)
+    // Sub Title
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16)
+    doc.text('Rechnung', 20, 115)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.text('Vielen Dank für Ihren Auftrag. Wir berechnen Ihnen folgende Lieferung bzw. Leistung:', 20, 125)
+
+    renderItemsTable(135)
   }
 
   // ========================================
@@ -430,45 +442,79 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
   const renderItemsTable = (startY: number, tableX = 20, tableWidth = 170) => {
     let yPos = startY
 
-    // Header
+    // Header Background
     doc.setFillColor(...primaryColorRGB)
-    doc.rect(tableX, yPos - 5, tableWidth, 8, 'F')
-    doc.setFontSize(8)
+    doc.rect(tableX, yPos - 5, tableWidth, 9, 'F')
+    doc.setFontSize(8.5)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(255, 255, 255)
-    doc.text('Bezeichnung', tableX + 5, yPos)
-    doc.text('Menge', tableX + tableWidth - 60, yPos)
-    doc.text('Preis', tableX + tableWidth - 35, yPos)
-    doc.text('Gesamt', tableX + tableWidth - 10, yPos, { align: 'right' })
+
+    // Column Definitions based on image: Bezeichnung, EAN, Menge, MwSt., Preis, Gesamt
+    doc.text('Bezeichnung', tableX + 5, yPos + 1)
+    doc.text('EAN', tableX + tableWidth - 85, yPos + 1, { align: 'center' })
+    doc.text('Menge', tableX + tableWidth - 65, yPos + 1, { align: 'center' })
+    doc.text('MwSt.', tableX + tableWidth - 45, yPos + 1, { align: 'center' })
+    doc.text('Preis', tableX + tableWidth - 25, yPos + 1, { align: 'right' })
+    doc.text('Gesamt', tableX + tableWidth - 5, yPos + 1, { align: 'right' })
 
     // Items
-    yPos += 10
+    yPos += 12
     doc.setTextColor(0, 0, 0)
     doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
     invoice.items.forEach(item => {
-      const desc = doc.splitTextToSize(item.description, tableWidth - 80)
+      const desc = doc.splitTextToSize(item.description, tableWidth - 100)
       doc.text(desc, tableX + 5, yPos)
-      doc.text(`${item.quantity}`, tableX + tableWidth - 60, yPos)
-      doc.text(`${item.unitPrice.toFixed(2)}`, tableX + tableWidth - 35, yPos)
+
+      // EAN
+      const ean = item.ean || ''
+      doc.text(String(ean), tableX + tableWidth - 85, yPos, { align: 'center' })
+
+      // Menge
+      doc.text(`${item.quantity} Stk.`, tableX + tableWidth - 65, yPos, { align: 'center' })
+
+      // MwSt.
+      const vat = item.vat || invoice.taxRate || 19
+      doc.text(`${vat}%`, tableX + tableWidth - 45, yPos, { align: 'center' })
+
+      // Preis & Gesamt
+      doc.text(`${item.unitPrice.toFixed(2)}`, tableX + tableWidth - 25, yPos, { align: 'right' })
       doc.text(`${item.total.toFixed(2)}`, tableX + tableWidth - 5, yPos, { align: 'right' })
-      yPos += (desc.length * 4) + 2
+
+      yPos += (desc.length * 4.5) + 3
     })
 
-    // Totals
+    // Totals Block
     yPos += 10
+    const totalX = tableX + tableWidth - 70
     doc.setDrawColor(...primaryColorRGB)
-    doc.line(tableX + tableWidth - 70, yPos - 5, tableX + tableWidth, yPos - 5)
+    doc.line(totalX, yPos - 5, tableX + tableWidth, yPos - 5)
 
-    doc.setFontSize(10)
-    doc.text('Netto:', tableX + tableWidth - 70, yPos)
+    doc.setFontSize(9.5)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Summe netto', totalX, yPos)
     doc.text(`${invoice.subtotal.toFixed(2)}`, tableX + tableWidth - 5, yPos, { align: 'right' })
+
     yPos += 6
-    doc.text('MwSt 19%:', tableX + tableWidth - 70, yPos)
+    doc.text(`MwSt. ${invoice.taxRate || 19}%`, totalX, yPos)
     doc.text(`${invoice.taxAmount.toFixed(2)}`, tableX + tableWidth - 5, yPos, { align: 'right' })
+
     yPos += 8
     doc.setFont('helvetica', 'bold')
-    doc.text('Gesamt:', tableX + tableWidth - 70, yPos)
+    doc.setFontSize(10.5)
+    doc.text('Gesamt', totalX, yPos)
     doc.text(`${invoice.total.toFixed(2)}`, tableX + tableWidth - 5, yPos, { align: 'right' })
+
+    // Closing Text like in image
+    yPos += 20
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9.5)
+    doc.text('Wir bedanken uns für Ihren Auftrag und freuen uns auf die weitere Zusammenarbeit.', tableX, yPos)
+    yPos += 6
+    doc.setFont('helvetica', 'normal')
+    doc.text('Sie haben Fragen oder wünschen weitere Informationen? Rufen Sie uns an', tableX, yPos)
+    yPos += 5
+    doc.text('wir sind für Sie da.', tableX, yPos)
 
     // Footer marks
     if (invoice.showSettings?.foldMarks) {
@@ -489,12 +535,40 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
   // General Footer (common for non-sidebar layouts)
   if (layout !== 'bold') {
-    const footerY = 270
-    doc.setFontSize(7)
-    doc.setTextColor(150, 150, 150)
+    const footerY = 265
+    doc.setFillColor(245, 248, 247) // Light greenish/grayish background
+    doc.rect(0, footerY - 5, 210, 40, 'F')
+
+    doc.setFontSize(7.5)
+    doc.setTextColor(80, 80, 80)
     doc.setFont('helvetica', 'normal')
-    doc.text(`${companySettings.companyName || companySettings.name} | ${companySettings.address} | ${companySettings.zipCode} ${companySettings.city}`, 105, footerY, { align: 'center' })
-    doc.text(`IBAN: ${companySettings.iban || ''} | BIC: ${companySettings.bic || ''} | Tax ID: ${companySettings.taxId || ''}`, 105, footerY + 4, { align: 'center' })
+
+    const col1X = 20
+    const col2X = 80
+    const col3X = 140
+
+    // Column 1: Company & Address
+    const name = companySettings.companyName || companySettings.name || 'KARINEX'
+    doc.text(name, col1X, footerY)
+    doc.text(companySettings.address, col1X, footerY + 4)
+    doc.text(`${companySettings.zipCode} ${companySettings.city}`, col1X, footerY + 8)
+    doc.text(companySettings.country || 'Deutschland', col1X, footerY + 12)
+
+    // Column 2: Management & Contact
+    doc.text(`Geschäftsführer: ${name}`, col2X, footerY)
+    doc.text(`Telefon: ${companySettings.phone || '--'}`, col2X, footerY + 4)
+    doc.text(`E-Mail: ${companySettings.email || '--'}`, col2X, footerY + 8)
+
+    // Column 3: Bank
+    doc.text('Bankverbindungen', col3X, footerY)
+    doc.text(companySettings.bankName || '--', col3X, footerY + 4)
+    doc.text(`IBAN: ${companySettings.iban || ''}`, col3X, footerY + 8)
+    doc.text(`BIC: ${companySettings.bic || ''}`, col3X, footerY + 12)
+
+    // Lower Footer Line (Tax IDs)
+    let yPos = footerY + 22
+    doc.text(`Steuernummer: ${companySettings.taxId || '--'}`, col2X, yPos)
+    doc.text(`USt.-IdNr.: ${companySettings.vatId || '--'}`, col2X, yPos + 4)
   }
 
   return doc
