@@ -382,7 +382,15 @@ export default function ProductImportPage() {
             }
 
             showToast("Produkt erfolgreich importiert!", "success")
-            setActiveTab('store')
+
+            // Redirect to digital products section with import context
+            const importId = `imp_prod_${Date.now()}`
+            const count = Array.isArray(previewData) ? previewData.length : 1
+
+            setTimeout(() => {
+                router.push(`/digital-products?source=csv_import&importId=${importId}&count=${count}`)
+            }, 1200)
+
             setPreviewData(null)
             setUrls([''])
             setImportStep('idle')
@@ -411,9 +419,8 @@ export default function ProductImportPage() {
                 onClose={() => setIsPreviewOpen(false)}
                 draftId={currentDraftId}
                 onSuccess={() => {
-                    setActiveTab('store')
-                    loadImportedProducts()
-                    setUrls([''])
+                    const importId = `imp_modal_${Date.now()}`
+                    router.push(`/digital-products?source=csv_import&importId=${importId}&count=1`)
                 }}
             />
 

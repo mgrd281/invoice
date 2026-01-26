@@ -26,6 +26,7 @@ import { ExpensesTable } from '@/components/accounting/expenses-table'
 import { InvoicesTable } from '@/components/accounting/invoices-table'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { EditReceiptDialog } from '@/components/accounting/edit-receipt-dialog'
+import { ImportSuccessBanner } from '@/components/ui/import-success-banner'
 
 interface AdditionalIncome {
   id: string
@@ -423,6 +424,7 @@ function BuchhaltungContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ImportSuccessBanner />
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

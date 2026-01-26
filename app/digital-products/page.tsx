@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
+import { ImportSuccessBanner } from '@/components/ui/import-success-banner'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -231,9 +232,10 @@ export default function DigitalProductsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
+            <ImportSuccessBanner />
             <header className="bg-white shadow-sm border-b sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <HeaderNavIcons />
                             <div className="ml-1">

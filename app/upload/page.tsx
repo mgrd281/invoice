@@ -327,15 +327,21 @@ export default function UploadPage() {
 
     if (failedInvoices.length === 0) {
       setUploadStatus({ type: 'success', message: `${savedCount} Rechnungen erfolgreich gespeichert!` })
-      if (previewInvoices.length === 0) { // Check if all are gone
+      if (previewInvoices.length === 0) {
         setFile(null)
-        // Redirect to invoices page after successful save
+        // Redirect to target section with import context
+        const importId = `imp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`
+
         setTimeout(() => {
+          let targetRoute = '/invoices'
           if (importTarget === 'accounting') {
-            navigate('/buchhaltung?period=all')
-          } else {
-            navigate('/invoices')
+            targetRoute = '/buchhaltung?period=all'
+          } else if (importTarget === 'purchase-invoices') {
+            targetRoute = '/purchase-invoices'
           }
+
+          const glue = targetRoute.includes('?') ? '&' : '?'
+          navigate(`${targetRoute}${glue}source=csv_import&importId=${importId}&count=${savedCount}`)
         }, 1500)
       }
     } else {

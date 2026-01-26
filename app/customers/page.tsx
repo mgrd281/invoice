@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 // CRM Components
 import { Customer360Drawer } from '@/components/customers/customer-360-drawer';
 import { CustomerEmptyState } from '@/components/customers/customer-empty-state';
+import { ImportSuccessBanner } from '@/components/ui/import-success-banner';
 
 type CRMTab = 'overview' | 'list' | 'segments' | 'profiles';
 
@@ -61,73 +62,76 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="p-6 space-y-10 bg-[#F8FAFC] min-h-screen">
-      {/* Enterprise CRM Header */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="flex items-center gap-4 mb-4">
-            <HeaderNavIcons />
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 font-black uppercase tracking-widest text-[10px]">
-              <Users className="w-3 h-3 mr-1" /> Customer Intelligence
-            </Badge>
+    <div className="bg-[#F8FAFC] min-h-screen">
+      <ImportSuccessBanner />
+      <div className="p-6 space-y-10">
+        {/* Enterprise CRM Header */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <HeaderNavIcons />
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 font-black uppercase tracking-widest text-[10px]">
+                <Users className="w-3 h-3 mr-1" /> Customer Intelligence
+              </Badge>
+            </div>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 uppercase italic">
+              CRM & Intelligence Hub
+            </h1>
+            <p className="text-slate-500 font-medium mt-1 uppercase tracking-widest text-[11px]">Real-time Shopify CRM, Behavior Tracking & AI Insights</p>
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 uppercase italic">
-            CRM & Intelligence Hub
-          </h1>
-          <p className="text-slate-500 font-medium mt-1 uppercase tracking-widest text-[11px]">Real-time Shopify CRM, Behavior Tracking & AI Insights</p>
+
+          <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
+            {['today', '7d', '30d'].map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={cn(
+                  "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  range === r ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {r === 'today' ? 'Heute' : r === '7d' ? '7 Tage' : '30 Tage'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
-          {['today', '7d', '30d'].map((r) => (
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-1 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 w-fit">
+          {[
+            { id: 'overview', label: 'Überblick' },
+            { id: 'list', label: 'Kundenliste' },
+            { id: 'segments', label: 'Segmente' },
+            { id: 'profiles', label: 'Kundenprofile' }
+          ].map((tab) => (
             <button
-              key={r}
-              onClick={() => setRange(r)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                range === r ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                "px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                activeTab === tab.id ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              {r === 'today' ? 'Heute' : r === '7d' ? '7 Tage' : '30 Tage'}
+              {tab.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-1 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 w-fit">
-        {[
-          { id: 'overview', label: 'Überblick' },
-          { id: 'list', label: 'Kundenliste' },
-          { id: 'segments', label: 'Segmente' },
-          { id: 'profiles', label: 'Kundenprofile' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={cn(
-              "px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-              activeTab === tab.id ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Tab Content */}
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {activeTab === 'overview' && <OverviewTab data={data} />}
+          {activeTab === 'list' && <KundenlisteTab data={data} onOpenProfile={openProfile} />}
+          {activeTab === 'segments' && <SegmentsTab data={data} />}
+          {activeTab === 'profiles' && <ProfilesTab data={data} onOpenProfile={openProfile} />}
+        </div>
 
-      {/* Tab Content */}
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {activeTab === 'overview' && <OverviewTab data={data} />}
-        {activeTab === 'list' && <KundenlisteTab data={data} onOpenProfile={openProfile} />}
-        {activeTab === 'segments' && <SegmentsTab data={data} />}
-        {activeTab === 'profiles' && <ProfilesTab data={data} onOpenProfile={openProfile} />}
+        {/* Customer 360 Drawer */}
+        <Customer360Drawer
+          customer={selectedCustomer}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+        />
       </div>
-
-      {/* Customer 360 Drawer */}
-      <Customer360Drawer
-        customer={selectedCustomer}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
     </div>
   );
 }

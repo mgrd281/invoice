@@ -24,6 +24,7 @@ import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { BarChart3 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
+import { ImportSuccessBanner } from '@/components/ui/import-success-banner'
 
 function getPaymentMethodDisplay(method: string | undefined) {
   if (!method) return <span className="text-gray-400">-</span>
@@ -672,8 +673,8 @@ function InvoicesPageContent() {
 
     // Skip old method entirely, use new method directly
     try {
-      showToast('PDF wird generiert...', 'success')
-
+      showToast('PDF wird generiert...', 'loading')
+      
       // Use new download endpoint with authentication
       const response = await fetch(`/api/invoices/${invoiceId}/download-pdf`, {
         method: 'GET',
@@ -707,7 +708,13 @@ function InvoicesPageContent() {
           document.body.removeChild(a)
           window.URL.revokeObjectURL(url)
 
-          showToast(`✅ PDF für Rechnung ${invoiceNumber} erfolgreich heruntergeladen!`, 'success')
+          showToast('', 'success', {
+            title: 'PDF heruntergeladen',
+            description: invoiceNumber ? `Rechnung #${invoiceNumber} wurde gespeichert.` : 'Rechnung wurde gespeichert.',
+            variant: 'premium',
+            duration: 6000
+          })
+          
         } else {
           throw new Error('PDF ist zu klein oder leer')
         }
@@ -1035,6 +1042,7 @@ function InvoicesPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ImportSuccessBanner />
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
