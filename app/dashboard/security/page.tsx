@@ -16,7 +16,7 @@ import {
     Lock,
     AlertCircle,
     KeyRound,
-    GlobeLock,
+    Globe,
     Activity,
     SlidersHorizontal,
     FileText,
@@ -26,7 +26,7 @@ import {
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 
 interface BlockedIp {
     id: string
@@ -75,7 +75,7 @@ export default function SecurityPage() {
     const [activeTab, setActiveTab] = useState('ip-blocks')
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const { toast } = useToast()
+    const { showToast } = useToast()
 
     const authenticatedFetch = useAuthenticatedFetch()
 
@@ -88,19 +88,11 @@ export default function SecurityPage() {
                 setBlockedIps(data.blockedIps)
             } else {
                 const errorData = await res.json()
-                toast({
-                    title: "Fehler beim Laden",
-                    description: errorData.error || "Sperrliste konnte nicht geladen werden",
-                    variant: "destructive"
-                })
+                showToast(errorData.error || "Sperrliste konnte nicht geladen werden", 'error')
             }
         } catch (e) {
             console.error("Failed to fetch blocked IPs", e)
-            toast({
-                title: "Netzwerkfehler",
-                description: "Verbindung zum Server fehlgeschlagen",
-                variant: "destructive"
-            })
+            showToast("Verbindung zum Server fehlgeschlagen", 'error')
         } finally {
             setLoading(false)
         }
@@ -144,25 +136,14 @@ export default function SecurityPage() {
                 setBlockedIps(prev => [data.blockedIp, ...prev])
                 setNewIp('')
                 setNewReason('')
-                toast({
-                    title: "Sperre hinzugefügt",
-                    description: `IP ${newIp} wurde erfolgreich gesperrt`,
-                })
+                showToast(`IP ${newIp} wurde erfolgreich gesperrt`, 'success')
             } else {
                 setError(data.error || 'Fehler beim Hinzufügen der Sperre')
-                toast({
-                    title: "Fehler",
-                    description: data.error || 'IP konnte nicht gesperrt werden',
-                    variant: "destructive"
-                })
+                showToast(data.error || 'IP konnte nicht gesperrt werden', 'error')
             }
         } catch (e) {
             setError('Netzwerkfehler. Bitte versuchen Sie es erneut.')
-            toast({
-                title: "Netzwerkfehler",
-                description: "Verbindung zum Server fehlgeschlagen",
-                variant: "destructive"
-            })
+            showToast("Verbindung zum Server fehlgeschlagen", 'error')
         } finally {
             setSubmitting(false)
         }
@@ -184,28 +165,17 @@ export default function SecurityPage() {
             })
 
             if (res.ok) {
-                toast({
-                    title: "Sperre entfernt",
-                    description: `IP ${ipAddress} wurde entsperrt`,
-                })
+                showToast(`IP ${ipAddress} wurde entsperrt`, 'success')
             } else {
                 // Revert on error
                 fetchBlockedIps()
                 const errorData = await res.json()
-                toast({
-                    title: "Fehler",
-                    description: errorData.error || 'Sperre konnte nicht entfernt werden',
-                    variant: "destructive"
-                })
+                showToast(errorData.error || 'Sperre konnte nicht entfernt werden', 'error')
             }
         } catch (e) {
             // Revert on error
             fetchBlockedIps()
-            toast({
-                title: "Netzwerkfehler",
-                description: "Verbindung zum Server fehlgeschlagen",
-                variant: "destructive"
-            })
+            showToast("Verbindung zum Server fehlgeschlagen", 'error')
         }
     }
 
@@ -281,7 +251,7 @@ export default function SecurityPage() {
                 <div className="mb-6 border-b border-gray-200">
                     <div className="flex gap-6">
                         {[
-                            { id: 'ip-blocks', label: 'IP-Sperren', icon: GlobeLock },
+                            { id: 'ip-blocks', label: 'IP-Sperren', icon: Globe },
                             { id: 'live-events', label: 'Live-Events', icon: Activity },
                             { id: 'rules', label: 'Regeln', icon: SlidersHorizontal },
                             { id: 'audit', label: 'Audit-Log', icon: FileText }
@@ -290,8 +260,8 @@ export default function SecurityPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-1 py-3 border-b-2 transition-colors ${activeTab === tab.id
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 <tab.icon className="w-4 h-4" />
