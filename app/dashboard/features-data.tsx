@@ -224,6 +224,20 @@ export const DEFAULT_FEATURES = [
         pingDotColor: 'bg-violet-500'
     },
     {
+        id: 'seo-intelligence',
+        href: '/seo-intelligence',
+        title: 'SEO Intelligence',
+        description: 'Autonome SEO-Optimierung & Ranking-Wachstum (24/7 KI)',
+        icon: TrendingUp,
+        iconBg: 'bg-gradient-to-r from-emerald-600 to-teal-500',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-emerald-300 bg-gradient-to-br from-white to-emerald-50',
+        badge: 'NEU',
+        badgeClass: 'bg-emerald-100 text-emerald-700',
+        hasPing: true,
+        pingColor: 'bg-emerald-400',
+        pingDotColor: 'bg-emerald-500'
+    },
+    {
         id: 'settings',
         href: '/settings',
         title: 'Einstellungen',
