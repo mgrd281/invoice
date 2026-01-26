@@ -80,11 +80,11 @@ export async function GET(request: NextRequest) {
             );
 
             const refundedInvoices = c.invoices.filter(inv =>
-                inv.status === 'REFUNDED' || (inv.refundAmount && Number(inv.refundAmount) > 0)
+                (inv.refundAmount && Number(inv.refundAmount) > 0)
             );
 
             const cancelledInvoices = c.invoices.filter(inv =>
-                inv.status === 'CANCELLED' || inv.status === 'VOID'
+                inv.status === 'CANCELLED'
             );
 
             const ltv = validInvoices.reduce((sum, inv) => sum + Number(inv.totalGross || 0), 0);
