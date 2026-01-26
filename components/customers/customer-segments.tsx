@@ -28,9 +28,9 @@ export function CustomerSegments({ segments, activeSegment, onSegmentChange }: a
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Smart Segments</h3>
-                <button className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors">
-                    <Plus className="w-3 h-3" /> NEUES SEGMENT
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Intelligente Segmente</h3>
+                <button className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase">
+                    <Plus className="w-3 h-3" /> NEUES SEGMENT ERSTELLEN
                 </button>
             </div>
 
