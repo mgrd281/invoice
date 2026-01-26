@@ -11,7 +11,8 @@ import {
     Activity,
     Settings,
     LogOut,
-    MapPin
+    MapPin,
+    Bot
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSession, signOut } from "next-auth/react"
@@ -58,6 +59,12 @@ const sidebarItems = [
         href: "/admin/settings",
         icon: Settings,
         matcher: (pathname: string) => pathname.startsWith("/admin/settings")
+    },
+    {
+        title: "AI Automatisierung",
+        href: "/ai-automation",
+        icon: Bot,
+        matcher: (pathname: string) => pathname.startsWith("/ai-automation")
     }
 ]
 

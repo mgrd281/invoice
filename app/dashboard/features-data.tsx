@@ -25,7 +25,8 @@ import {
     ShieldAlert,
     UserX,
     Terminal,
-    Activity
+    Activity,
+    Bot
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -208,6 +209,20 @@ export const DEFAULT_FEATURES = [
         pingDotColor: 'bg-blue-500'
     },
 
+    {
+        id: 'ai-automation',
+        href: '/ai-automation',
+        title: 'AI Automation Center',
+        description: 'Autonome KI-Inhalte für Shopify (24/7 Betrieb)',
+        icon: Bot,
+        iconBg: 'bg-gradient-to-r from-violet-600 to-fuchsia-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-violet-300 bg-gradient-to-br from-white to-violet-50',
+        badge: 'PRO',
+        badgeClass: 'bg-violet-100 text-violet-700',
+        hasPing: true,
+        pingColor: 'bg-violet-400',
+        pingDotColor: 'bg-violet-500'
+    },
     {
         id: 'settings',
         href: '/settings',
