@@ -104,6 +104,7 @@ model Organization {
   brokenLinks             BrokenLink[]
   redirectScanJobs        RedirectScanJob[]
   redirectActionLogs      RedirectActionLog[]
+  suppliers               Supplier[]
 }
 
 model BrokenLink {
@@ -1189,6 +1190,8 @@ model PurchaseInvoice {
   documentId      String?               @unique // For OCR tracking
   ocrData         Json?                 // Original extracted AI data
   confidence      Float?                // AI confidence score
+  category        String?
+  notes           String?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   organization    Organization          @relation(fields: [organizationId], references: [id])
@@ -1248,4 +1251,38 @@ model ImportDraft {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model Supplier {
+  id             String            @id @default(uuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  zipCode        String?
+  city           String?
+  country        String            @default("DE")
+  taxId          String?
+  iban           String?
+  bic            String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  invoices       PurchaseInvoice[]
+
+  @@unique([organizationId, name])
+}
+
+model PurchaseInvoiceItem {
+  id                String          @id @default(uuid())
+  purchaseInvoiceId String
+  description       String
+  quantity          Float           @default(1)
+  unitPrice         Float
+  taxRate           Float           @default(19)
+  taxAmount         Float
+  netAmount         Float
+  grossAmount       Float
+  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
 }
