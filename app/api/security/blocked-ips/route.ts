@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
             stack: error.stack
         });
         return NextResponse.json({
-            error: 'Fehler beim Sperren der IP-Adresse. Bitte versuchen Sie es erneut.'
+            error: `Fehler: ${error.message}`
         }, { status: 500 });
     }
 }
