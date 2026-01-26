@@ -105,6 +105,7 @@ model Organization {
   redirectScanJobs        RedirectScanJob[]
   redirectActionLogs      RedirectActionLog[]
   suppliers               Supplier[]
+  storefrontVisits        StorefrontVisit[]
 }
 
 model BrokenLink {
