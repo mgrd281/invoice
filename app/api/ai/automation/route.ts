@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth-options'
 import { openaiClient } from '@/lib/openai-client'
 import { ShopifyAPI } from '@/lib/shopify-api'
