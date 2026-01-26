@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { auth } from '@/lib/auth'
 import { subHours } from 'date-fns'
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
+        const session = await auth()
         if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        // @ts-ignore
-        const organizationId = session.user.organizationId
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email! },
+            select: { organizationId: true }
+        });
+
+        const organizationId = user?.organizationId
         const whereClause = organizationId ? { organizationId } : {}
 
         const now = new Date()
@@ -23,18 +26,13 @@ export async function GET(request: NextRequest) {
             totalBlockedIps,
             totalBlockedEmails
         ] = await Promise.all([
-            // Active threats: recent failed attempts that are NOT yet blocked? 
-            // Or maybe blocked user attempts in last hour.
-            // Let's count BlockedIp + BlockedUser entries for "Total Active Constraints"
-            // But "Active Threats" implies ongoing attack. Let's use Failed Attempts in last 1h.
             prisma.blockedUserAttempt.count({
                 where: {
                     ...whereClause,
                     createdAt: { gte: subHours(now, 1) },
-                    blocked: false // Failed but not yet blocked? Or just failed attempts.
+                    blocked: false
                 }
             }),
-            // Blocked Today (Attempts that were blocked)
             prisma.blockedUserAttempt.count({
                 where: {
                     ...whereClause,
@@ -42,7 +40,6 @@ export async function GET(request: NextRequest) {
                     blocked: true
                 }
             }),
-            // Failed Logins 24h
             prisma.blockedUserAttempt.count({
                 where: {
                     ...whereClause,
@@ -54,8 +51,6 @@ export async function GET(request: NextRequest) {
             prisma.blockedUser.count({ where: whereClause })
         ])
 
-        // Calculate Risk Level based on failed logins in last 1h
-        // Simple logic: > 50 = High, > 10 = Medium, else Low
         let riskLevel = 'Low'
         if (activeThreats > 50) riskLevel = 'High'
         else if (activeThreats > 10) riskLevel = 'Medium'

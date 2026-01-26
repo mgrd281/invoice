@@ -9,10 +9,6 @@
     const baseOrigin = scriptSrc ? new URL(scriptSrc).origin : '';
     const TRACKER_ENDPOINT = baseOrigin ? `${baseOrigin}/api/analytics/track` : '/api/analytics/track';
 
-    // Organization ID should be injected when this script is served, or fetched.
-    let organizationId = window.STORE_ORG_ID || document.currentScript?.getAttribute('data-org-id') || document.querySelector('meta[name="organization-id"]')?.content || '';
-    let isReturning = false;
-    let isInit = false;
 
     // Async Init Helper
     const initTracker = async () => {
