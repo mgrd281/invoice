@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import {
     Bot, Zap, Activity, TrendingUp, DollarSign,
     Plus, History, ShieldAlert, Play, Pause,
-    Settings2, ChevronRight, Sparkles, Brain, Layout,
-    CheckCircle, Search
+    Settings2, ChevronRight, Sparkles, Brain, Layout
 } from 'lucide-react'
 import { EnterpriseHeader } from '@/components/layout/enterprise-header'
 import { Badge } from '@/components/ui/badge'
@@ -193,7 +192,7 @@ function AIAutomationPage() {
                                         <div key={i} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                                    <CheckCircle className="w-5 h-5" />
+                                                    <StatusCheck className="w-5 h-5" />
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-black text-slate-900 uppercase">{log.event}: {log.detail}</p>
@@ -283,6 +282,9 @@ function AIAutomationPage() {
         </div>
     )
 }
+
+const StatusCheck = ({ className }: { className?: string }) => <Zap className={className} />
+const NodeSearch = ({ className }: { className?: string }) => <Bot className={className} />
 
 export default function Page() {
     return (
