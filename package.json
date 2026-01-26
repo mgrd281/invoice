@@ -59,9 +59,10 @@
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
-    "lucide-react": "^0.294.0",
+    "lucide-react": "^0.563.0",
+
     "next": "^16.0.10",
-    "next-auth": "^4.24.11",
+    "next-auth": "^5.0.0-beta.30",
     "nodemailer": "^6.10.1",
     "oauth-1.0a": "^2.2.6",
     "openai": "^6.10.0",

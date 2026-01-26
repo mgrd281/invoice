@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth/next'
+import { auth } from '@/lib/auth'
 import { NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
@@ -20,7 +20,7 @@ export interface AuthResult {
 export async function getServerAuth(request?: NextRequest): Promise<AuthResult> {
   try {
     // Try NextAuth session first
-    const session = await getServerSession()
+    const session = await auth()
 
     if (session?.user?.email) {
       // Convert NextAuth session to our User format

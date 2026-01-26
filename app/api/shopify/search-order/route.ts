@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyAPI, convertShopifyOrderToInvoice } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma'
 import { ensureOrganization, ensureCustomer, ensureTaxRate, ensureDefaultTemplate } from '@/lib/db-operations'
 import { Prisma } from '@prisma/client'
@@ -12,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
     try {
         // Check authentication
-        const session = await getServerSession(authOptions)
+        const session = await auth()
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
