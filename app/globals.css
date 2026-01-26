@@ -59,6 +59,86 @@
   }
 }
 
+/* Mobile-only overrides (Max width 768px matches Tailwind md breakpoint) */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  /* Force word break to prevent overflow from long text */
+  * {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Optimize typography for mobile (16px base prevents iOS zoom) */
+  html, body, input, select, textarea, button {
+    font-size: 16px;
+  }
+
+  /* Thumb-friendly inputs */
+  input, select, textarea, button {
+    min-height: 44px; /* Touch target size */
+  }
+
+  /* Containers max width */
+  .container, .w-full {
+    max-width: 100vw !important;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Convert Tables to Cards (CSS-only transformation) */
+  /* Target standard shadcn/tailwind tables */
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  /* Hide table headers (but not display:none for accessibility) */
+  thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  tr {
+    margin-bottom: 12px;
+    background: white;
+    border: 1px solidhsl(var(--border));
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 12px;
+  }
+
+  td {
+    /* Behave like a "row" */
+    border: none;
+    position: relative;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+  }
+  
+  /* Fallback for td content alignment if flex breaks complex content */
+  td > * {
+    text-align: left;
+  }
+
+  /* Adjust Charts container */
+  .recharts-wrapper {
+    width: 100% !important;
+    overflow-x: auto;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
