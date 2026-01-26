@@ -33,7 +33,14 @@ export function GlobalHeader({ sectionMeta, statusElement, actionElement }: Glob
     const iconColor = sectionMeta.color || '#64748B'
 
     return (
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8 pb-6 border-b border-slate-200">
+        <div className="
+            flex flex-col sm:flex-row sm:items-start sm:justify-between 
+            gap-4 mb-8 pb-6 border-b border-slate-200
+            /* Mobile Sticky Header Overrides */
+            sticky top-0 z-50 bg-white/95 backdrop-blur-sm 
+            pt-[env(safe-area-inset-top)] 
+            max-sm:mb-4 max-sm:pb-4 max-sm:-mx-4 max-sm:px-4 max-sm:shadow-sm
+        ">
             {/* Left Column: Navigation + Section Info */}
             <div className="flex items-start gap-4">
                 {/* Navigation Buttons */}

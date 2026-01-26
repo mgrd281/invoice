@@ -21,6 +21,18 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Rechnungs-Generator',
   description: 'Professionelle deutsche Rechnungserstellung aus Shopify-Bestellungen',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Rechnungen',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false, // Prevent zoom on mobile for native app feel
+  },
 }
 
 import { ToastProvider } from '@/components/ui/toast'
