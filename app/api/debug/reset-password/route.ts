@@ -22,11 +22,18 @@ export async function GET(req: NextRequest) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const user = await prisma.user.update({
+        const user = await prisma.user.upsert({
             where: { email },
-            data: {
+            update: {
                 passwordHash: hashedPassword,
-                password: hashedPassword // Update both if schema uses legacy field
+                password: hashedPassword
+            },
+            create: {
+                email,
+                passwordHash: hashedPassword,
+                password: hashedPassword,
+                name: 'Admin',
+                role: 'ADMIN' // Ensure role is set
             }
         });
 
