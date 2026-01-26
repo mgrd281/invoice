@@ -186,32 +186,43 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Ensure Visitor exists
-        const visitor = await prisma.visitor.upsert({
-            where: { visitorToken },
-            update: {
-                userAgent: ua,
-                ipHash,
-                country: country || undefined,
-                browserVersion: browserVersion || undefined,
-                osVersion: osVersion || undefined,
-                ipv4: ipv4 || undefined,
-                ipv6: ipv6 || undefined,
-            },
-            create: {
-                visitorToken,
-                organizationId,
-                ipHash,
-                userAgent: ua,
-                deviceType: deviceInfo.device.toLowerCase(),
-                os: deviceInfo.os,
-                browser: deviceInfo.browser,
-                country: country || undefined,
-                browserVersion: browserVersion || undefined,
-                osVersion: osVersion || undefined,
-                ipv4: ipv4 || undefined,
-                ipv6: ipv6 || undefined,
+        // 1. Ensure Visitor exists
+        let visitor;
+        try {
+            visitor = await prisma.visitor.upsert({
+                where: { visitorToken },
+                update: {
+                    userAgent: ua,
+                    ipHash,
+                    country: country || undefined,
+                    browserVersion: browserVersion || undefined,
+                    osVersion: osVersion || undefined,
+                    ipv4: ipv4 || undefined,
+                    ipv6: ipv6 || undefined,
+                },
+                create: {
+                    visitorToken,
+                    organizationId,
+                    ipHash,
+                    userAgent: ua,
+                    deviceType: deviceInfo.device.toLowerCase(),
+                    os: deviceInfo.os,
+                    browser: deviceInfo.browser,
+                    country: country || undefined,
+                    browserVersion: browserVersion || undefined,
+                    osVersion: osVersion || undefined,
+                    ipv4: ipv4 || undefined,
+                    ipv6: ipv6 || undefined,
+                }
+            });
+        } catch (error: any) {
+            // Handle Foreign Key Constraint Violation (Invalid Organization ID)
+            if (error.code === 'P2003') {
+                console.warn(`[Analytics] Invalid Organization ID: ${organizationId}`);
+                return NextResponse.json({ error: 'Invalid Organization ID' }, { status: 400 });
             }
-        });
+            throw error;
+        }
 
         // 2. Ensure Session exists
         // 2. Ensure Session exists & Handle Cart Diff
