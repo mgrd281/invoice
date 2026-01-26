@@ -25,13 +25,11 @@ export async function GET(req: NextRequest) {
         const user = await prisma.user.upsert({
             where: { email },
             update: {
-                passwordHash: hashedPassword,
-                password: hashedPassword
+                passwordHash: hashedPassword
             },
             create: {
                 email,
                 passwordHash: hashedPassword,
-                password: hashedPassword,
                 name: 'Admin',
                 role: 'ADMIN' // Ensure role is set
             }
