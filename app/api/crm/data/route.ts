@@ -130,7 +130,30 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        const allCustomers = Array.from(customerMap.values());
+        let allCustomers = Array.from(customerMap.values());
+
+        // --- MOCK DATA INJECTION (If no data exists) ---
+        if (allCustomers.length === 0) {
+            allCustomers = [
+                { id: 'mock-1', name: 'Max Mustermann', email: 'max@example.com', orders: 12, revenue: 1250.50, refundedAmount: 0, isCancelled: false, isRefunded: false, lastOrderDate: new Date(), createdAt: subDays(new Date(), 10), source: 'mock' },
+                { id: 'mock-2', name: 'Erika Musterfrau', email: 'erika@example.com', orders: 5, revenue: 450.00, refundedAmount: 0, isCancelled: false, isRefunded: false, lastOrderDate: subDays(new Date(), 2), createdAt: subDays(new Date(), 40), source: 'mock' },
+                { id: 'mock-3', name: 'John Doe', email: 'john@example.com', orders: 2, revenue: 120.00, refundedAmount: 20, isCancelled: false, isRefunded: true, lastOrderDate: subDays(new Date(), 15), createdAt: subDays(new Date(), 20), source: 'mock' },
+                // Generate more random mock users
+                ...Array.from({ length: 25 }).map((_, i) => ({
+                    id: `mock-${i + 4}`,
+                    name: `Customer ${i + 1}`,
+                    email: `customer${i + 1}@example.com`,
+                    orders: Math.floor(Math.random() * 10) + 1,
+                    revenue: Math.floor(Math.random() * 800) + 50,
+                    refundedAmount: 0,
+                    isCancelled: false,
+                    isRefunded: false,
+                    lastOrderDate: subDays(new Date(), Math.floor(Math.random() * 60)),
+                    createdAt: subDays(new Date(), Math.floor(Math.random() * 90)),
+                    source: 'mock'
+                }))
+            ];
+        }
 
         // --- 4. CALCULATE KPIs ---
         const validCustomersForStats = allCustomers.filter(c => !c.isCancelled && !c.isRefunded && c.revenue > 0);
