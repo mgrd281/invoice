@@ -101,6 +101,50 @@ model Organization {
   reviewSources           ReviewSource[]
   importDrafts            ImportDraft[]
   securitySettings        SecuritySettings?
+  brokenLinks             BrokenLink[]
+  redirectScanJobs        RedirectScanJob[]
+  redirectActionLogs      RedirectActionLog[]
+}
+
+model BrokenLink {
+  id             String       @id @default(uuid())
+  organizationId String
+  url            String
+  referrer       String?
+  hits           Int          @default(1)
+  firstSeen      DateTime     @default(now())
+  lastSeen       DateTime     @default(now())
+  resolved       Boolean      @default(false)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, url])
+  @@index([organizationId, lastSeen])
+}
+
+model RedirectScanJob {
+  id             String       @id @default(uuid())
+  organizationId String
+  status         String       @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  totalUrls      Int          @default(0)
+  processedUrls  Int          @default(0)
+  found404s      Int          @default(0)
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  finishedAt     DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model RedirectActionLog {
+  id             String       @id @default(uuid())
+  organizationId String
+  type           String       @default("SINGLE") // SINGLE, BULK, AUTO, CSV
+  details        Json
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
 }
 
 model ReviewSource {

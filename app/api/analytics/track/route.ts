@@ -591,6 +591,28 @@ export async function POST(req: NextRequest) {
             });
         }
 
+        if (event === '404') {
+            await prisma.brokenLink.upsert({
+                where: {
+                    organizationId_url: {
+                        organizationId,
+                        url: path || url
+                    }
+                },
+                update: {
+                    hits: { increment: 1 },
+                    lastSeen: new Date(),
+                    referrer: referrer || undefined
+                },
+                create: {
+                    organizationId,
+                    url: path || url,
+                    referrer,
+                    hits: 1
+                }
+            });
+        }
+
         if (event === 'session_ended') {
             const today = new Date();
             today.setHours(0, 0, 0, 0);

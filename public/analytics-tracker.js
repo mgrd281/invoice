@@ -708,9 +708,29 @@
         } catch (e) { return null; }
     };
 
+    // Proactive 404 Detection
+    const detect404 = () => {
+        const is404Title = document.title.toLowerCase().includes('404') ||
+            document.title.toLowerCase().includes('not found') ||
+            document.title.toLowerCase().includes('nicht gefunden');
+
+        const isShopify404 = window.Shopify?.template === '404' ||
+            window.meta?.page?.pageType === '404';
+
+        if (is404Title || isShopify404) {
+            console.log('[Analytics] 404 Page Detected');
+            track('404', {
+                url: window.location.href,
+                path: window.location.pathname,
+                referrer: document.referrer
+            });
+        }
+    };
+
     // Initial Tracking Pipeline
     if (window._isNewSession) track('session_start');
     track('page_view');
+    detect404();
     loadRRWeb();
 
     // Heartbeat every 5 seconds (High Frequency for Stability)

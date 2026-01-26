@@ -12,7 +12,8 @@ import {
     Settings,
     LogOut,
     MapPin,
-    Bot
+    Bot,
+    RefreshCw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSession, signOut } from "next-auth/react"
@@ -65,6 +66,12 @@ const sidebarItems = [
         href: "/ai-automation",
         icon: Bot,
         matcher: (pathname: string) => pathname.startsWith("/ai-automation")
+    },
+    {
+        title: "404 & Weiterleitungen",
+        href: "/admin/redirects",
+        icon: RefreshCw,
+        matcher: (pathname: string) => pathname.startsWith("/admin/redirects")
     }
 ]
 
