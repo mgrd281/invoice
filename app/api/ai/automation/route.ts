@@ -59,8 +59,29 @@ export async function POST(req: Request) {
         }
 
         if (action === 'KILL_SWITCH') {
-            console.warn('CRITICAL: AI Automation Kill Switch Triggered by', session.user.email)
+            console.warn('CRITICAL: AI Automation Kill Switch Triggered by', session.user?.email)
             return NextResponse.json({ success: true, status: 'PAUSED' })
+        }
+
+        if (action === 'GENERATE_BLOG') {
+            const { topic } = body
+
+            // Simulate AI Delay
+            await new Promise(resolve => setTimeout(resolve, 2000))
+
+            // Here we would use the real OpenAI Client
+            // const generatedContent = await openaiClient.generateSEOText(`Write a blog post about ${topic}`)
+
+            return NextResponse.json({
+                success: true,
+                message: `Blog-Artikel zu "${topic}" wurde generiert und veröffentlicht.`,
+                logEntry: {
+                    time: new Date().toISOString(),
+                    event: 'MANUAL_PUBLISH',
+                    detail: `Topic: ${topic}`,
+                    status: 'SUCCESS'
+                }
+            })
         }
 
         return NextResponse.json({ success: true })

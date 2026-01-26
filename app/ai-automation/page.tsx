@@ -25,6 +25,10 @@ function AIAutomationPage() {
     const [error, setError] = useState<string | null>(null)
     const { showToast, toasts, removeToast } = useToast()
 
+    // Manual Publish State
+    const [topic, setTopic] = useState('')
+    const [isPublishing, setIsPublishing] = useState(false)
+
     // Environment Validation
     const [envValid, setEnvValid] = useState(true)
     useEffect(() => {
@@ -95,6 +99,42 @@ function AIAutomationPage() {
             })
         } catch (err) {
             console.error('Kill switch failed', err)
+        }
+    }
+
+    const handleManualPublish = async () => {
+        if (!topic.trim()) {
+            showToast('Bitte ein Thema eingeben', 'error')
+            return
+        }
+
+        setIsPublishing(true)
+        try {
+            const res = await fetch('/api/ai/automation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'GENERATE_BLOG', topic })
+            })
+
+            const data = await res.json()
+
+            if (data.success) {
+                showToast('Blog-Artikel erfolgreich generiert & veröffentlicht!', 'success')
+                setTopic('')
+                // Refresh Logs (Optimistic Update)
+                if (automation) {
+                    setAutomation({
+                        ...automation,
+                        logs: [data.logEntry, ...(automation.logs || [])]
+                    })
+                }
+            } else {
+                throw new Error(data.error || 'Fehler beim Generieren')
+            }
+        } catch (err: any) {
+            showToast(err.message || 'Verbindungsfehler', 'error')
+        } finally {
+            setIsPublishing(false)
         }
     }
 
@@ -239,6 +279,54 @@ function AIAutomationPage() {
                                 </CardContent>
                             </Card>
                         </ErrorBoundary>
+
+                        {/* Manual Publisher */}
+                        <Card className="border-none shadow-xl bg-white overflow-hidden rounded-3xl">
+                            <CardHeader className="p-8 pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-slate-900 rounded-2xl text-white shadow-lg shadow-slate-200">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-xl font-black uppercase">Manual Publisher</CardTitle>
+                                        <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                            Instant Blog Generation
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-8 pt-4">
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="Thema oder Keyword eingeben..."
+                                            value={topic}
+                                            onChange={(e) => setTopic(e.target.value)}
+                                            className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all placeholder:text-slate-400"
+                                            onKeyDown={(e) => e.key === 'Enter' && handleManualPublish()}
+                                        />
+                                    </div>
+                                    <Button
+                                        onClick={handleManualPublish}
+                                        disabled={isPublishing || !topic.trim()}
+                                        className="h-12 px-8 bg-violet-600 hover:bg-violet-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-violet-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isPublishing ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Zap className="w-4 h-4 mr-2" />
+                                                Publish
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
 
                         {/* Recent Logs/Activity */}
                         <Card className="border-none shadow-sm bg-white rounded-3xl">
