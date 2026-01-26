@@ -219,9 +219,7 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     template = getDefaultTemplate()
   }
 
-  // Apply template styling and settings (using default colors since styling was removed)
-  const primaryColor = hexToRgb('#2563eb') // Default blue
-  const secondaryColor = hexToRgb('#64748b') // Default gray
+
 
   // Use template bank details if available, otherwise fallback to company settings
   const bankDetails = template.bankDetails || {
