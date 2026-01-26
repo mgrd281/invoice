@@ -1,609 +1,297 @@
 'use client'
 
-import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
-import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useSafeNavigation } from '@/hooks/use-safe-navigation'
 import { useState, useEffect, Suspense } from 'react'
-import { BackButton } from '@/components/navigation/back-button'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Plus, ArrowLeft, Home, Mail, Phone, Edit, Search, X, Trash2, AlertTriangle, CheckSquare, Square, User, Filter, ArrowUpDown, MoreHorizontal, Tag } from 'lucide-react'
+import {
+  Users, Plus, Search, X, Trash2, User, Filter,
+  ArrowUpDown, MoreHorizontal, Download, Tag
+} from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/layout/page-header'
+
+// New Hub Components
+import { CustomerKPIs } from '@/components/customers/customer-kpis'
+import { CustomerAnalytics } from '@/components/customers/customer-analytics'
+import { CustomerSegments } from '@/components/customers/customer-segments'
+import { Customer360Drawer } from '@/components/customers/customer-360-drawer'
+import { CustomerEmptyState } from '@/components/customers/customer-empty-state'
 
 function CustomersPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { navigate } = useSafeNavigation()
   const [customers, setCustomers] = useState<any[]>([])
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
-  const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [activeSegment, setActiveSegment] = useState('all')
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set())
-  const [selectAll, setSelectAll] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
 
-  // New States for Sorting and Filtering
-  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({
-    key: searchParams.get('sort') || 'createdAt',
-    direction: (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
-  })
-  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || 'ALL')
-
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{
-    isOpen: boolean
-    customer: any | null
-    isDeleting: boolean
-  }>({
-    isOpen: false,
-    customer: null,
-    isDeleting: false
-  })
-  const [bulkDeleteConfirmation, setBulkDeleteConfirmation] = useState<{
-    isOpen: boolean
-    isDeleting: boolean
-  }>({
-    isOpen: false,
-    isDeleting: false
-  })
   const { showToast, ToastContainer } = useToast()
   const { user, isAuthenticated } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
 
-  // Load customers on component mount and when user changes
   useEffect(() => {
-    loadCustomers()
+    loadData()
   }, [isAuthenticated, user])
 
-  // Update selectAll state when selection changes
-  useEffect(() => {
-    const displayed = getProcessedCustomers()
-    if (displayed.length > 0) {
-      const allSelected = displayed.every(c => selectedCustomers.has(c.id))
-      setSelectAll(allSelected)
-    } else {
-      setSelectAll(false)
-    }
-  }, [selectedCustomers, customers, searchResults, showSearchResults, sortConfig, filterStatus])
-
-  // Load all customers
-  const loadCustomers = async () => {
+  const loadData = async () => {
     if (!isAuthenticated || !user) return
-
     try {
       const response = await authenticatedFetch('/api/customers')
       const data = await response.json()
-
       if (data.success) {
         setCustomers(data.customers)
-      } else {
-        setCustomers([])
+        setAnalytics(data.analytics)
       }
     } catch (error) {
       console.error('Error loading customers:', error)
-      setCustomers([])
-    }
-  }
-
-  // Search customers
-  const searchCustomers = async (query: string) => {
-    if (!query.trim()) {
-      setShowSearchResults(false)
-      return
-    }
-
-    setIsSearching(true)
-    const searchTerms = query.split(/[,;|\n\r\t]+/).map(term => term.trim()).filter(term => term.length > 0)
-
-    try {
-      const allResults = new Map()
-      for (const term of searchTerms) {
-        const response = await fetch(`/api/customers/search?q=${encodeURIComponent(term)}`)
-        const data = await response.json()
-        if (data.success && data.customers) {
-          data.customers.forEach((customer: any) => {
-            const key = customer.email?.toLowerCase() || customer.id
-            if (!allResults.has(key)) allResults.set(key, customer)
-          })
-        }
-      }
-      setSearchResults(Array.from(allResults.values()))
-      setShowSearchResults(true)
-    } catch (error) {
-      console.error('Error searching customers:', error)
-      setSearchResults([])
-      setShowSearchResults(true)
     } finally {
-      setIsSearching(false)
+      setLoading(false)
     }
   }
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery) searchCustomers(searchQuery)
-      else setShowSearchResults(false)
-    }, 300)
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery])
+  const filteredCustomers = customers.filter(c => {
+    const matchesSearch = !searchQuery ||
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.tags?.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase()))
 
-  const clearSearch = () => {
-    setSearchQuery('')
-    setShowSearchResults(false)
-    setSearchResults([])
+    // Segment filtering logic
+    if (activeSegment === 'vip') return matchesSearch && (c.status === 'VIP' || c.ltv > 500)
+    if (activeSegment === 'new') return matchesSearch && c.status === 'NEW'
+    if (activeSegment === 'inactive') return matchesSearch && c.status === 'INACTIVE'
+
+    return matchesSearch
+  })
+
+  const handleRowClick = (customer: any) => {
+    setSelectedCustomer(customer)
+    setDrawerOpen(true)
   }
 
-  // Sorting and Filtering Logic
-  const getProcessedCustomers = () => {
-    let processed = showSearchResults ? searchResults : customers
-
-    // Filter by Status
-    if (filterStatus !== 'ALL') {
-      processed = processed.filter(c => c.status === filterStatus)
-    }
-
-    // Sort
-    return [...processed].sort((a, b) => {
-      let aValue = a[sortConfig.key]
-      let bValue = b[sortConfig.key]
-
-      // Handle special cases
-      if (sortConfig.key === 'ltv' || sortConfig.key === 'orderCount') {
-        aValue = Number(aValue || 0)
-        bValue = Number(bValue || 0)
-      } else if (sortConfig.key === 'lastPurchase') {
-        aValue = aValue ? new Date(aValue).getTime() : 0
-        bValue = bValue ? new Date(bValue).getTime() : 0
-      } else if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase()
-        bValue = bValue?.toLowerCase() || ''
-      }
-
-      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
-      return 0
-    })
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 min-h-screen bg-[#F8FAFC]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    )
   }
 
-  // Handle Back Button and URL Sync
-  useEffect(() => {
-    const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || 'ALL'
-    const sort = searchParams.get('sort') || 'createdAt'
-    const dir = (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
-
-    if (searchQuery !== search) setSearchQuery(search)
-    if (filterStatus !== status) setFilterStatus(status)
-    if (sortConfig.key !== sort || sortConfig.direction !== dir) {
-      setSortConfig({ key: sort, direction: dir })
-    }
-  }, [searchParams])
-
-  // Sync state to URL
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (searchQuery) params.set('search', searchQuery)
-    if (filterStatus && filterStatus !== 'ALL') params.set('status', filterStatus)
-    if (sortConfig.key !== 'createdAt') params.set('sort', sortConfig.key)
-    if (sortConfig.direction !== 'desc') params.set('dir', sortConfig.direction)
-
-    const newUrl = `${window.location.pathname}?${params.toString()}`
-    const currentUrl = `${window.location.pathname}${window.location.search}`
-
-    if (currentUrl !== newUrl) {
-      // For status/sort changes, use push. For typing search, use replace.
-      const isMajorChange = params.get('status') !== searchParams.get('status') || params.get('sort') !== searchParams.get('sort')
-
-      if (isMajorChange) {
-        router.push(newUrl, { scroll: false })
-      } else {
-        router.replace(newUrl, { scroll: false })
-      }
-    }
-  }, [searchQuery, filterStatus, sortConfig, router, searchParams])
-
-  const displayedCustomers = getProcessedCustomers()
-
-  // Delete Handlers
-  const handleDeleteCustomer = (customer: any) => {
-    setDeleteConfirmation({ isOpen: true, customer, isDeleting: false })
-  }
-
-  const confirmDeleteCustomer = async () => {
-    const { customer } = deleteConfirmation
-    if (!customer || !user) return
-    setDeleteConfirmation(prev => ({ ...prev, isDeleting: true }))
-    try {
-      const response = await authenticatedFetch(`/api/customers?id=${customer.id}`, { method: 'DELETE' })
-      const data = await response.json()
-      if (data.success) {
-        showToast(`Kunde "${customer.name}" gelöscht`, 'success')
-        setCustomers(prev => prev.filter(c => c.id !== customer.id))
-        if (showSearchResults) setSearchResults(prev => prev.filter(c => c.id !== customer.id))
-        setDeleteConfirmation({ isOpen: false, customer: null, isDeleting: false })
-      } else {
-        throw new Error(data.error)
-      }
-    } catch (error) {
-      showToast('Fehler beim Löschen', 'error')
-    } finally {
-      setDeleteConfirmation(prev => ({ ...prev, isDeleting: false }))
-    }
-  }
-
-  const handleBulkDelete = () => {
-    if (selectedCustomers.size === 0) return
-    setBulkDeleteConfirmation({ isOpen: true, isDeleting: false })
-  }
-
-  const confirmBulkDelete = async () => {
-    if (selectedCustomers.size === 0 || !user) return
-    setBulkDeleteConfirmation(prev => ({ ...prev, isDeleting: true }))
-    try {
-      const customerIds = Array.from(selectedCustomers)
-      let successCount = 0
-      for (const id of customerIds) {
-        const response = await authenticatedFetch(`/api/customers?id=${id}`, { method: 'DELETE' })
-        const data = await response.json()
-        if (data.success) successCount++
-      }
-      if (successCount > 0) {
-        setCustomers(prev => prev.filter(c => !selectedCustomers.has(c.id)))
-        if (showSearchResults) setSearchResults(prev => prev.filter(c => !selectedCustomers.has(c.id)))
-        showToast(`${successCount} Kunden gelöscht`, 'success')
-        setSelectedCustomers(new Set())
-        setSelectAll(false)
-      }
-      setBulkDeleteConfirmation({ isOpen: false, isDeleting: false })
-    } catch (error) {
-      showToast('Fehler bei Massenlöschung', 'error')
-      setBulkDeleteConfirmation(prev => ({ ...prev, isDeleting: false }))
-    }
-  }
-
-  const toggleCustomerSelection = (id: string) => {
-    setSelectedCustomers(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(id)) newSet.delete(id)
-      else newSet.add(id)
-      return newSet
-    })
-  }
-
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      setSelectedCustomers(new Set())
-      setSelectAll(false)
-    } else {
-      setSelectedCustomers(new Set(displayedCustomers.map(c => c.id)))
-      setSelectAll(true)
-    }
-  }
-
-  // Helper for Status Badge
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">Aktiv</Badge>
-      case 'INACTIVE': return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-200">Inaktiv</Badge>
-      case 'VIP': return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200">VIP</Badge>
-      case 'NEW': return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200">Neu</Badge>
-      default: return <Badge variant="outline">Unbekannt</Badge>
-    }
-  }
+  const actions = (
+    <div className="flex items-center gap-3">
+      {selectedCustomers.size > 0 && (
+        <div className="flex items-center bg-slate-100 rounded-lg p-1 animate-in fade-in zoom-in duration-200">
+          <Button variant="ghost" size="sm" className="h-8 text-[11px] font-black uppercase text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Trash2 className="w-3.5 h-3.5 mr-2" /> Löschen ({selectedCustomers.size})
+          </Button>
+          <Separator orientation="vertical" className="h-4 mx-1" />
+          <Button variant="ghost" size="sm" className="h-8 text-[11px] font-black uppercase text-slate-600">
+            <Tag className="w-3.5 h-3.5 mr-2" /> Tagging
+          </Button>
+        </div>
+      )}
+      <Button variant="outline" size="sm" className="h-10 px-4 font-black text-xs uppercase tracking-widest border-slate-200">
+        <Download className="w-4 h-4 mr-2" /> Export CSV
+      </Button>
+      <Button
+        onClick={() => router.push('/customers/new')}
+        className="h-10 px-6 font-black text-xs uppercase tracking-widest bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-200"
+      >
+        <Plus className="w-4 h-4 mr-2" /> Neuer Kunde
+      </Button>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-30 backdrop-blur-xl bg-white/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-4">
-              <HeaderNavIcons />
-              <div className="ml-1">
-                <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  Kunden
-                  <Badge variant="secondary" className="rounded-full px-2.5">{customers.length}</Badge>
-                </h1>
-                <p className="text-sm text-gray-500">Verwalten Sie Ihre Kundenbeziehungen</p>
+    <div className="space-y-8 pb-20 bg-[#F8FAFC] min-h-screen animate-in fade-in duration-500">
+      <PageHeader
+        title="Customer Intelligence Hub"
+        subtitle="CRM-analytik und Kundenwert-Optimierung in Echtzeit."
+        actions={actions}
+      />
+
+      {customers.length === 0 ? (
+        <CustomerEmptyState />
+      ) : (
+        <>
+          {/* Zone A: Analysis KPIs */}
+          <CustomerKPIs analytics={{ ...analytics, total: customers.length }} />
+
+          {/* Zone B: Growth Analytics */}
+          <CustomerAnalytics />
+
+          {/* Zone C: Smart Segments */}
+          <CustomerSegments
+            segments={analytics?.segments}
+            activeSegment={activeSegment}
+            onSegmentChange={setActiveSegment}
+          />
+
+          {/* Zone D: The Enterprise Table */}
+          <Card className="border-none shadow-sm overflow-hidden bg-white rounded-2xl">
+            <div className="p-4 border-b border-slate-50 flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Suche nach Name, E-Mail oder Tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2 text-sm font-medium focus:ring-2 focus:ring-slate-900 transition-all"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select defaultValue="all">
+                  <SelectTrigger className="w-[140px] h-9 text-[11px] font-black uppercase tracking-tight bg-slate-50 border-none">
+                    <Filter className="w-3.5 h-3.5 mr-2" /> Status
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Status</SelectItem>
+                    <SelectItem value="active">Aktiv</SelectItem>
+                    <SelectItem value="vip">VIP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select defaultValue="ltv-desc">
+                  <SelectTrigger className="w-[160px] h-9 text-[11px] font-black uppercase tracking-tight bg-slate-50 border-none">
+                    <ArrowUpDown className="w-3.5 h-3.5 mr-2" /> Sortieren
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ltv-desc">Höchster LTV</SelectItem>
+                    <SelectItem value="date-desc">Neueste Kunden</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="flex space-x-2">
-              {selectedCustomers.size > 0 && (
-                <Button variant="destructive" onClick={handleBulkDelete} size="sm">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Löschen ({selectedCustomers.size})
-                </Button>
-              )}
-              <Link href="/customers/new">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Neuer Kunde
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="shadow-sm border-none bg-white">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Gesamt Kunden</p>
-                  <h3 className="text-2xl font-bold mt-2">{customers.length}</h3>
-                </div>
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-none bg-white">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Aktive Kunden</p>
-                  <h3 className="text-2xl font-bold mt-2 text-green-600">
-                    {customers.filter(c => c.status === 'ACTIVE' || !c.status).length}
-                  </h3>
-                </div>
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <User className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-none bg-white">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">VIP Kunden</p>
-                  <h3 className="text-2xl font-bold mt-2 text-purple-600">
-                    {customers.filter(c => c.status === 'VIP').length}
-                  </h3>
-                </div>
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <Users className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-none bg-white">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Ø Umsatz (LTV)</p>
-                  <h3 className="text-2xl font-bold mt-2 text-indigo-600">
-                    {customers.length > 0
-                      ? `€${(customers.reduce((sum, c) => sum + (c.ltv || 0), 0) / customers.length).toFixed(2)}`
-                      : '€0.00'}
-                  </h3>
-                </div>
-                <div className="p-2 bg-indigo-50 rounded-lg">
-                  <Users className="h-5 w-5 text-indigo-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl shadow-sm border">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Suchen nach Name, E-Mail, Tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            />
-            {searchQuery && (
-              <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[150px]">
-                <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Alle Status</SelectItem>
-                <SelectItem value="ACTIVE">Aktiv</SelectItem>
-                <SelectItem value="NEW">Neu</SelectItem>
-                <SelectItem value="VIP">VIP</SelectItem>
-                <SelectItem value="INACTIVE">Inaktiv</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={`${sortConfig.key}-${sortConfig.direction}`} onValueChange={(val) => {
-              const [key, direction] = val.split('-')
-              setSortConfig({ key, direction: direction as 'asc' | 'desc' })
-            }}>
-              <SelectTrigger className="w-[180px]">
-                <ArrowUpDown className="h-4 w-4 mr-2 text-gray-500" />
-                <SelectValue placeholder="Sortieren" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt-desc">Neueste zuerst</SelectItem>
-                <SelectItem value="createdAt-asc">Älteste zuerst</SelectItem>
-                <SelectItem value="ltv-desc">Höchster Umsatz</SelectItem>
-                <SelectItem value="orderCount-desc">Meiste Bestellungen</SelectItem>
-                <SelectItem value="lastPurchase-desc">Letzter Kauf</SelectItem>
-                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Table */}
-        <Card className="shadow-sm border-none overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="p-0 h-6 w-6">
-                      {selectAll ? <CheckSquare className="h-4 w-4 text-blue-600" /> : <Square className="h-4 w-4 text-gray-400" />}
-                    </Button>
-                  </TableHead>
-                  <TableHead>Kunde</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead className="text-right">Bestellungen</TableHead>
-                  <TableHead className="text-right">LTV (Umsatz)</TableHead>
-                  <TableHead className="text-right">Letzter Kauf</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayedCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-gray-500">
-                      Keine Kunden gefunden
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="border-none">
+                    <TableHead className="w-10">
+                      <input type="checkbox" className="rounded border-slate-300" />
+                    </TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Kunde</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tags</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Orders</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">LTV</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Letzter Kauf</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
-                ) : (
-                  displayedCustomers.map((customer) => (
-                    <TableRow key={customer.id} className="hover:bg-gray-50/50 transition-colors">
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => toggleCustomerSelection(customer.id)} className="p-0 h-6 w-6">
-                          {selectedCustomers.has(customer.id) ? <CheckSquare className="h-4 w-4 text-blue-600" /> : <Square className="h-4 w-4 text-gray-400" />}
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {filteredCustomers.map((customer) => (
+                    <TableRow
+                      key={customer.id}
+                      onClick={() => handleRowClick(customer)}
+                      className="group cursor-pointer hover:bg-slate-50/50 transition-colors border-slate-50"
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-300"
+                          checked={selectedCustomers.has(customer.id)}
+                          onChange={() => {
+                            const newSet = new Set(selectedCustomers)
+                            if (newSet.has(customer.id)) newSet.delete(customer.id)
+                            else newSet.add(customer.id)
+                            setSelectedCustomers(newSet)
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col">
-                          <Link href={`/customers/${customer.id}`} className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                            {customer.name}
-                          </Link>
-                          <span className="text-xs text-gray-500">{customer.email}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-black text-xs text-slate-500 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                            {customer.name?.charAt(0)}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-slate-900">{customer.name}</span>
+                            <span className="text-[10px] font-bold text-slate-400">{customer.email}</span>
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(customer.status)}</TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {customer.tags && customer.tags.length > 0 ? (
-                            customer.tags.slice(0, 2).map((tag: string, i: number) => (
-                              <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-                                {tag}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
-                          {customer.tags && customer.tags.length > 2 && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">+{customer.tags.length - 2}</Badge>
-                          )}
+                        <Badge className={`
+                                                text-[9px] font-black uppercase px-2 h-5 border-none
+                                                ${customer.status === 'VIP' ? 'bg-violet-100 text-violet-600' : 'bg-emerald-100 text-emerald-600'}
+                                            `}>
+                          {customer.status || 'AKTIV'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {customer.tags?.slice(0, 2).map((t: string) => (
+                            <Badge key={t} variant="secondary" className="text-[9px] font-bold h-5 uppercase tracking-tighter">
+                              {t}
+                            </Badge>
+                          ))}
+                          {customer.tags?.length > 2 && <span className="text-[9px] font-bold text-slate-300">+{customer.tags.length - 2}</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium">{customer.orderCount || 0}</TableCell>
-                      <TableCell className="text-right font-medium text-gray-900">
-                        €{(customer.ltv || 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right text-gray-500 text-sm">
-                        {customer.lastPurchase ? new Date(customer.lastPurchase).toLocaleDateString('de-DE') : '-'}
+                      <TableCell className="text-right text-xs font-black">{customer.orderCount || 0}</TableCell>
+                      <TableCell className="text-right text-xs font-black text-slate-900">€{customer.ltv?.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-[10px] font-bold text-slate-400">
+                        {customer.lastPurchase ? new Date(customer.lastPurchase).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                            <Link href={`/customers/${customer.id}`}>
-                              <DropdownMenuItem>
-                                <User className="h-4 w-4 mr-2" /> Profil ansehen
-                              </DropdownMenuItem>
-                            </Link>
-                            <Link href={`/customers/${customer.id}/edit`}>
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" /> Bearbeiten
-                              </DropdownMenuItem>
-                            </Link>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => handleRowClick(customer)}>
+                              <User className="w-4 h-4 mr-2" /> Einsehen
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Tag className="w-4 h-4 mr-2" /> Tag hinzufügen
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteCustomer(customer)}>
-                              <Trash2 className="h-4 w-4 mr-2" /> Löschen
+                            <DropdownMenuItem className="text-red-600">
+                              <Trash2 className="w-4 h-4 mr-2" /> Löschen
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </main>
-
-      {/* Delete Dialogs */}
-      {deleteConfirmation.isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <h3 className="text-lg font-bold mb-2">Kunde löschen?</h3>
-            <p className="text-gray-600 mb-6">
-              Möchten Sie <b>{deleteConfirmation.customer?.name}</b> wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setDeleteConfirmation({ isOpen: false, customer: null, isDeleting: false })}>
-                Abbrechen
-              </Button>
-              <Button variant="destructive" onClick={confirmDeleteCustomer} disabled={deleteConfirmation.isDeleting}>
-                {deleteConfirmation.isDeleting ? 'Löscht...' : 'Löschen'}
-              </Button>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        </div>
+          </Card>
+        </>
       )}
 
-      {bulkDeleteConfirmation.isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <h3 className="text-lg font-bold mb-2">Massenlöschung</h3>
-            <p className="text-gray-600 mb-6">
-              Möchten Sie <b>{selectedCustomers.size} Kunden</b> wirklich löschen?
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setBulkDeleteConfirmation({ isOpen: false, isDeleting: false })}>
-                Abbrechen
-              </Button>
-              <Button variant="destructive" onClick={confirmBulkDelete} disabled={bulkDeleteConfirmation.isDeleting}>
-                {bulkDeleteConfirmation.isDeleting ? 'Löscht...' : 'Alle löschen'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <Customer360Drawer
+        customer={selectedCustomer}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      />
       <ToastContainer />
     </div>
   )
 }
 
+function Separator({ orientation, className }: any) {
+  return <div className={`bg-slate-200 ${orientation === 'vertical' ? 'w-px h-full' : 'h-px w-full'} ${className}`} />
+}
+
 export default function CustomersPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Lade Kunden...</p>
-        </div>
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     }>
       <CustomersPageContent />
