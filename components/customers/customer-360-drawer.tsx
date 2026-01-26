@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -27,10 +27,14 @@ type ProfileTab = 'overview' | 'orders' | 'contact' | 'tags' | 'ai';
 
 export function Customer360Drawer({ customer, open, onOpenChange }: any) {
     const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
-    const [tags, setTags] = useState<string[]>(customer.tags || []);
+    const [tags, setTags] = useState<string[]>(customer?.tags || []);
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [newTag, setNewTag] = useState('');
+
+    useEffect(() => {
+        setTags(customer?.tags || []);
+    }, [customer?.tags, customer?.id]);
 
     if (!customer) return null
 
