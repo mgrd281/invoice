@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import {
     Mail, Phone, MapPin, Tag as TagIcon, Sparkles,
     ShoppingCart, MousePointer2, Brain, History,
-    TrendingUp, ExternalLink, ArrowRight, UserMinus, ShieldCheck, Package, X
+    TrendingUp, ExternalLink, ArrowRight, UserMinus, ShieldCheck, Package, X,
+    Copy, Plus, Search, MessageSquare, Calendar, MoreHorizontal, Filter,
+    CreditCard, CheckCircle2, AlertCircle, Clock, ChevronRight, Users
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -16,219 +18,505 @@ import {
 } from 'recharts'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { toast } from 'sonner'
 
-type ProfileTab = 'overview' | 'orders' | 'behavior' | 'ai';
+type ProfileTab = 'overview' | 'orders' | 'contact' | 'tags' | 'ai';
 
 export function Customer360Drawer({ customer, open, onOpenChange }: any) {
     const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
+    const [tags, setTags] = useState<string[]>(customer.tags || []);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [newTag, setNewTag] = useState('');
+
     if (!customer) return null
+
+    const handleCopy = (text: string, label: string) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        toast.success(`${label} kopiert`);
+    }
+
+    const handleUpdateField = async (field: string, value: any) => {
+        setIsLoading(true);
+        try {
+            const res = await fetch(`/api/customers/${customer.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ [field]: value })
+            });
+            if (res.ok) {
+                toast.success('Änderung gespeichert');
+            } else {
+                toast.error('Fehler beim Speichern');
+            }
+        } catch (e) {
+            toast.error('Netzwerkfehler');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    const handleAddTag = () => {
+        if (!newTag.trim()) return;
+        if (tags.includes(newTag.trim())) {
+            toast.error('Tag existiert bereits');
+            return;
+        }
+        const updatedTags = [...tags, newTag.trim()];
+        setTags(updatedTags);
+        handleUpdateField('tags', updatedTags);
+        setNewTag('');
+    }
+
+    const handleRemoveTag = (tagToRemove: string) => {
+        const updatedTags = tags.filter(t => t !== tagToRemove);
+        setTags(updatedTags);
+        handleUpdateField('tags', updatedTags);
+    }
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:w-[850px] border-l-0 p-0 overflow-hidden flex flex-col bg-white">
-                {/* Header Section - Premium Dark */}
-                <div className="bg-slate-900 text-white p-10 flex-shrink-0 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-10 opacity-5">
-                        <Users className="w-64 h-64 text-white" />
-                    </div>
-
-                    <div className="flex justify-between items-start mb-8 relative z-10">
-                        <div className="flex gap-6 items-center">
-                            <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center text-3xl font-black border border-white/10 shadow-2xl uppercase italic">
-                                {customer.name?.charAt(0)}
-                            </div>
-                            <div>
-                                <h2 className="text-3xl font-black uppercase tracking-tight italic">{customer.name}</h2>
-                                <div className="flex flex-col gap-1 mt-2">
-                                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
-                                        <Mail className="w-3.5 h-3.5" /> {customer.email || 'Keine E-Mail'}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <Badge className={cn("border-none text-[9px] font-black uppercase tracking-widest px-3 h-6",
-                                            customer.segment === 'VIP' ? 'bg-amber-100 text-amber-600' :
-                                                customer.segment === 'Neukunde' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
-                                        )}>{customer.segment}</Badge>
-                                        {customer.isRefunded && <Badge className="bg-red-500/20 text-red-400 border-none text-[9px] font-black uppercase px-3 h-6">Rückerstattung</Badge>}
-                                        {customer.isCancelled && <Badge className="bg-amber-500/20 text-amber-400 border-none text-[9px] font-black uppercase px-3 h-6">Storniert</Badge>}
-                                    </div>
+            <SheetContent className="w-full sm:max-w-[480px] p-0 overflow-hidden flex flex-col bg-slate-50 border-none shadow-2xl">
+                {/* STICKY HEADER AREA */}
+                <div className="bg-white border-b sticky top-0 z-30 flex-shrink-0">
+                    {/* Header Top: Info + Avatar */}
+                    <div className="p-6 pb-4">
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="flex gap-4 items-center min-w-0">
+                                <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-xl font-bold text-slate-900 border border-slate-200 uppercase flex-shrink-0">
+                                    {customer.name?.charAt(0)}
+                                </div>
+                                <div className="min-w-0">
+                                    <h2 className="text-xl font-black text-slate-900 truncate tracking-tight pr-4">
+                                        {customer.name}
+                                    </h2>
+                                    <p className="text-xs font-medium text-slate-500 truncate mt-0.5">
+                                        {customer.email || 'Keine E-Mail'}
+                                    </p>
                                 </div>
                             </div>
+                            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-xl -mt-2 -mr-2">
+                                <X className="w-5 h-5 text-slate-400" />
+                            </Button>
                         </div>
-                        <div className="text-right">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Kundenwert (Netto)</p>
-                            <h3 className="text-3xl font-black text-emerald-400">
-                                {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(customer.revenue)}
-                            </h3>
+
+                        {/* Status Badges */}
+                        <div className="flex flex-wrap gap-2 mb-6">
+                            <Badge variant="secondary" className={cn(
+                                "text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-none",
+                                customer.segment === 'VIP' ? 'bg-amber-100 text-amber-700' :
+                                    customer.segment === 'Neukunde' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                            )}>
+                                {customer.segment || 'Kunde'}
+                            </Badge>
+                            {customer.source === 'shopify' && (
+                                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-none">
+                                    Shopify
+                                </Badge>
+                            )}
+                            {customer.isRefunded && <Badge className="bg-red-50 text-red-700 text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-none">Rückerstattung</Badge>}
+                        </div>
+
+                        {/* Quick Actions Row */}
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" className="h-9 px-3 rounded-lg border-slate-200 text-xs font-bold gap-2 flex-1 shadow-sm">
+                                <Mail className="w-3.5 h-3.5" /> E-Mail
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-9 px-3 rounded-lg border-slate-200 text-xs font-bold gap-2 flex-1 shadow-sm">
+                                <ShoppingCart className="w-3.5 h-3.5" /> Bestellungen
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-9 px-3 rounded-lg border-slate-200 text-xs font-bold gap-2 flex-1 shadow-sm">
+                                <MessageSquare className="w-3.5 h-3.5" /> Notiz
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-9 px-2 rounded-lg border-slate-200 text-xs font-bold shadow-sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                            </Button>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl w-fit relative z-10">
-                        {[
-                            { id: 'overview', label: 'Übersicht', icon: History },
-                            { id: 'orders', label: 'Bestellungen', icon: ShoppingCart },
-                            { id: 'behavior', label: 'Verhalten', icon: MousePointer2 },
-                            { id: 'ai', label: 'KI-Prognose', icon: Brain }
-                        ].map((t) => (
-                            <button
-                                key={t.id}
-                                onClick={() => setActiveTab(t.id as any)}
-                                className={cn(
-                                    "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    activeTab === t.id ? "bg-white text-slate-900 shadow-xl" : "text-slate-400 hover:text-white hover:bg-white/5"
-                                )}
-                            >
-                                <t.icon className="w-3.5 h-3.5" />
-                                {t.label}
-                            </button>
-                        ))}
+                    {/* STICKY TABS */}
+                    <div className="px-2">
+                        <ScrollArea className="w-full">
+                            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v as ProfileTab)} className="w-full">
+                                <TabsList className="bg-transparent h-12 w-full justify-start gap-1 p-0 px-4">
+                                    {[
+                                        { id: 'overview', label: 'Übersicht' },
+                                        { id: 'orders', label: 'Bestellungen' },
+                                        { id: 'contact', label: 'Kontakt' },
+                                        { id: 'tags', label: 'Segmente & Tags' },
+                                        { id: 'ai', label: 'KI-Insights' },
+                                    ].map((tab) => (
+                                        <TabsTrigger
+                                            key={tab.id}
+                                            value={tab.id}
+                                            className={cn(
+                                                "h-12 bg-transparent text-slate-400 font-bold text-[11px] uppercase tracking-wider px-4 border-b-2 border-transparent transition-all data-[state=active]:border-slate-900 data-[state=active]:text-slate-900 rounded-none",
+                                            )}
+                                        >
+                                            {tab.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        </ScrollArea>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-10 space-y-12 pb-32 scrollbar-hide">
-                    {activeTab === 'overview' && (
-                        <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-3 gap-6">
-                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                    <p className="text-[9px] font-black uppercase text-slate-400 mb-1">Gültige Käufe</p>
-                                    <p className="text-2xl font-black">{customer.orders}</p>
-                                </div>
-                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                    <p className="text-[9px] font-black uppercase text-slate-400 mb-1">Rückerstattet</p>
-                                    <p className="text-2xl font-black text-red-500">€{customer.refundedAmount?.toFixed(2) || '0,00'}</p>
-                                </div>
-                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                    <p className="text-[9px] font-black uppercase text-slate-400 mb-1">Kunden seit</p>
-                                    <p className="text-xl font-black">{customer.createdAt ? format(new Date(customer.createdAt), 'MMMM yyyy', { locale: de }) : 'Unbekannt'}</p>
-                                </div>
-                            </div>
-
-                            {/* Identity Grid */}
-                            <div className="grid grid-cols-2 gap-10">
-                                <div className="space-y-6">
-                                    <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 italic">
-                                        <MapPin className="w-4 h-4 text-blue-600" /> Kontakt- & Adressdaten
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <div className="flex items-start gap-4 p-6 bg-slate-50 rounded-[2rem] border border-slate-100/50">
-                                            <div className="text-xs font-bold leading-relaxed text-slate-700">
-                                                <p className="font-black text-slate-900 mb-1">Hausanschrift</p>
-                                                {customer.address || 'Keine Adresse hinterlegt'}<br />
-                                                {customer.zipCode} {customer.city}<br />
-                                                {customer.country || 'Deutschland'}
-                                            </div>
-                                        </div>
+                {/* SCROLLABLE CONTENT AREA */}
+                <ScrollArea className="flex-1">
+                    <div className="p-6 pb-32 space-y-8">
+                        {activeTab === 'overview' && (
+                            <div className="space-y-8 animate-in fade-in duration-300">
+                                {/* KPI Grid */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
+                                        <p className="text-[10px] font-bold uppercase text-slate-400 mb-1 tracking-wider">Gültige Käufe</p>
+                                        <p className="text-2xl font-black text-slate-900">{customer.orders}</p>
+                                    </div>
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
+                                        <p className="text-[10px] font-bold uppercase text-slate-400 mb-1 tracking-wider">Umsatz (Netto)</p>
+                                        <p className="text-2xl font-black text-emerald-600">
+                                            {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(customer.revenue)}
+                                        </p>
+                                    </div>
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
+                                        <p className="text-[10px] font-bold uppercase text-slate-400 mb-1 tracking-wider">Rückerstattet</p>
+                                        <p className="text-2xl font-black text-red-500">€{customer.refundedAmount?.toFixed(2) || '0,00'}</p>
+                                    </div>
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
+                                        <p className="text-[10px] font-bold uppercase text-slate-400 mb-1 tracking-wider">Kunde seit</p>
+                                        <p className="text-lg font-black text-slate-900 leading-tight">
+                                            {customer.createdAt ? format(new Date(customer.createdAt), 'MMM yyyy', { locale: de }) : 'Unbekannt'}
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="space-y-6">
-                                    <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 italic">
-                                        <TagIcon className="w-4 h-4 text-violet-600" /> CRM Segmente & Tags
+
+                                {/* Activity Timeline Mini-Block */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-slate-400" /> Letzte Aktivität
                                     </h3>
-                                    <div className="space-y-4">
-                                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100/50">
+                                    <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm divide-y">
+                                        {customer.lastOrderDate ? (
+                                            <div className="p-4 flex items-center justify-between">
+                                                <div className="flex gap-3 items-center">
+                                                    <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                                                        <Package className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-bold text-slate-900">Letzte Bestellung</p>
+                                                        <p className="text-[10px] text-slate-400">{format(new Date(customer.lastOrderDate), 'dd. MMM yyyy HH:mm', { locale: de })}</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-slate-300" />
+                                            </div>
+                                        ) : (
+                                            <div className="p-8 text-center text-xs font-medium text-slate-400">
+                                                Keine Aktivitäten verzeichnet
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'orders' && (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                        <ShoppingCart className="w-4 h-4 text-slate-400" /> Letzte 10 Bestellungen
+                                    </h3>
+                                    <div className="flex gap-1">
+                                        <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-black uppercase tracking-widest bg-slate-900 text-white rounded-lg">Alle</Button>
+                                        <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-100 rounded-lg">Gültig</Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {(customer.invoices && customer.invoices.length > 0) ? (
+                                        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden divide-y">
+                                            {customer.invoices.slice(0, 10).map((inv: any) => (
+                                                <div key={inv.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <span className="text-xs font-black text-slate-900">#{inv.invoiceNumber}</span>
+                                                            <Badge className={cn(
+                                                                "border-none text-[8px] font-black uppercase px-2 h-4 rounded-md",
+                                                                inv.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' :
+                                                                    inv.status === 'CANCELLED' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                                                            )}>
+                                                                {inv.status === 'PAID' ? 'Bezahlt' : inv.status === 'CANCELLED' ? 'Storniert' : 'Offen'}
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                            {format(new Date(inv.issueDate), 'dd. MMMM yyyy', { locale: de })}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-black text-slate-900">
+                                                            {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(Number(inv.totalGross))}
+                                                        </p>
+                                                        <ArrowRight className="w-4 h-4 text-slate-300 mt-1 inline-block" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
+                                            <ShoppingCart className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                                            <p className="text-xs font-bold text-slate-400 uppercase italic">Keine Bestellungen gefunden</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'contact' && (
+                            <div className="space-y-8 animate-in fade-in duration-300">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 text-blue-600">
+                                        <MapPin className="w-4 h-4" /> Kontakt- & Adressdaten
+                                    </h3>
+                                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)} className="h-8 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-200/50">
+                                        {isEditing ? 'Abbrechen' : 'Bearbeiten'}
+                                    </Button>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
+                                    <div className="grid gap-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between group">
+                                                <div className="flex-1 mr-4">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">E-Mail Adresse</p>
+                                                    {isEditing ? (
+                                                        <input
+                                                            type="email"
+                                                            defaultValue={customer.email}
+                                                            onBlur={(e) => handleUpdateField('email', e.target.value)}
+                                                            className="w-full h-8 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold"
+                                                        />
+                                                    ) : (
+                                                        <p className="text-xs font-bold text-slate-900">{customer.email || 'Nicht angegeben'}</p>
+                                                    )}
+                                                </div>
+                                                {!isEditing && (
+                                                    <Button variant="ghost" size="icon" onClick={() => handleCopy(customer.email, 'E-Mail')} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <Separator className="bg-slate-50" />
+                                            <div className="flex items-center justify-between group">
+                                                <div className="flex-1 mr-4">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Telefonnummer</p>
+                                                    {isEditing ? (
+                                                        <input
+                                                            type="tel"
+                                                            defaultValue={customer.phone}
+                                                            onBlur={(e) => handleUpdateField('phone', e.target.value)}
+                                                            className="w-full h-8 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold"
+                                                        />
+                                                    ) : (
+                                                        <p className="text-xs font-bold text-slate-900">{customer.phone || 'Nicht angegeben'}</p>
+                                                    )}
+                                                </div>
+                                                {!isEditing && (
+                                                    <Button variant="ghost" size="icon" onClick={() => handleCopy(customer.phone, 'Telefon')} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Hausanschrift</p>
+                                            {isEditing ? (
+                                                <div className="space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Straße & Hausnummer"
+                                                        defaultValue={customer.address}
+                                                        onBlur={(e) => handleUpdateField('address', e.target.value)}
+                                                        className="w-full h-9 bg-slate-50 border border-slate-200 rounded-lg px-3 text-xs font-bold"
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="PLZ"
+                                                            defaultValue={customer.zipCode}
+                                                            onBlur={(e) => handleUpdateField('zipCode', e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-lg h-9 px-3 text-xs font-bold"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Stadt"
+                                                            defaultValue={customer.city}
+                                                            onBlur={(e) => handleUpdateField('city', e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-lg h-9 px-3 text-xs font-bold"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 group relative">
+                                                    <div className="text-xs font-bold leading-relaxed text-slate-700">
+                                                        {customer.address ? (
+                                                            <>
+                                                                <p className="text-slate-900">{customer.address}</p>
+                                                                <p>{customer.zipCode} {customer.city}</p>
+                                                                <p>{customer.country || 'Deutschland'}</p>
+                                                            </>
+                                                        ) : (
+                                                            <p className="text-slate-400 italic">Keine Adresse hinterlegt</p>
+                                                        )}
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleCopy(`${customer.address}, ${customer.zipCode} ${customer.city}`, 'Adresse')} className="h-8 w-8 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {isEditing && (
+                                        <Button
+                                            onClick={() => {
+                                                setIsEditing(false);
+                                                toast.success('Modus beendet');
+                                            }}
+                                            className="w-full h-11 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-lg shadow-slate-200"
+                                        >
+                                            Fertig
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'tags' && (
+                            <div className="space-y-8 animate-in fade-in duration-300">
+                                <div>
+                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 text-indigo-600 mb-6">
+                                        <TagIcon className="w-4 h-4" /> Segmente & Tags
+                                    </h3>
+
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-8">
+                                        <div className="space-y-4">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aktive Tags</p>
                                             <div className="flex flex-wrap gap-2">
-                                                <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 text-[9px] font-bold h-7 px-3 uppercase">{customer.source === 'shopify' ? 'Shopify Kunde' : 'Direktkunde'}</Badge>
-                                                <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 text-[9px] font-bold h-7 px-3 uppercase">{customer.segment}</Badge>
+                                                {(tags && tags.length > 0) ? tags.map((tag: string) => (
+                                                    <Badge key={tag} className="bg-indigo-50 text-indigo-600 border-none text-[9px] font-black uppercase px-2.5 h-7 rounded-lg gap-1.5 flex items-center group">
+                                                        {tag}
+                                                        <X
+                                                            className="w-3 h-3 cursor-pointer hover:text-indigo-800"
+                                                            onClick={() => handleRemoveTag(tag)}
+                                                        />
+                                                    </Badge>
+                                                )) : (
+                                                    <p className="text-[10px] font-medium text-slate-400 italic uppercase">Keine Tags zugewiesen</p>
+                                                )}
                                             </div>
-                                            <p className="text-[10px] font-bold text-slate-300 uppercase mt-4">Kunden-ID: {customer.id}</p>
+
+                                            <div className="pt-2 flex gap-2">
+                                                <div className="relative flex-1">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Tag hinzufügen..."
+                                                        className="w-full h-9 pl-9 pr-4 bg-slate-50 border-none rounded-lg text-xs font-bold focus:ring-1 focus:ring-indigo-200 transition-all"
+                                                        value={newTag}
+                                                        onChange={(e) => setNewTag(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                                                    />
+                                                </div>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={handleAddTag}
+                                                    className="h-9 px-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                                                >
+                                                    Hinzufügen
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <Separator className="bg-slate-50" />
+
+                                        <div className="space-y-4">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Segment-Mitgliedschaft</p>
+                                            <div className="flex gap-2">
+                                                <Badge className="bg-slate-100 text-slate-600 border-none text-[9px] font-black uppercase px-2.5 h-7 rounded-lg">
+                                                    {customer.segment}
+                                                </Badge>
+                                                <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 rounded-lg">Segment zuweisen</Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'orders' && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 italic">
-                                <History className="w-4 h-4 text-blue-600" /> Transaktionshistorie
-                            </h3>
-                            <div className="space-y-4">
-                                {customer.orders > 0 ? (
-                                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group cursor-pointer hover:border-blue-200 transition-all">
-                                        <div className="flex items-center gap-5">
-                                            <div className="w-14 h-14 bg-white rounded-2xl border border-slate-100 flex items-center justify-center shadow-sm">
-                                                <Package className="w-6 h-6 text-slate-900" />
+                        {activeTab === 'ai' && (
+                            <div className="space-y-8 animate-in fade-in duration-300">
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 text-violet-600">
+                                    <Sparkles className="w-4 h-4" /> KI-Insights & Empfehlungen
+                                </h3>
+
+                                <div className="space-y-4">
+                                    <div className="p-5 bg-gradient-to-br from-indigo-50 to-violet-50 border border-violet-100 rounded-[2rem] space-y-4 shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                                <TrendingUp className="w-5 h-5 text-indigo-600" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-black uppercase italic tracking-tight text-slate-900">Letzte Bestellung</p>
-                                                <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                                                    {customer.lastOrderDate ? format(new Date(customer.lastOrderDate), 'dd. MMMM yyyy', { locale: de }) : 'Datum unbekannt'}
-                                                </p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Upsell-Potenzial</p>
+                                                <p className="text-xs font-black text-slate-900 italic">Smarte Empfehlung</p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-lg font-black text-slate-900">
-                                                {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(customer.revenue)}
-                                            </p>
-                                            <Badge className="bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase border-none h-6 px-3 mt-1">Erfolgreich bezahlt</Badge>
+                                        <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic">
+                                            "Kunde zeigt hohes Interesse an Kategorie 'Digital'. Empfohlenes Upsell: Produkt 'Professional Pack'."
+                                        </p>
+                                    </div>
+
+                                    <div className="p-5 bg-white border border-slate-200/60 rounded-[2rem] space-y-4 shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-red-50 rounded-xl shadow-sm flex items-center justify-center text-red-500">
+                                                <AlertCircle className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Risiko-ANALYSE</p>
+                                                <p className="text-xs font-black text-slate-900 italic">Abwanderungs-Gefahr</p>
+                                            </div>
                                         </div>
+                                        <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic">
+                                            "Seit 45 Tagen inaktiv. Sende Re-Engagement E-Mail mit 10% Rabattcode."
+                                        </p>
                                     </div>
-                                ) : (
-                                    <div className="text-center p-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                                        <ShoppingCart className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                                        <p className="text-sm font-black uppercase text-slate-400 italic">Keine validen Bestellungen gefunden</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
-                    {activeTab === 'behavior' && (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <div className="grid grid-cols-2 gap-8">
-                                <Card className="p-8 bg-slate-900 text-white border-none rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                                    <MousePointer2 className="w-10 h-10 text-blue-400 mb-6" />
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Besuchsverhalten</h4>
-                                    <p className="text-4xl font-black">24</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-6 italic tracking-widest">Seitenaufrufe (Letzte 30T)</p>
-                                </Card>
-                                <Card className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
-                                    <ShoppingCart className="w-10 h-10 text-slate-900 mb-6" />
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Warenkorb-Abbrüche</h4>
-                                    <p className="text-4xl font-black">2</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-6 italic tracking-widest">Nicht abgeschlossene Käufe</p>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'ai' && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <div className="p-10 bg-gradient-to-br from-violet-600 to-indigo-900 text-white rounded-[3rem] shadow-2xl relative overflow-hidden group">
-                                <Sparkles className="absolute top-10 right-10 w-24 h-24 text-white/5" />
-                                <div className="z-10 relative">
-                                    <Badge className="bg-white/10 text-white border-white/20 text-[9px] font-black uppercase tracking-widest mb-8">KI-Analysesystem</Badge>
-                                    <h4 className="text-2xl font-black uppercase tracking-tight mb-4 italic">Kaufwahrscheinlichkeit: {customer.revenue > 300 ? 'Sehr Hoch' : 'Hoch'}</h4>
-                                    <p className="text-sm text-indigo-100/80 leading-relaxed mb-10 max-w-sm">
-                                        Die KI empfiehlt eine persönliche Nachricht mit einem Treuerabatt, da der Kunde typischerweise alle 45 Tage bestellt.
-                                    </p>
-                                    <Button className="w-full h-14 bg-white text-indigo-900 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] transition-all">
-                                        Persönlichen Deal generieren
+                                    <Button className="w-full h-12 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] transition-all italic shadow-xl shadow-slate-200 mt-4">
+                                        Vollständigen KI-Bericht anzeigen
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                </ScrollArea>
 
-                {/* Fixed Footer Actions */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 border-t bg-white/80 backdrop-blur-md flex items-center justify-between gap-6 z-50">
-                    <div className="flex gap-4 flex-1">
-                        <Button variant="outline" className="h-14 flex-1 rounded-2xl border-slate-200 font-black text-[11px] uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all">
-                            E-Mail senden
+                {/* Fixed Footer Bar */}
+                <div className="p-6 bg-white border-t sticky bottom-0 z-30 shadow-[0_-4px_20px_-8px_rgba(0,0,0,0.1)]">
+                    <div className="flex gap-4">
+                        <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 w-12 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors flex-shrink-0 border border-slate-100">
+                            <ArrowRight className="w-5 h-5" />
                         </Button>
-                        <Button className="h-14 flex-1 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-200 transition-all italic">
-                            KI-Empfehlung nutzen
+                        <Button className="h-12 flex-1 rounded-xl bg-slate-900 text-white font-black text-[12px] uppercase tracking-widest hover:scale-[1.01] active:scale-95 transition-all shadow-xl shadow-slate-200">
+                            Kundendaten speichern
                         </Button>
                     </div>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-14 w-14 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors">
-                        <X className="w-6 h-6" />
-                    </Button>
                 </div>
             </SheetContent>
         </Sheet>
     )
 }
 
-import { Users } from 'lucide-react'
