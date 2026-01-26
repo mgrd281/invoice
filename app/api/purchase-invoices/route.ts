@@ -97,6 +97,9 @@ export async function POST(req: NextRequest) {
                 category: body.category || 'General',
                 notes: body.notes || '',
                 fileUrl: body.fileUrl || null,
+                documentId: body.documentId || null,
+                ocrData: body.ocrData || null,
+                confidence: body.confidence !== undefined ? parseFloat(body.confidence) : null,
                 status: body.status || 'PENDING',
                 organization: {
                     connect: { id: orgId }

@@ -1174,24 +1174,26 @@ model StorefrontVisit {
 model PurchaseInvoice {
   id              String                @id @default(uuid())
   organizationId  String
-  supplierName    String
-  invoiceNumber   String
-  invoiceDate     DateTime
+  supplierId      String?
+  supplierName    String?
+  invoiceNumber   String?
+  invoiceDate     DateTime?
   dueDate         DateTime?
-  paymentDate     DateTime?
   netAmount       Float
   taxAmount       Float
   grossAmount     Float
   currency        String                @default("EUR")
-  category        String?
-  status          PurchaseInvoiceStatus @default(PENDING)
+  status          String                @default("DRAFT") // DRAFT, PENDING, PAID, OVERDUE, CANCELLED
+  paymentStatus   String                @default("UNPAID")
   fileUrl         String?
-  mimeType        String?
-  notes           String?
-  productImportId String?
+  documentId      String?               @unique // For OCR tracking
+  ocrData         Json?                 // Original extracted AI data
+  confidence      Float?                // AI confidence score
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
-  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization          @relation(fields: [organizationId], references: [id])
+  supplier        Supplier?             @relation(fields: [supplierId], references: [id])
+  items           PurchaseInvoiceItem[]
 
   @@index([organizationId])
   @@index([status])

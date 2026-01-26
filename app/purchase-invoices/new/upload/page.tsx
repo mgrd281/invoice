@@ -54,65 +54,65 @@ export default function PurchaseInvoiceUploadPage() {
         }
     }, [])
 
+    const validateFile = (file: File): boolean => {
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png']
+        if (!allowedTypes.includes(file.type)) {
+            toast.error("Ungültiger Dateityp. Bitte nur PDF, JPG oder PNG hochladen.")
+            return false
+        }
+        if (file.size > 20 * 1024 * 1024) {
+            toast.error("Datei zu groß. Das Maximum beträgt 20MB.")
+            return false
+        }
+        return true
+    }
+
     const startUpload = async () => {
         if (!file) return
+        if (!validateFile(file)) return
 
         setUploadStep('uploading')
-        setProgress(10)
+        setProgress(15)
 
         try {
-            // 1. Upload file to server storage
-            const uploadFormData = new FormData()
-            uploadFormData.append('file', file)
-            uploadFormData.append('type', 'purchase-invoice')
+            // Send file to OCR endpoint
+            const formData = new FormData()
+            formData.append('file', file)
 
-            const uploadRes = await authenticatedFetch('/api/upload', {
+            const response = await authenticatedFetch('/api/ocr/purchase-invoice', {
                 method: 'POST',
-                body: uploadFormData
+                body: formData
             })
 
-            if (!uploadRes.ok) throw new Error('Upload fehlgeschlagen')
-            const uploadData = await uploadRes.json()
-            const fileUrl = uploadData.url
-
-            setProgress(40)
+            setProgress(60)
             setUploadStep('analyzing')
 
-            // 2. Run AI OCR Analysis
-            const ocrFormData = new FormData()
-            ocrFormData.append('file', file)
+            const result = await response.json()
 
-            const ocrRes = await authenticatedFetch('/api/ocr/analyze', {
-                method: 'POST',
-                body: ocrFormData
-            })
-
-            if (!ocrRes.ok) throw new Error('OCR Analyse fehlgeschlagen')
-            const ocrResult = await ocrRes.json()
+            if (!response.ok || !result.ok) {
+                throw new Error(result.error || 'Fehler bei der OCR Analyse')
+            }
 
             setProgress(100)
             setUploadStep('complete')
 
-            if (ocrResult.success) {
-                toast.success("Beleg erfolgreich analysiert!")
+            toast.success("Beleg erfolgreich analysiert!")
 
-                // Add the file URL to the OCR results
-                const finalData = {
-                    ...ocrResult.data,
-                    fileUrl
-                }
-
-                // Redirect to manual edit page with extracted data
-                const encodedData = encodeURIComponent(JSON.stringify(finalData))
-                router.push(`/purchase-invoices/new/manual?ocrData=${encodedData}`)
-            } else {
-                toast.warning("Analyse unvollständig. Bitte Daten manuell prüfen.")
-                router.push(`/purchase-invoices/new/manual?from=upload&fileUrl=${encodeURIComponent(fileUrl)}`)
+            // Redirect to manual edit page with extracted data
+            const ocrData = {
+                ...result.data.extracted,
+                documentId: result.data.documentId,
+                // We'll pass a temporary blob URL or handle file upload separately if needed, 
+                // but for now, let's keep the user's flow.
+                fileName: file.name
             }
 
+            const encodedData = encodeURIComponent(JSON.stringify(ocrData))
+            router.push(`/purchase-invoices/new/manual?ocrData=${encodedData}`)
+
         } catch (error: any) {
-            console.error('OCR/Upload Error:', error)
-            toast.error(error.message || "Fehler bei der Analyse.")
+            console.error('OCR Upload Error:', error)
+            toast.error(error.message || "Upload fehlgeschlagen")
             setUploadStep('idle')
             setProgress(0)
         }

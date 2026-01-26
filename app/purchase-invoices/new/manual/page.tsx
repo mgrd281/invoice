@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
@@ -49,25 +50,44 @@ function ManualFormContent() {
         fileUrl: ''
     })
 
+    const [ocrMetadata, setOcrMetadata] = useState<{
+        documentId?: string,
+        ocrData?: any,
+        confidence?: number
+    }>({})
+
+    const [isAiRecognized, setIsAiRecognized] = useState(false)
+
     // Pre-fill from OCR data if available
     useEffect(() => {
         const ocrDataStr = searchParams.get('ocrData')
         if (ocrDataStr) {
             try {
-                const ocrData = JSON.parse(decodeURIComponent(ocrDataStr))
+                const ocrResult = JSON.parse(decodeURIComponent(ocrDataStr))
+
+                // Set metadata for saving later
+                setOcrMetadata({
+                    documentId: ocrResult.documentId,
+                    ocrData: ocrResult,
+                    confidence: ocrResult.confidence
+                })
+
+                setIsAiRecognized(true)
+
                 setFormData(prev => ({
                     ...prev,
-                    supplierName: ocrData.supplier || '',
-                    invoiceNumber: ocrData.invoiceNumber || '',
-                    invoiceDate: ocrData.date ? ocrData.date.split('T')[0] : prev.invoiceDate,
-                    grossAmount: ocrData.totalAmount?.toString() || '',
-                    notes: `AI-Extraktion: ${ocrData.description || ''}`,
-                    fileUrl: ocrData.fileUrl || ''
+                    supplierName: ocrResult.supplierName || ocrResult.supplier || '',
+                    invoiceNumber: ocrResult.invoiceNumber || '',
+                    invoiceDate: ocrResult.invoiceDate || (ocrResult.date ? ocrResult.date.split('T')[0] : prev.invoiceDate),
+                    dueDate: ocrResult.dueDate || '',
+                    grossAmount: (ocrResult.gross || ocrResult.totalAmount || '').toString(),
+                    netAmount: (ocrResult.net || '').toString(),
+                    notes: prev.notes || (ocrResult.description ? `AI-Extraktion: ${ocrResult.description}` : ''),
+                    fileUrl: ocrResult.fileUrl || prev.fileUrl
                 }))
 
-                // Recalculate net if gross is provided
-                if (ocrData.totalAmount) {
-                    const gross = parseFloat(ocrData.totalAmount)
+                if (ocrResult.gross && !ocrResult.net) {
+                    const gross = parseFloat(ocrResult.gross)
                     const net = (gross / 1.19).toFixed(2)
                     setFormData(prev => ({ ...prev, netAmount: net }))
                 }
@@ -120,7 +140,11 @@ function ManualFormContent() {
                     status: formData.status,
                     category: formData.category,
                     notes: formData.notes,
-                    fileUrl: formData.fileUrl
+                    fileUrl: formData.fileUrl,
+                    // Save OCR metadata
+                    documentId: ocrMetadata.documentId,
+                    ocrData: ocrMetadata.ocrData,
+                    confidence: ocrMetadata.confidence
                 })
             })
 
@@ -151,9 +175,16 @@ function ManualFormContent() {
                     <div className="mx-1" />
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Beleg erfassen</h1>
-                        <p className="text-sm text-slate-500">Geben Sie die Rechnungsdaten ein oder verifizieren Sie die AI-Ergebnisse</p>
+                        <p className="text-sm text-slate-500">Geben Sie die Rechnungsdaten ein أو verifizieren Sie die AI-Ergebnisse</p>
                     </div>
                 </div>
+
+                {isAiRecognized && (
+                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1.5 px-3 py-1.5">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="font-semibold">Automatisch erkannt (KI). Bitte prüfen.</span>
+                    </Badge>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
