@@ -309,17 +309,13 @@ export function InvoicePreviewDialog({ open, onOpenChange, data, design, onDesig
                                         onClick={() => setSelectedColor(color)}
                                     />
                                 ))}
-                                <div className="relative">
-                                    <div
-                                        className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 cursor-pointer border-2 border-transparent hover:scale-105"
-                                        onClick={() => document.getElementById('custom-color-picker')?.click()}
-                                    />
+                                <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 border-2 border-transparent hover:scale-105 overflow-hidden">
                                     <input
                                         type="color"
-                                        id="custom-color-picker"
                                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-none"
                                         value={selectedColor}
                                         onChange={(e) => setSelectedColor(e.target.value)}
+                                        style={{ width: '200%', height: '200%', margin: '-50%' }} // Ensure it covers fully across browsers
                                     />
                                 </div>
                             </div>

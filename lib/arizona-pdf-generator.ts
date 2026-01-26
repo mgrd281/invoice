@@ -108,6 +108,18 @@ function hexToRgb(hex: string): [number, number, number] {
   ] : [76, 130, 106] // Default KARNEX Green
 }
 
+/**
+ * Handle 3-digit and 6-digit hex codes
+ */
+function normalizeHex(hex: string): [number, number, number] {
+  let c: any = hex.substring(1).split('');
+  if (c.length === 3) {
+    c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+  }
+  c = '0x' + c.join('');
+  return [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+}
+
 // ========================================
 // STAMP & WATERMARK FUNCTIONS
 // ========================================
@@ -210,7 +222,15 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
   // Branding Logic
   const primaryColorHex = invoice.primaryColor || '#4c826a' // Default KARINEX Green
-  const primaryColorRGB: [number, number, number] = hexToRgb(primaryColorHex)
+  let primaryColorRGB: [number, number, number];
+  try {
+    primaryColorRGB = hexToRgb(primaryColorHex);
+    if (primaryColorHex.length === 4) { // Handle #RGB shorthand
+      primaryColorRGB = normalizeHex(primaryColorHex);
+    }
+  } catch (e) {
+    primaryColorRGB = [76, 130, 106];
+  }
   const logoScale = invoice.logoSize ? invoice.logoSize / 100 : 1.0
 
   // ========================================
@@ -290,11 +310,20 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
       ['Lieferdatum', new Date(invoice.dueDate || invoice.date).toLocaleDateString('de-DE')]
     ]
     info.forEach((row, i) => {
+      if (row[0] === 'Kunden-Nr.' && !invoice.showSettings?.customerNumber) return;
+
       doc.setFont('helvetica', 'bold')
       doc.text(row[0], boxX + 5, boxY + 16 + (i * 5))
       doc.setFont('helvetica', 'normal')
       doc.text(String(row[1]), boxX + boxW - 5, boxY + 16 + (i * 5), { align: 'right' })
     })
+
+    // Contact Person (if enabled and set)
+    if (invoice.showSettings?.contactPerson && companySettings.name) {
+      doc.setFontSize(7)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Ihr Ansprechpartner: ${companySettings.name}`, 20, 105)
+    }
 
     // Sub Title
     doc.setFont('helvetica', 'bold')
@@ -526,6 +555,21 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text('Sie haben Fragen oder wünschen weitere Informationen? Rufen Sie uns an', tableX, yPos)
     yPos += 5
     doc.text('wir sind für Sie da.', tableX, yPos)
+
+    // Payment Terms (if enabled)
+    if (invoice.showSettings?.paymentTerms) {
+      yPos += 8
+      doc.setFont('helvetica', 'bold')
+      doc.text('Zahlungsbedingungen:', tableX, yPos)
+      doc.setFont('helvetica', 'normal')
+      // Calculate due date diff or show standard text
+      const dueDate = new Date(invoice.dueDate);
+      const issueDate = new Date(invoice.date);
+      const diffTime = Math.abs(dueDate.getTime() - issueDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      doc.text(`Zahlbar innerhalb von ${diffDays > 0 ? diffDays : '14'} Tagen ohne Abzug.`, tableX + 40, yPos)
+    }
 
     // Footer marks
     if (invoice.showSettings?.foldMarks) {
