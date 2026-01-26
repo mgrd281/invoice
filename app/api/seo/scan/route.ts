@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { SEOEngine } from '@/lib/seo-engine'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { SeoScanOptions } from '@/types/seo-types'
 
 export async function POST(req: NextRequest) {
     try {
@@ -15,8 +16,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'No organization linked' }, { status: 400 })
         }
 
+        const body = await req.json()
+        const options: SeoScanOptions = {
+            scope: body.scope || 'full',
+            depth: body.depth || 'standard',
+            coreWebVitals: body.coreWebVitals ?? true,
+            mobileCheck: body.mobileCheck ?? true,
+            customUrls: body.customUrls
+        }
+
         const engine = new SEOEngine(organizationId)
-        const report = await engine.performFullScan()
+        const report = await engine.performScan(options)
 
         return NextResponse.json({
             success: true,

@@ -1,157 +1,188 @@
 import { ShopifyAPI, ShopifyProduct } from './shopify-api'
 import { getShopifySettings } from './shopify-settings'
-
-export interface SEOIssue {
-    url: string
-    title: string
-    issue: string
-    impact: 'Critical' | 'High' | 'Medium' | 'Low'
-    type: 'Technical' | 'On-Page' | 'Shopify'
-}
-
-export interface SEOAuditReport {
-    healthScore: number
-    criticalErrors: number
-    warnings: number
-    opportunities: number
-    issues: SEOIssue[]
-    speedScore: number
-}
+import {
+    SeoIssue,
+    SeoScan,
+    SeoScanOptions,
+    SeoResourceType,
+    SeoSeverity,
+    SeoCategory,
+    SeoFixType
+} from '../types/seo-types'
 
 /**
  * Core engine for scanning and auditing a Shopify store for SEO issues.
+ * Expanded for enterprise-grade reporting and AI integration.
  */
 export class SEOEngine {
     private shopifyApi: ShopifyAPI
 
     constructor(organizationId: string) {
         // In a real app, we'd fetch settings specifically for this organization
-        // For now, using the global helper
         const settings = getShopifySettings()
         this.shopifyApi = new ShopifyAPI(settings)
     }
 
     /**
-     * Performs a full store SEO scan.
+     * Performs a full store SEO scan based on provided options.
      */
-    async performFullScan(): Promise<SEOAuditReport> {
-        const issues: SEOIssue[] = []
-        let totalStats = {
-            critical: 0,
-            high: 0,
-            medium: 0,
-            low: 0
+    async performScan(options: SeoScanOptions): Promise<SeoScan> {
+        const issues: SeoIssue[] = []
+        const startTime = Date.now()
+
+        // Initialize scan progress
+        const scanResult: SeoScan = {
+            id: `scan_${Math.random().toString(36).substr(2, 9)}`,
+            status: 'running',
+            progress: 0,
+            crawledUrls: 0,
+            totalUrls: 0,
+            currentStage: 'crawl',
+            options,
+            startedAt: new Date().toISOString()
         }
 
         try {
-            // 1. Fetch Products
-            const products = await this.shopifyApi.getProducts({ limit: 50 })
+            // 1. Crawl / Fetch URLs
+            // In a real scenario, this would involve fetching all products, collections, pages, and blog posts
+            let resources: { type: SeoResourceType, data: any }[] = []
 
-            for (const product of products) {
-                const productIssues = this.auditProduct(product)
-                issues.push(...productIssues)
+            if (options.scope === 'full' || options.scope === 'products') {
+                const products = await this.shopifyApi.getProducts({ limit: 50 })
+                resources.push(...products.map(p => ({ type: 'Product' as SeoResourceType, data: p })))
             }
 
-            // 2. Fetch Collections
-            const collections = await this.shopifyApi.getCollections({ limit: 20 })
-            for (const collection of collections) {
-                const collectionIssues = this.auditCollection(collection)
-                issues.push(...collectionIssues)
+            if (options.scope === 'full' || options.scope === 'collections') {
+                const collections = await this.shopifyApi.getCollections({ limit: 20 })
+                resources.push(...collections.map(c => ({ type: 'Collection' as SeoResourceType, data: c })))
             }
 
-            // Calculate stats
-            issues.forEach(issue => {
-                if (issue.impact === 'Critical') totalStats.critical++
-                else if (issue.impact === 'High') totalStats.high++
-                else if (issue.impact === 'Medium') totalStats.medium++
-                else if (issue.impact === 'Low') totalStats.low++
-            })
-
-            // Calculate health score (weighted)
-            const baseScore = 100
-            const deducted = (totalStats.critical * 10) + (totalStats.high * 5) + (totalStats.medium * 2)
-            const healthScore = Math.max(0, Math.min(100, baseScore - deducted))
-
-            return {
-                healthScore,
-                criticalErrors: totalStats.critical,
-                warnings: totalStats.high + totalStats.medium,
-                opportunities: totalStats.low,
-                issues,
-                speedScore: 85 // Mocked for now
+            // Mocking pages and blogs for now if full scan
+            if (options.scope === 'full') {
+                resources.push({ type: 'Page', data: { handle: '', title: 'Home', body_html: 'Welcome' } })
             }
+
+            scanResult.totalUrls = resources.length
+            scanResult.currentStage = 'analyze'
+            scanResult.progress = 30
+
+            // 2. Analyze
+            for (let i = 0; i < resources.length; i++) {
+                const resource = resources[i]
+                const resourceIssues = this.auditResource(resource.type, resource.data)
+                issues.push(...resourceIssues)
+
+                scanResult.crawledUrls++
+                scanResult.progress = 30 + Math.floor((i / resources.length) * 50)
+            }
+
+            // 3. Score
+            scanResult.currentStage = 'score'
+            scanResult.progress = 90
+
+            const stats = this.calculateStats(issues)
+
+            // 4. Report
+            scanResult.status = 'completed'
+            scanResult.currentStage = 'report'
+            scanResult.progress = 100
+            scanResult.completedAt = new Date().toISOString()
+            scanResult.duration = Date.now() - startTime
+            scanResult.healthScore = stats.healthScore
+            scanResult.criticalErrors = stats.critical
+            scanResult.warnings = stats.high + stats.medium
+            scanResult.opportunities = stats.low
+
+            // In a real app, issues would be saved to a DB and linked via scanId
+            // We'll return them in a wrapper or handled by the caller
+
+            return scanResult
 
         } catch (error) {
             console.error('SEO Scan failed:', error)
+            scanResult.status = 'failed'
             throw error
         }
     }
 
     /**
-     * Audit a single Shopify product.
+     * Audit a single resource (Product, Collection, etc.)
      */
-    private auditProduct(product: ShopifyProduct): SEOIssue[] {
-        const issues: SEOIssue[] = []
-        const productUrl = `/products/${product.handle}`
+    private auditResource(type: SeoResourceType, data: any): SeoIssue[] {
+        const issues: SeoIssue[] = []
+        const url = `/${type.toLowerCase()}s/${data.handle || ''}`
+        const resourceId = data.id?.toString() || 'mock-id'
 
-        // Rule: Title Tag Length (Shopify title is usually the default title tag)
-        if (!product.title || product.title.length < 30) {
-            issues.push({
-                url: productUrl,
-                title: product.title,
-                issue: 'Titel-Tag ist zu kurz (empfohlen: 50-60 Zeichen)',
-                impact: 'High',
-                type: 'On-Page'
-            })
+        // Rule: Title Tag
+        if (!data.title || data.title.length < 30) {
+            issues.push(this.createIssue(url, 'Titel-Tag zu kurz', 'On-Page', 'High', 'auto', 'Optimieren Sie den Titel auf 50-60 Zeichen.', type))
+        } else if (data.title.length > 70) {
+            issues.push(this.createIssue(url, 'Titel-Tag zu lang', 'On-Page', 'Medium', 'auto', 'Kürzen Sie den Titel auf unter 70 Zeichen.', type))
         }
 
-        // Rule: Meta Description (body_html is often used as snippet if meta is missing)
-        // Note: Real check would need metafields for SEO Title/Description
-        if (!product.body_html || product.body_html.length < 100) {
-            issues.push({
-                url: productUrl,
-                title: product.title,
-                issue: 'Produktbeschreibung ist zu kurz oder fehlt',
-                impact: 'Critical',
-                type: 'On-Page'
-            })
+        // Rule: Meta Description / Body Content
+        const content = data.body_html || ''
+        const textContent = content.replace(/<[^>]*>?/gm, '') // Strip HTML
+
+        if (textContent.length < 100) {
+            issues.push(this.createIssue(url, 'Inhalt zu dünn', 'Content', 'Critical', 'manual', 'Fügen Sie mehr wertvollen Text hinzu.', type))
         }
 
-        // Rule: Image Alt Tags
-        if (product.images && product.images.length > 0) {
-            // In a real scan, we'd check if any image lacks alt text
-            // Mocking a finding
-            if (product.id % 5 === 0) {
-                issues.push({
-                    url: productUrl,
-                    title: product.title,
-                    issue: 'Bilder ohne Alt-Text gefunden',
-                    impact: 'Medium',
-                    type: 'Shopify'
-                })
+        // Rule: Images (for products)
+        if (type === 'Product' && data.images && data.images.length > 0) {
+            // Mocking check for missing alt tags
+            if (data.id % 4 === 0) {
+                issues.push(this.createIssue(url, 'Bilder ohne Alt-Text', 'Accessibility', 'Medium', 'auto', 'Generieren Sie Alt-Texte für alle Bilder.', type))
             }
+        }
+
+        // Rule: Technical (Mobile / Speed - Mocked)
+        if (Math.random() > 0.8) {
+            issues.push(this.createIssue(url, 'LCP Wert zu hoch', 'Performance', 'High', 'info', 'Optimieren Sie die Ladezeit der Bilder.', type))
         }
 
         return issues
     }
 
-    /**
-     * Audit a Shopify collection.
-     */
-    private auditCollection(collection: any): SEOIssue[] {
-        const issues: SEOIssue[] = []
-        const collectionUrl = `/collections/${collection.handle}`
-
-        if (!collection.body_html) {
-            issues.push({
-                url: collectionUrl,
-                title: collection.title,
-                issue: 'Kategorie-Beschreibung fehlt',
-                impact: 'High',
-                type: 'On-Page'
-            })
+    private createIssue(
+        url: string,
+        title: string,
+        category: SeoCategory,
+        severity: SeoSeverity,
+        fixType: SeoFixType,
+        recommendation: string,
+        resourceType: SeoResourceType
+    ): SeoIssue {
+        return {
+            id: `issue_${Math.random().toString(36).substr(2, 9)}`,
+            url,
+            title,
+            issue: title,
+            category,
+            severity,
+            fixType,
+            status: 'pending',
+            impact: severity === 'Critical' ? 10 : severity === 'High' ? 7 : severity === 'Medium' ? 4 : 2,
+            recommendation,
+            resourceType,
+            createdAt: new Date().toISOString()
         }
+    }
 
-        return issues
+    private calculateStats(issues: SeoIssue[]) {
+        let stats = { critical: 0, high: 0, medium: 0, low: 0 }
+
+        issues.forEach(issue => {
+            if (issue.severity === 'Critical') stats.critical++
+            else if (issue.severity === 'High') stats.high++
+            else if (issue.severity === 'Medium') stats.medium++
+            else if (issue.severity === 'Low') stats.low++
+        })
+
+        const baseScore = 100
+        const deducted = (stats.critical * 15) + (stats.high * 8) + (stats.medium * 3) + (stats.low * 1)
+        const healthScore = Math.max(0, Math.min(100, baseScore - deducted))
+
+        return { ...stats, healthScore }
     }
 }
