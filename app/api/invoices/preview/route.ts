@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
             layout: data.layout || 'classic',
             primaryColor: data.primaryColor,
             logoSize: data.logoSize,
-            showSettings: data.showSettings,
 
             customer: {
                 name: data.customer.name,
@@ -65,6 +64,18 @@ export async function POST(request: NextRequest) {
                 unit: item.unit,
                 vat: item.vat
             })),
+            showSettings: {
+                qrCode: data.showSettings?.qrCode || false,
+                epcQrCode: data.showSettings?.epcQrCode || false,
+                customerNumber: data.showSettings?.customerNumber ?? true,
+                contactPerson: data.showSettings?.contactPerson ?? true,
+                vatPerItem: data.showSettings?.vatPerItem || false,
+                articleNumber: data.showSettings?.articleNumber || false,
+                foldMarks: data.showSettings?.foldMarks ?? true,
+                paymentTerms: data.showSettings?.paymentTerms ?? true,
+                bankDetails: data.showSettings?.bankDetails ?? true,
+                taxId: data.showSettings?.taxId ?? true
+            },
             qrCodeSettings: data.showSettings?.qrCode || data.showSettings?.epcQrCode ? {
                 enabled: true,
                 paymentMethod: 'sepa',

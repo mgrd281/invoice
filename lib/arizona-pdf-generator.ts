@@ -44,6 +44,9 @@ interface InvoiceData {
     vatPerItem: boolean
     articleNumber: boolean
     foldMarks: boolean
+    paymentTerms: boolean
+    bankDetails: boolean
+    taxId: boolean
   }
   // QR-Code payment settings
   qrCodeSettings?: {
@@ -451,9 +454,13 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
 
     // Column Definitions based on image: Bezeichnung, EAN, Menge, MwSt., Preis, Gesamt
     doc.text('Bezeichnung', tableX + 5, yPos + 1)
-    doc.text('EAN', tableX + tableWidth - 85, yPos + 1, { align: 'center' })
+    if (invoice.showSettings?.articleNumber) {
+      doc.text('EAN', tableX + tableWidth - 85, yPos + 1, { align: 'center' })
+    }
     doc.text('Menge', tableX + tableWidth - 65, yPos + 1, { align: 'center' })
-    doc.text('MwSt.', tableX + tableWidth - 45, yPos + 1, { align: 'center' })
+    if (invoice.showSettings?.vatPerItem) {
+      doc.text('MwSt.', tableX + tableWidth - 45, yPos + 1, { align: 'center' })
+    }
     doc.text('Preis', tableX + tableWidth - 25, yPos + 1, { align: 'right' })
     doc.text('Gesamt', tableX + tableWidth - 5, yPos + 1, { align: 'right' })
 
@@ -467,15 +474,19 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
       doc.text(desc, tableX + 5, yPos)
 
       // EAN
-      const ean = item.ean || ''
-      doc.text(String(ean), tableX + tableWidth - 85, yPos, { align: 'center' })
+      if (invoice.showSettings?.articleNumber) {
+        const ean = item.ean || ''
+        doc.text(String(ean), tableX + tableWidth - 85, yPos, { align: 'center' })
+      }
 
       // Menge
       doc.text(`${item.quantity} Stk.`, tableX + tableWidth - 65, yPos, { align: 'center' })
 
       // MwSt.
-      const vat = item.vat || invoice.taxRate || 19
-      doc.text(`${vat}%`, tableX + tableWidth - 45, yPos, { align: 'center' })
+      if (invoice.showSettings?.vatPerItem) {
+        const vat = item.vat || invoice.taxRate || 19
+        doc.text(`${vat}%`, tableX + tableWidth - 45, yPos, { align: 'center' })
+      }
 
       // Preis & Gesamt
       doc.text(`${item.unitPrice.toFixed(2)}`, tableX + tableWidth - 25, yPos, { align: 'right' })
@@ -560,15 +571,32 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     doc.text(`E-Mail: ${companySettings.email || '--'}`, col2X, footerY + 8)
 
     // Column 3: Bank
-    doc.text('Bankverbindungen', col3X, footerY)
-    doc.text(companySettings.bankName || '--', col3X, footerY + 4)
-    doc.text(`IBAN: ${companySettings.iban || ''}`, col3X, footerY + 8)
-    doc.text(`BIC: ${companySettings.bic || ''}`, col3X, footerY + 12)
+    if (invoice.showSettings?.bankDetails) {
+      doc.text('Bankverbindungen', col3X, footerY)
+      doc.text(companySettings.bankName || '--', col3X, footerY + 4)
+      doc.text(`IBAN: ${companySettings.iban || ''}`, col3X, footerY + 8)
+      doc.text(`BIC: ${companySettings.bic || ''}`, col3X, footerY + 12)
+    }
 
     // Lower Footer Line (Tax IDs)
-    let yPos = footerY + 22
-    doc.text(`Steuernummer: ${companySettings.taxId || '--'}`, col2X, yPos)
-    doc.text(`USt.-IdNr.: ${companySettings.vatId || '--'}`, col2X, yPos + 4)
+    if (invoice.showSettings?.taxId) {
+      let yPos = footerY + 22
+      doc.text(`Steuernummer: ${companySettings.taxId || '--'}`, col2X, yPos)
+      doc.text(`USt.-IdNr.: ${companySettings.vatId || '--'}`, col2X, yPos + 4)
+    }
+  }
+
+  // QR-Code Integration
+  if (invoice.showSettings?.qrCode || invoice.showSettings?.epcQrCode) {
+    if (invoice.qrCodeSettings) {
+      await addQRCodeToPDF(doc, {
+        iban: invoice.qrCodeSettings.iban || '',
+        bic: invoice.qrCodeSettings.bic || '',
+        recipientName: invoice.qrCodeSettings.recipientName || '',
+        amount: invoice.total,
+        reference: invoice.number
+      } as any)
+    }
   }
 
   return doc

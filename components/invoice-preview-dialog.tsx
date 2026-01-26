@@ -39,9 +39,13 @@ export function InvoicePreviewDialog({ open, onOpenChange, data, design, onDesig
         contactPerson: true,
         vatPerItem: false,
         articleNumber: false,
-        foldMarks: true
+        foldMarks: true,
+        paymentTerms: true,
+        bankDetails: true,
+        taxId: true
     })
     const [selectedLayout, setSelectedLayout] = useState<'classic' | 'modern' | 'minimal' | 'bold'>(design?.templateId || 'classic')
+    const [isAdditionalSettingsOpen, setIsAdditionalSettingsOpen] = useState(false)
 
     const [localCompanySettings, setLocalCompanySettings] = useState<any>(null)
     const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -305,7 +309,19 @@ export function InvoicePreviewDialog({ open, onOpenChange, data, design, onDesig
                                         onClick={() => setSelectedColor(color)}
                                     />
                                 ))}
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 cursor-pointer border-2 border-transparent hover:scale-105" />
+                                <div className="relative">
+                                    <div
+                                        className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 cursor-pointer border-2 border-transparent hover:scale-105"
+                                        onClick={() => document.getElementById('custom-color-picker')?.click()}
+                                    />
+                                    <input
+                                        type="color"
+                                        id="custom-color-picker"
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-none"
+                                        value={selectedColor}
+                                        onChange={(e) => setSelectedColor(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -345,96 +361,125 @@ export function InvoicePreviewDialog({ open, onOpenChange, data, design, onDesig
 
                         {/* Further Settings */}
                         <div className="space-y-6 pt-4 border-t">
-                            <div className="flex justify-between items-center cursor-pointer">
+                            <div
+                                className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded-lg transition-colors"
+                                onClick={() => setIsAdditionalSettingsOpen(!isAdditionalSettingsOpen)}
+                            >
                                 <Label className="font-medium cursor-pointer">Weitere Einstellungen</Label>
-                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                                {isAdditionalSettingsOpen ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Sprache</Label>
-                                    <Select defaultValue="de">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="de">Deutsch</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            {isAdditionalSettingsOpen && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="space-y-2">
+                                        <Label>Sprache</Label>
+                                        <Select defaultValue="de">
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="de">Deutsch</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                <div className="space-y-2">
-                                    <Label>Briefpapier</Label>
-                                    <Select defaultValue="none">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Ohne Briefpapier</SelectItem>
-                                            <SelectItem value="uploaded">Mein Briefpapier</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                    <div className="space-y-2">
+                                        <Label>Briefpapier</Label>
+                                        <Select defaultValue="none">
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">Ohne Briefpapier</SelectItem>
+                                                <SelectItem value="uploaded">Mein Briefpapier</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                <div className="space-y-4 pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="qr-code" className="text-gray-700">QR-Code anzeigen</Label>
-                                        <Switch
-                                            id="qr-code"
-                                            checked={showSettings.qrCode}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, qrCode: c }))}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="epc-qr" className="text-gray-700">EPC-QR-Code (GiroCode)</Label>
-                                        <Switch
-                                            id="epc-qr"
-                                            checked={showSettings.epcQrCode}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, epcQrCode: c }))}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="cust-num" className="text-gray-700">Kundennummer</Label>
-                                        <Switch
-                                            id="cust-num"
-                                            checked={showSettings.customerNumber}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, customerNumber: c }))}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="contact" className="text-gray-700">Kontaktperson</Label>
-                                        <Switch
-                                            id="contact"
-                                            checked={showSettings.contactPerson}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, contactPerson: c }))}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="vat-item" className="text-gray-700">USt. pro Position</Label>
-                                        <Switch
-                                            id="vat-item"
-                                            checked={showSettings.vatPerItem}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, vatPerItem: c }))}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="art-num" className="text-gray-700">Artikelnummer</Label>
-                                        <Switch
-                                            id="art-num"
-                                            checked={showSettings.articleNumber}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, articleNumber: c }))}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="fold-marks" className="text-gray-700">Falz- und Lochmarken</Label>
-                                        <Switch
-                                            id="fold-marks"
-                                            checked={showSettings.foldMarks}
-                                            onCheckedChange={(c) => setShowSettings(s => ({ ...s, foldMarks: c }))}
-                                        />
+                                    <div className="space-y-4 pt-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="qr-code" className="text-gray-700 cursor-pointer">QR-Code anzeigen</Label>
+                                            <Switch
+                                                id="qr-code"
+                                                checked={showSettings.qrCode}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, qrCode: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="epc-qr" className="text-gray-700 cursor-pointer">EPC-QR-Code (GiroCode)</Label>
+                                            <Switch
+                                                id="epc-qr"
+                                                checked={showSettings.epcQrCode}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, epcQrCode: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="cust-num" className="text-gray-700 cursor-pointer">Kundennummer</Label>
+                                            <Switch
+                                                id="cust-num"
+                                                checked={showSettings.customerNumber}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, customerNumber: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="contact" className="text-gray-700 cursor-pointer">Kontaktperson</Label>
+                                            <Switch
+                                                id="contact"
+                                                checked={showSettings.contactPerson}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, contactPerson: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="vat-item" className="text-gray-700 cursor-pointer">USt. pro Position</Label>
+                                            <Switch
+                                                id="vat-item"
+                                                checked={showSettings.vatPerItem}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, vatPerItem: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="art-num" className="text-gray-700 cursor-pointer">Artikelnummer</Label>
+                                            <Switch
+                                                id="art-num"
+                                                checked={showSettings.articleNumber}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, articleNumber: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="fold-marks" className="text-gray-700 cursor-pointer">Falz- und Lochmarken</Label>
+                                            <Switch
+                                                id="fold-marks"
+                                                checked={showSettings.foldMarks}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, foldMarks: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="pay-terms" className="text-gray-700 cursor-pointer">Zahlungsbedingungen</Label>
+                                            <Switch
+                                                id="pay-terms"
+                                                checked={showSettings.paymentTerms}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, paymentTerms: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="bank-details" className="text-gray-700 cursor-pointer">Bankverbindung</Label>
+                                            <Switch
+                                                id="bank-details"
+                                                checked={showSettings.bankDetails}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, bankDetails: c }))}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="tax-id" className="text-gray-700 cursor-pointer">Steuernummer/USt-IdNr.</Label>
+                                            <Switch
+                                                id="tax-id"
+                                                checked={showSettings.taxId}
+                                                onCheckedChange={(c) => setShowSettings((s: any) => ({ ...s, taxId: c }))}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                     </div>
