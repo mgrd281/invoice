@@ -102,7 +102,7 @@ function hexToRgb(hex: string): [number, number, number] {
     parseInt(result[1], 16),
     parseInt(result[2], 16),
     parseInt(result[3], 16)
-  ] : [37, 99, 235] // Default blue
+  ] : [76, 130, 106] // Default KARNEX Green
 }
 
 // ========================================
@@ -193,13 +193,7 @@ function addDocumentStamps(doc: jsPDF, documentKind?: DocumentKind) {
     // STORNO: Red stamp + gray watermark
     addRectangularStamp(doc, 'STORNO', 85, 130, 40, 20, [220, 38, 38], 14)
     addDiagonalText(doc, 'STORNO', [200, 200, 200], 80)
-
   }
-  // ERSTATTUNG stamp removed as per user request
-  // else if (documentKind === DocumentKind.CREDIT_NOTE || documentKind === DocumentKind.REFUND_FULL || documentKind === DocumentKind.REFUND_PARTIAL) {
-  //   addRectangularStamp(doc, 'ERSTATTUNG', 75, 130, 60, 20, [37, 99, 235], 12)
-  //   addDiagonalText(doc, 'ERSTATTUNG', [180, 200, 230], 70)
-  // }
 }
 
 // ========================================
@@ -219,274 +213,202 @@ export async function generateArizonaPDF(invoice: InvoiceData): Promise<jsPDF> {
     template = getDefaultTemplate()
   }
 
-
-
-  // Use template bank details if available, otherwise fallback to company settings
-  const bankDetails = template.bankDetails || {
-    bankName: companySettings.bankName || 'Ihre Bank',
-    iban: companySettings.iban || 'DE89 3704 0044 0532 0130 00',
-    bic: companySettings.bic || 'COBADEFFXXX',
-    accountHolder: companySettings.accountHolder || companySettings.companyName || 'Ihr Unternehmen'
-  }
+  // Branding: Use the KARNEX Green (#4c826a) as primary color
+  const karnexGreen: [number, number, number] = [76, 130, 106]
 
   // ========================================
-  // LAYOUT RENDERING
+  // INVOICE RENDERING (with template support)
   // ========================================
-
-  const renderClassic = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
+  const renderDefault = () => {
     // Set font
     doc.setFont('helvetica')
-    const cs = invoice.organization
 
-    // Header Background - Pure white across full width
+    // Header Background - Pure white
     doc.setFillColor(255, 255, 255)
     doc.rect(0, 0, 210, 50, 'F')
 
-    // Company Logo - Box with text
+    // Company Logo
     const logoX = 20
     const logoY = 18
-    const logoSizeFactor = (invoice.logoSize || 50) / 100
-    const logoW = 60 * logoSizeFactor
-    const logoH = 14 * logoSizeFactor
+    const logoW = 60
+    const logoH = 14
 
     const displayCompanyName = companySettings.companyName || companySettings.name || 'KARINEX'
 
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.setFillColor(...karnexGreen)
     doc.rect(logoX, logoY, logoW, logoH, 'F')
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12 * logoSizeFactor)
+    doc.setFontSize(12)
     doc.setTextColor(255, 255, 255)
 
-    const textWidth = doc.getTextWidth(displayCompanyName)
-    doc.text(displayCompanyName, logoX + (logoW - textWidth) / 2, logoY + logoH / 2 + (2.5 * logoSizeFactor))
+    const logoTextWidth = doc.getTextWidth(displayCompanyName)
+    doc.text(displayCompanyName, logoX + (logoW - logoTextWidth) / 2, logoY + logoH / 2 + 2.5)
 
     // Reset colors
     doc.setTextColor(0, 0, 0)
     doc.setFont('helvetica', 'normal')
 
-    // Sender line (Small text above address)
+    // Sender line
     doc.setFontSize(7)
     doc.setTextColor(150, 150, 150)
-    const senderLine = `${displayCompanyName} • ${cs.address} • ${cs.zipCode} ${cs.city}`
+    const senderZipCode = companySettings.zip || companySettings.zipCode
+    const senderLine = `${displayCompanyName} • ${companySettings.address} • ${senderZipCode} ${companySettings.city}`
     doc.text(senderLine, 20, 45)
 
     // Recipient Block
-    doc.setFontSize(10)
-    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
     let yPos = 55
-    if (invoice.customer.companyName) {
-      doc.setFont('helvetica', 'bold')
-      doc.text(invoice.customer.companyName, 20, yPos)
-      yPos += 5
+    const personName = (invoice.customer.name || '').toString().trim()
+    const companyName = (invoice.customer.companyName || '').toString().trim()
+
+    if (personName) {
+      doc.text(personName, 20, yPos)
+      yPos += 4
     }
-    doc.setFont('helvetica', 'normal')
-    doc.text(invoice.customer.name, 20, yPos)
-    yPos += 5
+    if (companyName) {
+      doc.text(companyName, 20, yPos)
+      yPos += 4
+    }
     doc.text(invoice.customer.address, 20, yPos)
-    yPos += 5
+    yPos += 4
     doc.text(`${invoice.customer.zipCode} ${invoice.customer.city}`, 20, yPos)
+    yPos += 4
     if (invoice.customer.country && invoice.customer.country !== 'DE') {
-      yPos += 5
       doc.text(invoice.customer.country, 20, yPos)
     }
 
     // Info Box (Right side)
     const boxX = 130
-    const boxY = 55
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
+    const boxY = 35
+    const boxW = 65
+    const boxH = 35
 
-    const info = [
-      { label: 'Rechnungs-Nr.', value: invoice.number },
+    doc.setFillColor(240, 248, 244)
+    doc.rect(boxX, boxY, boxW, boxH, 'F')
+    doc.setDrawColor(...karnexGreen)
+    doc.setLineWidth(0.5)
+    doc.rect(boxX, boxY, boxW, boxH, 'S')
+
+    doc.setFontSize(9)
+    doc.setTextColor(0, 0, 0)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Rechnung', boxX + 5, boxY + 8)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    yPos = boxY + 15
+    const infoLabels = [
+      { label: 'Beleg-Nr.', value: invoice.number.replace(/^#/, '') },
+      { label: 'Kunden-Nr.', value: invoice.id.substring(0, 6).toUpperCase() },
       { label: 'Datum', value: new Date(invoice.date).toLocaleDateString('de-DE') },
+      { label: 'E-Mail', value: invoice.customer.email },
       { label: 'Lieferdatum', value: new Date(invoice.dueDate || invoice.date).toLocaleDateString('de-DE') }
     ]
 
-    if (invoice.showSettings?.customerNumber) {
-      info.push({ label: 'Kundennummer', value: `KD-${invoice.id.substring(0, 6).toUpperCase()}` })
-    }
-
-    info.forEach((row, i) => {
-      doc.text(row.label, boxX, boxY + (i * 5))
+    infoLabels.forEach(row => {
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(0, 0, 0)
-      doc.text(row.value, boxX + 35, boxY + (i * 5), { align: 'right' })
+      doc.text(row.label, boxX + 5, yPos)
       doc.setFont('helvetica', 'normal')
-      doc.setTextColor(100, 100, 100)
+      doc.text(String(row.value), boxX + 30, yPos)
+      yPos += 4
     })
 
-    // Subject/Title
+    // Invoice Title
     yPos = 110
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
-    doc.text(invoice.number, 20, yPos)
-
-    yPos += 8
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
     doc.setTextColor(0, 0, 0)
-    doc.text('Vielen Dank für Ihren Auftrag. Wir berechnen Ihnen folgende Leistungen:', 20, yPos)
+    doc.text('Rechnung', 20, yPos)
 
-    // Table
-    yPos += 15
-    doc.setFont('helvetica', 'bold')
+    yPos += 10
     doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Pos.', 20, yPos)
-    doc.text('Beschreibung', 30, yPos)
-    doc.text('Menge', 120, yPos, { align: 'right' })
-    doc.text('Preis', 150, yPos, { align: 'right' })
-    doc.text('Gesamt', 190, yPos, { align: 'right' })
-
-    yPos += 3
-    doc.setDrawColor(230, 230, 230)
-    doc.line(20, yPos, 190, yPos)
-
-    yPos += 7
     doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    doc.text('Vielen Dank für Ihren Auftrag. Wir berechnen Ihnen folgende Lieferung bzw. Leistung:', 20, yPos)
+
+    // Table Header
+    yPos += 15
+    doc.setFillColor(240, 248, 244)
+    doc.rect(20, yPos - 5, 170, 8, 'F')
+    doc.setDrawColor(...karnexGreen)
+    doc.line(20, yPos - 5, 190, yPos - 5)
+    doc.line(20, yPos + 3, 190, yPos + 3)
+
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(0, 0, 0)
+    doc.text('Bezeichnung', 25, yPos)
+    doc.text('EAN', 110, yPos, { align: 'center' })
+    doc.text('Menge', 125, yPos)
+    doc.text('MwSt.', 145, yPos)
+    doc.text('Preis', 165, yPos)
+    doc.text('Gesamt', 182, yPos)
 
-    invoice.items.forEach((item, i) => {
-      doc.text(`${i + 1}`, 20, yPos)
-      const desc = doc.splitTextToSize(item.description, 80)
-      doc.text(desc, 30, yPos)
-      const lines = desc.length
+    // Table Items
+    yPos += 10
+    doc.setFont('helvetica', 'normal')
+    invoice.items.forEach(item => {
+      const desc = doc.splitTextToSize(item.description, 70)
+      doc.text(desc, 25, yPos)
 
-      doc.text(`${item.quantity} ${item.unit || 'Stk'}`, 120, yPos, { align: 'right' })
-      doc.text(`${item.unitPrice.toFixed(2)} €`, 150, yPos, { align: 'right' })
-      doc.text(`${item.total.toFixed(2)} €`, 190, yPos, { align: 'right' })
+      const ean = (item as any).ean || (item as any).sku || ''
+      doc.text(String(ean), 110, yPos, { align: 'center' })
+      doc.text(`${item.quantity} Stk.`, 125, yPos)
+      doc.text(`${invoice.taxRate || 19}%`, 145, yPos)
+      doc.text(`${item.unitPrice.toFixed(2)}`, 165, yPos)
+      doc.text(`${item.total.toFixed(2)}`, 182, yPos)
 
-      yPos += (lines * 5) + 2
+      yPos += (desc.length * 4) + 2
     })
 
     // Totals
-    yPos += 5
-    doc.line(130, yPos, 190, yPos)
-    yPos += 7
+    yPos += 10
+    doc.setDrawColor(...karnexGreen)
+    doc.line(140, yPos - 5, 190, yPos - 5)
+
     doc.setFontSize(9)
-    doc.text('Netto', 130, yPos)
-    doc.text(`${invoice.subtotal.toFixed(2)} €`, 190, yPos, { align: 'right' })
-    yPos += 5
-    doc.text(`USt. ${invoice.taxRate}%`, 130, yPos)
-    doc.text(`${invoice.taxAmount.toFixed(2)} €`, 190, yPos, { align: 'right' })
+    doc.text('Summe netto', 140, yPos)
+    doc.text(`${invoice.subtotal.toFixed(2)}`, 182, yPos, { align: 'right' })
+
+    yPos += 6
+    doc.text(`MwSt. ${invoice.taxRate || 19}%`, 140, yPos)
+    doc.text(`${invoice.taxAmount.toFixed(2)}`, 182, yPos, { align: 'right' })
+
     yPos += 8
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
-    doc.text('Gesamtbetrag', 130, yPos)
-    doc.text(`${invoice.total.toFixed(2)} €`, 190, yPos, { align: 'right' })
+    doc.setFontSize(10)
+    doc.text('Gesamt', 140, yPos)
+    doc.text(`${invoice.total.toFixed(2)}`, 182, yPos, { align: 'right' })
+    doc.line(140, yPos + 2, 190, yPos + 2)
 
-    renderFooter(doc, invoice, cs)
-  }
-
-  const renderMinimal = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
-    // Basic implementation for compatibility
-    renderClassic(doc, invoice, primaryColor)
-  }
-
-  const renderModern = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
-    renderClassic(doc, invoice, primaryColor)
-  }
-
-  const renderBold = (doc: jsPDF, invoice: InvoiceData, primaryColor: [number, number, number]) => {
-    renderClassic(doc, invoice, primaryColor)
-  }
-
-  const renderFooter = (doc: jsPDF, invoice: InvoiceData, cs: any) => {
-    const yFooter = 270
-
-    // Light background rect for footer
-    doc.setFillColor(248, 250, 252)
-    doc.rect(0, yFooter - 5, 210, 30, 'F')
-    doc.setDrawColor(226, 232, 240)
-    doc.line(0, yFooter - 5, 210, yFooter - 5)
-
+    // Footer
+    yPos = 270
+    doc.setFillColor(240, 248, 244)
+    doc.rect(0, yPos - 5, 210, 25, 'F')
     doc.setFontSize(7)
-    doc.setTextColor(100, 116, 139)
+    doc.setTextColor(100, 100, 100)
     doc.setFont('helvetica', 'normal')
 
-    // Col 1: Name & Address
-    doc.text(cs.name || '', 20, yFooter)
-    doc.text(cs.address || '', 20, yFooter + 4)
-    doc.text(`${cs.zipCode || ''} ${cs.city || ''}`, 20, yFooter + 8)
+    const footerCompanyName = companySettings.companyName || companySettings.name
+    doc.text(footerCompanyName, 20, yPos)
+    doc.text(companySettings.address, 20, yPos + 4)
+    doc.text(`${senderZipCode} ${companySettings.city}`, 20, yPos + 8)
 
-    // Col 2: Bank
-    doc.text('Bankverbindung', 80, yFooter)
-    doc.text(cs.bankName || '', 80, yFooter + 4)
-    doc.text(`IBAN: ${cs.iban || ''}`, 80, yFooter + 8)
-    doc.text(`BIC: ${cs.bic || ''}`, 80, yFooter + 12)
+    doc.text(`Geschäftsführer: ${footerCompanyName}`, 80, yPos)
+    doc.text(`Telefon: ${companySettings.phone || ''}`, 80, yPos + 4)
+    doc.text(`E-Mail: ${companySettings.email || ''}`, 80, yPos + 8)
 
-    // Col 3: Tax & Contact
-    doc.text(`USt-IdNr: ${cs.taxId || ''}`, 150, yFooter)
-    doc.text(cs.email || '', 150, yFooter + 4)
-    doc.text(cs.phone || '', 150, yFooter + 8)
+    doc.text('Bankverbindungen', 140, yPos)
+    doc.text(companySettings.bankName || '', 140, yPos + 4)
+    doc.text(`IBAN: ${companySettings.iban || ''}`, 140, yPos + 8)
+    doc.text(`BIC: ${companySettings.bic || ''}`, 140, yPos + 12)
   }
 
-  const addFoldMarks = (doc: jsPDF) => {
-    doc.setDrawColor(200, 200, 200)
-    doc.setLineWidth(0.1)
-    doc.line(0, 105, 5, 105) // Top fold
-    doc.line(0, 148.5, 7, 148.5) // Center
-    doc.line(0, 210, 5, 210) // Bottom fold
-  }
-
-  // ========================================
-  // PDF GENERATION EXECUTION
-  // ========================================
-
-  const layout = invoice.layout || 'classic'
-  const primaryColor = hexToRgb(invoice.primaryColor || '#2563eb')
-
-  if (layout === 'minimal') {
-    renderMinimal(doc, invoice, primaryColor)
-  } else if (layout === 'modern') {
-    renderModern(doc, invoice, primaryColor)
-  } else if (layout === 'bold') {
-    renderBold(doc, invoice, primaryColor)
-  } else {
-    renderClassic(doc, invoice, primaryColor)
-  }
-
-  // Common overlays
-  const totalPages = doc.getNumberOfPages()
-  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-    doc.setPage(pageNum)
-    if (invoice.showSettings?.foldMarks !== false) {
-      addFoldMarks(doc)
-    }
-    addDocumentStamps(doc, invoice.document_kind)
-  }
-
-  // QR-Code
-  if (invoice.qrCodeSettings?.enabled) {
-    try {
-      const paymentData = {
-        paymentMethod: invoice.qrCodeSettings.paymentMethod,
-        iban: invoice.qrCodeSettings.iban,
-        bic: invoice.qrCodeSettings.bic,
-        paypalEmail: invoice.qrCodeSettings.paypalEmail,
-        customText: invoice.qrCodeSettings.customText,
-        recipientName: invoice.qrCodeSettings.recipientName || companySettings.companyName || 'Unternehmen',
-        amount: invoice.total,
-        currency: 'EUR',
-        reference: invoice.number,
-        purpose: `Rechnung ${invoice.number}`
-      }
-      const placement = invoice.qrCodeSettings.placement || 'flex-beside-thanks'
-      await addQRCodeToPDF(doc, paymentData as any, placement as any)
-    } catch (e) {
-      console.warn('QR Code generation failed', e)
-    }
-  }
-
+  renderDefault()
   return doc
-} // End of generateArizonaPDF function
-
-// ========================================
-// UTILITY FUNCTIONS
-// ========================================
+}
 
 /**
  * Saves PDF directly to user's downloads
