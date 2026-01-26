@@ -40,19 +40,37 @@ export function ProductPreviewModal({ isOpen, onClose, draftId, onSuccess }: Pro
         const loadData = async () => {
             try {
                 // Load Collections
-                const colRes = await fetch('/api/shopify/collections')
-                const colData = await colRes.json()
-                if (colData.success) setCollections(colData.collections)
+                try {
+                    const colRes = await fetch('/api/shopify/collections')
+                    const colData = await colRes.json()
+                    if (colData.success) setCollections(colData.collections)
+                } catch (e) { console.error('Failed to load collections', e) }
 
-                // Load Draft
-                console.log('[Frontend] Fetching draft:', draftId)
-                const res = await fetch(`/api/products/import/draft/${draftId}`)
-                console.log('[Frontend] Fetch response:', res.status)
+                // Load Draft with Retry Logic
+                let retries = 5
+                let loadedDraft = null
 
-                if (!res.ok) throw new Error('Draft not found')
+                while (retries > 0) {
+                    try {
+                        console.log(`[Frontend] Fetching draft: ${draftId} (Attempts left: ${retries})`)
+                        const res = await fetch(`/api/products/import/draft/${draftId}?t=${Date.now()}`, { cache: 'no-store' })
 
-                const data = await res.json()
-                const loadedDraft = data.draft
+                        if (res.ok) {
+                            const data = await res.json()
+                            if (data.draft) {
+                                loadedDraft = data.draft
+                                break
+                            }
+                        }
+                    } catch (e) { console.error('Fetch attempt failed', e) }
+
+                    // Wait 500ms before retry
+                    await new Promise(r => setTimeout(r, 500))
+                    retries--
+                }
+
+                if (!loadedDraft) throw new Error('Draft not found after retries')
+
                 setDraft(loadedDraft)
 
                 // Check Status & Trigger Processing if needed
@@ -64,7 +82,7 @@ export function ProductPreviewModal({ isOpen, onClose, draftId, onSuccess }: Pro
 
             } catch (error) {
                 console.error(error)
-                showToast("Fehler beim Laden der Vorschau", "error")
+                showToast("Fehler beim Laden der Vorschau: Entwurf nicht gefunden.", "error")
                 setLoading(false)
             }
         }

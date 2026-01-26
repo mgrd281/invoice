@@ -54,6 +54,7 @@ import { DEFAULT_FEATURES } from './features-data'
 import { useAuth } from '@/hooks/use-auth-compat'
 import { useAuthenticatedFetch } from '@/lib/api-client'
 import { ProtectedRoute } from '@/components/protected-route'
+import { EnterpriseHeader } from '@/components/layout/enterprise-header'
 
 interface DashboardStats {
   totalRevenue: number
@@ -220,9 +221,7 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, router, user, loadDashboardData])
 
-  const handleLogout = () => {
-    logout() // This will redirect to landing page automatically
-  }
+
 
   if (loading || authLoading || featuresLoading) {
     return (
@@ -239,37 +238,10 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b relative overflow-hidden">
-          {/* Beautiful Small Orbs in Header */}
-          <div className="absolute top-2 right-20 interactive-orb orb-mini" title="Dashboard Perle"></div>
-          <div className="absolute top-4 left-20 interactive-orb orb-tiny" title="Winzige Perle"></div>
-          <div className="absolute top-1 right-40 interactive-orb orb-tiny" title="Kleine Perle"></div>
+        <div className="pb-[44px] sm:pb-[56px]">
+          <EnterpriseHeader />
+        </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg mr-3">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    RechnungsProfi
-                  </h1>
-                  <p className="text-xs text-gray-500">Professional Invoice Management • v1.2.2 [LIVE]</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="text-gray-700 hover:text-red-600 hover:bg-red-50 border-gray-200"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Abmelden
-              </Button>
-            </div>
-          </div>
-        </header>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
           {/* Beautiful Small Background Orbs */}
