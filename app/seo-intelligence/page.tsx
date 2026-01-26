@@ -13,7 +13,7 @@ import {
 import { EnterpriseHeader } from '@/components/layout/enterprise-header'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { useToast } from '@/components/ui/toast'
+import { useToast, Toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 
 function SEOIntelligencePage() {
@@ -21,7 +21,7 @@ function SEOIntelligencePage() {
     const [status, setStatus] = useState<'active' | 'paused'>('paused')
     const [isScanning, setIsScanning] = useState(false)
     const [report, setReport] = useState<any>(null)
-    const { showToast, ToastContainer } = useToast()
+    const { showToast, toasts, removeToast } = useToast()
 
     const defaultKpis = [
         { label: 'SEO Health Score', value: '74', trend: '+12%', color: 'text-emerald-600', icon: Activity, sparkline: '70%' },
@@ -355,7 +355,18 @@ function SEOIntelligencePage() {
                     </div>
                 </div>
             </main>
-            <ToastContainer />
+
+            {/* Toast Notifications */}
+            <div className="fixed top-4 right-4 z-50 space-y-2">
+                {toasts.map(toast => (
+                    <Toast
+                        key={toast.id}
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => removeToast(toast.id)}
+                    />
+                ))}
+            </div>
         </div>
     )
 }
