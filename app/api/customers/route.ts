@@ -1,429 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { loadCustomersFromDisk, saveCustomersToDisk, saveInvoicesToDisk, loadInvoicesFromDisk } from '../../../lib/server-storage'
-import { requireAuth, getUserFromRequest, shouldShowAllData } from '../../../lib/auth-middleware'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
-// Access global storage for data
-declare global {
-  var allCustomers: any[] | undefined
-}
-
-// Initialize global storage (load from disk once on cold start)
-if (!global.allCustomers) {
-  const persisted = loadCustomersFromDisk()
-  global.allCustomers = Array.isArray(persisted) ? persisted : []
-  console.log(`[init /api/customers] Loaded ${global.allCustomers.length} customers from disk`)
-}
-
-// No mock customers - all data comes from disk or user creation
-
-// GET: Get all customers for the authenticated user
-export async function GET(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Require authentication
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
-    }
-    const { user } = authResult
-
-    // Ensure invoices are loaded for metrics calculation
-    if (!global.allInvoices) {
-      global.allInvoices = loadInvoicesFromDisk()
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get customers from different sources
-    const globalCustomers = global.allCustomers || []
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      select: { organizationId: true }
+    });
 
-    // Admin users can see all customers, regular users see only their own
-    let filteredCustomers
-    if (shouldShowAllData(user)) {
-      filteredCustomers = globalCustomers
-    } else {
-      filteredCustomers = globalCustomers.filter((customer: any) =>
-        customer.userId === user.id
-      )
+    let organizationId = user?.organizationId;
+    if (!organizationId) {
+      const org = await prisma.organization.findFirst();
+      organizationId = org?.id;
     }
 
-    // Calculate metrics for each customer
-    const customersWithMetrics = filteredCustomers.map((customer: any) => {
-      const customerInvoices = global.allInvoices?.filter((inv: any) =>
-        inv.customerId === customer.id ||
-        (inv.customerEmail?.toLowerCase() === customer.email?.toLowerCase() && inv.userId === user.id)
-      ) || []
+    if (!organizationId) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 404 });
+    }
 
-      const totalSales = customerInvoices.reduce((sum: number, inv: any) => {
-        // Handle different number formats (string with comma/dot or number)
-        let amount = 0
-        if (typeof inv.totalGross === 'number') amount = inv.totalGross
-        else if (typeof inv.totalGross === 'string') {
-          amount = parseFloat(inv.totalGross.replace('€', '').replace(',', '.').trim())
-        }
-        return sum + (isNaN(amount) ? 0 : amount)
-      }, 0)
+    const { name, email, phone } = await req.json();
 
-      const orderCount = customerInvoices.length
+    if (!name || !email) {
+      return NextResponse.json({ error: 'Name and Email are required' }, { status: 400 });
+    }
 
-      // Sort invoices by date to find first/last
-      const sortedInvoices = [...customerInvoices].sort((a: any, b: any) =>
-        new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
-      )
-
-      const lastPurchase = sortedInvoices.length > 0 ? sortedInvoices[0].issueDate : null
-      const firstPurchase = sortedInvoices.length > 0 ? sortedInvoices[sortedInvoices.length - 1].issueDate : null
-      const aov = orderCount > 0 ? totalSales / orderCount : 0
-
-      return {
-        ...customer,
-        ltv: totalSales,
-        orderCount,
-        lastPurchase,
-        firstPurchase,
-        aov,
-        // Ensure new fields exist with defaults if missing
-        status: customer.status || 'ACTIVE',
-        type: customer.type || 'PRIVATE',
-        tags: customer.tags || [],
-        deliveryAddress: customer.deliveryAddress || '',
-        deliveryZip: customer.deliveryZip || '',
-        deliveryCity: customer.deliveryCity || '',
-        deliveryCountry: customer.deliveryCountry || '',
-        documents: customer.documents || []
+    const customer = await prisma.customer.create({
+      data: {
+        organizationId,
+        name,
+        email,
+        phone: phone || null,
+        visitorToken: `manual_${Date.now()}`
       }
-    })
+    });
 
-    // Calculate aggregate metrics
-    const totalLtv = customersWithMetrics.reduce((sum, c) => sum + (c.ltv || 0), 0)
-    const avgLtv = customersWithMetrics.length > 0 ? totalLtv / customersWithMetrics.length : 0
-    const activeCount = customersWithMetrics.filter(c => c.status === 'ACTIVE' || !c.status).length
-    const vipCount = customersWithMetrics.filter(c => c.ltv > 500 || c.status === 'VIP').length // Logic for VIP
-
-    return NextResponse.json({
-      success: true,
-      customers: customersWithMetrics,
-      total: customersWithMetrics.length,
-      analytics: {
-        totalLtv,
-        avgLtv,
-        activeCount,
-        vipCount,
-        repeatPurchaseRate: 34.2, // Mocked for now
-        trends: {
-          total: 12,
-          active: 8,
-          vip: 5,
-          ltv: -2
-        },
-        segments: [
-          { id: 'all', label: 'Alle Kunden', count: customersWithMetrics.length, revenue: totalLtv },
-          { id: 'new', label: 'Neukunden', count: customersWithMetrics.filter(c => c.status === 'NEW').length, revenue: 1200 },
-          { id: 'vip', label: 'VIP Kunden', count: vipCount, revenue: totalLtv * 0.4 },
-          { id: 'inactive', label: 'Inaktiv', count: customersWithMetrics.filter(c => c.status === 'INACTIVE').length, revenue: 450 },
-          { id: 'at_risk', label: 'Risiko', count: 4, revenue: 890 }
-        ]
-      }
-    })
-  } catch (error) {
-    console.error('Error fetching customers:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Laden der Kunden',
-        customers: [],
-        total: 0
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true, customer });
+  } catch (error: any) {
+    console.error('[Customers API] Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST: Create new customer
-export async function POST(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    // Require authentication
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
-    }
-    const { user } = authResult
-
-    const customerData = await request.json()
-
-    // Validate required fields
-    if (!customerData.name || !customerData.email) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Name und E-Mail-Adresse sind erforderlich'
-        },
-        { status: 400 }
-      )
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if customer with this email already exists FOR THIS USER
-    const existingCustomer = global.allCustomers?.find(
-      customer => customer.email.toLowerCase() === customerData.email.toLowerCase() &&
-        customer.userId === user.id
-    )
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      select: { organizationId: true }
+    });
 
-    if (existingCustomer) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Ein Kunde mit dieser E-Mail-Adresse existiert bereits'
-        },
-        { status: 409 }
-      )
+    if (!user?.organizationId) {
+      return NextResponse.json({ error: 'No organization' }, { status: 404 });
     }
 
-    // Create new customer with unique ID and link to user
-    const newCustomer = {
-      id: `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId: user.id, // Link customer to authenticated user
-      name: customerData.name,
-      email: customerData.email,
-      phone: customerData.phone || '',
-      address: customerData.address || '',
-      zipCode: customerData.zipCode || '',
-      city: customerData.city || '',
-      country: customerData.country || 'Deutschland',
-      taxId: customerData.taxId || '',
-      notes: customerData.notes || '',
+    const customers = await prisma.customer.findMany({
+      where: { organizationId: user.organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
 
-      // New Fields
-      status: customerData.status || 'ACTIVE', // ACTIVE, INACTIVE, VIP, NEW
-      type: customerData.type || 'PRIVATE', // PRIVATE, BUSINESS
-      tags: customerData.tags || [],
-      deliveryAddress: customerData.deliveryAddress || '',
-      deliveryZip: customerData.deliveryZip || '',
-      deliveryCity: customerData.deliveryCity || '',
-      deliveryCountry: customerData.deliveryCountry || '',
-      documents: [],
-
-      invoiceCount: 0,
-      totalAmount: '€0.00',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-
-    // Add to global storage
-    if (!global.allCustomers) {
-      global.allCustomers = []
-    }
-    global.allCustomers.push(newCustomer)
-    // Persist to disk
-    saveCustomersToDisk(global.allCustomers)
-
-    console.log(`[POST /api/customers] Created new customer: ${newCustomer.name} (${newCustomer.email}) for user ${user.email}`)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Kunde erfolgreich erstellt',
-      customer: newCustomer
-    })
-
-  } catch (error) {
-    console.error('Error creating customer:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Erstellen des Kunden'
-      },
-      { status: 500 }
-    )
-  }
-}
-
-// PUT: Update existing customer
-export async function PUT(request: NextRequest) {
-  try {
-    // Require authentication
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
-    }
-    const { user } = authResult
-
-    const { searchParams } = new URL(request.url)
-    const customerId = searchParams.get('id')
-
-    if (!customerId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Kunden-ID ist erforderlich'
-        },
-        { status: 400 }
-      )
-    }
-
-    const customerData = await request.json()
-
-    // Find customer by ID - admin can edit any customer, regular users only their own
-    let customerIndex
-    if (shouldShowAllData(user)) {
-      customerIndex = global.allCustomers?.findIndex(
-        customer => customer.id === customerId
-      )
-      console.log(`[PUT /api/customers] ADMIN ${user.email} - editing customer ${customerId}`)
-    } else {
-      customerIndex = global.allCustomers?.findIndex(
-        customer => customer.id === customerId && customer.userId === user.id
-      )
-      console.log(`[PUT /api/customers] USER ${user.email} - editing own customer ${customerId}`)
-    }
-
-    if (customerIndex === -1 || customerIndex === undefined) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Kunde nicht gefunden oder Sie haben keine Berechtigung'
-        },
-        { status: 404 }
-      )
-    }
-
-    // Update customer (preserve userId for non-admin users)
-    const originalCustomer = global.allCustomers![customerIndex]
-    const updatedCustomer = {
-      ...originalCustomer,
-      ...customerData,
-      userId: shouldShowAllData(user) ? originalCustomer.userId : user.id, // Admin preserves original userId
-      updatedAt: new Date().toISOString()
-    }
-
-    global.allCustomers![customerIndex] = updatedCustomer
-    // Persist to disk
-    saveCustomersToDisk(global.allCustomers!)
-
-    console.log(`[PUT /api/customers] Updated customer: ${updatedCustomer.name} (${updatedCustomer.email}) for user ${user.email}`)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Kunde erfolgreich aktualisiert',
-      customer: updatedCustomer
-    })
-
-  } catch (error) {
-    console.error('Error updating customer:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Aktualisieren des Kunden'
-      },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE: Delete customer
-export async function DELETE(request: NextRequest) {
-  try {
-    // Require authentication
-    const authResult = requireAuth(request)
-    if ('error' in authResult) {
-      return authResult.error
-    }
-    const { user } = authResult
-
-    const { searchParams } = new URL(request.url)
-    const customerId = searchParams.get('id')
-
-    console.log(`[DELETE /api/customers] Attempting to delete customer ID: ${customerId} for user ${user.email}`)
-
-    if (!customerId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Kunden-ID ist erforderlich'
-        },
-        { status: 400 }
-      )
-    }
-
-    // Find and remove customer from global storage - admin can delete any customer, regular users only their own
-    let customerIndex
-    if (shouldShowAllData(user)) {
-      customerIndex = global.allCustomers?.findIndex(
-        customer => customer.id === customerId
-      )
-      console.log(`[DELETE /api/customers] ADMIN ${user.email} - deleting customer ${customerId}`)
-    } else {
-      customerIndex = global.allCustomers?.findIndex(
-        customer => customer.id === customerId && customer.userId === user.id
-      )
-      console.log(`[DELETE /api/customers] USER ${user.email} - deleting own customer ${customerId}`)
-    }
-
-    console.log(`[DELETE /api/customers] Customer index in global storage: ${customerIndex}`)
-    console.log(`[DELETE /api/customers] Global customers count: ${global.allCustomers?.length || 0}`)
-
-    if (customerIndex === -1 || customerIndex === undefined) {
-      console.log(`[DELETE /api/customers] Customer not found or no permission for user ${user.email}`)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Kunde nicht gefunden oder Sie haben keine Berechtigung'
-        },
-        { status: 404 }
-      )
-    }
-
-    const deletedCustomer = global.allCustomers![customerIndex]
-    global.allCustomers!.splice(customerIndex, 1)
-    // Persist to disk
-    saveCustomersToDisk(global.allCustomers!)
-
-    // Cascade delete invoices linked to this customer (only for this user)
-    let removedInvoices = 0
-    try {
-      const beforeCount = (global.allInvoices?.length || 0)
-      if (global.allInvoices) {
-        global.allInvoices = global.allInvoices.filter((inv: any) =>
-          !(inv.customerId === deletedCustomer.id ||
-            (inv.customerEmail?.toLowerCase?.() === deletedCustomer.email?.toLowerCase?.() && inv.userId === user.id) ||
-            (inv.customerName === deletedCustomer.name && inv.userId === user.id))
-        )
-      }
-      const afterCount = (global.allInvoices?.length || 0)
-      removedInvoices = beforeCount - afterCount
-
-      // Also remove from csvInvoices in-memory if present (only for this user)
-      if (global.csvInvoices) {
-        const beforeCsv = global.csvInvoices.length
-        global.csvInvoices = global.csvInvoices.filter((inv: any) =>
-          !(inv.customerId === deletedCustomer.id ||
-            (inv.customerEmail?.toLowerCase?.() === deletedCustomer.email?.toLowerCase?.() && inv.userId === user.id) ||
-            (inv.customerName === deletedCustomer.name && inv.userId === user.id))
-        )
-        const afterCsv = global.csvInvoices.length
-        removedInvoices += (beforeCsv - afterCsv)
-      }
-
-      // Persist invoices to disk
-      saveInvoicesToDisk(global.allInvoices || [])
-      console.log(`[DELETE /api/customers] Cascade-deleted ${removedInvoices} invoice(s) for customer ${deletedCustomer.id} and user ${user.email}`)
-    } catch (e) {
-      console.warn(`[DELETE /api/customers] Failed during cascade delete for customer ${deletedCustomer.id}`, e)
-    }
-
-    console.log(`[DELETE /api/customers] Deleted customer: ${deletedCustomer.name} (${deletedCustomer.email}) for user ${user.email}`)
-    console.log(`[DELETE /api/customers] Total customers now: ${global.allCustomers!.length}`)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Kunde erfolgreich gelöscht',
-      customer: deletedCustomer,
-      deletedInvoices: removedInvoices
-    })
-
-  } catch (error) {
-    console.error('Error deleting customer:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Fehler beim Löschen des Kunden'
-      },
-      { status: 500 }
-    )
+    return NextResponse.json(customers);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

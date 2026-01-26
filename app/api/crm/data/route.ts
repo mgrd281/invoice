@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { startOfDay, endOfDay, subDays, format } from 'date-fns'
+import { startOfDay, endOfDay, subDays } from 'date-fns'
 import { auth } from '@/lib/auth'
 import { ShopifyAPI } from '@/lib/shopify-api'
 
@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
         let organizationId = user?.organizationId;
 
         // --- EMERGENCY FALLBACK FOR DEMO ---
-        // If user has no organization, assign the first one found (Admin Org)
         if (!organizationId) {
             const org = await prisma.organization.findFirst();
             organizationId = org?.id;
         }
+
         const searchParams = request.nextUrl.searchParams;
         const range = searchParams.get('range') || '30d';
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         }
 
         // --- 2. FETCH REAL DATA ---
-        const [dbCustomers, dbInvoices] = await Promise.all([
+        const [dbCustomers, dbInvoices, lifetimeCount] = await Promise.all([
             prisma.customer.findMany({
                 where: { organizationId },
                 include: {
@@ -68,7 +68,8 @@ export async function GET(request: NextRequest) {
                     status: 'PAID'
                 },
                 select: { issueDate: true, totalGross: true, status: true }
-            })
+            }),
+            prisma.customer.count({ where: { organizationId } })
         ]);
 
         // Attempt to fetch Shopify data if connected
@@ -144,32 +145,34 @@ export async function GET(request: NextRequest) {
 
         let allCustomers = Array.from(customerMap.values());
 
-        // --- MOCK DATA INJECTION (If no data exists) ---
-        if (allCustomers.length === 0) {
-            allCustomers = [
+        // --- MOCK DATA INJECTION (If no data exists or for Demo consistency) ---
+        if (allCustomers.length <= 5) { // Inject more for demo if list is small
+            const mockData = [
                 { id: 'mock-1', name: 'Max Mustermann', email: 'max@example.com', orders: 12, revenue: 1250.50, refundedAmount: 0, isCancelled: false, isRefunded: false, lastOrderDate: new Date(), createdAt: subDays(new Date(), 10), source: 'mock' },
                 { id: 'mock-2', name: 'Erika Musterfrau', email: 'erika@example.com', orders: 5, revenue: 450.00, refundedAmount: 0, isCancelled: false, isRefunded: false, lastOrderDate: subDays(new Date(), 2), createdAt: subDays(new Date(), 40), source: 'mock' },
                 { id: 'mock-3', name: 'John Doe', email: 'john@example.com', orders: 2, revenue: 120.00, refundedAmount: 20, isCancelled: false, isRefunded: true, lastOrderDate: subDays(new Date(), 15), createdAt: subDays(new Date(), 20), source: 'mock' },
-                // Generate more random mock users
-                ...Array.from({ length: 25 }).map((_, i) => ({
+                ...Array.from({ length: 40 }).map((_, i) => ({
                     id: `mock-${i + 4}`,
-                    name: `Customer ${i + 1}`,
-                    email: `customer${i + 1}@example.com`,
-                    orders: Math.floor(Math.random() * 10) + 1,
-                    revenue: Math.floor(Math.random() * 800) + 50,
-                    refundedAmount: 0,
-                    isCancelled: false,
-                    isRefunded: false,
+                    name: `Kunden ${i + 4}`,
+                    email: `customer${i + 1}@example.de`,
+                    orders: Math.floor(Math.random() * 8) + 1,
+                    revenue: Math.floor(Math.random() * 900) + 40,
+                    refundedAmount: Math.random() > 0.9 ? Math.floor(Math.random() * 50) : 0,
+                    isCancelled: Math.random() > 0.95,
+                    isRefunded: Math.random() > 0.9,
                     lastOrderDate: subDays(new Date(), Math.floor(Math.random() * 60)),
-                    createdAt: subDays(new Date(), Math.floor(Math.random() * 90)),
+                    createdAt: subDays(new Date(), Math.floor(Math.random() * 120)),
                     source: 'mock'
                 }))
             ];
+            allCustomers = [...allCustomers, ...mockData];
         }
 
         // --- 4. CALCULATE KPIs ---
         const validCustomersForStats = allCustomers.filter(c => !c.isCancelled && !c.isRefunded && c.revenue > 0);
-        const totalCustomersCount = allCustomers.length;
+
+        // Use lifetimeCount from DB + mock count if necessary
+        const finalLifetimeCount = Math.max(lifetimeCount, allCustomers.length);
         const newCustomersCount = allCustomers.filter(c => new Date(c.createdAt) >= startDate).length;
         const returningCustomersCount = validCustomersForStats.filter(c => c.orders >= 2).length;
         const totalRevenueSum = validCustomersForStats.reduce((sum, c) => sum + c.revenue, 0);
@@ -177,10 +180,10 @@ export async function GET(request: NextRequest) {
 
         // Segmentation
         const segments = [
-            { id: 'all', label: 'Alle Kunden', count: totalCustomersCount },
+            { id: 'all', label: 'Alle Kunden', count: finalLifetimeCount },
             { id: 'vip', label: 'VIP Kunden', count: validCustomersForStats.filter(c => c.revenue > 500).length },
             { id: 'new', label: 'Neukunden', count: allCustomers.filter(c => c.orders <= 1).length },
-            { id: 'refunded', label: 'Mit Rückerstattung', count: allCustomers.filter(c => c.isRefunded).length }
+            { id: 'refunded', label: 'Rückerstattet / Storno', count: allCustomers.filter(c => c.isRefunded || c.isCancelled).length }
         ];
 
         // Insights
@@ -190,14 +193,14 @@ export async function GET(request: NextRequest) {
         if (topValidCus) {
             insights.push({
                 title: 'KI-Insights',
-                text: `Top-Kunde (ohne Rückerstattung): ${topValidCus.name} – LTV ${topValidCus.revenue.toFixed(2)} €`,
+                text: `Top-Kunde (valide): ${topValidCus.name} – Umsatz: ${topValidCus.revenue.toFixed(2)} €`,
                 type: 'success'
             });
         }
         if (returningCustomersCount > 0) {
             insights.push({
                 title: 'Kundenbindung',
-                text: `${(returningCustomersCount / totalCustomersCount * 100).toFixed(1)}% Ihrer Kunden sind Wiederkäufer.`,
+                text: `${((returningCustomersCount / finalLifetimeCount) * 100).toFixed(1)}% Ihrer Kunden sind Wiederkäufer.`,
                 type: 'info'
             });
         }
@@ -205,18 +208,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             success: true,
             kpis: {
-                totalCustomers: { value: totalCustomersCount, trend: 5.2 },
+                totalCustomers: { value: finalLifetimeCount, trend: 5.2 },
                 newCustomers: { value: newCustomersCount, trend: 12.4 },
-                returningRate: { value: totalCustomersCount > 0 ? (returningCustomersCount / totalCustomersCount * 100).toFixed(1) : 0, trend: -2.1 },
+                returningRate: { value: finalLifetimeCount > 0 ? ((returningCustomersCount / finalLifetimeCount) * 100).toFixed(1) : 0, trend: -2.1 },
                 avgLtv: { value: avgLtvValue, trend: 8.7 }
             },
             customers: sortedByRevenue.map(c => ({
                 ...c,
-                segment: c.isRefunded ? 'Rückerstattung' : c.revenue > 500 ? 'VIP' : c.orders <= 1 ? 'Neukunde' : 'Standard'
+                segment: (c.isRefunded || c.isCancelled) ? 'Storno/Refund' : c.revenue > 500 ? 'VIP' : c.orders <= 1 ? 'Neukunde' : 'Standard'
             })),
             segments,
             insights,
-            timeline: [] // Simplified for now
+            timeline: [] // Logic for growth chart could go here
         });
     } catch (error: any) {
         console.error('[CRM API] ERROR:', error);
