@@ -14,6 +14,7 @@ import {
     MapPin
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSession, signOut } from "next-auth/react"
 
 const sidebarItems = [
     {
@@ -97,19 +98,40 @@ export function AdminSidebar() {
             </div>
 
             <div className="p-4 border-t border-slate-200">
-                <div className="flex items-center gap-3 px-2 py-3 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-sm">
-                        AD
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">Administrator</p>
-                        <p className="text-xs text-slate-500 truncate">admin@system.com</p>
-                    </div>
-                </div>
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100">
+                <UserProfile />
+                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100" onClick={() => signOut()}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Abmelden
                 </Button>
+            </div>
+        </div>
+    )
+}
+
+function UserProfile() {
+    const { data: session } = useSession()
+
+    if (!session?.user) return null
+
+    const user = session.user
+    const initials = user.name
+        ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+        : 'AD'
+
+    return (
+        <div className="flex items-center gap-3 px-2 py-3 mb-2">
+            <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-sm overflow-hidden">
+                {user.image ? (
+                    <img src={user.image} alt={user.name || 'User'} className="w-full h-full object-cover" />
+                ) : (
+                    initials
+                )}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 truncate">
+                    {user.name || 'Administrator'}
+                </p>
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
             </div>
         </div>
     )

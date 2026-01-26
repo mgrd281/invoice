@@ -2,47 +2,25 @@
 
 import { HeaderNavIcons } from '@/components/navigation/header-nav-icons'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Home, Gift, Save, Loader2, History, Mail } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Save, RefreshCcw, Sparkles } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
-import { format } from 'date-fns'
-import { de } from 'date-fns/locale'
 
-interface MarketingSettings {
-    fpdEnabled: boolean
-    fpdPercentage: number
-    fpdValidityDays: number
-    fpdEmailSubject: string
-    fpdEmailBody: string
-}
-
-interface DiscountHistoryItem {
-    id: string
-    name: string
-    email: string
-    firstPurchaseDiscountCode: string
-    firstPurchaseDiscountSentAt: string
-}
+import { GrowthDashboard } from '@/components/settings/marketing/growth-dashboard'
+import { JourneyBuilder } from '@/components/settings/marketing/journey-builder'
+import { CampaignManager } from '@/components/settings/marketing/campaign-manager'
+import { SegmentsPerformance } from '@/components/settings/marketing/segments-performance'
 
 export default function MarketingSettingsPage() {
-    const [settings, setSettings] = useState<MarketingSettings>({
-        fpdEnabled: false,
-        fpdPercentage: 10,
-        fpdValidityDays: 30,
-        fpdEmailSubject: '',
-        fpdEmailBody: ''
-    })
-    const [history, setHistory] = useState<DiscountHistoryItem[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const { showToast, ToastContainer } = useToast()
+
+    // Data State
+    const [settings, setSettings] = useState<any>({})
+    const [stats, setStats] = useState<any>({ newCustomers: 0, automationRevenue: 0, conversionRate: 0, activeAutomations: 0 })
+    const [funnel, setFunnel] = useState<any[]>([])
 
     useEffect(() => {
         loadData()
@@ -50,20 +28,23 @@ export default function MarketingSettingsPage() {
 
     const loadData = async () => {
         try {
-            setLoading(true)
-            const [settingsRes, historyRes] = await Promise.all([
+            const [settingsRes, statsRes] = await Promise.all([
                 fetch('/api/settings/marketing'),
-                fetch('/api/settings/marketing/history')
+                fetch('/api/settings/marketing/stats')
             ])
 
             if (settingsRes.ok) {
                 setSettings(await settingsRes.json())
             }
-            if (historyRes.ok) {
-                setHistory(await historyRes.json())
+
+            if (statsRes.ok) {
+                const data = await statsRes.json()
+                if (data.stats) setStats(data.stats)
+                if (data.funnel) setFunnel(data.funnel)
             }
+
         } catch (error) {
-            console.error('Error loading marketing data:', error)
+            console.error('Failed to load marketing data', error)
             showToast('Fehler beim Laden der Daten', 'error')
         } finally {
             setLoading(false)
@@ -71,23 +52,22 @@ export default function MarketingSettingsPage() {
     }
 
     const handleSave = async () => {
+        setSaving(true)
         try {
-            setSaving(true)
-            const response = await fetch('/api/settings/marketing', {
+            const res = await fetch('/api/settings/marketing', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             })
 
-            if (!response.ok) {
-                const data = await response.json()
-                throw new Error(data.error || 'Failed to save')
+            if (res.ok) {
+                showToast('Marketing-Einstellungen gespeichert', 'success')
+            } else {
+                throw new Error('Failed to save')
             }
-
-            showToast('Einstellungen erfolgreich gespeichert', 'success')
         } catch (error) {
-            console.error('Error saving settings:', error)
-            showToast(error instanceof Error ? error.message : 'Fehler beim Speichern', 'error')
+            console.error('Failed to save settings', error)
+            showToast('Fehler beim Speichern', 'error')
         } finally {
             setSaving(false)
         }
@@ -95,163 +75,120 @@ export default function MarketingSettingsPage() {
 
     if (loading) {
         return (
-            <div className="container mx-auto p-6 flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin" />
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm border-b">
+        <div className="min-h-screen bg-slate-50 pb-20">
+            {/* Sticky Header */}
+            <header className="bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-6">
+                    <div className="flex justify-between items-center py-4">
                         <div className="flex items-center gap-4">
                             <HeaderNavIcons />
-                            <div className="ml-1">
-                                <h1 className="text-2xl font-bold text-gray-900">
-                                    Marketing & Automatisierung
+                            <div>
+                                <h1 className="text-xl font-bold text-slate-900">
+                                    Growth Automation Hub
                                 </h1>
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Enterprise Marketing & Journeys
+                                </p>
                             </div>
                         </div>
-                        <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
-                            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                            Speichern
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 ${settings.fpdEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                <div className={`w-2 h-2 rounded-full ${settings.fpdEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                                {settings.fpdEnabled ? 'Automation Active' : 'Paused'}
+                            </div>
+                            <Button size="sm" onClick={handleSave} disabled={saving} className="bg-slate-900 hover:bg-slate-800">
+                                <Save className="h-4 w-4 mr-2" />
+                                {saving ? 'Speichert...' : 'Veröffentlichen'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-                {/* Automation Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Gift className="h-5 w-5 mr-2 text-pink-600" />
-                            Erstkauf-Rabatt (10%)
-                        </CardTitle>
-                        <CardDescription>
-                            Senden Sie automatisch einen Rabattcode an Kunden nach ihrem ersten Kauf.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Automatisierung aktivieren</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Wenn aktiviert, erhalten Neukunden nach dem ersten Kauf (Status "Paid") automatisch einen Rabattcode.
-                                </p>
-                            </div>
-                            <Switch
-                                checked={settings.fpdEnabled}
-                                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, fpdEnabled: checked }))}
-                            />
-                        </div>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Rabattwert (%)</Label>
-                                <Input
-                                    type="number"
-                                    value={settings.fpdPercentage}
-                                    onChange={(e) => setSettings(prev => ({ ...prev, fpdPercentage: parseInt(e.target.value) || 10 }))}
-                                    min="1"
-                                    max="100"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Gültigkeitsdauer (Tage)</Label>
-                                <Input
-                                    type="number"
-                                    value={settings.fpdValidityDays}
-                                    onChange={(e) => setSettings(prev => ({ ...prev, fpdValidityDays: parseInt(e.target.value) || 30 }))}
-                                    min="1"
-                                    max="365"
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Zone A: KPIs */}
+                <section>
+                    <GrowthDashboard stats={stats} funnel={funnel} />
+                </section>
 
-                {/* Email Template */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Mail className="h-5 w-5 mr-2 text-blue-600" />
-                            E-Mail Vorlage
-                        </CardTitle>
-                        <CardDescription>
-                            Passen Sie den Inhalt der E-Mail an, die an Ihre Kunden gesendet wird.
-                            Verfügbare Platzhalter: {'{{ customer_name }}'}, {'{{ discount_code }}'}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Betreff</Label>
-                            <Input
-                                value={settings.fpdEmailSubject}
-                                onChange={(e) => setSettings(prev => ({ ...prev, fpdEmailSubject: e.target.value }))}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Nachricht</Label>
-                            <Textarea
-                                value={settings.fpdEmailBody}
-                                onChange={(e) => setSettings(prev => ({ ...prev, fpdEmailBody: e.target.value }))}
-                                className="min-h-[200px] font-mono text-sm"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                <Tabs defaultValue="journey" className="space-y-8">
+                    <div className="flex items-center justify-between">
+                        <TabsList className="bg-white border border-slate-200 p-1 rounded-lg">
+                            <TabsTrigger value="journey" className="data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">Customer Journeys</TabsTrigger>
+                            <TabsTrigger value="campaigns" className="data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">Kampagnen & Vorlagen</TabsTrigger>
+                            <TabsTrigger value="segments" className="data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">Segmente</TabsTrigger>
+                        </TabsList>
 
-                {/* History */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <History className="h-5 w-5 mr-2 text-gray-600" />
-                            Versandhistorie
-                        </CardTitle>
-                        <CardDescription>
-                            Die letzten 50 versendeten Rabattcodes.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-500 font-medium">
-                                    <tr>
-                                        <th className="p-4">Datum</th>
-                                        <th className="p-4">Kunde</th>
-                                        <th className="p-4">Code</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {history.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={3} className="p-8 text-center text-gray-500">
-                                                Noch keine Rabattcodes versendet.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        history.map((item) => (
-                                            <tr key={item.id}>
-                                                <td className="p-4">
-                                                    {format(new Date(item.firstPurchaseDiscountSentAt), 'dd.MM.yyyy HH:mm', { locale: de })}
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="font-medium">{item.name}</div>
-                                                    <div className="text-gray-500 text-xs">{item.email}</div>
-                                                </td>
-                                                <td className="p-4 font-mono">{item.firstPurchaseDiscountCode}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                        <Button variant="ghost" size="sm" className="text-slate-500" onClick={loadData}>
+                            <RefreshCcw className="w-3 h-3 mr-2" />
+                            Daten aktualisieren
+                        </Button>
+                    </div>
+
+                    <TabsContent value="journey" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Zone B: Journey Builder */}
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                            <div className="lg:col-span-3">
+                                <div className="mb-4">
+                                    <h2 className="text-lg font-bold text-slate-900">Journey Builder</h2>
+                                    <p className="text-sm text-slate-500">Visualisieren und bearbeiten Sie Ihre Automatisierungs-Flows.</p>
+                                </div>
+                                <JourneyBuilder settings={settings} onUpdate={setSettings} type="fpd" />
+                            </div>
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-slate-900 mt-14">Aktiver Flow</h3>
+                                <div className="p-3 bg-white border border-violet-200 rounded-lg shadow-sm cursor-pointer ring-2 ring-violet-500">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-emerald-100 p-2 rounded-lg">
+                                            <Sparkles className="w-4 h-4 text-emerald-600" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-medium text-slate-900">Erstkauf-Rabatt</div>
+                                            <div className="text-xs text-slate-500">Trigger: Checkout (Paid)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm cursor-pointer opacity-60 hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-slate-100 p-2 rounded-lg">
+                                            <Sparkles className="w-4 h-4 text-slate-500" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-medium text-slate-900">Warenkorb Abbruch</div>
+                                            <div className="text-xs text-slate-500">Trigger: Cart Abandoned</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 p-4 bg-slate-100 rounded-lg text-xs text-slate-500">
+                                    <p className="font-semibold text-slate-700 mb-1">Hinweis:</p>
+                                    Aktuell wird der Erstkauf-Flow bearbeitet. Wechseln Sie in den Kampagnen-Tab, um andere Flows zu verwalten.
+                                </div>
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    </TabsContent>
+
+                    <TabsContent value="campaigns" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Zone C: Campaigns */}
+                        <CampaignManager settings={settings} onUpdate={setSettings} type="fpd" />
+                    </TabsContent>
+
+                    <TabsContent value="segments" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Zone D: Segments */}
+                        <SegmentsPerformance />
+                    </TabsContent>
+                </Tabs>
+            </main>
+
             <ToastContainer />
         </div>
     )

@@ -1,29 +1,75 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, UserCheck, ShieldAlert, Activity, ArrowUpRight } from "lucide-react"
-import { useToast } from "@/components/ui/toast"
+import { Users, UserCheck, ShieldAlert, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatDistanceToNow } from 'date-fns'
+import { de } from 'date-fns/locale'
+
+interface AdminStats {
+    totalUsers: number
+    verifiedUsers: number
+    adminUsers: number
+    activeToday: number
+}
+
+interface ActivityLog {
+    id: string
+    action: string
+    ipAddress?: string
+    createdAt: string
+    user?: {
+        name: string | null
+        email: string
+        image: string | null
+    }
+}
+
+interface GrowthData {
+    date: string
+    count: number
+    formattedDate: string
+}
 
 export default function AdminDashboardPage() {
-    const [stats, setStats] = useState<any>(null)
+    const [stats, setStats] = useState<AdminStats | null>(null)
+    const [activities, setActivities] = useState<ActivityLog[]>([])
+    const [growthData, setGrowthData] = useState<GrowthData[]>([])
     const [loading, setLoading] = useState(true)
-    const { showToast } = useToast()
 
-    useEffect(() => {
-        fetch('/api/admin/stats')
-            .then(res => res.json())
-            .then(data => {
-                setStats(data)
-                setLoading(false)
-            })
-            .catch(err => {
-                console.error(err)
-                setLoading(false)
-            })
+    const loadData = useCallback(async () => {
+        try {
+            const [statsRes, activityRes, growthRes] = await Promise.all([
+                fetch('/api/admin/stats'),
+                fetch('/api/admin/activity?limit=10'),
+                fetch('/api/admin/growth?range=30')
+            ])
+
+            if (statsRes.ok) setStats(await statsRes.json())
+            if (activityRes.ok) setActivities(await activityRes.json())
+            if (growthRes.ok) setGrowthData(await growthRes.json())
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error)
+        } finally {
+            setLoading(false)
+        }
     }, [])
 
-    if (loading) return <div className="p-8">Lade Dashboard...</div>
+    useEffect(() => {
+        loadData()
+        const interval = setInterval(loadData, 10000) // Poll every 10s
+        return () => clearInterval(interval)
+    }, [loadData])
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -34,86 +80,160 @@ export default function AdminDashboardPage() {
 
             {/* KPI Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="border-slate-200">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-slate-500 text-sm font-medium">Gesamtbenutzer</span>
-                            <Users className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <h3 className="text-3xl font-bold text-slate-900">{stats?.totalUsers || 0}</h3>
-                            <span className="text-xs text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded flex items-center">
-                                <ArrowUpRight className="w-3 h-3 mr-0.5" /> +12%
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-slate-200">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-slate-500 text-sm font-medium">Verifiziert</span>
-                            <UserCheck className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <h3 className="text-3xl font-bold text-slate-900">{stats?.verifiedUsers || 0}</h3>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-slate-200">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-slate-500 text-sm font-medium">Admins</span>
-                            <ShieldAlert className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <h3 className="text-3xl font-bold text-slate-900">{stats?.adminUsers || 0}</h3>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-slate-200">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-slate-500 text-sm font-medium">Heute Aktiv</span>
-                            <Activity className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <h3 className="text-3xl font-bold text-slate-900">{stats?.activeToday || 0}</h3>
-                    </CardContent>
-                </Card>
+                <KPICard
+                    title="Gesamtbenutzer"
+                    value={stats?.totalUsers || 0}
+                    icon={Users}
+                    subtext="Registrierte Benutzer"
+                />
+                <KPICard
+                    title="Verifiziert"
+                    value={stats?.verifiedUsers || 0}
+                    icon={UserCheck}
+                    subtext="E-Mail bestätigt"
+                />
+                <KPICard
+                    title="Admins"
+                    value={stats?.adminUsers || 0}
+                    icon={ShieldAlert}
+                    subtext="Systemadministratoren"
+                />
+                <KPICard
+                    title="Heute Aktiv"
+                    value={stats?.activeToday || 0}
+                    icon={Activity}
+                    subtext="Logins in 24h"
+                    highlight
+                />
             </div>
 
             {/* Charts & Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="col-span-2 border-slate-200">
+                <Card className="col-span-2 border-slate-200 shadow-sm">
                     <CardHeader>
                         <CardTitle>Benutzerwachstum</CardTitle>
-                        <CardDescription>Anmeldungen in den letzten 30 Tagen.</CardDescription>
+                        <CardDescription>Neuanmeldungen in den letzten 30 Tagen.</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[300px] flex items-center justify-center bg-slate-50/50 rounded-lg mx-6 mb-6 border border-dashed border-slate-200 text-slate-400">
-                        Chart Component Placeholder
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={growthData}>
+                                <defs>
+                                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis
+                                    dataKey="formattedDate"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fontSize: 12, fill: '#64748b' }}
+                                    dy={10}
+                                />
+                                <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fontSize: 12, fill: '#64748b' }}
+                                    allowDecimals={false}
+                                />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="#8b5cf6"
+                                    fillOpacity={1}
+                                    fill="url(#colorCount)"
+                                    strokeWidth={3}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200">
+                <Card className="border-slate-200 shadow-sm flex flex-col">
                     <CardHeader>
                         <CardTitle>Letzte Aktivitäten</CardTitle>
                         <CardDescription>Echtzeit-Feed.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-1 overflow-auto max-h-[600px] pr-2 custom-scrollbar">
                         <div className="space-y-6">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="flex gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-500">
-                                        JD
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <p className="text-sm font-medium text-slate-900">John Doe hat sich angemeldet.</p>
-                                        <p className="text-xs text-slate-500">Vor {i * 15} Minuten • IP 192.168.1.{i}</p>
-                                    </div>
-                                </div>
-                            ))}
+                            {activities.length === 0 ? (
+                                <p className="text-sm text-slate-500 text-center py-4">Keine Aktivitäten gefunden.</p>
+                            ) : (
+                                activities.map((activity) => (
+                                    <ActivityItem key={activity.id} activity={activity} />
+                                ))
+                            )}
                         </div>
                     </CardContent>
                 </Card>
             </div>
         </div>
     )
+}
+
+function KPICard({ title, value, icon: Icon, subtext, highlight = false }: any) {
+    return (
+        <Card className="border-slate-200 shadow-sm">
+            <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-500 text-sm font-medium">{title}</span>
+                    <Icon className={`h-4 w-4 ${highlight ? 'text-violet-600' : 'text-slate-400'}`} />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-3xl font-bold text-slate-900">{value}</h3>
+                    <span className="text-xs text-slate-500">
+                        {subtext}
+                    </span>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function ActivityItem({ activity }: { activity: ActivityLog }) {
+    const user = activity.user
+    const initials = user?.name
+        ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+        : 'SY' // System
+
+    const displayName = user?.name || 'System'
+    const ip = activity.ipAddress || 'IP unbekannt'
+
+    return (
+        <div className="flex gap-4">
+            <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden ${user ? 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-400' // System styling
+                }`}>
+                {user?.image ? (
+                    <img src={user.image} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                    initials
+                )}
+            </div>
+            <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-900">
+                    <span className="font-semibold">{displayName}</span> {formatAction(activity.action)}
+                </p>
+                <p className="text-xs text-slate-500">
+                    Vor {formatDistanceToNow(new Date(activity.createdAt), { locale: de })} • {ip}
+                </p>
+            </div>
+        </div>
+    )
+}
+
+function formatAction(action: string) {
+    const map: Record<string, string> = {
+        'user.login_success': 'hat sich angemeldet.',
+        'user.login_failed': 'hatte einen fehlgeschlagenen Login.',
+        'user.logout': 'hat sich abgemeldet.',
+        'user.created': 'hat sich registriert.',
+        'user.updated': 'hat das Profil aktualisiert.',
+        'audit.log': 'Ereignis protokolliert',
+        // Add more mappings as needed
+    }
+    return map[action] || action
 }
