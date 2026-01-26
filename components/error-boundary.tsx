@@ -34,21 +34,20 @@ export class ErrorBoundary extends Component<Props, State> {
             }
 
             return (
-                <div className="p-8 text-center bg-red-50 border border-red-100 rounded-3xl space-y-4">
-                    <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mx-auto">
-                        <AlertTriangle className="w-6 h-6" />
+                <div className="p-12 text-center bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-6">
+                    <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mx-auto border border-slate-100">
+                        <AlertTriangle className="w-8 h-8" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 uppercase">Komponenten-Fehler</h3>
-                        <p className="text-xs text-slate-500 mt-1">Dieser Teil der Seite konnte nicht geladen werden.</p>
+                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Teil konnte nicht geladen werden</h3>
+                        <p className="text-sm font-medium text-slate-500 mt-1">Ein Hintergrund-Prozess wurde unerwartet beendet.</p>
                     </div>
                     <Button
-                        variant="outline"
-                        size="sm"
+                        variant="ghost"
                         onClick={() => this.setState({ hasError: false })}
-                        className="h-8 px-4 font-black text-[10px] uppercase border-red-200 text-red-600 hover:bg-red-100"
+                        className="h-12 px-8 font-black text-[10px] uppercase bg-slate-900 text-white rounded-xl shadow-xl shadow-slate-200 hover:bg-slate-800"
                     >
-                        <RefreshCcw className="w-3 h-3 mr-2" /> Neu laden
+                        <RefreshCcw className="w-4 h-4 mr-2" /> Neu laden
                     </Button>
                 </div>
             )

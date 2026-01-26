@@ -73,36 +73,45 @@ export async function POST(req: Request) {
             let title = ''
 
             try {
-                // We use a structured prompt to get Title and Content separated
+                // EXPLICIT GERMAN LOCK & ENTERPRISE TONE
                 const prompt = `
-                Write a professional, SEO-optimized blog post for an eCommerce store about: "${topic}".
-                Target Audience: Enterprise / B2B.
-                Tone: Professional, Innovative.
-                Format: HTML (body only, no html/body tags).
-                Structure:
-                - Catchy H1 Title (Put this on the very first line, purely the text of the title, no HTML tags around the title inline)
-                - Introduction
-                - 3-4 Key Sections with H2
-                - Conclusion
+                Rolle: Professioneller SEO-Experte.
+                Aufgabe: Schreiben Sie einen SEO-optimierten Blog-Artikel über: "${topic}".
+                SPRACHE: NUR DEUTSCH (DE). KEIN ENGLISCH.
+                TONFALL: Professionell, sachlich, Enterprise-Level. Keine Emojis.
                 
-                Output the Title on the first line, and the HTML Body starting from the second line.
+                Format: HTML (nur Body-Inhalt, keine html/body/head Tags).
+                Struktur:
+                - Erste Zeile: Ein aussagekräftiger H1-Titel (Kein HTML, nur Text).
+                - Einleitung (Professional)
+                - 3-4 Abschnitte mit H2-Überschriften
+                - Fazit
+                
+                WICHTIG: Der gesamte Text MUSS in deutscher Sprache verfasst sein.
                 `
 
                 const rawResult = await openaiClient.generateSEOText(prompt)
 
-                if (!rawResult) throw new Error('No content generated')
+                if (!rawResult) throw new Error('Kein Inhalt generiert')
+
+                // Verification: Basic check if common German words exist (e.g. "der", "die", "das", "und", "ist")
+                // In a production app, we'd use a proper language detection library.
+                const germanWords = ['der', 'die', 'das', 'und', 'ist', 'für', 'mit', 'von']
+                const isGerman = germanWords.some(word => rawResult.toLowerCase().includes(` ${word} `))
+
+                if (!isGerman) {
+                    throw new Error('Generierter Inhalt entspricht nicht der Spracheinstellung (Deutsch). Bitte erneut versuchen.')
+                }
 
                 const lines = rawResult.split('\n')
-                title = lines[0].replace(/<[^>]*>/g, '').trim() // Remove potential HTML tags from title
+                title = lines[0].replace(/<[^>]*>/g, '').trim()
                 content = lines.slice(1).join('\n').trim()
 
-                if (!content) content = `<p>Hier folgt der Inhalt zu ${topic}...</p>` // Fallback
+                if (!content) content = `<p>Hier folgt der Inhalt zu ${topic}...</p>`
 
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Generation failed', err)
-                // Fallback if OpenAI fails or key missing
-                title = `${topic} - Trends 2026`
-                content = `<p>Dies ist ein automatisch generierter Platzhalter für das Thema <strong>${topic}</strong>.</p><p>Die KI-Generierung war in diesem Moment nicht verfügbar.</p>`
+                return NextResponse.json({ success: false, error: err.message || 'KI-Generierung fehlgeschlagen' })
             }
 
             // 2. Publish to Shopify

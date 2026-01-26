@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
     Play, Search, Sparkles, Activity, Layout,
     ChevronRight, ArrowRight, Settings2, Info,
@@ -20,7 +21,7 @@ export function AutomationCanvas() {
             detail: 'Täglich @ 09:00',
             icon: Calendar,
             color: 'bg-blue-500',
-            params: ['Region: DE', 'Hour: 09:00', 'Days: Weekdays']
+            params: ['Region: DE', 'Stunde: 09:00', 'Tage: Werktage']
         },
         {
             id: 'res',
@@ -29,7 +30,7 @@ export function AutomationCanvas() {
             detail: 'Shopify & SaaS Trends',
             icon: Search,
             color: 'bg-emerald-500',
-            params: ['Competitors: Enabled', 'Keyword Cap: 50', 'Freshness: 24h']
+            params: ['Konkurrenz: Aktiv', 'Keyword-Limit: 50', 'Aktualität: 24h']
         },
         {
             id: 'gen',
@@ -38,7 +39,7 @@ export function AutomationCanvas() {
             detail: '900+ Wörter, Expert',
             icon: Sparkles,
             color: 'bg-violet-500',
-            params: ['Tone: Professional', 'Links: Internal', 'Section: FAQ']
+            params: ['Ton: Professionell', 'Links: Intern', 'Sektion: FAQ']
         },
         {
             id: 'seo',
@@ -47,7 +48,7 @@ export function AutomationCanvas() {
             detail: 'Score > 80, Uni: 95%',
             icon: ShieldCheck,
             color: 'bg-amber-500',
-            params: ['SEO Target: High', 'Min Length: 900', 'Unique: Check']
+            params: ['SEO-Ziel: Hoch', 'Min. Länge: 900', 'Eindeutigkeit: Check']
         },
         {
             id: 'pub',
@@ -56,7 +57,7 @@ export function AutomationCanvas() {
             detail: 'Blog: News/SaaS',
             icon: Layout,
             color: 'bg-slate-800',
-            params: ['Mode: Auto-Publish', 'Author: AI Agent', 'Tags: Dynamic']
+            params: ['Modus: Auto-Post', 'Autor: KI-Agent', 'Tags: Dynamisch']
         }
     ]
 
@@ -138,8 +139,8 @@ export function AutomationCanvas() {
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="outline" className="h-10 px-4 font-black text-[10px] uppercase border-slate-200">Reset</Button>
-                            <Button className="h-10 px-6 font-black text-[10px] uppercase bg-slate-900 text-white">Save Changes</Button>
+                            <Button variant="outline" className="h-10 px-4 font-black text-[10px] uppercase border-slate-200">Zurücksetzen</Button>
+                            <Button className="h-10 px-6 font-black text-[10px] uppercase bg-slate-900 text-white">Änderungen speichern</Button>
                         </div>
                     </div>
                 </Card>
