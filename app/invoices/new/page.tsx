@@ -15,8 +15,9 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   FileText, ArrowLeft, Home, Plus, Trash2, Save, Calculator, Bookmark, Download, QrCode,
   MoreHorizontal, Calendar, Search, Settings, ChevronDown, Check, AlertCircle, Info,
-  Copy, Printer, Clock, Zap, Sparkles, User, Building2, Globe, CreditCard, Layout
+  Copy, Printer, Clock, Zap, Sparkles, User, Building2, Globe, CreditCard, Layout, RefreshCw
 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { DashboardUpdater } from '@/lib/dashboard-updater'
 import { useAuth } from '@/hooks/use-auth-compat'
@@ -170,6 +171,54 @@ export default function NewInvoicePage() {
   const [activeSection, setActiveSection] = useState('recipient')
   const [summaryMode, setSummaryMode] = useState<'net' | 'gross'>('net')
   const [isOptionsExpanded, setIsOptionsExpanded] = useState(false)
+
+  // Search State
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Debounced Search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([])
+      setShowSearchDropdown(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      setShowSearchDropdown(true)
+      try {
+        const response = await fetch(`/api/contacts/search?q=${encodeURIComponent(searchQuery)}`)
+        const result = await response.json()
+        if (result.ok) {
+          setSearchResults(result.data.results)
+        }
+      } catch (error) {
+        console.error('Search error:', error)
+      } finally {
+        setSearching(false)
+      }
+    }, 350)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const selectContact = (contact: any) => {
+    setCustomer({
+      type: contact.source === 'shopify_customer' || contact.source === 'shopify_order' ? 'person' : 'organization',
+      name: contact.displayName,
+      companyName: contact.company || '',
+      email: contact.email || '',
+      address: contact.address.line1,
+      zipCode: contact.address.zip,
+      city: contact.address.city,
+      country: contact.address.country || 'DE'
+    })
+    setShowSearchDropdown(false)
+    setSearchQuery('')
+  }
 
   // Load item templates from localStorage and invoice templates from API
   useEffect(() => {
@@ -572,13 +621,81 @@ export default function NewInvoicePage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
                       placeholder="Name, E-Mail oder Firma eingeben..."
-                      value={customer.name}
-                      onChange={(e) => setCustomer(prev => ({ ...prev, name: e.target.value }))}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
                       className="pl-11 h-12 bg-slate-50/50 border-slate-200/60 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all"
                     />
-                    <Button size="sm" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-900 font-bold text-xs hover:bg-slate-100 rounded-lg">
-                      <Search className="w-3.5 h-3.5 mr-1" /> Kunde suchen
-                    </Button>
+                    {searching ? (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <RefreshCw className="w-4 h-4 text-slate-400 animate-spin" />
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-900 font-bold text-xs hover:bg-slate-100 rounded-lg">
+                        <Search className="w-3.5 h-3.5 mr-1" /> Kunde suchen
+                      </Button>
+                    )}
+
+                    {/* Search Dropdown */}
+                    {showSearchDropdown && (searchQuery.length >= 2) && (
+                      <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-200 shadow-2xl rounded-2xl z-[100] max-h-[400px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                        {searchResults.length > 0 ? (
+                          <div className="p-2 space-y-1">
+                            {['app', 'invoice', 'shopify_customer', 'shopify_order'].map((source: string) => {
+                              const sourceResults = searchResults.filter(r => r.source === source)
+                              if (sourceResults.length === 0) return null
+
+                              const sourceLabel = {
+                                app: 'Kunden (App)',
+                                invoice: 'Kunden (aus Rechnungen)',
+                                shopify_customer: 'Shopify Kunden',
+                                shopify_order: 'Shopify Bestellungen'
+                              }[source]
+
+                              const sourceBadge = {
+                                app: 'App',
+                                invoice: 'Rechnung',
+                                shopify_customer: 'Shopify',
+                                shopify_order: 'Bestellung'
+                              }[source]
+
+                              return (
+                                <div key={source} className="pb-2">
+                                  <div className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">{sourceLabel}</div>
+                                  {sourceResults.map(res => (
+                                    <button
+                                      key={res.id}
+                                      onClick={() => selectContact(res)}
+                                      className="w-full flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors text-left group/item"
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-slate-900">{res.displayName}</span>
+                                        {res.email && <span className="text-[10px] text-slate-400 font-medium">{res.email}</span>}
+                                        {res.company && <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{res.company}</span>}
+                                      </div>
+                                      <Badge variant={"outline" as any} className="text-[9px] font-black uppercase tracking-tighter bg-slate-50 text-slate-500 border-slate-100 group-hover/item:bg-slate-900 group-hover/item:text-white transition-colors">
+                                        {sourceBadge}
+                                      </Badge>
+                                    </button>
+                                  ))}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : !searching ? (
+                          <div className="p-8 text-center">
+                            <User className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Keine Kontakte gefunden</p>
+                          </div>
+                        ) : null}
+
+                        {/* Backdrop to close */}
+                        <div
+                          className="fixed inset-0 z-[-1]"
+                          onClick={() => setShowSearchDropdown(false)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -617,7 +734,7 @@ export default function NewInvoicePage() {
                 <div className="flex items-center gap-4">
                   <div className="flex-1 space-y-2">
                     <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Land</Label>
-                    <Select value={customer.country} onValueChange={(v) => setCustomer(prev => ({ ...prev, country: v }))}>
+                    <Select value={customer.country} onValueChange={(v: string) => setCustomer(prev => ({ ...prev, country: v }))}>
                       <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200/60 rounded-xl focus:bg-white transition-all">
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4 text-slate-400" />
@@ -661,7 +778,7 @@ export default function NewInvoicePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 block px-1">Dokumententyp</Label>
-                    <Select value={documentKind} onValueChange={(v) => setDocumentKind(v as DocumentKind)}>
+                    <Select value={documentKind} onValueChange={(v: string) => setDocumentKind(v as DocumentKind)}>
                       <SelectTrigger className="h-12 border-slate-200/60 bg-white rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
                         <SelectValue />
                       </SelectTrigger>
@@ -815,7 +932,7 @@ export default function NewInvoicePage() {
                             onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                             className="w-16 h-9 text-center bg-slate-50 border-slate-200/60 rounded-lg font-bold text-sm"
                           />
-                          <Select value={item.unit} onValueChange={(v) => updateItem(item.id, 'unit', v)}>
+                          <Select value={item.unit} onValueChange={(v: string) => updateItem(item.id, 'unit', v)}>
                             <SelectTrigger className="w-20 h-9 bg-slate-50 border-slate-200/60 rounded-lg text-xs font-bold text-slate-500">
                               <SelectValue />
                             </SelectTrigger>
@@ -839,7 +956,7 @@ export default function NewInvoicePage() {
 
                         <div className="col-span-1 md:col-span-1 flex flex-col items-center justify-center gap-1">
                           <div className="relative w-full px-2">
-                            <Select value={String(item.vat)} onValueChange={(v) => updateItem(item.id, 'vat', parseFloat(v))}>
+                            <Select value={String(item.vat)} onValueChange={(v: string) => updateItem(item.id, 'vat', parseFloat(v))}>
                               <SelectTrigger className="h-7 border-none bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black p-0 justify-center">
                                 <SelectValue />
                               </SelectTrigger>
@@ -903,10 +1020,13 @@ export default function NewInvoicePage() {
                     </div>
                     <h2 className="text-lg font-bold">Kopf- & Fußtexte</h2>
                   </div>
-                  <Select value={selectedTemplate?.id} onValueChange={(id) => {
-                    const t = invoiceTemplates.find(x => x.id === id)
-                    if (t) setSelectedTemplate(t)
-                  }}>
+                  <Select
+                    value={selectedTemplate?.id}
+                    onValueChange={(v: string) => {
+                      const template = invoiceTemplates.find((t: any) => t.id === v)
+                      if (template) setSelectedTemplate(template)
+                    }}
+                  >
                     <SelectTrigger className="w-48 h-9 border-slate-200 bg-slate-50 rounded-lg text-xs font-bold">
                       <SelectValue placeholder="Textvorlage wählen" />
                     </SelectTrigger>
@@ -1003,7 +1123,7 @@ export default function NewInvoicePage() {
                     <div className="space-y-2 bg-white p-4 rounded-xl border border-slate-200/50">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Währung & Skonto</Label>
                       <div className="flex gap-2 mt-2">
-                        <Select value={currency} onValueChange={setCurrency}>
+                        <Select value={currency} onValueChange={(v: string) => setCurrency(v)}>
                           <SelectTrigger className="h-9 border-slate-200 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
                           <SelectContent className="rounded-xl"><SelectItem value="EUR">EUR (€)</SelectItem><SelectItem value="USD">USD ($)</SelectItem></SelectContent>
                         </Select>

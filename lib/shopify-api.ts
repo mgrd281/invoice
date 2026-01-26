@@ -806,17 +806,45 @@ export class ShopifyAPI {
   async getCustomers(params: {
     limit?: number
     since_id?: number
+    query?: string
   } = {}): Promise<any[]> {
     try {
       const searchParams = new URLSearchParams()
       searchParams.set('limit', (params.limit || 250).toString())
       if (params.since_id) searchParams.set('since_id', params.since_id.toString())
+      if (params.query) searchParams.set('query', params.query)
 
       const response = await this.makeRequest(`/customers.json?${searchParams}`)
       const data = await response.json()
       return data.customers || []
     } catch (error) {
       console.error('Error fetching Shopify customers:', error)
+      return []
+    }
+  }
+
+  /**
+   * Search customers by query (name, email, company)
+   */
+  async searchCustomers(query: string): Promise<any[]> {
+    return this.getCustomers({ query, limit: 10 })
+  }
+
+  /**
+   * Flexible order search (partial matches)
+   */
+  async searchOrdersFlexible(query: string): Promise<ShopifyOrder[]> {
+    try {
+      const searchParams = new URLSearchParams()
+      searchParams.set('query', query)
+      searchParams.set('status', 'any')
+      searchParams.set('limit', '10')
+
+      const response = await this.makeRequest(`/orders/search.json?${searchParams}`)
+      const data = await response.json()
+      return data.orders || []
+    } catch (error) {
+      console.error('Error searching Shopify orders:', error)
       return []
     }
   }
@@ -865,7 +893,7 @@ export class ShopifyAPI {
   }): Promise<any> {
     try {
       console.log(`📝 Creating article in blog ${blogId}...`)
-      const response = await this.makeRequest(`/ blogs / ${blogId}/articles.json`, {
+      const response = await this.makeRequest(`/blogs/${blogId}/articles.json`, {
         method: 'POST',
         body: JSON.stringify({ article: articleData })
       })
