@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, subDays, format } from 'date-fns'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { ShopifyAPI } from '@/lib/shopify-api'
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,6 @@ export async function GET(request: NextRequest) {
         const isAdmin = (sessionAuth.user as any).isAdmin;
 
         if (!organizationId && !isAdmin) {
-            // Fallback for old sessions or missing info
             const user = await prisma.user.findUnique({
                 where: { email: sessionAuth.user.email! },
                 select: { organizationId: true, role: true }
@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
             // @ts-ignore
             organizationId = user?.organizationId;
         }
+
         const searchParams = request.nextUrl.searchParams
         fromStr = searchParams.get('from')
         toStr = searchParams.get('to')
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // 1. Fetch Sessions and Events within range
+        // --- 1. Fetch Application Traffic Sessions (Visitor Tracking) ---
         const sessions = await prisma.visitorSession.findMany({
             where: {
                 organizationId: isAdmin ? undefined : (organizationId || undefined),
@@ -77,10 +78,18 @@ export async function GET(request: NextRequest) {
             }
         })
 
+        // --- 2. Fetch REAL Shopify Store Data (Orders & Products) ---
+        const shopifyApi = new ShopifyAPI()
+        const orders = await shopifyApi.getOrders({
+            created_at_min: startDate.toISOString(),
+            created_at_max: endDate.toISOString(),
+            status: 'any'
+        })
+
+        // --- 3. Aggregate App Traffic Metrics ---
         const totalSessions = sessions.length
         const totalVisitors = new Set(sessions.map((s: any) => s.visitorId)).size
 
-        // Active visitors (last 30 minutes for aggregation)
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
         const activeVisitors = await prisma.visitorSession.count({
             where: {
@@ -90,101 +99,63 @@ export async function GET(request: NextRequest) {
             }
         })
 
-        // 2. Calculate KPIs
         let totalDuration = 0
         let totalPages = 0
         let bounceCount = 0
-        let conversionCount = 0
 
         sessions.forEach((session: any) => {
-            // Duration
             const duration = (new Date(session.lastActiveAt).getTime() - new Date(session.startTime).getTime()) / 1000
             totalDuration += duration
-
-            // Page Views
             const pageViews = session.events.filter((e: any) => e.type === 'page_view').length
             totalPages += pageViews
+            if (pageViews <= 1 && session.events.length <= 2) bounceCount++
+        })
 
-            // Bounce (only 1 page view and no other meaningful interaction)
-            if (pageViews <= 1 && session.events.length <= 2) {
-                bounceCount++
+        // --- 4. Aggregate Shopify Financial Metrics ---
+        let totalRevenue = 0
+        let orderCount = orders.length
+        let totalTax = 0
+        let refunds = 0
+
+        orders.forEach(order => {
+            const price = parseFloat(order.total_price)
+            totalRevenue += price
+            totalTax += parseFloat(order.total_tax)
+            if (order.financial_status === 'refunded') {
+                refunds += price
             }
-
-            // Conversion (Order placed)
-            if (session.purchaseStatus === 'PAID') {
-                conversionCount++
-            }
         })
 
-        const avgSessionDuration = totalSessions > 0 ? Math.round(totalDuration / totalSessions) : 0
-        const pagesPerSession = totalSessions > 0 ? parseFloat((totalPages / totalSessions).toFixed(1)) : 0
-        const bounceRate = totalSessions > 0 ? Math.round((bounceCount / totalSessions) * 100) : 0
-        const conversionRate = totalSessions > 0 ? parseFloat(((conversionCount / totalSessions) * 100).toFixed(1)) : 0
+        const netRevenue = totalRevenue - refunds
+        const aov = orderCount > 0 ? parseFloat((totalRevenue / orderCount).toFixed(2)) : 0
+        const conversionRate = totalSessions > 0 ? parseFloat(((orderCount / totalSessions) * 100).toFixed(2)) : 0
 
-        // 3. Device & System Distribution
-        const devices: Record<string, number> = {}
-        const osDistribution: Record<string, number> = {}
+        // --- 5. Timeline & Distributions ---
+        const timelineMap: Record<string, { sessions: number, revenue: number }> = {}
 
-        sessions.forEach((s: any) => {
-            const d = s.deviceType || 'Unknown'
-            devices[d] = (devices[d] || 0) + 1
-
-            const o = s.os || 'Unknown'
-            osDistribution[o] = (osDistribution[o] || 0) + 1
-        })
-
-        // 4. Traffic Sources
-        const sources: Record<string, number> = {}
-        sessions.forEach((s: any) => {
-            const src = s.sourceLabel || 'Direct'
-            sources[src] = (sources[src] || 0) + 1
-        })
-
-        // 5. Timeline Data (Daily)
-        const timelineMap: Record<string, { sessions: number, visitors: number }> = {}
+        // Fill sessions
         sessions.forEach((s: any) => {
             const day = format(new Date(s.createdAt), 'yyyy-MM-dd')
-            if (!timelineMap[day]) {
-                timelineMap[day] = { sessions: 0, visitors: 0 }
-            }
+            if (!timelineMap[day]) timelineMap[day] = { sessions: 0, revenue: 0 }
             timelineMap[day].sessions++
         })
 
-        // 6. Top Pages Analysis
-        const pageStats: Record<string, { views: number, duration: number, exits: number }> = {}
-        sessions.forEach((session: any) => {
-            const sessionEvents = session.events.filter((e: any) => e.type === 'page_view')
-            sessionEvents.forEach((ev: any, idx: number) => {
-                const path = ev.path || '/'
-                if (!pageStats[path]) {
-                    pageStats[path] = { views: 0, duration: 0, exits: 0 }
-                }
-                pageStats[path].views++
-
-                // Calculate duration on this page (time until next event or end of session)
-                const currentIdx = session.events.indexOf(ev);
-                const nextEv = session.events[currentIdx + 1]
-                const duration = nextEv
-                    ? (new Date(nextEv.timestamp).getTime() - new Date(ev.timestamp).getTime()) / 1000
-                    : 0
-                pageStats[path].duration += duration
-
-                // Exit rate
-                if (idx === sessionEvents.length - 1) {
-                    pageStats[path].exits++
-                }
-            })
+        // Fill revenue
+        orders.forEach(o => {
+            const day = format(new Date(o.created_at), 'yyyy-MM-dd')
+            if (!timelineMap[day]) timelineMap[day] = { sessions: 0, revenue: 0 }
+            timelineMap[day].revenue += parseFloat(o.total_price)
         })
 
-        const topPages = Object.entries(pageStats)
-            .map(([url, stats]) => ({
-                url,
-                views: stats.views,
-                avgDuration: Math.round(stats.duration / stats.views),
-                exitRate: Math.round((stats.exits / stats.views) * 100)
-            }))
-            .sort((a, b) => b.views - a.views)
-            .slice(0, 10)
+        // Distributions (Devices/Sources) - From Sessions
+        const devices: Record<string, number> = {}
+        const sources: Record<string, number> = {}
+        sessions.forEach((s: any) => {
+            const d = s.deviceType || 'Unknown'
+            devices[d] = (devices[d] || 0) + 1
+            const src = s.sourceLabel || 'Direct'
+            sources[src] = (sources[src] || 0) + 1
+        })
 
         return NextResponse.json({
             success: true,
@@ -192,34 +163,31 @@ export async function GET(request: NextRequest) {
                 totalVisitors,
                 activeVisitors,
                 totalSessions,
-                avgSessionDuration,
-                pagesPerSession,
-                bounceRate,
-                conversions: conversionCount,
-                conversionRate
+                totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+                netRevenue: parseFloat(netRevenue.toFixed(2)),
+                orderCount,
+                aov,
+                conversionRate,
+                bounceRate: totalSessions > 0 ? Math.round((bounceCount / totalSessions) * 100) : 0,
+                avgSessionDuration: totalSessions > 0 ? Math.round(totalDuration / totalSessions) : 0
             },
             distribution: {
                 devices: Object.entries(devices).map(([label, value]) => ({ label, value })),
-                os: Object.entries(osDistribution).map(([label, value]) => ({ label, value })),
                 sources: Object.entries(sources).map(([label, value]) => ({ label, value }))
             },
             timeline: Object.entries(timelineMap).map(([date, data]) => ({
                 date,
-                sessions: data.sessions
+                sessions: data.sessions,
+                revenue: parseFloat(data.revenue.toFixed(2))
             })).sort((a, b) => a.date.localeCompare(b.date)),
-            topPages
+            orders: orders.slice(0, 10) // Small slice for preview
         })
 
     } catch (error: any) {
-        console.error('[Analytics Overview] FATAL ERROR:', {
-            message: error.message,
-            stack: error.stack,
-            params: { range, fromStr, toStr }
-        });
+        console.error('[Analytics Overview] ERROR:', error);
         return NextResponse.json({
             success: false,
-            message: error.message,
-            detail: error.stack
+            message: error.message
         }, { status: 500 });
     }
 }
