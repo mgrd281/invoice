@@ -782,6 +782,27 @@ export class ShopifyAPI {
   }
 
   /**
+   * Get customers from Shopify with pagination
+   */
+  async getCustomers(params: {
+    limit?: number
+    since_id?: number
+  } = {}): Promise<any[]> {
+    try {
+      const searchParams = new URLSearchParams()
+      searchParams.set('limit', (params.limit || 250).toString())
+      if (params.since_id) searchParams.set('since_id', params.since_id.toString())
+
+      const response = await this.makeRequest(`/customers.json?${searchParams}`)
+      const data = await response.json()
+      return data.customers || []
+    } catch (error) {
+      console.error('Error fetching Shopify customers:', error)
+      return []
+    }
+  }
+
+  /**
    * Get orders since last import
    */
   async getNewOrders(): Promise<ShopifyOrder[]> {
