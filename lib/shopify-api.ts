@@ -797,6 +797,47 @@ export class ShopifyAPI {
 
     return this.getOrders(params)
   }
+
+  /**
+   * Get Blogs from Shopify
+   */
+  async getBlogs(): Promise<any[]> {
+    try {
+      const response = await this.makeRequest('/blogs.json')
+      const data = await response.json()
+      return data.blogs || []
+    } catch (error) {
+      console.error('Error fetching blogs:', error)
+      return []
+    }
+  }
+
+  /**
+   * Create a new Article in a Blog
+   */
+  async createArticle(blogId: number, articleData: {
+    title: string
+    author?: string
+    tags?: string
+    body_html?: string
+    summary_html?: string
+    published?: boolean
+  }): Promise<any> {
+    try {
+      console.log(`📝 Creating article in blog ${blogId}...`)
+      const response = await this.makeRequest(`/blogs/${blogId}/articles.json`, {
+        method: 'POST',
+        body: JSON.stringify({ article: articleData })
+      })
+
+      const data = await response.json()
+      console.log('✅ Article created successfully:', data.article?.id)
+      return data.article
+    } catch (error) {
+      console.error('Error creating article:', error)
+      throw error
+    }
+  }
   /**
    * Fulfill an order using Fulfillment Orders API (modern approach)
    */
