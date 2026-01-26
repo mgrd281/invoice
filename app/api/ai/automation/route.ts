@@ -7,7 +7,17 @@ import { ShopifyAPI } from '@/lib/shopify-api'
 
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions)
+        let session;
+        try {
+            session = await getServerSession(authOptions)
+        } catch (e: any) {
+            console.error('Session retrieval failed:', e)
+            return NextResponse.json({
+                error: 'Authentication Error',
+                details: e.message
+            }, { status: 500 })
+        }
+
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         // Mock data for automation state
@@ -42,9 +52,13 @@ export async function GET() {
             success: true,
             automation: automationState
         })
-    } catch (error) {
+    } catch (error: any) {
         console.error('AI Automation API Error:', error)
-        return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({
+            success: false,
+            error: 'Internal Server Error',
+            details: error.message || 'Unknown error'
+        }, { status: 500 })
     }
 }
 

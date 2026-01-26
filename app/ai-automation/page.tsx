@@ -32,7 +32,10 @@ function AIAutomationPage() {
         const loadAutomation = async () => {
             try {
                 const response = await fetch('/api/ai/automation')
-                if (!response.ok) throw new Error(`Server Status ${response.status}`)
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}))
+                    throw new Error(errorData.details || errorData.error || `Server Status ${response.status}`)
+                }
                 const data = await response.json()
                 if (data.success && data.automation) {
                     setAutomation(data.automation)
@@ -105,7 +108,7 @@ function AIAutomationPage() {
             </main>
 
             <div className="fixed top-4 right-4 z-50 space-y-2">
-                {toasts.map(t => <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />)}
+                {toasts.map(t => <Toast key={t.id} id={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />)}
             </div>
         </div>
     )
