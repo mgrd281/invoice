@@ -211,14 +211,16 @@ function OverviewTab({ data }: any) {
           </Card>
 
           <Card className="border-none shadow-sm bg-white rounded-[2.5rem] p-8">
-            <h3 className="text-sm font-black uppercase tracking-tight mb-6">Quick Filters</h3>
+            <h3 className="text-sm font-black uppercase tracking-tight mb-6">CRM Status</h3>
             <div className="space-y-3">
-              {['Top 10% Kunden', 'Inaktiv > 60 Tage', 'Neukunden heute', 'Hoher AOV'].map((filter, i) => (
-                <button key={i} className="w-full text-left px-5 py-4 bg-slate-50 hover:bg-slate-100 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-colors flex items-center justify-between">
-                  {filter}
-                  <ArrowRight className="w-4 h-4 text-slate-300" />
-                </button>
-              ))}
+              <div className="w-full text-left px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center justify-between">
+                Live Synchronisation
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="w-full text-left px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center justify-between text-slate-400">
+                DB Source: Prisma / Shopify
+                <Package className="w-3.5 h-3.5" />
+              </div>
             </div>
           </Card>
         </div>
@@ -273,12 +275,12 @@ function KundenlisteTab({ data, onOpenProfile }: any) {
                 <td className="px-8 py-6">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-xs text-slate-500 group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                      {c.name.charAt(0)}
+                      {(c.name || 'U').charAt(0)}
                     </div>
-                    <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{c.name}</span>
+                    <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{c.name || 'Unbekannt'}</span>
                   </div>
                 </td>
-                <td className="px-8 py-6 text-[11px] font-bold text-slate-400">{c.email}</td>
+                <td className="px-8 py-6 text-[11px] font-bold text-slate-400">{c.email || 'Unbekannt'}</td>
                 <td className="px-8 py-6 text-sm font-black">{c.orders}</td>
                 <td className="px-8 py-6 text-sm font-black uppercase">€{c.revenue.toFixed(2)}</td>
                 <td className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase">{c.lastOrderDate ? format(new Date(c.lastOrderDate), 'dd.MM.yyyy') : (c.lastOrder || '-')}</td>
@@ -349,10 +351,10 @@ function ProfilesTab({ data, onOpenProfile }: any) {
         <Card key={c.id} onClick={() => onOpenProfile(c)} className="border-none shadow-sm bg-white rounded-[2.5rem] p-8 hover:shadow-xl transition-all cursor-pointer group">
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-[2rem] bg-slate-50 flex items-center justify-center font-black text-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all mb-6 shadow-sm">
-              {c.name.charAt(0)}
+              {(c.name || 'U').charAt(0)}
             </div>
-            <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">{c.name}</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{c.email}</p>
+            <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">{c.name || 'Unbekannt'}</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{c.email || 'Unbekannt'}</p>
 
             <div className="mt-8 pt-8 border-t border-slate-50 w-full grid grid-cols-2 gap-4">
               <div>
