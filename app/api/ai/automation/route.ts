@@ -136,8 +136,8 @@ export async function POST(req: Request) {
             - "Sie"-Ansprache.
             `
 
-            const rawResult = await openaiClient.generateSEOText(prompt, 'gpt-4o-mini')
-
+            console.log('📝 Generating Deep Research Article (Using GPT-4o for Maximum Quality)...')
+            const rawResult = await openaiClient.generateSEOText(prompt, 'gpt-4o') // UPGRADE: GPT-4o is the world-class flagship model
             if (!rawResult) {
                 return NextResponse.json({ success: false, message: 'Content generation failed' }, { status: 500 })
             }
