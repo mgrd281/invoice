@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { Euro, CreditCard, Activity, AlertCircle } from "lucide-react";
 
 export default function PayPalDashboardPage() {
+  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
     paidToday: 0,
@@ -17,10 +20,12 @@ export default function PayPalDashboardPage() {
   }, []);
 
   const loadData = () => {
+    setLoading(true);
     fetch('/api/paypal/transactions')
       .then(res => res.json())
       .then(data => {
           if (Array.isArray(data)) {
+              setTransactions(data.slice(0, 10)); // Top 10
               const total = data.reduce((acc: number, tx: any) => acc + Number(tx.amount || 0), 0);
               const success = data.filter((tx: any) => tx.status === 'COMPLETED').length;
               const failed = data.filter((tx: any) => tx.status !== 'COMPLETED').length;
@@ -32,10 +37,12 @@ export default function PayPalDashboardPage() {
               });
           }
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
   };
 
   const handleSync = async () => {
+      setSyncing(true);
       try {
           const res = await fetch('/api/paypal/transactions', {
               method: 'POST',
@@ -43,19 +50,28 @@ export default function PayPalDashboardPage() {
               body: JSON.stringify({ action: 'sync_history' })
           });
           if (res.ok) {
-              loadData();
-              alert('Synchronisation erfolgreich!'); 
+              const data = await res.json();
+              await loadData(); // Reload stats
+              alert(`Synchronisation erfolgreich! ${data.synced || 0} Transaktionen importiert.`); 
+          } else {
+             alert('Fehler bei der Synchronisation.');
           }
       } catch (e) {
           console.error(e);
+          alert('Ein Fehler ist aufgetreten.');
+      } finally {
+          setSyncing(false);
       }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-          <button onClick={handleSync} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-             🔄 Jetzt synchronisieren
+          <button 
+             onClick={handleSync} 
+             disabled={syncing}
+             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2">
+             {syncing ? 'Synchronisiere...' : '🔄 Jetzt synchronisieren'}
           </button>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -118,7 +134,10 @@ export default function PayPalDashboardPage() {
           </CardHeader>
           <CardContent className="pl-2">
              <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                 Chart Placeholder
+                 {/* Chart Placeholder */}
+                 <div className="text-center">
+                    <p>Hier wird bald der Umsatzverlauf angezeigt.</p>
+                 </div>
              </div>
           </CardContent>
         </Card>
@@ -128,7 +147,24 @@ export default function PayPalDashboardPage() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-8">
-                     {/* List simplified items */}
+                     {transactions.length === 0 && (
+                         <p className="text-center text-muted-foreground py-8">Keine Transaktionen gefunden.</p>
+                     )}
+                     {transactions.map((tx) => (
+                         <div key={tx.id} className="flex items-center">
+                             <div className="space-y-1">
+                                 <p className="text-sm font-medium leading-none">
+                                     {tx.invoiceId ? `Rechnung #${tx.invoice?.invoiceNumber}` : 'PayPal Zahlung'}
+                                 </p>
+                                 <p className="text-xs text-muted-foreground">
+                                     {new Date(tx.transactionDate).toLocaleDateString()}
+                                 </p>
+                             </div>
+                             <div className={`ml-auto font-medium ${tx.status === 'COMPLETED' ? 'text-green-600' : 'text-orange-600'}`}>
+                                 {tx.status === 'COMPLETED' ? '+' : ''}€{Number(tx.amount).toFixed(2)}
+                             </div>
+                         </div>
+                     ))}
                 </div>
             </CardContent>
         </Card>
