@@ -235,33 +235,86 @@ export class PayPalService {
   /**
    * Fetch historical transactions from PayPal Reporting API
    */
+  /**
+   * Fetch historical transactions from PayPal Reporting API
+   * Implements pagination by 30-day chunks to respect API limits
+   */
   async fetchTransactionsFromPayPal(startDate?: Date, endDate?: Date) {
-      const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30)); // Default 30 days (API limit is 31)
-      const end = endDate || new Date();
+      // Default: Go back 1 year (approx 12 months)
+      const targetStart = startDate || new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+      let currentEnd = endDate || new Date();
       
       const token = await this.getAccessToken();
-      
-      // Format dates as YYYY-MM-DDTHH:mm:ss.SSSZ
-      const startStr = start.toISOString();
-      const endStr = end.toISOString();
-      
       const settings = await this.getSettings();
       const mode = settings?.mode || (process.env.PAYPAL_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'live');
       const apiBase = mode === 'sandbox' ? PAYPAL_SANDBOX_API : PAYPAL_LIVE_API;
-      
-      try {
-          const response = await fetch(`${apiBase}/v1/reporting/transactions?start_date=${startStr}&end_date=${endStr}&fields=all&page_size=100`, {
-              headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-              }
-          });
+
+      let totalSynced = 0;
+
+      // Loop in 30-day chunks backwards until we reach targetStart
+      while (currentEnd > targetStart) {
+          let chunkStart = new Date(currentEnd);
+          chunkStart.setDate(chunkStart.getDate() - 30);
           
-          if (!response.ok) {
-               const error = await response.text();
-               console.error('PayPal Reporting API Error:', error);
-               throw new Error(`Failed to fetch history: ${response.statusText}`);
+          if (chunkStart < targetStart) {
+              chunkStart = targetStart;
           }
+
+          const startStr = chunkStart.toISOString();
+          const endStr = currentEnd.toISOString();
+          
+          console.log(`[PayPal Sync] Fetching chunk: ${startStr} to ${endStr}`);
+
+          try {
+              const response = await fetch(`${apiBase}/v1/reporting/transactions?start_date=${startStr}&end_date=${endStr}&fields=all&page_size=100`, {
+                  headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                  }
+              });
+              
+              if (!response.ok) {
+                   const error = await response.text();
+                   console.error('PayPal Reporting API Error:', error);
+                   // Continue to next chunk even if one fails
+              } else {
+                  const data = await response.json();
+                  console.log(`[PayPal Sync] Chunk found ${data.transaction_details?.length || 0} items`);
+                  
+                  const details = data.transaction_details;
+                  
+                  if (Array.isArray(details)) {
+                      for (const item of details) {
+                          const info = item.transaction_info;
+                          // Filter: Only process income (payments received)
+                          if (Number(info.transaction_amount?.value) > 0) {
+                               await this.upsertTransaction({
+                                   id: info.transaction_id,
+                                   status: info.transaction_status === 'S' ? 'COMPLETED' : info.transaction_status, 
+                                   amount: {
+                                       value: info.transaction_amount?.value,
+                                       currency_code: info.transaction_amount?.currency_code
+                                   },
+                                   create_time: info.transaction_initiation_date,
+                                   invoice_id: info.invoice_id,
+                                   custom_id: info.custom_field,
+                                   payer_info: item.payer_info
+                               });
+                               totalSynced++;
+                          }
+                      }
+                  }
+              }
+          } catch (e) {
+              console.error("Chunk Sync Error:", e);
+          }
+          
+          // Move window back
+          currentEnd = new Date(chunkStart.getTime() - 1000); // 1 second before previous start
+      }
+
+      return totalSynced;
+  }
           
           const data = await response.json();
           console.log(`[PayPal Sync] Found ${data.transaction_details?.length || 0} items for range ${startStr} to ${endStr}`);
