@@ -89,19 +89,35 @@ export async function POST(req: Request) {
             try {
                 // EXPLICIT GERMAN LOCK & ENTERPRISE TONE
                 const prompt = `
-                Rolle: Professioneller SEO-Experte.
-                Aufgabe: Schreiben Sie einen SEO-optimierten Blog-Artikel über: "${topic}".
-                SPRACHE: NUR DEUTSCH (DE). KEIN ENGLISCH.
-                TONFALL: Professionell, sachlich, Enterprise-Level. Keine Emojis.
+                ROLLE: Senior Content Editor für ein Enterprise Tech-Magazin.
+                AUFGABE: Verfasse einen hochprofessionellen, SEO-optimierten Fachartikel zum Thema: "${topic}".
                 
-                Format: HTML (nur Body-Inhalt, keine html/body/head Tags).
-                Struktur:
-                - Erste Zeile: Ein aussagekräftiger H1-Titel (Kein HTML, nur Text).
-                - Einleitung (Professional)
-                - 3-4 Abschnitte mit H2-Überschriften
-                - Fazit
+                OUTPUT FORMAT: 
+                - REINES HTML (ohne markdown code blocks).
+                - KEINE Markdown-Syntax (keine ##, keine **).
+                - Nur Body-Content (kein <html>, <head>, <body>).
+
+                HTML-STRUKTUR & STYLING REGELN:
+                1. TITEL: Die erste Zeile muss der Titel als reiner Text sein (kein H1 Tag, wir nutzen diesen für den Shopify Title).
+                2. ÜBERSCHRIFTEN: Nutze <h2> für Hauptabschnitte und <h3> für Unterabschnitte.
+                3. ABSÄTZE: Nutze <p> Tags. Halte Absätze kurz (max. 3-4 Sätze) für maximale Lesbarkeit am Bildschirm.
+                4. LISTEN: Nutze zwingend mind. eine <ul> oder <ol> Liste mit <li> Items für Aufzählungen.
+                5. HERVORHEBUNGEN: Nutze <strong> für wichtige Schlüsselbegriffe.
+                6. LÄNGE: Der Artikel muss ausführlich und tiefgehend sein (min. 800 Wörter).
                 
-                WICHTIG: Der gesamte Text MUSS in deutscher Sprache verfasst sein.
+                TONFALL: 
+                - Deutsch (Deutschland)
+                - Seriös, Überzeugend, Fachlich fundiert.
+                - "Sie"-Ansprache oder neutrale Formulierung.
+                - KEINE Emojis.
+                - KEINE "Hallo Leute" oder flapsige Sprache.
+
+                INHALTLICHE STRUKTUR:
+                - Spannende Einleitung (Warum ist das Thema heute relevant?)
+                - Analyse des Problems / Ist-Zustand.
+                - Detaillierte Lösung / Trends / Technologien.
+                - Vorteile für Unternehmen (Bullet Points).
+                - Fazit & Ausblick.
                 `
 
                 const rawResult = await openaiClient.generateSEOText(prompt)
