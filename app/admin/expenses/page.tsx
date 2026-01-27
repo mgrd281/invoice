@@ -337,6 +337,7 @@ export default function ExpensesDashboard() {
                         </div>
                 </div>
             </div>
+            </div>
 
             {/* ROW 2: Categories (1/2) + Recent (1/2) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
