@@ -48,14 +48,14 @@ export async function POST(req: NextRequest) {
 
     const data: any = {
       isActive,
-      clientId,
+      clientId: clientId?.trim(),
       mode,
       organizationId: session.user.organizationId
     };
 
     // Only update secret if provided (allow empty to keep existing)
     if (clientSecret && clientSecret.length > 0) {
-        data.clientSecret = encrypt(clientSecret);
+        data.clientSecret = encrypt(clientSecret.trim());
     }
 
     const settings = await prisma.payPalSettings.upsert({
