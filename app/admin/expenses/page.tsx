@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Plus, Download, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, MoreHorizontal, FileText, Search } from "lucide-react";
+import { Plus, Download, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, MoreHorizontal, FileText, Search, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -49,7 +49,15 @@ export default function ExpensesDashboard() {
     const profitPositive = (stats?.profit || 0) >= 0;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] p-8 space-y-8 font-sans text-[#0F172A]">
+        <div className="min-h-screen bg-[#F8FAFC] w-full max-w-none p-4 md:p-8 space-y-8 font-sans text-[#0F172A]">
+            {/* BACK BUTTON */}
+            <div>
+                 <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Zurück zum Dashboard
+                 </Link>
+            </div>
+
             {/* 3) PAGE HEADER */}
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -144,12 +152,14 @@ export default function ExpensesDashboard() {
             </div>
 
             {/* MAIN GRID */}
+            {/* MAIN GRID */}
+            {/* ROW 1: Chart (2/3) + Insights (1/3) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 {/* 4) CHART SECTION (Left 2/3) */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2">
                     {/* Trend Chart */}
-                    <div className="rounded-[20px] bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                    <div className="rounded-[20px] bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] h-full">
                         <div className="flex items-center justify-between mb-8">
                             <div>
                                 <h3 className="text-lg font-semibold text-[#0F172A]">Ausgaben Trend</h3>
@@ -209,51 +219,12 @@ export default function ExpensesDashboard() {
                             )}
                         </div>
                     </div>
-
-                    {/* 6) RECENT EXPENSES LIST */}
-                    <div className="rounded-[20px] bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-[#0F172A]">Letzte Ausgaben</h3>
-                            <Link href="/admin/expenses/list">
-                                <Button variant="link" className="text-[#6D28D9] h-auto p-0 hover:no-underline hover:opacity-80">
-                                    Alle anzeigen &rarr;
-                                </Button>
-                            </Link>
-                        </div>
-                        <div className="space-y-1">
-                            {recentExpenses.length > 0 ? recentExpenses.map((expense, i) => (
-                                <div key={expense.id} className="group flex items-center justify-between p-4 rounded-xl hover:bg-[#F1F5F9] transition-colors cursor-pointer border border-transparent">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:scale-110 transition-all shadow-sm">
-                                            <FileText className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-[#0F172A] group-hover:text-[#6D28D9] transition-colors">
-                                                {expense.description}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                 <div className={`w-2 h-2 rounded-full`} style={{backgroundColor: expense.expenseCategory?.color || '#94A3B8'}}></div>
-                                                 <p className="text-xs text-[#64748B]">{expense.expenseCategory?.name || 'Allgemein'}</p>
-                                                 <span className="text-[10px] text-slate-300">•</span>
-                                                 <p className="text-xs text-[#64748B]">{new Date(expense.date).toLocaleDateString('de-DE')}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="font-semibold tabular-nums text-[#0F172A]">
-                                        -{formatCurrency(expense.totalAmount)}
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="text-center py-8 text-muted-foreground">Keine kürzlichen Ausgaben</div>
-                            )}
-                        </div>
-                    </div>
                 </div>
 
                 {/* RIGHT COLUMN (1/3) */}
-                <div className="space-y-8">
+                <div>
                     {/* 5) SMART INSIGHTS CARD (Dark Theme) */}
-                    <div className="rounded-[20px] bg-gradient-to-br from-[#0F172A] to-[#020617] p-8 text-white shadow-[0_20px_40px_-5px_rgba(0,0,0,0.3)] relative overflow-hidden">
+                    <div className="rounded-[20px] bg-gradient-to-br from-[#0F172A] to-[#020617] p-8 text-white shadow-[0_20px_40px_-5px_rgba(0,0,0,0.3)] relative overflow-hidden h-full">
                         {/* Glassmorphism details */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
                         <div className="relative z-10 space-y-6">
@@ -302,39 +273,81 @@ export default function ExpensesDashboard() {
                             </Button>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {/* 6) TOP CATEGORIES LIST */}
-                    <div className="rounded-[20px] bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-[#0F172A]">Top Kategorien</h3>
-                            <button className="text-slate-400 hover:text-slate-600">
-                                <MoreHorizontal className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            {stats?.categoryStats?.length > 0 ? stats.categoryStats.slice(0, 5).map((cat: any, i: number) => (
-                                <div key={i} className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:border-[#6D28D9]/20 group-hover:bg-[#6D28D9]/5 transition-colors">
-                                           <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: cat.color}}></div>
-                                        </div>
-                                        <span className="font-medium text-sm text-[#334155]">{cat.category}</span>
+            {/* ROW 2: Categories (1/2) + Recent (1/2) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 6) TOP CATEGORIES LIST */}
+                <div className="rounded-[20px] bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-[#0F172A]">Top Kategorien</h3>
+                        <button className="text-slate-400 hover:text-slate-600">
+                            <MoreHorizontal className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="space-y-4">
+                        {stats?.categoryStats?.length > 0 ? stats.categoryStats.slice(0, 5).map((cat: any, i: number) => (
+                            <div key={i} className="flex items-center justify-between group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:border-[#6D28D9]/20 group-hover:bg-[#6D28D9]/5 transition-colors">
+                                       <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: cat.color}}></div>
                                     </div>
-                                    <span className="font-semibold text-sm tabular-nums text-[#0F172A]">
-                                        {formatCurrency(cat.total)}
-                                    </span>
+                                    <span className="font-medium text-sm text-[#334155]">{cat.category}</span>
                                 </div>
-                            )) : (
-                                <div className="text-center text-sm text-slate-400 py-4">Keine Kategorien</div>
-                            )}
-                        </div>
-                        <div className="mt-6 pt-4 border-t border-slate-100">
-                             <Link href="/admin/expenses/categories">
-                                <Button variant="ghost" className="w-full text-sm text-[#64748B] hover:text-[#6D28D9]">
-                                    Kategorien verwalten
-                                </Button>
-                             </Link>
-                        </div>
+                                <span className="font-semibold text-sm tabular-nums text-[#0F172A]">
+                                    {formatCurrency(cat.total)}
+                                </span>
+                            </div>
+                        )) : (
+                            <div className="text-center text-sm text-slate-400 py-4">Keine Kategorien</div>
+                        )}
+                    </div>
+                    <div className="mt-6 pt-4 border-t border-slate-100">
+                         <Link href="/admin/expenses/categories">
+                            <Button variant="ghost" className="w-full text-sm text-[#64748B] hover:text-[#6D28D9]">
+                                Kategorien verwalten
+                            </Button>
+                         </Link>
+                    </div>
+                </div>
+
+                {/* 6) RECENT EXPENSES LIST */}
+                <div className="rounded-[20px] bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                     <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-[#0F172A]">Letzte Ausgaben</h3>
+                        <Link href="/admin/expenses/list">
+                            <Button variant="link" className="text-[#6D28D9] h-auto p-0 hover:no-underline hover:opacity-80">
+                                Alle anzeigen &rarr;
+                            </Button>
+                        </Link>
+                    </div>
+                    <div className="space-y-1">
+                        {recentExpenses.length > 0 ? recentExpenses.map((expense, i) => (
+                            <div key={expense.id} className="group flex items-center justify-between p-4 rounded-xl hover:bg-[#F1F5F9] transition-colors cursor-pointer border border-transparent">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:scale-110 transition-all shadow-sm">
+                                        <FileText className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-[#0F172A] group-hover:text-[#6D28D9] transition-colors">
+                                            {expense.description}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                             <div className={`w-2 h-2 rounded-full`} style={{backgroundColor: expense.expenseCategory?.color || '#94A3B8'}}></div>
+                                             <p className="text-xs text-[#64748B]">{expense.expenseCategory?.name || 'Allgemein'}</p>
+                                             <span className="text-[10px] text-slate-300">•</span>
+                                             <p className="text-xs text-[#64748B]">{new Date(expense.date).toLocaleDateString('de-DE')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="font-semibold tabular-nums text-[#0F172A]">
+                                    -{formatCurrency(expense.totalAmount)}
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="text-center py-8 text-muted-foreground">Keine kürzlichen Ausgaben</div>
+                        )}
                     </div>
                 </div>
             </div>

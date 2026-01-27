@@ -4,8 +4,16 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Search, Bell } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { usePathname } from "next/navigation"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const isExpensesPage = pathname?.startsWith('/admin/expenses');
+
+    if (isExpensesPage) {
+        return <>{children}</>;
+    }
+
     return (
         <div className="flex min-h-screen bg-slate-50/50">
             <AdminSidebar />
