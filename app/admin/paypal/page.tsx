@@ -27,7 +27,7 @@ export default function PayPalDashboardPage() {
       .then(res => res.json())
       .then(data => {
           if (Array.isArray(data)) {
-              setTransactions(data.slice(0, 10)); // Top 10
+              setTransactions(data); // Show all
               const total = data.reduce((acc: number, tx: any) => acc + Number(tx.amount || 0), 0);
               const success = data.filter((tx: any) => tx.status === 'COMPLETED').length;
               const failed = data.filter((tx: any) => tx.status !== 'COMPLETED').length;
@@ -155,7 +155,7 @@ export default function PayPalDashboardPage() {
                 <CardTitle>Letzte Transaktionen</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="space-y-8">
+                <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2">
                      {transactions.length === 0 && (
                          <p className="text-center text-muted-foreground py-8">Keine Transaktionen gefunden.</p>
                      )}
