@@ -756,6 +756,7 @@ model Expense {
   isRecurring       Boolean          @default(false)
   recurringInterval String?          // DAILY, WEEKLY, MONTHLY, YEARLY
   endDate           DateTime?
+}
 
 model ExpenseCategory {
   id             String       @id @default(uuid())
