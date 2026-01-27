@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
              const count = await service.fetchTransactionsFromPayPal();
              return NextResponse.json({ synced: count });
         }
-        }
+
         
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (error: any) {
