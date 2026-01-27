@@ -141,7 +141,7 @@ export default function ExpensesDashboard() {
                                     <YAxis tickLine={false} axisLine={false} tick={{fontSize: 12}} />
                                     <Tooltip 
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                        formatter={(val: number) => [formatCurrency(val), 'Betrag']}
+                                        formatter={(val: any) => [formatCurrency(val as number), 'Betrag']}
                                     />
                                     <Area type="monotone" dataKey="amount" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorAmount)" strokeWidth={2} />
                                 </AreaChart>
