@@ -226,7 +226,7 @@ export class PayPalService {
    * Fetch historical transactions from PayPal Reporting API
    */
   async fetchTransactionsFromPayPal(startDate?: Date, endDate?: Date) {
-      const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30)); // Default 30 days
+      const start = startDate || new Date(new Date().setDate(new Date().getDate() - 365)); // Default 1 year (was 30 days)
       const end = endDate || new Date();
       
       const token = await this.getAccessToken();
