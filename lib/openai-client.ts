@@ -36,6 +36,28 @@ export class OpenAIClient {
             return ''
         }
     }
+
+    async generateImage(prompt: string): Promise<string | null> {
+        if (!process.env.OPENAI_API_KEY) {
+            console.warn('OPENAI_API_KEY missing - returning mock image.')
+            return "https://placehold.co/1024x1024/png?text=Mock+AI+Image"
+        }
+
+        try {
+            const response = await this.client.images.generate({
+                model: "dall-e-3",
+                prompt: `Professional, modern, high-quality editorial blog image about: ${prompt}. Minimalist, elegant, tech-oriented style. No text overlays.`,
+                n: 1,
+                size: "1024x1024",
+                quality: "hd",
+                style: "vivid"
+            })
+            return response.data[0]?.url || null
+        } catch (error) {
+            console.error('OpenAI DALL-E Error:', error)
+            return null
+        }
+    }
 }
 
 export const openaiClient = new OpenAIClient()

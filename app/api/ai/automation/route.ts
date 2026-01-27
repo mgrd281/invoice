@@ -79,115 +79,121 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, status: 'PAUSED' })
         }
 
-        if (action === 'GENERATE_BLOG') {
+        // GENERATE BLOG LOGIC
+        if (action === 'GENERATE_BLOG' || (!action && body.topic)) {
             const { topic } = body
 
-            // 1. Generate Content via OpenAI
-            let content = ''
-            let title = ''
-
-            try {
-                // EXPLICIT GERMAN LOCK & ENTERPRISE TONE
-                const prompt = `
-                ROLLE: Senior Content Editor für ein Enterprise Tech-Magazin.
-                AUFGABE: Verfasse einen hochprofessionellen, SEO-optimierten Fachartikel zum Thema: "${topic}".
-                
-                OUTPUT FORMAT: 
-                - REINES HTML (ohne markdown code blocks).
-                - KEINE Markdown-Syntax (keine ##, keine **).
-                - Nur Body-Content (kein <html>, <head>, <body>).
-
-                HTML-STRUKTUR & STYLING REGELN:
-                1. TITEL: Die erste Zeile muss der Titel als reiner Text sein (kein H1 Tag, wir nutzen diesen für den Shopify Title).
-                2. ÜBERSCHRIFTEN: Nutze <h2> für Hauptabschnitte und <h3> für Unterabschnitte.
-                3. ABSÄTZE: Nutze <p> Tags. Halte Absätze kurz (max. 3-4 Sätze) für maximale Lesbarkeit am Bildschirm.
-                4. LISTEN: Nutze zwingend mind. eine <ul> oder <ol> Liste mit <li> Items für Aufzählungen.
-                5. HERVORHEBUNGEN: Nutze <strong> für wichtige Schlüsselbegriffe.
-                6. LÄNGE: Der Artikel muss ausführlich und tiefgehend sein (min. 800 Wörter).
-                
-                TONFALL: 
-                - Deutsch (Deutschland)
-                - Seriös, Überzeugend, Fachlich fundiert.
-                - "Sie"-Ansprache oder neutrale Formulierung.
-                - KEINE Emojis.
-                - KEINE "Hallo Leute" oder flapsige Sprache.
-
-                INHALTLICHE STRUKTUR:
-                - Spannende Einleitung (Warum ist das Thema heute relevant?)
-                - Analyse des Problems / Ist-Zustand.
-                - Detaillierte Lösung / Trends / Technologien.
-                - Vorteile für Unternehmen (Bullet Points).
-                - Fazit & Ausblick.
-                `
-
-                const rawResult = await openaiClient.generateSEOText(prompt)
-
-                if (!rawResult) throw new Error('Kein Inhalt generiert')
-
-                // Verification: Basic check if common German words exist (e.g. "der", "die", "das", "und", "ist")
-                // In a production app, we'd use a proper language detection library.
-                const germanWords = ['der', 'die', 'das', 'und', 'ist', 'für', 'mit', 'von']
-                const isGerman = germanWords.some(word => rawResult.toLowerCase().includes(` ${word} `))
-
-                if (!isGerman) {
-                    throw new Error('Generierter Inhalt entspricht nicht der Spracheinstellung (Deutsch). Bitte erneut versuchen.')
-                }
-
-                const lines = rawResult.split('\n')
-                title = lines[0].replace(/<[^>]*>/g, '').trim()
-                content = lines.slice(1).join('\n').trim()
-
-                if (!content) content = `<p>Hier folgt der Inhalt zu ${topic}...</p>`
-
-            } catch (err: any) {
-                console.error('Generation failed', err)
-                return NextResponse.json({ success: false, error: err.message || 'KI-Generierung fehlgeschlagen' })
+            if (!topic) {
+                return NextResponse.json({ success: false, message: 'Topic is required' }, { status: 400 })
             }
 
-            // 2. Publish to Shopify
-            let articleUrl = '#'
+            console.log('🤖 Starting AI Automation for:', topic)
+
+            // 1. GENERATE IMAGE
+            let imageUrl: string | null = null
             try {
-                const shopify = new ShopifyAPI()
+                console.log('🎨 Generating AI Image for:', topic)
+                imageUrl = await openaiClient.generateImage(topic)
+                console.log('✅ Image URL:', imageUrl)
+            } catch (imgError) {
+                console.warn('⚠️ Image generation failed, continuing without image:', imgError)
+            }
+
+            // 2. GENERATE DEEP RESEARCH CONTENT
+            console.log('📝 Generating Deep Research Text...')
+            const prompt = `
+            ROLLE: Chefredakteur für ein führendes deutsches Enterprise-Tech-Magazin (wie t3n, OMR, Business Insider).
+            AUFGABE: Erstelle einen "Deep Dive" Fachartikel (1500+ Wörter) über: "${topic}".
+            
+            ANFORDERUNG "DEEP RESEARCH":
+            - Simuliere eine tiefgehende Recherche.
+            - Integriere (fiktive aber realistische) Marktdaten, Statistiken und Expertenmeinungen.
+            - Analysiere Trends für 2025/2026.
+            - Der Artikel muss massive Tiefe haben, kein oberflächliches "AI-Geschwafel".
+
+            DESIGN & FORMATTING (STRICT HTML):
+            - Nutze modernes, luftiges Editorial-Design.
+            - <article> Wrapper um den Content.
+            - <h2> mit modernem Styling (z.B. klare, starke Aussagen).
+            - <blockquote> für "Experten-Zitate" oder Key-Takeways.
+            - <div style="background-color: #f8f9fa; padding: 20px; border-left: 4px solid #000; margin: 20px 0;"> für "Key Insights" Boxen.
+            - Listen (<ul>) mit kurzen, knackigen Punkten.
+            - <strong>Fettgedruckte</strong> Wörter für Skimmability.
+            - Füge an passender Stelle <img src="${imageUrl || ''}" alt="AI generated illustration" /> ein, falls URL vorhanden.
+            
+            STRUKTUR:
+            1. H1-Titel (Nutze keine H1 im Body, der Titel wird im Shopify-Feld gesetzt, aber gib mir einen H1-Text in der ersten Zeile für Meta-Daten).
+            2. Executive Summary (Fettdruck, 2-3 Sätze).
+            3. Problemstellung & Status Quo (Tiefenanalyse).
+            4. Die Lösung / Der Trend (Detailliert).
+            5. Strategische Implikationen für Unternehmen (Warum jetzt handeln?).
+            6. Checkliste / Action Plan (HTML Box).
+            7. Fazit.
+
+            TONFALL:
+            - Deutsch (Business Level).
+            - Autoritär, aber visionary.
+            - "Sie"-Ansprache.
+            `
+
+            const rawResult = await openaiClient.generateSEOText(prompt, 'gpt-4o-mini')
+
+            if (!rawResult) {
+                return NextResponse.json({ success: false, message: 'Content generation failed' }, { status: 500 })
+            }
+
+            // Parse Title and Content
+            const lines = rawResult.split('\n')
+            const cleanLines = lines.map(l => l.replace(/^#+\s*/, ''))
+            const title = cleanLines[0].replace(/<[^>]*>/g, '').trim() || topic
+            const content = lines.slice(1).join('\n')
+
+            // 3. PUBLISH TO SHOPIFY
+            try {
+                const shopify = new ShopifyAPI() // Uses env vars by default
+
+                // Get 'News' blog or first available
                 const blogs = await shopify.getBlogs()
+                let blogId = blogs.find(b => b.title === 'News')?.id || blogs[0]?.id
 
-                if (blogs.length > 0) {
-                    // Use the first available blog, usually "News"
-                    const blogId = blogs[0].id
-
-                    const article = await shopify.createArticle(blogId, {
+                if (blogId) {
+                    const articlePayload: any = {
                         title: title,
                         author: 'Karinex',
-                        tags: 'AI-Generated, Trends, 2026',
+                        tags: 'Deep Research, AI, Enterprise',
                         body_html: content,
                         published: true
+                    }
+
+                    if (imageUrl) {
+                        articlePayload.image = { src: imageUrl }
+                    }
+
+                    const article = await shopify.createArticle(blogId, articlePayload)
+
+                    // Create URL
+                    const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN || ''
+                    const handle = blogs.find(b => b.id === blogId)?.handle
+                    const articleUrl = `https://${shopDomain}/blogs/${handle}/${article.handle}`
+
+                    return NextResponse.json({
+                        success: true,
+                        article,
+                        message: 'Deep Research Article created successfully!',
+                        articleUrl
                     })
-
-                    // Construct public URL (this is a best guess, usually /blogs/handle/article-handle)
-                    const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN || '45dv93-bk.myshopify.com'
-                    articleUrl = `https://${shopDomain}/blogs/${blogs[0].handle}/${article.handle}`
                 } else {
-                    throw new Error('No blogs found in Shopify')
+                    return NextResponse.json({ success: false, message: 'No Blog found in Shopify' })
                 }
-            } catch (err: any) {
-                console.error('Publishing failed', err)
-                return NextResponse.json({ success: false, error: 'Fehler beim Veröffentlichen: ' + err.message })
+            } catch (shopError: any) {
+                console.error('Shopify Publish Error:', shopError)
+                return NextResponse.json({ success: false, message: 'Publishing failed: ' + shopError.message }, { status: 500 })
             }
-
-            return NextResponse.json({
-                success: true,
-                message: `Blog-Artikel "${title}" wurde erfolgreich veröffentlicht!`,
-                articleUrl,
-                logEntry: {
-                    time: new Date().toISOString(),
-                    event: 'MANUAL_PUBLISH',
-                    detail: `Published: ${title}`,
-                    status: 'SUCCESS'
-                }
-            })
         }
 
         return NextResponse.json({ success: true })
-    } catch (error) {
-        return NextResponse.json({ success: false, error: 'Failed to update automation' }, { status: 500 })
+    } catch (error: any) {
+        console.error('API Error:', error)
+        return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
     }
 }
