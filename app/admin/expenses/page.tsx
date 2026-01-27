@@ -98,87 +98,47 @@ export default function ExpensesDashboard() {
                     </div>
                 </div>
 
-                {/* 2) KPI CARDS */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Revenue */}
-                    <div className="group relative overflow-hidden rounded-[18px] bg-white p-6 md:p-7 shadow-[0_10px_40px_rgba(15,23,42,0.06)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-300 border border-slate-100">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-l-[18px]"></div>
-                        <div className="relative flex justify-between items-start">
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Einnahmen</p>
-                                <h3 className="text-[32px] md:text-[36px] font-semibold tracking-tight tabular-nums text-[#0F172A]">
-                                    {formatCurrency(stats?.revenue || 0)}
-                                </h3>
-                                <p className="text-xs text-slate-400 mt-2 font-medium flex items-center">
-                                    <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Trend</span>
-                                    vs. letzte Periode
-                                </p>
-                            </div>
-                            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                                 <TrendingUp className="w-6 h-6" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Expenses */}
-                    <div className="group relative overflow-hidden rounded-[18px] bg-white p-6 md:p-7 shadow-[0_10px_40px_rgba(15,23,42,0.06)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-300 border border-slate-100">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-[18px]"></div>
-                        <div className="relative flex justify-between items-start">
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Ausgaben</p>
-                                <h3 className="text-[32px] md:text-[36px] font-semibold tracking-tight tabular-nums text-[#0F172A]">
+                {/* 2) KPI CARDS (Compact & Modern) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    {/* Expenses - Modern Compact */}
+                    <div className="group relative overflow-hidden rounded-[24px] bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-300 border border-slate-100/50">
+                        <div className="flex justify-between items-center">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Ausgaben</p>
+                                <h3 className="text-[28px] font-bold tracking-tight tabular-nums text-[#0F172A]">
                                     {formatCurrency(stats?.expenses || 0)}
                                 </h3>
-                                <p className="text-xs text-slate-400 mt-2 font-medium flex items-center">
-                                    <span className="text-red-600 bg-red-50 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Trend</span>
-                                    vs. letzte Periode
-                                </p>
                             </div>
-                            <div className="h-12 w-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-600">
-                                 <TrendingDown className="w-6 h-6" />
+                            <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform duration-300">
+                                 <TrendingDown className="w-5 h-5" />
                             </div>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-[10px] font-bold text-red-600 border border-red-100">
+                                +12%
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-400">vs. Vormonat</span>
                         </div>
                     </div>
 
-                    {/* Profit */}
-                    <div className="group relative overflow-hidden rounded-[18px] bg-white p-6 md:p-7 shadow-[0_10px_40px_rgba(15,23,42,0.06)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-300 border border-slate-100">
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${profitPositive ? 'bg-violet-500' : 'bg-orange-500'} rounded-l-[18px]`}></div>
-                        <div className="relative flex justify-between items-start">
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Netto Gewinn</p>
-                                <h3 className={`text-[32px] md:text-[36px] font-semibold tracking-tight tabular-nums ${profitPositive ? 'text-[#6D28D9]' : 'text-orange-500'}`}>
-                                    {formatCurrency(stats?.profit || 0)}
-                                </h3>
-                                <p className="text-xs text-slate-400 mt-2 font-medium flex items-center">
-                                    <span className={`${profitPositive ? 'text-violet-600 bg-violet-50' : 'text-orange-600 bg-orange-50'} px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2`}>
-                                        {profitPositive ? 'Positiv' : 'Achtung'}
-                                    </span>
-                                    vs. letzte Periode
-                                </p>
-                            </div>
-                            <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${profitPositive ? 'bg-violet-500/10 text-[#6D28D9]' : 'bg-orange-500/10 text-orange-600'}`}>
-                                 {profitPositive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Budget */}
-                    <div className="group relative overflow-hidden rounded-[18px] bg-white p-6 md:p-7 shadow-[0_10px_40px_rgba(15,23,42,0.06)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-300 border border-slate-100">
-                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500 rounded-l-[18px]"></div>
-                        <div className="relative flex justify-between items-start">
-                            <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Budget Verfügbar</p>
-                                <h3 className="text-[32px] md:text-[36px] font-semibold tracking-tight tabular-nums text-[#0F172A]">
+                    {/* Budget - Modern Compact */}
+                    <div className="group relative overflow-hidden rounded-[24px] bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-300 border border-slate-100/50">
+                        <div className="flex justify-between items-center">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Verfügbares Budget</p>
+                                <h3 className="text-[28px] font-bold tracking-tight tabular-nums text-[#0F172A]">
                                     {formatCurrency((stats?.budget || 0) - (stats?.expenses || 0))}
                                 </h3>
-                                <p className="text-xs text-slate-400 mt-2 font-medium flex items-center">
-                                    <span className="text-cyan-600 bg-cyan-50 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Total</span>
-                                    Verbleibender Rest
-                                </p>
                             </div>
-                            <div className="h-12 w-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-600">
-                                 <Wallet className="w-6 h-6" />
+                            <div className="h-10 w-10 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 group-hover:scale-110 transition-transform duration-300">
+                                 <Wallet className="w-5 h-5" />
                             </div>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                             <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-cyan-500 rounded-full" style={{width: `${Math.min(stats?.budgetConsumedPercent || 0, 100)}%`}}></div>
+                             </div>
+                            <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap">{Math.round(stats?.budgetConsumedPercent || 0)}% genutzt</span>
                         </div>
                     </div>
                 </div>
