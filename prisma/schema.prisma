@@ -106,6 +106,45 @@ model Organization {
   redirectActionLogs      RedirectActionLog[]
   suppliers               Supplier[]
   storefrontVisits        StorefrontVisit[]
+  paypalSettings          PayPalSettings?
+  paypalTransactions      PayPalTransaction[]
+}
+
+model PayPalSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  clientId       String
+  clientSecret   String
+  webhookId      String?
+  isActive       Boolean      @default(false)
+  lastSyncAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model PayPalTransaction {
+  id              String       @id @default(uuid())
+  organizationId  String
+  paypalId        String       @unique
+  orderId         String?
+  amount          Decimal      @db.Decimal(10, 2)
+  currency        String       @default("EUR")
+  status          String
+  payerEmail      String?
+  payerName       String?
+  transactionDate DateTime
+  invoiceId       String?
+  customerId      String?
+  rawData         Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  invoice         Invoice?     @relation(fields: [invoiceId], references: [id])
+  customer        Customer?    @relation(fields: [customerId], references: [id])
+
+  @@index([organizationId, transactionDate])
 }
 
 model BrokenLink {
@@ -245,6 +284,7 @@ model Customer {
   payments                    Payment[]
   reviews                     Review[]
   supportTickets              SupportTicket[]
+  paypalTransactions          PayPalTransaction[]
 
   @@unique([organizationId, shopifyCustomerId], name: "unique_shopify_customer_per_organization")
 }
@@ -401,6 +441,7 @@ model Invoice {
   history         InvoiceHistory[]
   items           InvoiceItem[]
   payments        Payment[]
+  paypalTransactions PayPalTransaction[]
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId, issueDate(sort: Desc), invoiceNumber(sort: Desc)])

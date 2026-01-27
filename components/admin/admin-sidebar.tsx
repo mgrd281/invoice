@@ -13,7 +13,8 @@ import {
     LogOut,
     MapPin,
     Bot,
-    RefreshCw
+    RefreshCw,
+    CreditCard
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSession, signOut } from "next-auth/react"
@@ -72,8 +73,15 @@ const sidebarItems = [
         href: "/admin/redirects",
         icon: RefreshCw,
         matcher: (pathname: string) => pathname.startsWith("/admin/redirects")
+    },
+    {
+        title: "PayPal",
+        href: "/admin/paypal",
+        icon: CreditCard,
+        matcher: (pathname: string) => pathname.startsWith("/admin/paypal")
     }
 ]
+
 
 export function AdminSidebar() {
     const pathname = usePathname()
