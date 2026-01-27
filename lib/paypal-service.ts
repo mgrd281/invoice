@@ -57,6 +57,8 @@ export class PayPalService {
     const mode = settings?.mode || (process.env.PAYPAL_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'live');
     const apiBase = mode === 'sandbox' ? PAYPAL_SANDBOX_API : PAYPAL_LIVE_API;
 
+    console.log(`[PayPal] Authenticating against ${mode.toUpperCase()} (${apiBase}) with Client ID: ${clientId?.substring(0, 4)}...`);
+
     const response = await fetch(`${apiBase}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
