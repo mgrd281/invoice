@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   }
 
   const searchParams = req.nextUrl.searchParams;
-  const from = searchParams.get('from') ? new Date(searchParams.get('from')!) : new Date(new Date().setMonth(new Date().getMonth() - 1));
+  const from = searchParams.get('from') ? new Date(searchParams.get('from')!) : new Date(new Date().setFullYear(new Date().getFullYear() - 1));
   const to = searchParams.get('to') ? new Date(searchParams.get('to')!) : new Date();
 
   try {
