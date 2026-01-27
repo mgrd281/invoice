@@ -14,6 +14,7 @@ export default function PayPalSettingsPage() {
       clientId: '',
       clientSecret: '',
       isActive: false,
+      mode: 'live',
       hasSecret: false
   });
 
@@ -27,6 +28,7 @@ export default function PayPalSettingsPage() {
                     ...prev,
                     clientId: data.clientId || '',
                     isActive: !!data.isActive,
+                    mode: data.mode || 'live',
                     hasSecret: !!data.hasSecret
                 }));
             }
@@ -96,6 +98,39 @@ export default function PayPalSettingsPage() {
                   />
               </div>
               {config.hasSecret && <p className="text-xs text-green-600">✓ Secret Key ist sicher hinterlegt</p>}
+           </div>
+
+           <div className="pt-4 border-t">
+               <Label className="mb-2 block">Umgebung (Environment)</Label>
+               <div className="flex items-center space-x-4">
+                   <div className="flex items-center space-x-2">
+                       <input 
+                           type="radio" 
+                           id="mode-live" 
+                           name="mode" 
+                           value="live"
+                           checked={config.mode === 'live'}
+                           onChange={() => setConfig({...config, mode: 'live'})}
+                           className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                       />
+                       <Label htmlFor="mode-live">Live (Production)</Label>
+                   </div>
+                   <div className="flex items-center space-x-2">
+                       <input 
+                           type="radio" 
+                           id="mode-sandbox" 
+                           name="mode" 
+                           value="sandbox"
+                           checked={config.mode === 'sandbox'}
+                           onChange={() => setConfig({...config, mode: 'sandbox'})}
+                           className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                       />
+                       <Label htmlFor="mode-sandbox">Sandbox (Test)</Label>
+                   </div>
+               </div>
+               <p className="text-xs text-muted-foreground mt-1">
+                   Wichtig: Sandbox Credentials funktionieren nur im Sandbox-Modus.
+               </p>
            </div>
         </CardContent>
         <CardFooter className="flex justify-between">

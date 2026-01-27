@@ -1,9 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { encrypt, decrypt } from '@/lib/crypto-utils';
 
-const PAYPAL_API_BASE = process.env.PAYPAL_ENVIRONMENT === 'sandbox' 
-  ? 'https://api-m.sandbox.paypal.com' 
-  : 'https://api-m.paypal.com';
+const PAYPAL_LIVE_API = 'https://api-m.paypal.com';
+const PAYPAL_SANDBOX_API = 'https://api-m.sandbox.paypal.com';
 
 interface PayPalToken {
   access_token: string;
@@ -21,7 +20,8 @@ export class PayPalService {
 
   private async getSettings() {
     return prisma.payPalSettings.findUnique({
-      where: { organizationId: this.organizationId }
+      where: { organizationId: this.organizationId },
+      select: { clientId: true, clientSecret: true, isActive: true, mode: true }
     });
   }
 
@@ -53,7 +53,11 @@ export class PayPalService {
 
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-    const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+    // Determine Environment
+    const mode = settings?.mode || (process.env.PAYPAL_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'live');
+    const apiBase = mode === 'sandbox' ? PAYPAL_SANDBOX_API : PAYPAL_LIVE_API;
+
+    const response = await fetch(`${apiBase}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -97,7 +101,11 @@ export class PayPalService {
    */
   async syncTransaction(paypalCaptureId: string) {
       const token = await this.getAccessToken();
-      const response = await fetch(`${PAYPAL_API_BASE}/v2/payments/captures/${paypalCaptureId}`, {
+      const settings = await this.getSettings();
+      const mode = settings?.mode || (process.env.PAYPAL_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'live');
+      const apiBase = mode === 'sandbox' ? PAYPAL_SANDBOX_API : PAYPAL_LIVE_API;
+
+      const response = await fetch(`${apiBase}/v2/payments/captures/${paypalCaptureId}`, {
           headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -235,8 +243,12 @@ export class PayPalService {
       const startStr = start.toISOString();
       const endStr = end.toISOString();
       
+      const settings = await this.getSettings();
+      const mode = settings?.mode || (process.env.PAYPAL_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'live');
+      const apiBase = mode === 'sandbox' ? PAYPAL_SANDBOX_API : PAYPAL_LIVE_API;
+      
       try {
-          const response = await fetch(`${PAYPAL_API_BASE}/v1/reporting/transactions?start_date=${startStr}&end_date=${endStr}&fields=all&page_size=100`, {
+          const response = await fetch(`${apiBase}/v1/reporting/transactions?start_date=${startStr}&end_date=${endStr}&fields=all&page_size=100`, {
               headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json'

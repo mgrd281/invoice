@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       isActive: settings.isActive,
       clientId: settings.clientId,
       webhookId: settings.webhookId,
+      mode: settings.mode || 'live',
       hasSecret: !!settings.clientSecret // Tell UI we have a secret set
     });
   } catch (error: any) {
@@ -38,8 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
-    const { clientId, clientSecret, isActive } = body;
+    const { clientId, clientSecret, isActive, mode } = body;
 
     // Validation
     if (!clientId && isActive) {
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     const data: any = {
       isActive,
       clientId,
+      mode,
       organizationId: session.user.organizationId
     };
 
