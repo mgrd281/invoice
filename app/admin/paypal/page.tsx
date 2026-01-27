@@ -54,11 +54,12 @@ export default function PayPalDashboardPage() {
               await loadData(); // Reload stats
               alert(`Synchronisation erfolgreich! ${data.synced || 0} Transaktionen importiert.`); 
           } else {
-             alert('Fehler bei der Synchronisation.');
+             const data = await res.json().catch(() => ({}));
+             alert(`Fehler bei der Synchronisation: ${data.error || res.statusText}`);
           }
-      } catch (e) {
+      } catch (e: any) {
           console.error(e);
-          alert('Ein Fehler ist aufgetreten.');
+          alert(`Ein Fehler ist aufgetreten: ${e.message}`);
       } finally {
           setSyncing(false);
       }
