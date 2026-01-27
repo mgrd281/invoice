@@ -63,132 +63,157 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    let controller: ReadableStreamDefaultController | null = null
+
     try {
         const session = await getServerSession(authOptions)
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const body = await req.json()
-        const { action } = body
+        const { action, topic, title: userTitle } = body
 
+        // Handle utility actions normally
         if (action === 'TOGGLE_AUTONOMOUS') {
             return NextResponse.json({ success: true, isAutonomous: body.value })
         }
-
         if (action === 'KILL_SWITCH') {
             console.warn('CRITICAL: AI Automation Kill Switch Triggered by', session.user?.email)
             return NextResponse.json({ success: true, status: 'PAUSED' })
         }
 
-        // GENERATE BLOG LOGIC
-        if (action === 'GENERATE_BLOG' || (!action && body.topic)) {
-            const { topic } = body
-
+        // Handle Blog Generation with Streaming
+        if (action === 'GENERATE_BLOG' || (!action && topic)) {
             if (!topic) {
                 return NextResponse.json({ success: false, message: 'Topic is required' }, { status: 400 })
             }
 
-            console.log('🤖 Starting AI Automation for:', topic)
-
-            // 1. GENERATE IMAGE
-            let imageUrl: string | null = null
-            try {
-                console.log('🎨 Generating AI Image for:', topic)
-                imageUrl = await openaiClient.generateImage(topic)
-                console.log('✅ Image URL:', imageUrl)
-            } catch (imgError) {
-                console.warn('⚠️ Image generation failed, continuing without image:', imgError)
-            }
-
-            // 2. GENERATE DEEP RESEARCH CONTENT
-            console.log('📝 Generating Deep Research Text...')
-            const prompt = `
-            ROLLE: Chefredakteur für ein führendes deutsches Enterprise-Tech-Magazin (wie t3n, OMR, Business Insider).
-            AUFGABE: Erstelle einen "Deep Dive" Fachartikel (1500+ Wörter) über: "${topic}".
-            
-            ANFORDERUNG "DEEP RESEARCH":
-            - Simuliere eine tiefgehende Recherche.
-            - Integriere (fiktive aber realistische) Marktdaten, Statistiken und Expertenmeinungen.
-            - Analysiere Trends für 2025/2026.
-            - Der Artikel muss massive Tiefe haben, kein oberflächliches "AI-Geschwafel".
-
-            DESIGN & FORMATTING (STRICT HTML):
-            - Nutze modernes, luftiges Editorial-Design.
-            - <article> Wrapper um den Content.
-            - <h2> mit modernem Styling (z.B. klare, starke Aussagen).
-            - <blockquote> für "Experten-Zitate" oder Key-Takeways.
-            - <div style="background-color: #f8f9fa; padding: 20px; border-left: 4px solid #000; margin: 20px 0;"> für "Key Insights" Boxen.
-            - Listen (<ul>) mit kurzen, knackigen Punkten.
-            - <strong>Fettgedruckte</strong> Wörter für Skimmability.
-            - Füge an passender Stelle <img src="${imageUrl || ''}" alt="AI generated illustration" /> ein, falls URL vorhanden.
-            
-            STRUKTUR:
-            1. H1-Titel (Nutze keine H1 im Body, der Titel wird im Shopify-Feld gesetzt, aber gib mir einen H1-Text in der ersten Zeile für Meta-Daten).
-            2. Executive Summary (Fettdruck, 2-3 Sätze).
-            3. Problemstellung & Status Quo (Tiefenanalyse).
-            4. Die Lösung / Der Trend (Detailliert).
-            5. Strategische Implikationen für Unternehmen (Warum jetzt handeln?).
-            6. Checkliste / Action Plan (HTML Box).
-            7. Fazit.
-
-            TONFALL:
-            - Deutsch (Business Level).
-            - Autoritär, aber visionary.
-            - "Sie"-Ansprache.
-            `
-
-            console.log('📝 Generating Deep Research Article (Using GPT-4o for Maximum Quality)...')
-            const rawResult = await openaiClient.generateSEOText(prompt, 'gpt-4o') // UPGRADE: GPT-4o is the world-class flagship model
-            if (!rawResult) {
-                return NextResponse.json({ success: false, message: 'Content generation failed' }, { status: 500 })
-            }
-
-            // Parse Title and Content
-            const lines = rawResult.split('\n')
-            const cleanLines = lines.map(l => l.replace(/^#+\s*/, ''))
-            const title = cleanLines[0].replace(/<[^>]*>/g, '').trim() || topic
-            const content = lines.slice(1).join('\n')
-
-            // 3. PUBLISH TO SHOPIFY
-            try {
-                const shopify = new ShopifyAPI() // Uses env vars by default
-
-                // Get 'News' blog or first available
-                const blogs = await shopify.getBlogs()
-                let blogId = blogs.find(b => b.title === 'News')?.id || blogs[0]?.id
-
-                if (blogId) {
-                    const articlePayload: any = {
-                        title: title,
-                        author: 'Karinex',
-                        tags: 'Deep Research, AI, Enterprise',
-                        body_html: content,
-                        published: true
+            const encoder = new TextEncoder()
+            const stream = new ReadableStream({
+                async start(ctrl) {
+                    controller = ctrl
+                    const send = (data: any) => {
+                        try {
+                            ctrl.enqueue(encoder.encode(JSON.stringify(data) + '\n'))
+                        } catch (e) { /* client disconnected */ }
                     }
 
-                    if (imageUrl) {
-                        articlePayload.image = { src: imageUrl }
+                    try {
+                        console.log('🤖 Starting AI Automation Stream for:', topic)
+
+                        // STEP 1: RESEARCH
+                        send({ step: 'searching', message: `Durchsuche globale Quellen nach "${topic}"...` })
+
+                        // Fake "Deep Search" delay/logic (or actually perform a light GPT research query first)
+                        // Use GPT to get "Facts" first to simulate research
+                        const researchPrompt = `
+                            Recherchiere 5-10 aktuelle, harte Fakten, Statistiken oder Trends für 2024/2025 zum Thema: "${topic}".
+                            Formatiere sie als kurze Liste. Fokus: Enterprise/B2B Relevanz.
+                        `
+                        const researchData = await openaiClient.generateSEOText(researchPrompt, 'gpt-4o')
+
+                        send({ step: 'analyzing', message: 'Analysiere Datenpunkte & Trends...' })
+                        await new Promise(r => setTimeout(r, 1500)) // Visual pacing
+
+                        // STEP 2: IMAGE
+                        send({ step: 'image', message: 'Generiere thematisch passendes Cover-Bild...' })
+                        let imageUrl: string | null = null
+                        try {
+                            // Use userTitle if available for better image prompting, else topic
+                            imageUrl = await openaiClient.generateImage(userTitle || topic)
+                            send({ step: 'image', message: 'Bild erfolgreich generiert!' })
+                        } catch (imgError) {
+                            send({ step: 'image', message: 'Kein Bild generiert, fahre fort...' })
+                        }
+
+                        // STEP 3: WRITING
+                        send({ step: 'writing', message: 'Verfasse Deep-Dive Fachartikel...' })
+
+                        const articlePrompt = `
+                            ROLLE: Chefredakteur für ein führendes deutsches Enterprise-Tech-Magazin.
+                            AUFGABE: Erstelle einen "Deep Dive" Fachartikel (1500+ Wörter) über: "${topic}".
+                            
+                            KONTEXT & FAKTEN (Aus Recherche):
+                            ${researchData}
+
+                            TITEL VORGABE: ${userTitle ? `Nutze EXAKT diesen Titel: "${userTitle}"` : 'Erstelle einen viralen, professionellen Titel'}
+
+                            DESIGN & FORMATTING (STRICT HTML):
+                            - <article> Wrapper.
+                            - <h2> modern & stark.
+                            - <blockquote> für Experten-Zitate.
+                            - <div style="background-color: #f8f9fa; padding: 20px; border-left: 4px solid #000; margin: 20px 0;"> für Insights.
+                            - <strong>Fettgedruckte</strong> Keywords.
+                            - Füge <img src="${imageUrl || ''}" alt="${topic}" /> ein, falls URL vorhanden.
+
+                            STRUKTUR:
+                            1. (Falls kein fester Titel): H1-Titel in erster Zeile.
+                            2. Executive Summary (fett).
+                            3. Problemstellung (Status Quo).
+                            4. Lösung / Trend 2025.
+                            5. Fazit.
+
+                            TONFALL: Deutsch, Business Level, Visionär.
+                        `
+
+                        const rawResult = await openaiClient.generateSEOText(articlePrompt, 'gpt-4o')
+                        if (!rawResult) throw new Error('Generation failed')
+
+                        // Parse
+                        const lines = rawResult.split('\n')
+                        const cleanLines = lines.map(l => l.replace(/^#+\s*/, ''))
+                        // If userTitle is forced, use it. Otherwise try scrape from line 1.
+                        let title = userTitle
+                        let contentStartIdx = 0
+
+                        if (!title) {
+                            title = cleanLines[0].replace(/<[^>]*>/g, '').trim() || topic
+                            contentStartIdx = 1
+                        } else {
+                            // If user provided title, check if first line looks like a title duplicate and skip it if so
+                            if (cleanLines[0].includes(title)) contentStartIdx = 1
+                        }
+
+                        const content = lines.slice(contentStartIdx).join('\n')
+
+                        // STEP 4: PUBLISH
+                        send({ step: 'publishing', message: 'Finalisiere & Publiere zu Shopify...' })
+
+                        const shopify = new ShopifyAPI()
+                        const blogs = await shopify.getBlogs()
+                        let blogId = blogs.find(b => b.title === 'News')?.id || blogs[0]?.id
+
+                        if (!blogId) throw new Error('Kein Shopify Blog gefunden')
+
+                        const articlePayload: any = {
+                            title: title,
+                            author: 'Karinex AI',
+                            tags: 'Deep Research, AI, Enterprise',
+                            body_html: content,
+                            published: true
+                        }
+                        if (imageUrl) articlePayload.image = { src: imageUrl }
+
+                        const article = await shopify.createArticle(blogId, articlePayload)
+
+                        // Create URL
+                        const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN || ''
+                        const handle = blogs.find(b => b.id === blogId)?.handle
+                        const articleUrl = `https://${shopDomain}/blogs/${handle}/${article.handle}`
+
+                        send({ step: 'done', articleUrl, message: 'Fertig!' })
+                        ctrl.close()
+
+                    } catch (error: any) {
+                        console.error('Stream Error:', error)
+                        send({ error: error.message || 'Unknown error' })
+                        ctrl.close()
                     }
-
-                    const article = await shopify.createArticle(blogId, articlePayload)
-
-                    // Create URL
-                    const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN || ''
-                    const handle = blogs.find(b => b.id === blogId)?.handle
-                    const articleUrl = `https://${shopDomain}/blogs/${handle}/${article.handle}`
-
-                    return NextResponse.json({
-                        success: true,
-                        article,
-                        message: 'Deep Research Article created successfully!',
-                        articleUrl
-                    })
-                } else {
-                    return NextResponse.json({ success: false, message: 'No Blog found in Shopify' })
                 }
-            } catch (shopError: any) {
-                console.error('Shopify Publish Error:', shopError)
-                return NextResponse.json({ success: false, message: 'Publishing failed: ' + shopError.message }, { status: 500 })
-            }
+            })
+
+            return new NextResponse(stream, {
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+            })
         }
 
         return NextResponse.json({ success: true })

@@ -272,10 +272,16 @@ function WorkflowStep({ number, icon: Icon, title, detail }: any) {
 
 function ContentTab({ automation, showToast, setAutomation }: any) {
     const [topic, setTopic] = useState('')
+    const [title, setTitle] = useState('')
     const [isPublishing, setIsPublishing] = useState(false)
     const [posts, setPosts] = useState<any[]>([])
     const [loadingPosts, setLoadingPosts] = useState(true)
     const [deleteId, setDeleteId] = useState<string | null>(null)
+
+    // Progress State
+    const [progressStep, setProgressStep] = useState<string>('idle') // idle, searching, analyzing, image, writing, publishing, done
+    const [progressLogs, setProgressLogs] = useState<string[]>([])
+    const [generatedUrl, setGeneratedUrl] = useState<string | null>(null)
 
     // Fetch Posts
     const fetchPosts = async () => {
@@ -304,31 +310,71 @@ function ContentTab({ automation, showToast, setAutomation }: any) {
         }
 
         setIsPublishing(true)
+        setProgressStep('searching')
+        setProgressLogs(['Starte Prozess...', 'Initialisiere AI Agent...'])
+        setGeneratedUrl(null)
+
         try {
-            const res = await fetch('/api/ai/automation', {
+            const response = await fetch('/api/ai/automation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'GENERATE_BLOG', topic })
+                body: JSON.stringify({
+                    action: 'GENERATE_BLOG',
+                    topic,
+                    title: title.trim() || undefined
+                })
             })
 
-            const data = await res.json()
-            if (data.success) {
-                showToast('Blog-Artikel erfolgreich veröffentlicht!', 'success')
-                setTopic('')
-                fetchPosts() // Refresh list
-                if (automation && setAutomation) {
-                    setAutomation({
-                        ...automation,
-                        logs: [data.logEntry, ...(automation.logs || [])]
-                    })
+            if (!response.body) throw new Error('ReadableStream not supported')
+
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n')
+                buffer = lines.pop() || ''
+
+                for (const line of lines) {
+                    if (!line.trim()) continue
+                    try {
+                        const data = JSON.parse(line)
+                        if (data.step) {
+                            setProgressStep(data.step)
+                            if (data.message) {
+                                setProgressLogs(prev => [data.message, ...prev])
+                            }
+                        }
+                        if (data.articleUrl) {
+                            setGeneratedUrl(data.articleUrl)
+                        }
+                        if (data.error) {
+                            throw new Error(data.error)
+                        }
+                    } catch (e) {
+                        console.error('Parse error', e, line)
+                    }
                 }
-            } else {
-                throw new Error(data.error || 'Fehler beim Generieren')
             }
+
+            showToast('Blog-Artikel erfolgreich veröffentlicht!', 'success')
+            setTopic('')
+            setTitle('')
+            fetchPosts()
+
         } catch (err: any) {
-            showToast(err.message, 'error')
+            showToast(err.message || 'Fehler beim Generieren', 'error')
+            setProgressStep('error')
         } finally {
-            setIsPublishing(false)
+            if (progressStep !== 'error') {
+                // Keep the success state visible for a moment or let user close it
+            } else {
+                setIsPublishing(false)
+            }
         }
     }
 
@@ -368,22 +414,39 @@ function ContentTab({ automation, showToast, setAutomation }: any) {
                         <p className="text-slate-500 font-medium text-sm">Sofortige Artikel-Generierung (Deutsch) zu jedem Thema.</p>
                     </div>
                 </div>
-                <div className="flex gap-4">
-                    <input
-                        type="text"
-                        placeholder="Thema oder Keyword eingeben (z.B. Hausbau Trends 2026)..."
-                        value={topic}
-                        onChange={e => setTopic(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleManualPublish()}
-                        className="flex-1 h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition-all placeholder:text-slate-400"
-                    />
-                    <Button
-                        onClick={handleManualPublish}
-                        disabled={isPublishing || !topic.trim()}
-                        className="h-14 px-10 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-100 disabled:opacity-50"
-                    >
-                        {isPublishing ? 'Generiere...' : 'Artikel Veröffentlichen'}
-                    </Button>
+
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Artikel Titel (Optional)</label>
+                        <input
+                            type="text"
+                            placeholder="Z.B. Die Zukunft der KI im Handwerk"
+                            value={title}
+                            onChange={e => setTitle(e.target.value)}
+                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition-all placeholder:text-slate-400"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Thema & Fokus</label>
+                        <div className="flex gap-4">
+                            <input
+                                type="text"
+                                placeholder="Thema oder Keyword eingeben (z.B. Hausbau Trends 2026)..."
+                                value={topic}
+                                onChange={e => setTopic(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleManualPublish()}
+                                className="flex-1 h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/5 transition-all placeholder:text-slate-400"
+                            />
+                            <Button
+                                onClick={handleManualPublish}
+                                disabled={isPublishing || !topic.trim()}
+                                className="h-14 px-10 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-100 disabled:opacity-50"
+                            >
+                                {isPublishing ? 'Generiere...' : 'Artikel Veröffentlichen'}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </Card>
 
@@ -471,6 +534,101 @@ function ContentTab({ automation, showToast, setAutomation }: any) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Progress Overlay */}
+            {isPublishing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-300">
+                    <Card className="w-full max-w-lg border-none shadow-2xl bg-white rounded-[2.5rem] overflow-hidden p-8">
+                        <div className="flex flex-col items-center text-center space-y-6">
+                            {progressStep === 'done' ? (
+                                <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 animate-in zoom-in spin-in-180 duration-500">
+                                    <Sparkles className="w-10 h-10" />
+                                </div>
+                            ) : (
+                                <div className="relative w-20 h-20">
+                                    <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+                                    <div className="absolute inset-0 rounded-full border-4 border-slate-900 border-t-transparent animate-spin"></div>
+                                    <div className="absolute inset-0 flex items-center justify-center text-slate-900">
+                                        <Bot className="w-8 h-8" />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                                    {progressStep === 'done' ? 'Erfolgreich Erstellt!' : 'AI Arbeitet...'}
+                                </h3>
+                                <p className="text-slate-500 font-medium mt-2">
+                                    {progressStep === 'searching' && 'Durchsuche das Internet nach Informationen...'}
+                                    {progressStep === 'analyzing' && 'Analysiere Daten & Trends...'}
+                                    {progressStep === 'image' && 'Generiere passendes Cover-Bild...'}
+                                    {progressStep === 'writing' && 'Schreibe tiefgehenden Fachartikel...'}
+                                    {progressStep === 'publishing' && 'Lade Artikel zu Shopify hoch...'}
+                                    {progressStep === 'done' && 'Ihr Artikel ist jetzt online.'}
+                                </p>
+                            </div>
+
+                            {/* Steps Visualizer */}
+                            <div className="w-full space-y-3 py-4">
+                                {[
+                                    { id: 'searching', label: 'Research', icon: Search },
+                                    { id: 'image', label: 'Design', icon: Layout },
+                                    { id: 'writing', label: 'Copywriting', icon: Sparkles },
+                                    { id: 'publishing', label: 'Upload', icon: TrendingUp }
+                                ].map((step, idx) => {
+                                    const steps = ['searching', 'analyzing', 'image', 'writing', 'publishing', 'done'];
+                                    const currentIndex = steps.indexOf(progressStep);
+                                    const stepIndex = steps.indexOf(step.id);
+                                    const isCompleted = currentIndex > stepIndex || progressStep === 'done';
+                                    const isCurrent = progressStep === step.id || (step.id === 'searching' && progressStep === 'analyzing');
+
+                                    return (
+                                        <div key={step.id} className={cn(
+                                            "flex items-center gap-4 p-3 rounded-xl transition-all duration-300",
+                                            isCurrent ? "bg-slate-900 text-white shadow-lg scale-105" : "bg-slate-50 text-slate-400",
+                                            isCompleted && "bg-emerald-50 text-emerald-600"
+                                        )}>
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                isCurrent ? "bg-white/10" : "bg-white",
+                                                isCompleted && "bg-emerald-100"
+                                            )}>
+                                                {isCompleted ? <Sparkles className="w-4 h-4" /> : <step.icon className="w-4 h-4" />}
+                                            </div>
+                                            <span className="text-xs font-black uppercase tracking-widest flex-1 text-left">{step.label}</span>
+                                            {isCurrent && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {progressStep === 'done' ? (
+                                <div className="flex gap-3 w-full">
+                                    <Button onClick={() => setIsPublishing(false)} className="flex-1 h-12 bg-slate-100 text-slate-900 hover:bg-slate-200 font-black text-xs uppercase tracking-widest rounded-xl">
+                                        Schließen
+                                    </Button>
+                                    {generatedUrl && (
+                                        <Button onClick={() => window.open(generatedUrl, '_blank')} className="flex-1 h-12 bg-slate-900 text-white hover:bg-slate-800 font-black text-xs uppercase tracking-widest rounded-xl">
+                                            Artikel Ansehen
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="w-full bg-slate-50 rounded-xl p-4 h-24 overflow-y-auto text-left">
+                                    <div className="space-y-1">
+                                        {progressLogs.map((log, i) => (
+                                            <p key={i} className="text-[10px] font-mono text-slate-500 truncate">
+                                                <span className="opacity-50 mr-2">{new Date().toLocaleTimeString()}</span>
+                                                {log}
+                                            </p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                </div>
+            )}
         </div>
     )
 }
