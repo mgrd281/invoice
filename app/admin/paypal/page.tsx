@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react";
-import { Euro, CreditCard, Activity, AlertCircle } from "lucide-react";
+import { Euro, CreditCard, Activity, AlertCircle, Settings } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function PayPalDashboardPage() {
   const [loading, setLoading] = useState(false);
@@ -67,7 +69,13 @@ export default function PayPalDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+            <Link href="/admin/paypal/settings">
+                <Button variant="outline" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Einstellungen
+                </Button>
+            </Link>
           <button 
              onClick={handleSync} 
              disabled={syncing}
