@@ -30,12 +30,12 @@ export class PayPalService {
     
     // Prefer DB settings, fallback to Env Vars
     let clientId = settings?.clientId;
-    let clientSecret = settings?.clientSecret ? decrypt(settings.clientSecret) : null;
+    let clientSecret = settings?.clientSecret ? decrypt(settings.clientSecret) : undefined;
     let isActive = settings?.isActive;
 
     // Fallback to Environment Variables if DB is missing or empty
-    if (!clientId) clientId = process.env.PAYPAL_CLIENT_ID;
-    if (!clientSecret) clientSecret = process.env.PAYPAL_SECRET;
+    if (!clientId) clientId = process.env.PAYPAL_CLIENT_ID || undefined;
+    if (!clientSecret) clientSecret = process.env.PAYPAL_SECRET || undefined;
     
     // If we have env vars, assume active unless explicitly disabled in DB (which we can't easily distinguish from 'missing')
     // Let's assume if env vars are present and DB record is missing, it's active.
