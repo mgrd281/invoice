@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const to = searchParams.get('to') ? new Date(searchParams.get('to')!) : new Date();
 
   try {
-    const service = new PayPalService(session.user.organizationId);
+    const service = new PayPalService(user.organizationId);
     const transactions = await service.listTransactions(from, to);
     return NextResponse.json(transactions);
   } catch (error: any) {
