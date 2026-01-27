@@ -753,7 +753,9 @@ model Expense {
   updatedAt         DateTime         @updatedAt
   organization      Organization     @relation(fields: [organizationId], references: [id])
   expenseCategory   ExpenseCategory? @relation(fields: [categoryId], references: [id])
-}
+  isRecurring       Boolean          @default(false)
+  recurringInterval String?          // DAILY, WEEKLY, MONTHLY, YEARLY
+  endDate           DateTime?
 
 model ExpenseCategory {
   id             String       @id @default(uuid())
@@ -764,8 +766,10 @@ model ExpenseCategory {
   type           String       @default("OPERATIONAL")
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  rulesKeywords  String?      // Comma separated keywords for auto-classification
   organization   Organization @relation(fields: [organizationId], references: [id])
   expenses       Expense[]
+  budgets        Budget[]
 
   @@unique([organizationId, name])
 }
@@ -775,13 +779,15 @@ model Budget {
   organizationId    String
   month             String       // Format: YYYY-MM
   amount            Decimal      @db.Decimal(10, 2)
+  categoryId        String?
   alertThreshold80  Boolean      @default(true)
   alertThreshold100 Boolean      @default(true)
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   organization      Organization @relation(fields: [organizationId], references: [id])
+  category          ExpenseCategory? @relation(fields: [categoryId], references: [id])
 
-  @@unique([organizationId, month])
+  @@unique([organizationId, month, categoryId])
 }
 
 model AdditionalIncome {

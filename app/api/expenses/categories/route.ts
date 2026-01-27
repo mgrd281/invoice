@@ -39,16 +39,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
-    const { name, iconKey, color, type } = body;
+    const { name, color, type, rulesKeywords } = await req.json();
+
+    if (!name) return NextResponse.json({ error: 'Name fehlt' }, { status: 400 });
 
     const category = await prisma.expenseCategory.create({
       data: {
         organizationId: user.organizationId,
         name,
-        iconKey: iconKey || 'Tag',
         color: color || '#000000',
-        type: type || 'OPERATIONAL'
+        type: type || 'OPERATIONAL',
+        rulesKeywords: rulesKeywords // Optional JSON/String
       }
     });
 

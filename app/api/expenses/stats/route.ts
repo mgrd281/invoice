@@ -86,13 +86,42 @@ export async function GET(req: NextRequest) {
     }).sort((a, b) => b.total - a.total);
 
 
+    // 4. Get Daily Trend (Last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // Group expenses by day
+    const dailyExpenses = await prisma.expense.groupBy({
+        by: ['date'],
+        where: {
+            organizationId: user.organizationId,
+            date: { gte: thirtyDaysAgo }
+        },
+        _sum: {
+            totalAmount: true
+        }
+    });
+
+    // Format for chart
+    const dailyTrend = dailyExpenses.map(item => ({
+        date: item.date.toISOString().split('T')[0],
+        amount: Number(item._sum.totalAmount)
+    })).sort((a,b) => a.date.localeCompare(b.date));
+
+    // 5. Net Profit
+    // Revenue is already calculated (paid invoices)
+    const netProfit = totalRevenue - totalExpenses;
+
+    // 6. Revenue vs Expenses (Monthly comparison optional)
+    
     return NextResponse.json({
       revenue: totalRevenue,
       expenses: totalExpenses,
-      profit: totalRevenue - totalExpenses,
+      profit: netProfit,
       budget: budgetAmount,
       budgetConsumedPercent: budgetAmount > 0 ? (totalExpenses / budgetAmount) * 100 : 0,
-      categoryStats
+      categoryStats,
+      dailyTrend
     });
 
   } catch (error) {

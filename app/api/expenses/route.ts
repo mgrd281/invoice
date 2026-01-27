@@ -16,22 +16,39 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get('from');
   const to = searchParams.get('to');
   const categoryId = searchParams.get('categoryId');
+  const paymentMethod = searchParams.get('paymentMethod');
+  const minAmount = searchParams.get('minAmount');
+  const maxAmount = searchParams.get('maxAmount');
+  const isRecurring = searchParams.get('isRecurring');
 
   try {
     const where: any = {
       organizationId: user.organizationId,
     };
 
-    if (from && to) {
-      where.date = {
-        gte: new Date(from),
-        lte: new Date(to),
-      };
+    // Date Filter
+    if (from || to) {
+      where.date = {};
+      if (from) where.date.gte = new Date(from);
+      if (to) where.date.lte = new Date(to);
+    }
+    
+    // Category Filter
+    if (categoryId && categoryId !== 'ALL') {
+        where.categoryId = categoryId;
     }
 
-    if (categoryId) {
-      where.categoryId = categoryId;
+    // Payment Method Filter
+    if (paymentMethod && paymentMethod !== 'ALL') {
+        where.paymentMethod = paymentMethod;
     }
+
+    // Amount Filter
+    if (minAmount) where.totalAmount = { ...where.totalAmount, gte: parseFloat(minAmount) };
+    if (maxAmount) where.totalAmount = { ...where.totalAmount, lte: parseFloat(maxAmount) };
+
+    // Recurring Filter
+    if (isRecurring === 'true') where.isRecurring = true;
 
     const expenses = await prisma.expense.findMany({
       where,
@@ -41,6 +58,7 @@ export async function GET(req: NextRequest) {
       orderBy: {
         date: 'desc',
       },
+      take: 100 // Limit for performance
     });
 
     return NextResponse.json(expenses);
@@ -101,7 +119,10 @@ export async function POST(req: NextRequest) {
         taxAmount: taxVal,
         totalAmount: totalVal,
         paymentMethod: paymentMethod || 'CASH',
-        receiptUrl: receiptUrl
+        receiptUrl: receiptUrl,
+        isRecurring: body.isRecurring || false,
+        recurringInterval: body.isRecurring ? body.recurringInterval : null,
+        endDate: body.endDate ? new Date(body.endDate) : null
       }
     });
 
