@@ -27,7 +27,8 @@ import {
     UserX,
     Terminal,
     Activity,
-    Bot
+    Bot,
+    Wallet
 } from 'lucide-react'
 
 export const DEFAULT_FEATURES = [
@@ -237,6 +238,20 @@ export const DEFAULT_FEATURES = [
         hasPing: true,
         pingColor: 'bg-emerald-400',
         pingDotColor: 'bg-emerald-500'
+    },
+    {
+        id: 'expenses',
+        href: '/admin/expenses',
+        title: 'Ausgaben (Expenses)',
+        description: 'Tägliche Ausgaben, Budgets & Reports',
+        icon: Wallet,
+        iconBg: 'bg-gradient-to-r from-violet-600 to-indigo-600',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-violet-300 bg-gradient-to-br from-white to-violet-50',
+        badge: 'NEU',
+        badgeClass: 'bg-violet-100 text-violet-700',
+        hasPing: true,
+        pingColor: 'bg-violet-400',
+        pingDotColor: 'bg-violet-500'
     },
     {
         id: 'paypal',
