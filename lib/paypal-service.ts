@@ -264,15 +264,17 @@ export class PayPalService {
           }
           
           const data = await response.json();
+          console.log(`[PayPal Sync] Found ${data.transaction_details?.length || 0} items for range ${startStr} to ${endStr}`);
+          
           const details = data.transaction_details;
           
+          let syncedCount = 0;
           if (Array.isArray(details)) {
               for (const item of details) {
                   const info = item.transaction_info;
-                  // Map Reporting API structure to our upsert format
-                  // transaction_info has: transaction_id, transaction_amount, transaction_status, etc.
-                  
-                  // Filter: Only process income (payments received)
+                  console.log(`[PayPal Sync] Item: ${info.transaction_id} | Amt: ${info.transaction_amount?.value} | Status: ${info.transaction_status}`);
+
+                  // Filter: Only process income (payments received) - we might want to debug this filter later
                   if (Number(info.transaction_amount?.value) > 0) {
                        await this.upsertTransaction({
                            id: info.transaction_id,
@@ -286,10 +288,11 @@ export class PayPalService {
                            custom_id: info.custom_field,
                            payer_info: item.payer_info
                        });
+                       syncedCount++;
                   }
               }
           }
-          return details?.length || 0;
+          return syncedCount;
       } catch (e: any) {
           console.error("Sync Error:", e);
           // Don't fail hard, just return 0 or log
