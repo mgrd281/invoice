@@ -316,40 +316,5 @@ export class PayPalService {
       return totalSynced;
   }
           
-          const data = await response.json();
-          console.log(`[PayPal Sync] Found ${data.transaction_details?.length || 0} items for range ${startStr} to ${endStr}`);
-          
-          const details = data.transaction_details;
-          
-          let syncedCount = 0;
-          if (Array.isArray(details)) {
-              for (const item of details) {
-                  const info = item.transaction_info;
-                  console.log(`[PayPal Sync] Item: ${info.transaction_id} | Amt: ${info.transaction_amount?.value} | Status: ${info.transaction_status}`);
 
-                  // Filter: Only process income (payments received) - we might want to debug this filter later
-                  if (Number(info.transaction_amount?.value) > 0) {
-                       await this.upsertTransaction({
-                           id: info.transaction_id,
-                           status: info.transaction_status === 'S' ? 'COMPLETED' : info.transaction_status, // 'S' is Success in Reporting API? strict mapping needed
-                           amount: {
-                               value: info.transaction_amount?.value,
-                               currency_code: info.transaction_amount?.currency_code
-                           },
-                           create_time: info.transaction_initiation_date,
-                           invoice_id: info.invoice_id,
-                           custom_id: info.custom_field,
-                           payer_info: item.payer_info
-                       });
-                       syncedCount++;
-                  }
-              }
-          }
-          return syncedCount;
-      } catch (e: any) {
-          console.error("Sync Error:", e);
-          // Don't fail hard, just return 0 or log
-          return 0;
-      }
-  }
 }
