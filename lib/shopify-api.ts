@@ -1290,5 +1290,37 @@ export class ShopifyAPI {
       return []
     }
   }
+  /**
+   * Get Articles from a specific Blog
+   */
+  async getArticles(blogId: number | string, params: { limit?: number } = {}): Promise<any[]> {
+    try {
+      const searchParams = new URLSearchParams()
+      searchParams.set('limit', (params.limit || 250).toString())
+
+      const response = await this.makeRequest(`/blogs/${blogId}/articles.json?${searchParams}`)
+      const data = await response.json()
+      return data.articles || []
+    } catch (error) {
+      console.error(`Error fetching articles for blog ${blogId}:`, error)
+      return []
+    }
+  }
+
+  /**
+   * Delete an Article
+   */
+  async deleteArticle(blogId: number | string, articleId: number | string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting article ${articleId} from blog ${blogId}...`)
+      await this.makeRequest(`/blogs/${blogId}/articles/${articleId}.json`, {
+        method: 'DELETE'
+      })
+      console.log('✅ Article deleted successfully')
+    } catch (error) {
+      console.error(`Error deleting article ${articleId}:`, error)
+      throw error
+    }
+  }
 }
 

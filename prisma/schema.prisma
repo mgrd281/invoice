@@ -1287,3 +1287,4 @@ model PurchaseInvoiceItem {
   grossAmount       Float
   purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
 }
+

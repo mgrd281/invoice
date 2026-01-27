@@ -16,6 +16,16 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { useToast, Toast } from '@/components/ui/toast'
 import { AutomationCanvas } from '@/components/ai/automation-canvas'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import { ErrorBoundary } from '@/components/error-boundary'
 
@@ -263,6 +273,29 @@ function WorkflowStep({ number, icon: Icon, title, detail }: any) {
 function ContentTab({ automation, showToast, setAutomation }: any) {
     const [topic, setTopic] = useState('')
     const [isPublishing, setIsPublishing] = useState(false)
+    const [posts, setPosts] = useState<any[]>([])
+    const [loadingPosts, setLoadingPosts] = useState(true)
+    const [deleteId, setDeleteId] = useState<string | null>(null)
+
+    // Fetch Posts
+    const fetchPosts = async () => {
+        try {
+            setLoadingPosts(true)
+            const res = await fetch('/api/content/posts')
+            const data = await res.json()
+            if (data.ok) {
+                setPosts(data.data.items)
+            }
+        } catch (error) {
+            console.error('Failed to fetch posts', error)
+        } finally {
+            setLoadingPosts(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchPosts()
+    }, [])
 
     const handleManualPublish = async () => {
         if (!topic.trim()) {
@@ -282,6 +315,7 @@ function ContentTab({ automation, showToast, setAutomation }: any) {
             if (data.success) {
                 showToast('Blog-Artikel erfolgreich veröffentlicht!', 'success')
                 setTopic('')
+                fetchPosts() // Refresh list
                 if (automation && setAutomation) {
                     setAutomation({
                         ...automation,
@@ -295,6 +329,30 @@ function ContentTab({ automation, showToast, setAutomation }: any) {
             showToast(err.message, 'error')
         } finally {
             setIsPublishing(false)
+        }
+    }
+
+    const handleDelete = async () => {
+        if (!deleteId) return
+
+        const postToDelete = posts.find(p => p.id === deleteId)
+
+        try {
+            // Optimistic update
+            setPosts(prev => prev.filter(p => p.id !== deleteId))
+            setDeleteId(null)
+
+            const res = await fetch(`/api/content/posts/${deleteId}`, { method: 'DELETE' })
+            const data = await res.json()
+
+            if (data.ok) {
+                showToast(`Artikel "${postToDelete?.title}" gelöscht`, 'success')
+            } else {
+                throw new Error(data.error)
+            }
+        } catch (error) {
+            showToast('Fehler beim Löschen', 'error')
+            fetchPosts() // Revert on error
         }
     }
 
@@ -330,46 +388,89 @@ function ContentTab({ automation, showToast, setAutomation }: any) {
             </Card>
 
             <div className="space-y-6">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <Layout className="w-4 h-4" /> Content Bibliothek
-                </h3>
-                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Layout className="w-4 h-4" /> Content Bibliothek
+                    </h3>
+                    <Button variant="ghost" size="sm" onClick={fetchPosts} disabled={loadingPosts}>
+                        {loadingPosts ? 'Laden...' : 'Aktualisieren'}
+                    </Button>
+                </div>
+
+                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden min-h-[300px]">
                     <CardContent className="p-0">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-100">
-                                <tr>
-                                    {['Titel', 'Status', 'SEO Score', 'Veröffentlichungsdatum', 'Aktion'].map(h => (
-                                        <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{h}</th>
+                        {posts.length === 0 && !loadingPosts ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                                <Layout className="w-12 h-12 mb-4 opacity-50" />
+                                <p className="font-bold">Keine Artikel gefunden</p>
+                            </div>
+                        ) : (
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-100">
+                                    <tr>
+                                        {['Titel', 'Status', 'SEO Score', 'Veröffentlichungsdatum', 'Aktion'].map(h => (
+                                            <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {posts.map((post) => (
+                                        <tr key={post.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-6 max-w-[300px]">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 min-w-[2.5rem] rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center font-black">AI</div>
+                                                    <p className="text-sm font-black text-slate-900 uppercase truncate" title={post.title}>{post.title}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <Badge className={cn(
+                                                    "border-none font-black text-[9px] uppercase",
+                                                    post.status === 'published' ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                                                )}>
+                                                    {post.status === 'published' ? 'Veröffentlicht' : 'Entwurf'}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <span className="text-slate-400 font-bold">-</span>
+                                            </td>
+                                            <td className="px-6 py-6 text-xs text-slate-500 font-bold uppercase">
+                                                {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <div className="flex gap-2">
+                                                    {post.url && (
+                                                        <Button variant="ghost" size="sm" className="text-[10px] font-black text-slate-400 hover:text-slate-900" onClick={() => window.open(`https://${automation?.shopDomain || ''}/blogs/${post.url}`, '_blank')}>
+                                                            ÖFFNEN
+                                                        </Button>
+                                                    )}
+                                                    <Button variant="ghost" size="sm" className="text-[10px] font-black text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => setDeleteId(post.id)}>
+                                                        LÖSCHEN
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                <tr className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center font-black">AI</div>
-                                            <p className="text-sm font-black text-slate-900 uppercase">Zukunft des ERP Systems 2026</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6"><Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[9px] uppercase">Veröffentlicht</Badge></td>
-                                    <td className="px-6 py-6">
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-2 w-16 bg-slate-100 rounded-full overflow-hidden">
-                                                <div className="h-full bg-emerald-500 w-[94%]" />
-                                            </div>
-                                            <span className="text-[10px] font-black">94</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6 text-xs text-slate-500 font-bold uppercase">24. Jan 2026</td>
-                                    <td className="px-6 py-6">
-                                        <Button variant="ghost" size="sm" className="text-[10px] font-black text-blue-600 hover:bg-blue-50">BEARBEITEN</Button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        )}
                     </CardContent>
                 </Card>
             </div>
+
+            <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+                <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="font-black">Artikel löschen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Dieser Vorgang kann nicht rückgängig gemacht werden. Der Artikel wird dauerhaft aus Shopify entfernt.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl font-bold">Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 rounded-xl font-bold">Löschen</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
