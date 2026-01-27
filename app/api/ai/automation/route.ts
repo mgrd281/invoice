@@ -156,7 +156,7 @@ export async function POST(req: Request) {
 
                     const article = await shopify.createArticle(blogId, {
                         title: title,
-                        author: 'AI Editor',
+                        author: 'Karinex',
                         tags: 'AI-Generated, Trends, 2026',
                         body_html: content,
                         published: true
