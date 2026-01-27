@@ -5,7 +5,11 @@ import { authOptions } from '@/lib/auth-options';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || !session.user || !session.user.organizationId) {
+  
+  // Cast user to any or a custom type to access organizationId added in callbacks
+  const user = session?.user as any;
+
+  if (!user || !user.organizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -25,13 +29,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user || !session.user.organizationId) {
+    const user = session?.user as any;
+
+    if (!user || !user.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     try {
         const body = await req.json();
-        const service = new PayPalService(session.user.organizationId);
+        const service = new PayPalService(user.organizationId);
 
         if (body.action === 'sync') {
             // Trigger manual sync for a period or specific id?
@@ -41,6 +47,10 @@ export async function POST(req: NextRequest) {
                 const tx = await service.syncTransaction(body.captureId);
                 return NextResponse.json(tx);
             }
+        } else if (body.action === 'sync_history') {
+             const count = await service.fetchTransactionsFromPayPal();
+             return NextResponse.json({ synced: count });
+        }
         }
         
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

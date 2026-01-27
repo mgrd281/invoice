@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,15 +9,50 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 
 export default function PayPalSettingsPage() {
+  const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState({
       clientId: '',
       clientSecret: '',
-      isActive: false
+      isActive: false,
+      hasSecret: false
   });
 
+  // Fetch initial settings
+  useEffect(() => {
+    fetch('/api/paypal/settings')
+        .then(res => res.json())
+        .then(data => {
+            if (data && !data.error) {
+                setConfig(prev => ({
+                    ...prev,
+                    clientId: data.clientId || '',
+                    isActive: !!data.isActive,
+                    hasSecret: !!data.hasSecret
+                }));
+            }
+        });
+  }, []);
+
   const handleSave = async () => {
-      // TODO: Implement save API
-      toast.success("Einstellungen gespeichert (Mock)");
+      setLoading(true);
+      try {
+          const res = await fetch('/api/paypal/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(config)
+          });
+          const data = await res.json();
+          if (res.ok) {
+              toast.success("Einstellungen erfolgreich gespeichert");
+              setConfig(prev => ({ ...prev, hasSecret: true, clientSecret: '' })); // Clear input after save
+          } else {
+              toast.error(data.error || "Fehler beim Speichern");
+          }
+      } catch (e) {
+          toast.error("Ein unbekannter Fehler ist aufgetreten");
+      } finally {
+          setLoading(false);
+      }
   };
 
   return (
@@ -51,18 +86,23 @@ export default function PayPalSettingsPage() {
            
            <div className="grid gap-2">
               <Label htmlFor="clientSecret">Client Secret</Label>
-              <Input 
-                id="clientSecret" 
-                type="password" 
-                placeholder="• • • • • • • •" 
-                value={config.clientSecret}
-                onChange={(e) => setConfig({...config, clientSecret: e.target.value})}
-              />
+              <div className="relative">
+                  <Input 
+                    id="clientSecret" 
+                    type="password" 
+                    placeholder={config.hasSecret ? "•••••••• (Gespeichert - leer lassen zum Behalten)" : "Secret Key eingeben"} 
+                    value={config.clientSecret}
+                    onChange={(e) => setConfig({...config, clientSecret: e.target.value})}
+                  />
+              </div>
+              {config.hasSecret && <p className="text-xs text-green-600">✓ Secret Key ist sicher hinterlegt</p>}
            </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-           <Button variant="outline">Verbindung testen</Button>
-           <Button onClick={handleSave}>Speichern</Button>
+           <Button variant="outline" disabled>Verbindung testen</Button>
+           <Button onClick={handleSave} disabled={loading}>
+             {loading ? 'Speichere...' : 'Speichern'}
+           </Button>
         </CardFooter>
       </Card>
       

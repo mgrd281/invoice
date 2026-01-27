@@ -1,0 +1,74 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
+import { prisma } from '@/lib/prisma';
+import { encrypt, decrypt } from '@/lib/crypto-utils';
+
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user || !session.user.organizationId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const settings = await prisma.payPalSettings.findUnique({
+      where: { organizationId: session.user.organizationId }
+    });
+
+    if (!settings) {
+      return NextResponse.json({ isActive: false, clientId: '', webhookId: '' });
+    }
+
+    // Return masked secret or just empty, never real secret
+    return NextResponse.json({
+      isActive: settings.isActive,
+      clientId: settings.clientId,
+      webhookId: settings.webhookId,
+      hasSecret: !!settings.clientSecret // Tell UI we have a secret set
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user || !session.user.organizationId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const { clientId, clientSecret, isActive } = body;
+
+    // Validation
+    if (!clientId && isActive) {
+        return NextResponse.json({ error: 'Client ID required' }, { status: 400 });
+    }
+
+    const data: any = {
+      isActive,
+      clientId,
+      organizationId: session.user.organizationId
+    };
+
+    // Only update secret if provided (allow empty to keep existing)
+    if (clientSecret && clientSecret.length > 0) {
+        data.clientSecret = encrypt(clientSecret);
+    }
+
+    const settings = await prisma.payPalSettings.upsert({
+      where: { organizationId: session.user.organizationId },
+      create: {
+          ...data,
+          clientSecret: data.clientSecret || '' // Handle case where secret is needed on create
+      },
+      update: data
+    });
+
+    return NextResponse.json(settings);
+  } catch (error: any) {
+    console.error("Error saving PayPal settings:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

@@ -221,4 +221,65 @@ export class PayPalService {
 
     return tx;
   }
+
+  /**
+   * Fetch historical transactions from PayPal Reporting API
+   */
+  async fetchTransactionsFromPayPal(startDate?: Date, endDate?: Date) {
+      const start = startDate || new Date(new Date().setDate(new Date().getDate() - 30)); // Default 30 days
+      const end = endDate || new Date();
+      
+      const token = await this.getAccessToken();
+      
+      // Format dates as YYYY-MM-DDTHH:mm:ss.SSSZ
+      const startStr = start.toISOString();
+      const endStr = end.toISOString();
+      
+      try {
+          const response = await fetch(`${PAYPAL_API_BASE}/v1/reporting/transactions?start_date=${startStr}&end_date=${endStr}&fields=all&page_size=100`, {
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+              }
+          });
+          
+          if (!response.ok) {
+               const error = await response.text();
+               console.error('PayPal Reporting API Error:', error);
+               throw new Error(`Failed to fetch history: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          const details = data.transaction_details;
+          
+          if (Array.isArray(details)) {
+              for (const item of details) {
+                  const info = item.transaction_info;
+                  // Map Reporting API structure to our upsert format
+                  // transaction_info has: transaction_id, transaction_amount, transaction_status, etc.
+                  
+                  // Filter: Only process income (payments received)
+                  if (Number(info.transaction_amount?.value) > 0) {
+                       await this.upsertTransaction({
+                           id: info.transaction_id,
+                           status: info.transaction_status === 'S' ? 'COMPLETED' : info.transaction_status, // 'S' is Success in Reporting API? strict mapping needed
+                           amount: {
+                               value: info.transaction_amount?.value,
+                               currency_code: info.transaction_amount?.currency_code
+                           },
+                           create_time: info.transaction_initiation_date,
+                           invoice_id: info.invoice_id,
+                           custom_id: info.custom_field,
+                           payer_info: item.payer_info
+                       });
+                  }
+              }
+          }
+          return details?.length || 0;
+      } catch (e: any) {
+          console.error("Sync Error:", e);
+          // Don't fail hard, just return 0 or log
+          return 0;
+      }
+  }
 }
