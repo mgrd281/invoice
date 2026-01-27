@@ -2,6 +2,7 @@ import {
     FileText,
     Users,
     Upload,
+    CreditCard,
     TrendingUp,
     Settings,
     ShoppingBag,
@@ -236,6 +237,20 @@ export const DEFAULT_FEATURES = [
         hasPing: true,
         pingColor: 'bg-emerald-400',
         pingDotColor: 'bg-emerald-500'
+    },
+    {
+        id: 'paypal',
+        href: '/admin/paypal',
+        title: 'PayPal',
+        description: 'Zahlungen, Transaktionen & Rechnungsabgleich',
+        icon: CreditCard,
+        iconBg: 'bg-gradient-to-r from-blue-700 to-blue-900',
+        cardClass: 'hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white to-blue-50',
+        badge: 'NEU',
+        badgeClass: 'bg-blue-100 text-blue-800',
+        hasPing: true,
+        pingColor: 'bg-blue-600',
+        pingDotColor: 'bg-blue-700'
     },
     {
         id: 'settings',
