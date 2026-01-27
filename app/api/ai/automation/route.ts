@@ -186,7 +186,7 @@ export async function POST(req: Request) {
 
                         const articlePayload: any = {
                             title: title,
-                            author: 'Karinex AI',
+                            author: 'Karinex',
                             tags: 'Deep Research, AI, Enterprise',
                             body_html: content,
                             published: true
