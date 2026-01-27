@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 
@@ -23,7 +24,7 @@ interface ContactResult {
 
 export async function GET(req: NextRequest) {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         if (!session) {
             return NextResponse.json({ ok: false, error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 })
         }

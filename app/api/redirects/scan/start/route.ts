@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma'
 import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
@@ -7,7 +8,7 @@ import * as cheerio from 'cheerio'
 
 export async function POST(req: Request) {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         if (!session || !session.user) {
             return new NextResponse('Unauthorized', { status: 401 })
         }

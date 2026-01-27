@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { loadUsersFromDisk, saveUsersToDisk } from '@/lib/server-storage'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         const userEmail = session?.user?.email
 
         if (!userEmail) {
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         const userEmail = session?.user?.email
 
         if (!userEmail) {

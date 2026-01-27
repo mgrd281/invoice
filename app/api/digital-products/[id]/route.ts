@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ShopifyAPI } from '@/lib/shopify-api'
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 
 export async function GET(
     request: NextRequest,
@@ -99,7 +100,7 @@ export async function DELETE(
     { params }: { params: any }
 ) {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         if (!session) return new NextResponse('Unauthorized', { status: 401 })
 
         const { id } = await params

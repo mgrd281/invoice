@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
@@ -31,7 +32,7 @@ try {
 
 export async function POST(req: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getServerSession(authOptions);
         if (!session?.user) {
             return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
         }

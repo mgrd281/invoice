@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { ShopifyAPI } from '@/lib/shopify-api'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
@@ -79,7 +80,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const session = await auth()
+        const session = await getServerSession(authOptions)
         if (!session?.user?.email) {
             return new NextResponse('Unauthorized', { status: 401 })
         }
