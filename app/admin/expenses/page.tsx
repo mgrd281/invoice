@@ -45,8 +45,8 @@ export default function ExpensesDashboard() {
             {/* Action Bar */}
             <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
                 <div className="flex gap-4">
-                    <Link href="/admin/expenses/overview">
-                         <Button variant="ghost">Übersicht</Button>
+                    <Link href="/admin/expenses">
+                         <Button variant={loading ? "ghost" : "secondary"}>Übersicht</Button>
                     </Link>
                     <Link href="/admin/expenses/list">
                          <Button variant="ghost">Alle Ausgaben</Button>
