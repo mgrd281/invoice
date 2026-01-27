@@ -1,179 +1,195 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingDown, TrendingUp, AlertTriangle, PieChart, Euro } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Download, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, PieChart } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 
 export default function ExpensesDashboard() {
     const [stats, setStats] = useState<any>(null);
-    const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchData();
+        fetch('/api/expenses/stats')
+            .then(res => res.json())
+            .then(data => {
+                setStats(data);
+                setLoading(false);
+            });
     }, []);
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            // Fetch stats (current month default)
-            const resStats = await fetch('/api/expenses/stats');
-            const dataStats = await resStats.json();
-            setStats(dataStats);
-
-            // Fetch recent expenses
-            const resRecent = await fetch('/api/expenses');
-            const dataRecent = await resRecent.json();
-            if (Array.isArray(dataRecent)) {
-                setRecentExpenses(dataRecent.slice(0, 5));
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+    const formatCurrency = (val: number) => {
+        return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val);
     };
 
-    if (loading) {
-        return <div className="p-8">Lade Daten...</div>;
-    }
+    if (loading) return <div className="p-8 text-center">Lade Finanzdaten...</div>;
+
+    const profitColor = stats?.profit >= 0 ? 'text-emerald-600' : 'text-red-600';
+    const profitIcon = stats?.profit >= 0 ? ArrowUpRight : ArrowDownRight;
+    const ProfitIcon = profitIcon; // capitalization for component usage
 
     return (
-        <div className="space-y-4">
-            {/* Action Bar */}
-            <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
-                <div className="flex gap-4">
-                    <Link href="/admin/expenses">
-                         <Button variant={loading ? "ghost" : "secondary"}>Übersicht</Button>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header Actions */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Finanzübersicht</h1>
+                    <p className="text-muted-foreground">Einnahmen, Ausgaben und Gewinn im Blick.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Link href="/api/expenses/reports?format=csv" target="_blank">
+                        <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Export</Button>
                     </Link>
-                    <Link href="/admin/expenses/list">
-                         <Button variant="ghost">Alle Ausgaben</Button>
-                    </Link>
-                     <Link href="/admin/expenses/budget">
-                         <Button variant="ghost">Mizanie (Budget)</Button>
-                    </Link>
-                     <Link href="/admin/expenses/categories">
-                         <Button variant="ghost">Fategorien</Button>
+                    <Link href="/admin/expenses/add">
+                        <Button className="bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-200">
+                            <Plus className="w-4 h-4 mr-2" /> Neue Ausgabe
+                        </Button>
                     </Link>
                 </div>
-                <Link href="/admin/expenses/add">
-                    <Button className="bg-violet-600 hover:bg-violet-700">
-                        <Plus className="mr-2 h-4 w-4" /> Ausgabe hinzufügen
-                    </Button>
-                </Link>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Gesamtausgaben (Monat)</CardTitle>
-                        <TrendingDown className="h-4 w-4 text-red-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">€{stats?.expenses?.toFixed(2) || '0.00'}</div>
-                        <p className="text-xs text-muted-foreground">in diesem Monat</p>
+            {/* KPI Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="border-l-4 border-l-emerald-500 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <p className="text-sm font-medium text-muted-foreground">Einnahmen (Monat)</p>
+                                <h3 className="text-2xl font-bold mt-2 text-slate-900">{formatCurrency(stats?.revenue || 0)}</h3>
+                             </div>
+                             <div className="p-2 bg-emerald-100 rounded-full">
+                                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                             </div>
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Budget Status</CardTitle>
-                        {stats?.budgetConsumedPercent > 80 ? (
-                             <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <Card className="border-l-4 border-l-red-500 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <p className="text-sm font-medium text-muted-foreground">Ausgaben (Monat)</p>
+                                <h3 className="text-2xl font-bold mt-2 text-slate-900">{formatCurrency(stats?.expenses || 0)}</h3>
+                             </div>
+                             <div className="p-2 bg-red-100 rounded-full">
+                                <TrendingDown className="w-4 h-4 text-red-600" />
+                             </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className={`border-l-4 ${stats?.profit >= 0 ? 'border-l-violet-500' : 'border-l-orange-500'} shadow-sm`}>
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <p className="text-sm font-medium text-muted-foreground">Netto Gewinn</p>
+                                <h3 className={`text-2xl font-bold mt-2 ${profitColor}`}>{formatCurrency(stats?.profit || 0)}</h3>
+                             </div>
+                             <div className={`p-2 rounded-full ${stats?.profit >= 0 ? 'bg-violet-100' : 'bg-orange-100'}`}>
+                                <ProfitIcon className={`w-4 h-4 ${stats?.profit >= 0 ? 'text-violet-600' : 'text-orange-600'}`} />
+                             </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                     <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-2">
+                             <div>
+                                <p className="text-sm font-medium text-muted-foreground">Budget Status</p>
+                             </div>
+                             <Wallet className="w-4 h-4 text-slate-400" />
+                        </div>
+                        <div className="mt-4">
+                            <div className="flex justify-between text-xs mb-1">
+                                <span>{Math.round(stats?.budgetConsumedPercent || 0)}% verbraucht</span>
+                                <span className="text-muted-foreground">{formatCurrency(stats?.budget || 0)} Limit</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div 
+                                    className={`h-full rounded-full transition-all ${stats?.budgetConsumedPercent > 100 ? 'bg-red-500' : stats?.budgetConsumedPercent > 80 ? 'bg-orange-500' : 'bg-emerald-500'}`}
+                                    style={{width: `${Math.min(stats?.budgetConsumedPercent || 0, 100)}%`}}
+                                ></div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Trend Chart */}
+                <Card className="md:col-span-2 shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Ausgaben Trend</CardTitle>
+                        <CardDescription>Tägliche Ausgaben der letzten 30 Tage</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        {stats?.dailyTrend?.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={stats.dailyTrend}>
+                                    <defs>
+                                        <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{fontSize: 12}} minTickGap={30} />
+                                    <YAxis tickLine={false} axisLine={false} tick={{fontSize: 12}} />
+                                    <Tooltip 
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                        formatter={(val: number) => [formatCurrency(val), 'Betrag']}
+                                    />
+                                    <Area type="monotone" dataKey="amount" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorAmount)" strokeWidth={2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         ) : (
-                             <Euro className="h-4 w-4 text-muted-foreground" />
+                            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                                Keine Daten verfügbar
+                            </div>
                         )}
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{Math.min(100, Math.round(stats?.budgetConsumedPercent || 0))}%</div>
-                        <p className="text-xs text-muted-foreground">
-                            von €{stats?.budget?.toFixed(0)} verbraucht
-                        </p>
-                        {/* Progress Bar could go here */}
-                         <div className="w-full bg-secondary h-2 mt-2 rounded-full overflow-hidden">
-                            <div 
-                                className={`h-full ${stats?.budgetConsumedPercent > 100 ? 'bg-red-500' : stats?.budgetConsumedPercent > 80 ? 'bg-orange-500' : 'bg-green-500'}`} 
-                                style={{ width: `${Math.min(100, stats?.budgetConsumedPercent || 0)}%` }}
-                            />
-                        </div>
                     </CardContent>
                 </Card>
 
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Einnahmen</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-green-500" />
+                {/* Category Chart */}
+                <Card className="shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Top Kategorien</CardTitle>
+                        <CardDescription>Verteilung diesen Monat</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">€{stats?.revenue?.toFixed(2) || '0.00'}</div>
-                        <p className="text-xs text-muted-foreground">in diesem Monat</p>
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Netto Gewinn</CardTitle>
-                        <PieChart className="h-4 w-4 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`text-2xl font-bold ${stats?.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {stats?.profit >= 0 ? '+' : ''}€{stats?.profit?.toFixed(2) || '0.00'}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Einnahmen - Ausgaben</p>
+                    <CardContent className="h-[300px] flex items-center justify-center">
+                         {stats?.categoryStats?.length > 0 ? (
+                            <div className="w-full h-full space-y-4 overflow-auto pr-2 custom-scrollbar">
+                                {stats.categoryStats.map((cat: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 rounded-full" style={{background: cat.color}}></div>
+                                            <span className="font-medium truncate max-w-[120px]">{cat.category}</span>
+                                        </div>
+                                        <span>{formatCurrency(cat.total)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                         ) : (
+                             <div className="text-muted-foreground text-sm">Keine Ausgaben</div>
+                         )}
                     </CardContent>
                 </Card>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                {/* Visual Chart / Categories */}
-                <Card className="col-span-4">
-                    <CardHeader>
-                        <CardTitle>Top Ausgaben-Kategorien</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {stats?.categoryStats?.length === 0 && <p className="text-muted-foreground">Keine Daten verfügbar</p>}
-                            {stats?.categoryStats?.map((cat: any, i: number) => (
-                                <div key={i} className="flex items-center">
-                                    <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: cat.color }}></div>
-                                    <div className="flex-1 font-medium text-sm">{cat.name}</div>
-                                    <div className="text-sm font-bold">€{cat.total.toFixed(2)}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Recent Expenses List */}
-                <Card className="col-span-3">
-                    <CardHeader>
-                         <CardTitle>Letzte Ausgaben</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {recentExpenses.length === 0 && <p className="text-muted-foreground">Keine Ausgaben gefunden</p>}
-                            {recentExpenses.map((exp: any) => (
-                                <div key={exp.id} className="flex items-center justify-between border-b pb-2 last:border-0 hover:bg-slate-50 p-2 rounded cursor-pointer">
-                                    <div>
-                                        <p className="font-medium text-sm">{exp.description}</p>
-                                        <p className="text-xs text-muted-foreground">{new Date(exp.date).toLocaleDateString()} • {exp.expenseCategory?.name || 'Allgemein'}</p>
-                                    </div>
-                                    <div className="text-red-600 font-bold text-sm">
-                                        -€{Number(exp.totalAmount).toFixed(2)}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                         <div className="mt-4 pt-2 border-t">
-                            <Link href="/admin/expenses/add">
-                                <Button variant="outline" className="w-full text-xs">Neue Ausgabe erfassen</Button>
-                            </Link>
-                        </div>
-                    </CardContent>
-                </Card>
+            
+            <div className="flex gap-4">
+                 <Link href="/admin/expenses/list" className="w-full">
+                     <Button variant="secondary" className="w-full">Alle Ausgaben anzeigen</Button>
+                 </Link>
+                 <Link href="/admin/expenses/categories" className="w-full">
+                     <Button variant="ghost" className="w-full">Kategorien verwalten</Button>
+                 </Link>
+                 <Link href="/admin/expenses/budget" className="w-full">
+                     <Button variant="ghost" className="w-full">Budgets anpassen</Button>
+                 </Link>
             </div>
         </div>
     );
