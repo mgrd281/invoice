@@ -36,7 +36,7 @@ function getPaymentMethodDisplay(method: string | undefined) {
 
   if (lowerMethod.includes('paypal')) {
     label = 'PayPal'
-    className = "bg-[#003087]/10 text-[#003087]"
+    className = "bg-[#003087]/10 text-[#003087] border border-[#003087]/20"
   } else if (lowerMethod.includes('credit') || lowerMethod.includes('kredit')) {
     label = 'Kreditkarte'
     className = "bg-purple-100 text-purple-800"
@@ -49,22 +49,19 @@ function getPaymentMethodDisplay(method: string | undefined) {
   } else if (lowerMethod.includes('amazon')) {
     label = 'Amazon Pay'
     className = "bg-cyan-100 text-cyan-800"
-  } else if (lowerMethod === 'manual' || lowerMethod === 'custom') {
-    label = 'Vorkasse'
-    className = "bg-yellow-100 text-yellow-800"
-  } else if (lowerMethod.includes('vorkasse')) {
-    label = 'Vorkasse'
-    className = "bg-yellow-100 text-yellow-800"
+  } else if (lowerMethod.includes('vorkasse') || lowerMethod === 'manual' || lowerMethod === 'custom') {
+    label = 'Vorkasse / Überweisung'
+    className = "bg-yellow-100 text-yellow-800 border border-yellow-200"
   } else if (lowerMethod.includes('rechnung')) {
     label = 'Rechnung'
     className = "bg-yellow-100 text-yellow-800"
   } else if (lowerMethod.includes('shopify')) {
     label = 'Shopify Payments'
-    className = "bg-green-100 text-green-800"
+    className = "bg-indigo-100 text-indigo-800 border border-indigo-200"
   }
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${className}`}>
       {label}
     </span>
   )
@@ -106,18 +103,42 @@ function getTrafficSourceBadge(key: string | null, label: string | null) {
 
 function getGermanStatus(status: string) {
   if (!status) return ''
-  const s = status.toUpperCase()
+  const s = status.toLowerCase()
   switch (s) {
-    case 'PAID': return 'Bezahlt'
-    case 'SENT':
-    case 'OPEN': return 'Offen'
-    case 'DRAFT': return 'Entwurf'
-    case 'OVERDUE': return 'Überfällig'
-    case 'CANCELLED': return 'Storniert'
-    case 'PENDING': return 'Ausstehend'
-    case 'BLOCKED': return 'Gesperrt'
-    case 'ON_HOLD': return 'In Prüfung'
+    case 'paid': return 'Bezahlt'
+    case 'pending':
+    case 'authorized': return 'Offen'
+    case 'sent': return 'Versendet'
+    case 'open': return 'Offen'
+    case 'draft': return 'Entwurf'
+    case 'overdue': return 'Überfällig'
+    case 'cancelled':
+    case 'voided': return 'Storniert'
+    case 'refunded': return 'Erstattet'
+    case 'partially_refunded': return 'Teil-Erstattet'
+    case 'partially_paid': return 'Teil-Bezahlt'
+    case 'blocked': return 'Gesperrt'
+    case 'on_hold': return 'In Prüfung'
     default: return status
+  }
+}
+
+function getStatusColor(status: string) {
+  if (!status) return 'bg-gray-100 text-gray-800'
+  const s = status.toLowerCase()
+  switch (s) {
+    case 'paid': return 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+    case 'pending':
+    case 'authorized':
+    case 'open':
+    case 'sent': return 'bg-amber-100 text-amber-800 border border-amber-200'
+    case 'overdue': return 'bg-red-100 text-red-800 border border-red-200'
+    case 'cancelled':
+    case 'voided': return 'bg-gray-100 text-gray-800 border border-gray-200'
+    case 'refunded': return 'bg-blue-100 text-blue-800 border border-blue-200'
+    case 'partially_refunded': return 'bg-blue-50 text-blue-700 border border-blue-100'
+    case 'partially_paid': return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+    default: return 'bg-gray-100 text-gray-800'
   }
 }
 
@@ -583,14 +604,13 @@ function InvoicesPageContent() {
 
           setLastSyncTime(new Date())
 
-          if (data.synced > 0) {
-            console.log(`✅ Auto-Sync found ${data.synced} new invoices! Refreshing...`)
-            showToast(`${data.synced} neue Bestellungen gefunden und importiert!`, 'success')
-
-            // Play Notification Sound
-            playNotificationSound()
-
-            fetchInvoices(true) // Refresh the list in background
+          if (data.synced > 0 || data.updated > 0) {
+            console.log(`✅ Auto-Sync found update: ${data.synced} new, ${data.updated} updated.`)
+            if (data.synced > 0) {
+              showToast(`${data.synced} neue Bestellungen gefunden!`, 'success')
+              playNotificationSound()
+            }
+            fetchInvoices(true) 
           }
         } catch (err) {
           console.error('Auto-Sync failed:', err)
@@ -1751,7 +1771,7 @@ function InvoicesPageContent() {
                 {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalPaidAmount)}
               </div>
               <p className="text-[10px] text-gray-400 mt-1">
-                nur abgeschlossene Zahlungen
+                Netto-Eingang (abzüglich Erstattungen)
               </p>
             </CardContent>
           </Card>

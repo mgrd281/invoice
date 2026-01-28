@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { processDigitalProductOrder } from '@/lib/digital-products'
+import { syncShopifyOrder } from '@/lib/shopify-sync'
 
 export const dynamic = 'force-dynamic' // Ensure dynamic behavior
 
@@ -128,6 +129,14 @@ export async function POST(req: NextRequest) {
             )
             console.log(`DEBUG: Result for ${item.title}:`, JSON.stringify(result))
             results.push(result)
+        }
+
+        // 5. SYNC ORDER & INVOICE DATA (Radical Fix)
+        console.log(`[Webhook] Syncing Order ${body.name} (${shopifyOrderId}) across DB...`)
+        try {
+            await syncShopifyOrder(shopifyOrderId, organization.id)
+        } catch (syncError) {
+            console.error('[Webhook] Sync Error:', syncError)
         }
 
         // 5. RADICAL: Link to Session & Mark as PAID

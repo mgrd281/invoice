@@ -383,6 +383,11 @@ model Order {
   vorkasseReminderLevel     Int          @default(0)
   vorkasseLastReminderAt    DateTime?
   initialPaymentEmailSentAt DateTime?
+  financialStatus           String?
+  totalPriceCents           Int?
+  totalPaidCents            Int?
+  totalRefundedCents        Int?
+  paymentMethodLabel        String?
   createdAt                 DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
   invoices                  Invoice[]
@@ -440,8 +445,17 @@ model Invoice {
   trafficSourceLabel String?
   trafficSourceRaw   String?
   utmJson            Json?
-  orderNumber     String?
-  dunningLogs     DunningLog[]
+  orderNumber        String?
+  shopifyOrderId     String?
+  financialStatus    String?
+  paymentMethodKey   String?
+  paymentMethodLabel String?
+  paidAt             DateTime?
+  updatedFromShopifyAt DateTime?
+  totalPriceCents    Int?
+  totalPaidCents     Int?
+  totalRefundedCents Int?
+  dunningLogs        DunningLog[]
   auditLog        AuditLog?        @relation(fields: [auditLogId], references: [id])
   customer        Customer         @relation(fields: [customerId], references: [id])
   order           Order?           @relation(fields: [orderId], references: [id])

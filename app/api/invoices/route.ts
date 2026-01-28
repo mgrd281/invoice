@@ -114,10 +114,13 @@ export async function GET(req: Request) {
       where: statsWhere,
       select: {
         status: true,
+        financialStatus: true,
         documentKind: true,
         totalGross: true,
         totalTax: true,
-      }
+        totalPaidCents: true,
+        totalPriceCents: true,
+      } as any
     })
 
     // Helper for safe number conversion
@@ -128,7 +131,7 @@ export async function GET(req: Request) {
       return Number(val.toString())
     }
 
-    const normalizeStatus = (s: string) => s?.toUpperCase().trim() || ''
+    const normalizeStatus = (s: string) => s?.toLowerCase().trim() || ''
 
     let totalPaidAmount = 0
     let totalVat19 = 0
@@ -139,39 +142,41 @@ export async function GET(req: Request) {
     let cancelledInvoicesCount = 0
     let refundInvoicesCount = 0
 
-    for (const inv of allMatchingInvoices) {
-      const s = normalizeStatus(inv.status as any)
-      const amount = toNumber(inv.totalGross)
+    for (const invNode of allMatchingInvoices) {
+      const inv = invNode as any
+      const s = normalizeStatus((inv.financialStatus || inv.status) as any)
+      const grossAmount = toNumber(inv.totalGross)
       const tax = toNumber(inv.totalTax)
 
+      // Use totalPaidCents if available (converted to EUR)
+      const paidAmount = inv.totalPaidCents !== null ? (inv.totalPaidCents / 100) : (s === 'paid' ? grossAmount : 0)
+
       // Calculate Counts & Amounts
-      if (s === 'PAID' || s === 'BEZAHLT') {
-        totalPaidAmount += amount
+      if (s === 'paid' || s === 'bezahlt') {
+        totalPaidAmount += paidAmount
         paidInvoicesCount++
-      } else if (s === 'SENT' || s === 'OFFEN' || s === 'OPEN' || s === 'PENDING') {
+      } else if (s === 'sent' || s === 'offen' || s === 'open' || s === 'pending' || s === 'authorized') {
         openInvoicesCount++
-      } else if (s === 'OVERDUE' || s === 'ÜBERFÄLLIG' || s === 'UEBERFAELLIG') {
+      } else if (s === 'overdue' || s === 'überfällig' || s === 'ueberfaellig') {
         overdueInvoicesCount++
-      } else if (s === 'CANCELLED' || s === 'STORNIERT') {
+      } else if (s === 'cancelled' || s === 'voided' || s === 'storniert') {
         cancelledInvoicesCount++
       }
 
-      // Check for refunds (based on document kind usually, or status)
-      // Note: In our schema, REFUND is not a status but a document kind, but we map it for stats
-      if (inv.documentKind === 'CREDIT_NOTE' || inv.documentKind === 'REFUND_FULL' || inv.documentKind === 'REFUND_PARTIAL' || s === 'GUTSCHRIFT') {
+      // Check for refunds
+      if (inv.documentKind?.includes('REFUND') || inv.documentKind === 'CREDIT_NOTE' || s === 'refunded' || s === 'partially_refunded' || s === 'gutschrift') {
         refundInvoicesCount++
+        // If it's a refund and we don't have totalPaidCents, paidAmount might be 0 already but let's be safe
+        if (inv.totalPaidCents === null && s === 'refunded') {
+            // totalPaidAmount stays same or decreased? Usually we sum ONLY paid ones.
+        }
+      }
+      
+      // If it's partially paid, add the paid amount
+      if (s === 'partially_paid' && inv.totalPaidCents !== null) {
+          totalPaidAmount += (inv.totalPaidCents / 100)
       }
 
-      // Calculate VAT sums (approximate based on total tax or items)
-      // Since we don't have explicit VAT breakdown in invoice model, we'll try to infer or use totalTax
-      // For now, let's assume standard tax is 19% if not specified
-      // A better approach would be to sum up taxAmount from InvoiceItems grouped by taxRate
-      // But for performance, we might just sum totalTax for now as "Vat19" if we assume mostly 19%
-
-      // Let's try to be smarter: check items
-      // This is complex without fetching all items. For now, let's aggregate totalTax as Vat19
-      // and 0 for Vat7 unless we have specific logic.
-      // User requested "19% MwSt" specifically.
       totalVat19 += tax
     }
 
@@ -208,7 +213,11 @@ export async function GET(req: Request) {
         totalAmount: Number(inv.order.totalAmount),
         createdAt: inv.order.createdAt.toISOString()
       } : null,
-      paymentMethod: inv.paymentMethod || 'Shopify Payments',
+      paymentMethod: (inv as any).paymentMethodLabel || inv.paymentMethod || 'Shopify Payments',
+      financialStatus: (inv as any).financialStatus,
+      totalPaidCents: (inv as any).totalPaidCents,
+      totalPriceCents: (inv as any).totalPriceCents,
+      totalRefundedCents: (inv as any).totalRefundedCents,
       settings: inv.settings,
     }))
 

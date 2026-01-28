@@ -3,6 +3,7 @@ import { ShopifyAPI } from '@/lib/shopify-api'
 import { getShopifySettings } from '@/lib/shopify-settings'
 import { handleOrderCreate } from '@/lib/shopify-order-handler'
 import { loadInvoicesFromDisk } from '@/lib/server-storage'
+import { syncShopifyOrder } from '@/lib/shopify-sync'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,9 +51,12 @@ export async function GET() {
         const recentOrders = await api.getOrders(fetchParams)
 
         let syncedCount = 0
+        let updatedCount = 0
         const newInvoiceIds: string[] = []
 
-        // 4. Check for new orders
+        // 4. Check for new orders or updates
+        const orgId = (await prisma.organization.findFirst())?.id || ''
+
         for (const order of recentOrders) {
             const orderIdStr = order.id.toString()
 
@@ -61,7 +65,6 @@ export async function GET() {
                 console.log(`🔄 Auto-Sync: Found new order #${order.name} (${order.id})`)
 
                 // Process it (Create Invoice + Send Email if configured)
-                // handleOrderCreate handles everything: invoice creation, PDF, Email
                 const invoice = await handleOrderCreate(order, settings.shopDomain)
 
                 if (invoice && invoice.id) {
@@ -69,13 +72,19 @@ export async function GET() {
                     newInvoiceIds.push(invoice.id)
                     console.log(`✅ Auto-Sync: Created invoice ${invoice.id} for order #${order.name}`)
                 }
+            } else {
+                // RADICAL FIX: Even if it exists, sync the status/payment method
+                console.log(`🔄 Auto-Sync: Refreshing status for existing order #${order.name}`)
+                await syncShopifyOrder(orderIdStr, orgId)
+                updatedCount++
             }
         }
 
         return NextResponse.json({
             synced: syncedCount,
+            updated: updatedCount,
             newInvoiceIds,
-            message: syncedCount > 0 ? `Synced ${syncedCount} new orders` : 'No new orders'
+            message: `Synced ${syncedCount} new, refreshed ${updatedCount} existing.`
         })
 
     } catch (error: any) {

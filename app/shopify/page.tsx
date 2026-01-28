@@ -688,6 +688,55 @@ function ShopifyEmbeddedContent() {
                       Jetzt importieren
                     </button>
                   </div>
+
+                  <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">Zahlungsstatus abgleichen (Sync)</h4>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Aktualisiert den Zahlungsstatus und die Zahlungsmethode für Bestellungen der letzten 60 Tage.
+                        <br />
+                        <span className="text-xs text-blue-600 font-medium">Empfohlen wenn Status in Shopify manuell geändert wurden.</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const btn = document.getElementById('reconcile-btn');
+                        if (btn) {
+                          btn.innerText = 'Synchronisiere...';
+                          (btn as HTMLButtonElement).disabled = true;
+                        }
+
+                        try {
+                          const res = await fetch('/api/shopify/reconcile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ shop, days: 60 })
+                          });
+                          const data = await res.json();
+
+                          if (data.success) {
+                            alert(data.message);
+                            fetchData();
+                          } else {
+                            alert('Fehler beim Abgleich: ' + (data.error || 'Unbekannter Fehler'));
+                          }
+                        } catch (e) {
+                          alert('Verbindungsfehler beim Abgleich.');
+                          console.error(e);
+                        } finally {
+                          if (btn) {
+                            btn.innerText = 'Rechnungen neu synchronisieren';
+                            (btn as HTMLButtonElement).disabled = false;
+                          }
+                        }
+                      }}
+                      id="reconcile-btn"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Rechnungen neu synchronisieren
+                    </button>
+                  </div>
                 </div>
               </div>
 
