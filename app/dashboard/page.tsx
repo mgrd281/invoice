@@ -290,7 +290,7 @@ export default function DashboardPage() {
                 ? 'Admin-Dashboard: Sie können alle Daten im System verwalten.'
                 : 'Hier ist eine Übersicht über Ihre Rechnungen und Geschäftstätigkeiten.'
               }
-              }
+
               <div className="flex items-center ml-4 gap-2">
                  <Button
                   variant="outline"
