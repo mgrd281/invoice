@@ -88,6 +88,14 @@ export interface ExtendedInvoice {
   reason?: string                 // Grund für Storno/Rückerstattung
   refundMethod?: 'bank_transfer' | 'credit_note' | 'original_payment_method'
   processingNotes?: string        // Interne Notizen
+  
+  // Shopify Sync Fields
+  financialStatus?: string
+  paymentMethodLabel?: string
+  totalPaidCents?: number
+  totalPriceCents?: number
+  totalRefundedCents?: number
+  updatedFromShopifyAt?: string
 }
 
 // Hilfsfunktionen für Rechnungstypen

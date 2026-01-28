@@ -108,7 +108,7 @@ function getGermanStatus(status: string) {
     case 'paid': return 'Bezahlt'
     case 'pending':
     case 'authorized': return 'Offen'
-    case 'sent': return 'Versendet'
+    case 'sent': return 'Offen'
     case 'open': return 'Offen'
     case 'draft': return 'Entwurf'
     case 'overdue': return 'Überfällig'
@@ -1915,9 +1915,15 @@ function InvoicesPageContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                            {getGermanStatus(invoice.status)}
-                          </span>
+                          {(() => {
+                            const displayStatus = invoice.financialStatus || invoice.status;
+                            return (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(displayStatus)}`}>
+                                {getGermanStatus(displayStatus)}
+                              </span>
+                            );
+                          })()}
+                          
                           {/* E-Mail-Status-Anzeige */}
                           {emailStatuses[invoice.id]?.sent && (
                             <div
@@ -1925,7 +1931,7 @@ function InvoicesPageContent() {
                               title={`E-Mail gesendet am ${new Date(emailStatuses[invoice.id].sentAt).toLocaleDateString('de-DE')} an ${emailStatuses[invoice.id].sentTo}`}
                             >
                               <MailCheck className="h-4 w-4" />
-                              <span className="text-xs ml-1">Versendet</span>
+                              <span className="text-xs ml-1 font-medium">Versendet</span>
                             </div>
                           )}
 
