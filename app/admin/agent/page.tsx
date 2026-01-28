@@ -45,11 +45,12 @@ export default function AgentPage() {
         }
     };
 
-    const sendMessage = async () => {
-        if (!input.trim()) return;
+    const sendMessage = async (textOverride?: string) => {
+        const textToSend = textOverride || input;
+        if (!textToSend.trim() && !textOverride) return;
 
-        const tempMsg = { id: Date.now(), role: 'user', content: input };
-        setMessages(prev => [...prev, tempMsg]);
+        const updatedMessages = [...messages, { role: 'user', content: textToSend }];
+        setMessages(updatedMessages);
         setInput("");
         setIsLoading(true);
 
@@ -57,19 +58,32 @@ export default function AgentPage() {
             const res = await fetch('/api/agent/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: tempMsg.content, conversationId })
+                body: JSON.stringify({ 
+                    message: textToSend,
+                    conversationId
+                })
             });
             const data = await res.json();
-            
             if (data.conversationId) setConversationId(data.conversationId);
             if (data.message) {
-                setMessages(prev => [...prev, data.message]);
+                // Merge specialized metadata from API if present in 'special' field or in message.metadata
+                const msgWithMeta = { 
+                    ...data.message, 
+                    metadata: data.special || data.message.metadata 
+                };
+                setMessages([...updatedMessages, msgWithMeta]);
+                
+                // If it created a task, refresh tasks
+                if (data.special?.type === 'TASK_CREATED') {
+                    toast.success("Task started! Watch the inspector.");
+                    fetchTasks(); 
+                }
             }
-        } catch (e) {
+        } catch (error) {
+            console.error(error);
             toast.error("Failed to send message");
         } finally {
             setIsLoading(false);
-            fetchTasks(); // Refresh tasks immediately
         }
     };
 
@@ -351,12 +365,11 @@ export default function AgentPage() {
                          </Button>
                          <Button variant="outline" size="sm" onClick={() => setMessages([])}>
                             Clear Chat
-                         </Button>
+                 </Button>
                     </div>
                 </div>
                 {/* ... existing chat UI ... */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" ref={scrollRef}>
-                    {/* ... existing messages map ... */}
                     {messages.length === 0 && (
                         <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8">
                             <Bot className="w-16 h-16 mb-4 opacity-20" />
@@ -385,6 +398,24 @@ export default function AgentPage() {
                                     : "bg-white border border-violet-100 text-slate-800 shadow-violet-100"
                             )} dir="auto">
                                 {msg.role === 'user' ? msg.content : parseMessage(msg.content)}
+                                
+                                {/* RENDER CLARIFICATION OPTIONS IF PRESENT */}
+                                {msg.role === 'assistant' && msg.metadata?.type === 'CLARIFICATION' && msg.metadata.options && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {msg.metadata.options.map((opt: any, idx: number) => (
+                                            <button 
+                                                key={idx}
+                                                className="px-3 py-1.5 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg text-xs font-medium transition-colors border border-violet-200"
+                                                onClick={() => {
+                                                    setInput(opt.value);
+                                                    sendMessage(opt.value);
+                                                }}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
