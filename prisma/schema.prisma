@@ -576,6 +576,7 @@ model DigitalProduct {
   buttonTextColor  String?                        @default("#ffffff")
   buttonAlignment  String?                        @default("left")
   downloadButtons  Json?
+  autoSendVorkasse Boolean                        @default(true)
   createdAt        DateTime                       @default(now())
   updatedAt        DateTime                       @updatedAt
   organization     Organization                   @relation(fields: [organizationId], references: [id])

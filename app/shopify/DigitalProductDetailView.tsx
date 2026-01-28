@@ -22,6 +22,7 @@ interface DigitalProduct {
     buttonTextColor?: string;
     buttonAlignment?: string;
     downloadButtons?: any[];
+    autoSendVorkasse?: boolean;
 }
 
 interface LicenseKey {
@@ -56,6 +57,7 @@ export default function DigitalProductDetailView({ product, onBack }: DigitalPro
     const [buttonTextColor, setButtonTextColor] = useState(product.buttonTextColor || '#ffffff');
     const [buttonAlignment, setButtonAlignment] = useState(product.buttonAlignment || 'left');
     const [buttons, setButtons] = useState<{ url: string, text: string, color: string, textColor: string }[]>([]);
+    const [autoSendVorkasse, setAutoSendVorkasse] = useState(product.autoSendVorkasse !== false);
 
     // UI State
     const [showSourceCode, setShowSourceCode] = useState(false);
@@ -78,6 +80,7 @@ export default function DigitalProductDetailView({ product, onBack }: DigitalPro
                 setButtonColor(data.data.buttonColor || '#000000');
                 setButtonTextColor(data.data.buttonTextColor || '#ffffff');
                 setButtonAlignment(data.data.buttonAlignment || 'left');
+                setAutoSendVorkasse(data.data.autoSendVorkasse !== false);
 
                 // Initialize buttons
                 if (data.data.downloadButtons && Array.isArray(data.data.downloadButtons) && data.data.downloadButtons.length > 0) {
@@ -141,7 +144,8 @@ Viel Spaß!`;
                     buttonColor,
                     buttonTextColor,
                     buttonAlignment,
-                    downloadButtons: buttons
+                    downloadButtons: buttons,
+                    autoSendVorkasse
                 })
             });
 
@@ -254,6 +258,20 @@ Viel Spaß!`;
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-slate-900">{keys.length}</div>
+                    </CardContent>
+                </Card>
+                <Card className="border-slate-200 shadow-sm">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-500">Auto-Versand</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500">Bei Zahlung sofort senden</span>
+                        <input 
+                            type="checkbox" 
+                            checked={autoSendVorkasse} 
+                            onChange={(e) => setAutoSendVorkasse(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                        />
                     </CardContent>
                 </Card>
             </div>

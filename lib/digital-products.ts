@@ -89,7 +89,8 @@ export async function processDigitalProductOrder(
     shopifyVariantId?: string,
     customerSalutation?: string,
     shouldSendEmail: boolean = true,
-    customerId?: string // NEW PARAMETER
+    customerId?: string,
+    quantity: number = 1
 ) {
     const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
 
@@ -98,125 +99,131 @@ export async function processDigitalProductOrder(
         return { success: false, error: 'Product not configured as digital product' }
     }
 
-    // Check if key already assigned for this order
-    const existingKey = await prisma.licenseKey.findFirst({
+    // 1. Check if we should even proceed for Vorkasse if paid check is needed
+    // If autoSendVorkasse is false, we don't send automatically even if paid.
+    if ((digitalProduct as any).autoSendVorkasse === false && shouldSendEmail) {
+        console.log(`⏸️ [SKIPPED] Auto-send is DISABLED for product ${digitalProduct.title}. Key will be assigned but not sent.`)
+        shouldSendEmail = false // Force delay
+    }
+
+    // 2. Check for existing keys for this order/product to ensure idempotency
+    const existingKeys = await prisma.licenseKey.findMany({
         where: {
             digitalProductId: digitalProduct.id,
-            shopifyOrderId: shopifyOrderId
+            shopifyOrderId: shopifyOrderId,
+            shopifyVariantId: shopifyVariantId || null
         }
     })
 
-    if (existingKey) {
-        console.log(`🔑 [ORDER ${shopifyOrderId}] Key already exists for product ${digitalProduct.title}`)
-        console.log(`   - Key ID: ${existingKey.id}`)
-        console.log(`   - Email Sent: ${(existingKey as any).emailSent}`)
-        console.log(`   - Delivery Status: ${(existingKey as any).deliveryStatus}`)
-        console.log(`   - Should Send Email Now: ${shouldSendEmail}`)
+    let keysToProcess: any[] = []
 
-        // CHECK: If existing key hasn't been sent yet, and now we should send it (e.g. manual payment confirmed)
-        const keyData = existingKey as any
-        if (shouldSendEmail && keyData.emailSent === false) {
-            console.log(`📧 [RESENDING] Existing key found but not sent. Sending now for order ${orderNumber}...`)
-            // Proceed to send email (treated as if we just got the key)
-        } else if (keyData.emailSent === true) {
-            console.log(`✅ [SKIPPED] Email already sent for this key. Returning success.`)
-            return { success: true, key: existingKey.key, message: 'Key already assigned and sent' }
+    if (existingKeys.length > 0) {
+        console.log(`🔑 [ORDER ${shopifyOrderId}] ${existingKeys.length} keys already exist for product ${digitalProduct.title}`)
+        
+        // If we have enough keys already, check if they need sending
+        if (existingKeys.length >= quantity) {
+            keysToProcess = existingKeys.slice(0, quantity)
+            
+            const allSent = keysToProcess.every(k => k.emailSent)
+            if (allSent) {
+                console.log(`✅ [SKIPPED] All keys already sent for this order.`)
+                return { success: true, keys: keysToProcess.map(k => k.key), message: 'Keys already assigned and sent' }
+            }
+            
+            if (!shouldSendEmail) {
+                console.log(`⏸️ [WAITING] Keys assigned but email not authorized yet.`)
+                return { success: true, keys: keysToProcess.map(k => k.key), message: 'Keys already assigned, waiting for payment' }
+            }
+            
+            // If some not sent and shouldSendEmail is true, we proceed to send them
+            console.log(`📧 [PROCESSING] Keys found but not all sent. Proceeding...`)
         } else {
-            console.log(`⏸️ [WAITING] Key assigned but email not yet authorized (shouldSendEmail=false)`)
-            return { success: true, key: existingKey.key, message: 'Key already assigned, waiting for payment' }
+            // Need more keys? This is rare but possible if quantity was increased or partial previous run
+            console.log(`⚠️ [PARTIAL] Found ${existingKeys.length} keys but need ${quantity}. Fetching more...`)
+            keysToProcess = [...existingKeys]
+            const needed = quantity - existingKeys.length
+            for(let i=0; i<needed; i++) {
+                const newKey = await getAvailableKey(digitalProduct.id, shopifyVariantId)
+                if (newKey) {
+                    await markKeyAsUsed(newKey.id, orderNumber, shopifyOrderId, false, customerId)
+                    keysToProcess.push(newKey)
+                }
+            }
+        }
+    } else {
+        // No existing keys, fetch N keys
+        for (let i = 0; i < quantity; i++) {
+            const key = await getAvailableKey(digitalProduct.id, shopifyVariantId)
+            if (!key) {
+                console.error(`No keys available for product: ${digitalProduct.title} (Stock: ${i}/${quantity})`)
+                // Admin Alert already handled in getAvailableKey? 
+                // Wait, getAvailableKey doesn't send email. Let's send here.
+                const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@example.com'
+                await sendEmail({
+                    to: adminEmail,
+                    subject: `⚠️ KEINE KEYS MEHR: ${digitalProduct.title}`,
+                    html: `<p>Achtung,</p><p>Für das Produkt <strong>${digitalProduct.title}</strong> sind keine Lizenzschlüssel mehr verfügbar!</p><p>Bestellung ${orderNumber} benötigt ${quantity} Keys, aber nur ${i} waren da.</p>`
+                })
+                return { success: false, error: 'Not enough keys available' }
+            }
+            await markKeyAsUsed(key.id, orderNumber, shopifyOrderId, false, customerId)
+            keysToProcess.push(key)
         }
     }
 
-    // Get key (if not reusing existing)
-    let key = existingKey
-    if (!key) {
-        key = await getAvailableKey(digitalProduct.id, shopifyVariantId)
-
-        if (!key) {
-            console.error(`No keys available for product: ${digitalProduct.title} (${digitalProduct.id}) [Variant: ${shopifyVariantId || 'Any'}]`)
-
-            // Notify Admin
-            const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'admin@example.com'
-            await sendEmail({
-                to: adminEmail,
-                subject: `⚠️ KEINE KEYS MEHR: ${digitalProduct.title}`,
-                html: `<p>Achtung,</p><p>Für das Produkt <strong>${digitalProduct.title}</strong> (Shopify ID: ${shopifyProductId}, Variante: ${shopifyVariantId || 'Alle'}) sind keine Lizenzschlüssel mehr verfügbar!</p><p>Eine Bestellung konnte nicht bedient werden.</p>`
-            })
-
-            return { success: false, error: 'No keys available' }
-        }
-
-        // Mark key as used immediately to reserve it
-        // We pass 'false' for emailSent initially if delayed
-        await markKeyAsUsed(key.id, orderNumber, shopifyOrderId, shouldSendEmail, customerId)
-    }
-
-    // If we should NOT send email (e.g. Invoice payment pending), return now
+    // 3. If we should NOT send email yet (e.g. waiting for payment), stop here
     if (!shouldSendEmail) {
-        console.log(`⏳ [DELAYED] Payment pending. Key ${key.id} assigned to order ${orderNumber} but email delayed.`)
-        console.log(`   - Delivery Status set to: PENDING`)
-        return { success: true, key: key.key, message: 'Key assigned, email delayed' }
+        return { success: true, message: 'Keys assigned, email delayed' }
     }
 
-    console.log(`📤 [SENDING] Preparing to send email for key ${key.id} to ${customerEmail}`)
+    // 4. Prepare consolidated email content
+    const consolidatedKeys = keysToProcess.map(k => k.key).join('\n')
+    const keyListHtml = keysToProcess.map(k => `<code style="background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-weight: bold;">${k.key}</code>`).join('<br/>')
 
-    // ---------------------------------------------------------
-    // SEND EMAIL LOGIC
-    // ---------------------------------------------------------
-
-    // Determine Variant Settings (if any)
+    // Determine Template & Buttons (Logic from original)
     let template = digitalProduct.emailTemplate || getDefaultTemplate()
     let buttons = digitalProduct.downloadButtons as any[] | null;
     let btnAlignment = digitalProduct.buttonAlignment || 'left';
 
-    // Check if we have specific settings for this variant
     if (shopifyVariantId && digitalProduct.variantSettings) {
-        const variantSetting = digitalProduct.variantSettings.find(s => s.shopifyVariantId === shopifyVariantId)
+        const variantSetting = (digitalProduct as any).variantSettings.find((s: any) => s.shopifyVariantId === shopifyVariantId)
         if (variantSetting) {
-            if (variantSetting.emailTemplate) {
-                template = variantSetting.emailTemplate
-            }
+            if (variantSetting.emailTemplate) template = variantSetting.emailTemplate
             if (variantSetting.downloadButtons && Array.isArray(variantSetting.downloadButtons) && variantSetting.downloadButtons.length > 0) {
                 buttons = variantSetting.downloadButtons as any[]
             }
         }
     }
 
-    // Generate Download Button HTML
+    // Button HTML generation
     let downloadButtonHtml = '';
     const textAlign = btnAlignment === 'center' ? 'center' : (btnAlignment === 'right' ? 'right' : 'left');
-
     if (Array.isArray(buttons) && buttons.length > 0) {
-        const buttonsHtml = buttons.map((btn: any) => `
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">` + 
+            buttons.map((btn: any) => `
                 <div style="margin-bottom: 12px;">
-                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">
+                    <a href="${btn.url}" style="background-color: ${btn.color || '#000000'}; color: ${btn.textColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center;">
                         ${btn.text || 'Download'}
                     </a>
                 </div>
-            `).join('');
-
-        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};">${buttonsHtml}</div>`;
+            `).join('') + `</div>`;
     } else if (digitalProduct.downloadUrl) {
-        const btnText = digitalProduct.buttonText || 'Download';
-        const btnColor = digitalProduct.buttonColor || '#000000';
-        const btnTextColor = digitalProduct.buttonTextColor || '#ffffff';
-
-        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${digitalProduct.downloadUrl}" style="background-color: ${btnColor}; color: ${btnTextColor}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center; box-sizing: border-box; white-space: normal; word-wrap: break-word;">${btnText}</a></div>`;
+        downloadButtonHtml = `<div style="margin: 20px 0; text-align: ${textAlign};"><a href="${digitalProduct.downloadUrl}" style="background-color: ${digitalProduct.buttonColor || '#000000'}; color: ${digitalProduct.buttonTextColor || '#ffffff'}; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; width: 280px; text-align: center;">${digitalProduct.buttonText || 'Download'}</a></div>`;
     }
 
-    // Convert newlines to HTML breaks in the template BEFORE injecting variables
     const htmlTemplate = convertToHtml(template);
-
     const emailBody = replaceVariables(htmlTemplate, {
         customer_name: customerName,
         customer_salutation: customerSalutation || `Hallo ${customerName}`,
         product_title: productTitle,
-        license_key: key.key,
-        download_button: downloadButtonHtml
+        license_key: quantity > 1 ? keyListHtml : keysToProcess[0].key,
+        download_button: downloadButtonHtml,
+        order_number: orderNumber
     })
 
     const subject = `Ihr Produktschlüssel für ${productTitle}`
 
+    // 5. Send Email
     try {
         await sendEmail({
             to: customerEmail,
@@ -224,43 +231,43 @@ export async function processDigitalProductOrder(
             html: emailBody
         })
 
-        // Update Key Status: Email Sent (if reusing key that wasn't sent before)
-        await prisma.licenseKey.update({
-            where: { id: key.id },
+        // Update all processed keys as SENT
+        await prisma.licenseKey.updateMany({
+            where: { id: { in: keysToProcess.map(k => k.id) } },
             data: {
                 emailSent: true,
                 emailSentAt: new Date(),
                 deliveryStatus: 'SENT'
-            } as any
+            }
         })
 
-        console.log(`✅ Email sent to ${customerEmail}`)
+        console.log(`✅ Email sent to ${customerEmail} with ${keysToProcess.length} keys`)
+
+        // 6. AUTO-FULFILL (Only after successful email)
+        try {
+            console.log(`📦 Auto-fulfilling Shopify order: ${shopifyOrderId}`)
+            const { ShopifyAPI } = await import('@/lib/shopify-api')
+            const api = new ShopifyAPI()
+            const numericOrderId = parseInt(shopifyOrderId.replace(/\D/g, ''))
+            if (!isNaN(numericOrderId)) {
+                await api.createFulfillment(numericOrderId)
+                console.log(`✅ Shopify fulfillment created for order ${shopifyOrderId}`)
+            }
+        } catch (fulfillError) {
+            console.error('Failed to auto-fulfill Shopify order:', fulfillError)
+            // We don't fail the whole request because email was sent, but it's an error.
+        }
+
+        return { success: true, keys: keysToProcess.map(k => k.key) }
+
     } catch (e) {
         console.error(`❌ Failed to send email:`, e)
-        await prisma.licenseKey.update({
-            where: { id: key.id },
-            data: { deliveryStatus: 'FAILED' } as any
+        await prisma.licenseKey.updateMany({
+            where: { id: { in: keysToProcess.map(k => k.id) } },
+            data: { deliveryStatus: 'FAILED' }
         })
+        return { success: false, error: 'Email delivery failed' }
     }
-
-    // Automatically fulfill order in Shopify ONLY if email was sent
-    try {
-        console.log(`📦 Auto-fulfilling Shopify order: ${shopifyOrderId}`)
-        const { ShopifyAPI } = await import('@/lib/shopify-api')
-        const api = new ShopifyAPI()
-
-        // Ensure ID is a number
-        const numericOrderId = parseInt(shopifyOrderId.replace(/\D/g, ''))
-        if (!isNaN(numericOrderId)) {
-            await api.createFulfillment(numericOrderId)
-        } else {
-            console.error(`Invalid Shopify Order ID for fulfillment: ${shopifyOrderId}`)
-        }
-    } catch (fulfillError) {
-        console.error('Failed to auto-fulfill Shopify order:', fulfillError)
-    }
-
-    return { success: true, key: key.key }
 }
 
 function getDefaultTemplate() {

@@ -45,7 +45,7 @@ export async function PUT(
     try {
         const { id } = await params
         const body = await request.json()
-        const { emailTemplate, title, downloadUrl, buttonText, buttonColor, buttonTextColor, buttonAlignment, downloadButtons, variantSettings } = body
+        const { emailTemplate, title, downloadUrl, buttonText, buttonColor, buttonTextColor, buttonAlignment, downloadButtons, variantSettings, autoSendVorkasse } = body
 
         // Update main product
         const product = await prisma.digitalProduct.update({
@@ -58,8 +58,9 @@ export async function PUT(
                 buttonColor,
                 buttonTextColor,
                 buttonAlignment,
-                downloadButtons
-            }
+                downloadButtons,
+                autoSendVorkasse
+            } as any
         })
 
         // Update variant settings if provided

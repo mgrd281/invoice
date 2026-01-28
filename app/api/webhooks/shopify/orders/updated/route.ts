@@ -127,7 +127,8 @@ export async function POST(req: NextRequest) {
                 String(item.variant_id), // Shopify Variant ID
                 undefined, // Salutation (optional)
                 true, // shouldSendEmail: TRUE because it's PAID now
-                customerId // Pass the linked customer ID
+                customerId, // Pass the linked customer ID
+                item.quantity // Pass the quantity
             )
             results.push(result)
         }

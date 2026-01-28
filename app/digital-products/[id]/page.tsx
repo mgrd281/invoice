@@ -14,6 +14,7 @@ import { ArrowLeft, Save, Plus, Trash2, Copy, RefreshCw, Edit } from 'lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
 export default function DigitalProductDetailPage() {
     const params = useParams()
@@ -34,6 +35,7 @@ export default function DigitalProductDetailPage() {
     const [buttonTextColor, setButtonTextColor] = useState('#ffffff')
     const [buttonAlignment, setButtonAlignment] = useState('left')
     const [buttons, setButtons] = useState<{ url: string, text: string, color: string, textColor: string }[]>([])
+    const [autoSendVorkasse, setAutoSendVorkasse] = useState(true)
     const [savingSettings, setSavingSettings] = useState(false)
     // Edit product state
     const [isEditingProduct, setIsEditingProduct] = useState(false)
@@ -85,6 +87,7 @@ export default function DigitalProductDetailPage() {
                 setButtonColor(prodData.data.buttonColor || '#000000')
                 setButtonTextColor(prodData.data.buttonTextColor || '#ffffff')
                 setButtonAlignment(prodData.data.buttonAlignment || 'left')
+                setAutoSendVorkasse(prodData.data.autoSendVorkasse !== false) // Default to true if undefined
 
                 // Initialize buttons from new JSON field or legacy fields
                 if (prodData.data.downloadButtons && Array.isArray(prodData.data.downloadButtons) && prodData.data.downloadButtons.length > 0) {
@@ -177,6 +180,7 @@ export default function DigitalProductDetailPage() {
                     buttonColor,
                     buttonTextColor,
                     buttonAlignment,
+                    autoSendVorkasse,
                     downloadButtons: selectedTemplateVariant === 'default' ? buttons : undefined,
                     variantSettings: selectedTemplateVariant !== 'default' ? [{
                         shopifyVariantId: selectedTemplateVariant,
@@ -448,6 +452,39 @@ Viel Spaß!`
 
                         <Card>
                             <CardHeader>
+                                <CardTitle>Versand-Einstellungen</CardTitle>
+                                <CardDescription>Steuern Sie, wie Keys an Kunden versendet werden.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between space-x-2">
+                                    <Label htmlFor="auto-send" className="flex flex-col space-y-1">
+                                        <span>Automatischer Versand</span>
+                                        <span className="font-normal text-xs text-muted-foreground leading-snug">
+                                            Keys sofort senden, wenn Shopify-Status auf "bezahlt" wechselt.
+                                        </span>
+                                    </Label>
+                                    <Switch
+                                        id="auto-send"
+                                        checked={autoSendVorkasse}
+                                        onCheckedChange={setAutoSendVorkasse}
+                                    />
+                                </div>
+                                <div className="pt-2">
+                                   <Button 
+                                    className="w-full" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={handleSaveTemplate}
+                                    disabled={savingTemplate}
+                                   >
+                                       {savingTemplate ? 'Speichert...' : 'Einstellungen speichern'}
+                                   </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
                                 <CardTitle>Keys hinzufügen</CardTitle>
                                 <CardDescription>
                                     Fügen Sie neue Produktschlüssel hinzu (Text oder Datei).
@@ -612,9 +649,24 @@ Viel Spaß!`
                                                                     </span>
                                                                     {/* Status Badge - Subtle & Clean */}
                                                                     {key.isUsed ? (
-                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-600 border border-red-100/50">
-                                                                            Verbraucht
-                                                                        </span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-600 border border-red-100/50">
+                                                                                Verbraucht
+                                                                            </span>
+                                                                            {key.deliveryStatus === 'SENT' ? (
+                                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-600 border border-blue-100/50">
+                                                                                    Versendet
+                                                                                </span>
+                                                                            ) : key.deliveryStatus === 'FAILED' ? (
+                                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-600 border border-amber-100/50">
+                                                                                    Fehler
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-gray-50 text-gray-600 border border-gray-100/50">
+                                                                                    Pending
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     ) : (
                                                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100/50">
                                                                             Verfügbar
