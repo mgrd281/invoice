@@ -110,6 +110,8 @@ model Organization {
   paypalTransactions      PayPalTransaction[]
   expenseCategories       ExpenseCategory[]
   budgets                 Budget[]
+  agentConversations      AgentConversation[]
+  agentTasks              AgentTask[]
 }
 
 model PayPalSettings {
