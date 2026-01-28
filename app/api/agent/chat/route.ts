@@ -66,12 +66,37 @@ export async function POST(req: NextRequest) {
         }));
     }
 
+    /* Fetch Project Structure Context */
+    // In a real app, you might cache this or generate it dynamically
+    const projectContext = `
+    CURRENT PROJECT STRUCTURE (Simplified):
+    - app/
+      - admin/ (Admin Panel)
+      - api/ (Backend Routes)
+      - auth/ (Login/Signup)
+      - dashboard/ (User Dashboard)
+      - layout.tsx (Root Layout)
+      - page.tsx (Landing Page)
+    - components/ (UI Library)
+    - lib/ (Utilities & DB)
+    - prisma/ (Database Schema)
+    `;
+
     if (openai) {
         // Simple Agent Implementation
         const completion = await openai.chat.completions.create({
             model: "gpt-4-turbo-preview",
             messages: [
-                { role: "system", content: "You are an autonomous dev agent embedded in an admin app. You can plan tasks. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages." },
+                { role: "system", content: `You are an autonomous dev agent embedded in an admin app. You can plan tasks. 
+                
+                CONTEXT:
+                ${projectContext}
+
+                INSTRUCTIONS:
+                1. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON.
+                2. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
+                3. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
+                4. BE AUTONOMOUS. Do not ask "which file?" if it's obvious from the project structure. make a reasonable assumption and proceed.` },
                 ...historyMessages,
                 { role: "user", content: message }
             ]
