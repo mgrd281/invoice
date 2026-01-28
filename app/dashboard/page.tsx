@@ -400,7 +400,7 @@ export default function DashboardPage() {
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{stats.paidInvoicesCount}</div>
+                <div className={cn("text-2xl font-bold text-green-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>{stats.paidInvoicesCount}</div>
                 <p className="text-xs text-gray-600">
                   {stats.totalInvoices > 0 ? Math.round((stats.paidInvoicesCount / stats.totalInvoices) * 100) : 0}% aller Rechnungen
                 </p>
@@ -413,8 +413,8 @@ export default function DashboardPage() {
                 <Calendar className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{stats.openInvoicesCount}</div>
-                <p className="text-xs text-gray-600">
+                <div className={cn("text-2xl font-bold text-orange-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>{stats.openInvoicesCount}</div>
+                <p className={cn("text-xs text-gray-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>
                   {stats.openInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € ausstehend
                 </p>
               </CardContent>
@@ -426,8 +426,8 @@ export default function DashboardPage() {
                 <RotateCcw className="h-4 w-4 text-red-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{stats.cancelledInvoicesCount}</div>
-                <p className="text-xs text-gray-600">
+                <div className={cn("text-2xl font-bold text-red-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>{stats.cancelledInvoicesCount}</div>
+                <p className={cn("text-xs text-gray-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>
                   {stats.cancelledInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € storniert
                 </p>
               </CardContent>
