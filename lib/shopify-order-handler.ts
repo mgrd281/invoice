@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { log } from '@/lib/logger'
 import { DocumentKind } from '@/lib/document-types'
 import { normalizeSource } from '@/lib/traffic-source'
+import { derivePaymentMethodLabel } from './shopify-sync'
 
 // Helper to map Prisma Invoice to InvoiceData (compatible with PDF generator)
 export function mapPrismaInvoiceToData(invoice: any) {
@@ -388,67 +389,9 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
 
     // Extract payment method from Shopify
     // Extract payment method from Shopify
-    let paymentMethod = '-'
-
-    // 1. Try payment_gateway_names first
-    if (order.payment_gateway_names && Array.isArray(order.payment_gateway_names)) {
-        const gateways = order.payment_gateway_names as string[]
-        if (gateways.length > 0) {
-            const specificGateways = gateways.filter(g => g.toLowerCase() !== 'manual')
-            if (specificGateways.length > 0) {
-                paymentMethod = specificGateways[0]
-            } else {
-                // If only 'manual' is present, default to 'Vorkasse' as per requirements
-                paymentMethod = 'Vorkasse'
-            }
-        }
-    }
-
-    // 2. If we didn't find it, or if it's generic 'manual'/'custom', try the legacy 'gateway' field
-    // This field often contains the specific name (e.g. "Vorkasse") even if payment_gateway_names is ['manual']
-    if (paymentMethod === '-' || paymentMethod.toLowerCase() === 'manual' || paymentMethod.toLowerCase() === 'custom') {
-        const legacyGateway = (order as any).gateway
-        if (legacyGateway && legacyGateway.toLowerCase() !== 'manual' && legacyGateway.toLowerCase() !== 'custom') {
-            paymentMethod = legacyGateway
-            log(`✅ Extracted better payment method from legacy gateway: ${paymentMethod}`)
-        }
-    }
-
-    // If payment method is ambiguous (manual or custom), try to get more info from transactions
-    if (paymentMethod.toLowerCase() === 'manual' || paymentMethod.toLowerCase() === 'custom') {
-        try {
-            // We need to dynamically import ShopifyAPI to avoid circular dependencies if any
-            const { ShopifyAPI } = await import('@/lib/shopify-api')
-            const api = new ShopifyAPI()
-            const transactions = await api.getTransactions(order.id)
-
-            if (transactions && transactions.length > 0) {
-                // 1. Check transaction gateway
-                const specificTx = transactions.find((t: any) =>
-                    t.gateway &&
-                    t.gateway.toLowerCase() !== 'manual' &&
-                    t.gateway.toLowerCase() !== 'custom'
-                )
-
-                if (specificTx) {
-                    paymentMethod = specificTx.gateway
-                    log(`✅ Refined payment method from transaction gateway: ${paymentMethod}`)
-                } else {
-                    // 2. Check transaction string for keywords
-                    const jsonString = JSON.stringify(transactions).toLowerCase()
-                    if (jsonString.includes('vorkasse')) {
-                        paymentMethod = 'Vorkasse'
-                        log(`✅ Detected 'Vorkasse' in transaction details`)
-                    } else if (jsonString.includes('rechnung') || jsonString.includes('invoice') || jsonString.includes('bank deposit') || jsonString.includes('überweisung')) {
-                        paymentMethod = 'Rechnung'
-                        log(`✅ Detected 'Rechnung' (via Bank Transfer) in transaction details`)
-                    }
-                }
-            }
-        } catch (err) {
-            log(`⚠️ Failed to fetch transactions for refinement: ${err}`)
-        }
-    }
+    // 1. Derivate robust payment method label using shared logic
+    const paymentMethod = derivePaymentMethodLabel(order, []) 
+    log(`✅ Derivates payment method: ${paymentMethod}`)
 
     // Final fallback: Check order.payment_details if available (sometimes contains credit_card_company or similar)
     if ((paymentMethod.toLowerCase() === 'manual' || paymentMethod.toLowerCase() === 'custom') && (order as any).payment_details) {
@@ -504,6 +447,14 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             settings: {
                 paymentMethod: paymentMethod
             },
+            // Shopify Sync Fields (Immediate population)
+            shopifyOrderId: String(order.id),
+            financialStatus: order.financial_status,
+            paymentMethodLabel: paymentMethod,
+            totalPriceCents: Math.round(parseFloat(order.total_price || '0') * 100),
+            totalPaidCents: Math.round(parseFloat(order.total_price || '0') * 100), // Initial guess, webhook will refine
+            totalRefundedCents: 0,
+            updatedFromShopifyAt: new Date(),
             // Traffic Source Tracking
             trafficSourceKey: trafficSource.sourceKey,
             trafficSourceLabel: trafficSource.sourceLabel,

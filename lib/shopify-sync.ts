@@ -91,22 +91,36 @@ export function derivePaymentMethodLabel(order: any, transactions: any[]): strin
     }
     
     // 2) Vorkasse / manual
-    const manualKeywords = ['bank_transfer', 'manual', 'vorkasse', 'bank_überweisung', 'überweisung', 'bank transfer']
+    const manualKeywords = ['bank_transfer', 'manual', 'vorkasse', 'bank_überweisung', 'überweisung', 'bank transfer', 'rechnung', 'invoice', 'bank deposit']
     if (gatewayNames.some((g: string) => manualKeywords.includes(g.toLowerCase()))) {
+        // If it's specifically 'rechnung' (invoice), label it correctly
+        if (gatewayNames.some((g: string) => g.toLowerCase().includes('rechnung') || g.toLowerCase().includes('invoice'))) {
+            return 'Rechnung'
+        }
         return 'Vorkasse / Überweisung'
     }
     
-    // 3) Shopify Payments
+    // 3) Look for Keywords in gateway names if not strictly manual
+    if (gatewayNames.some((g: string) => g.toLowerCase().includes('paypal'))) return 'PayPal'
+    if (gatewayNames.some((g: string) => g.toLowerCase().includes('klarna'))) return 'Klarna'
+    if (gatewayNames.some((g: string) => g.toLowerCase().includes('sofort'))) return 'Sofort'
+    if (gatewayNames.some((g: string) => g.toLowerCase().includes('amazon'))) return 'Amazon Pay'
+
+    // 4) Shopify Payments
     if (transactions.some(t => t.gateway?.toLowerCase() === 'shopify_payments') || gatewayNames.includes('shopify_payments')) {
         return 'Shopify Payments'
     }
     
-    // 4) Unknown / Fallback
+    // 5) Unknown / Fallback
     if (gatewayNames.length > 0) {
-        // Pretty print common ones
         const first = gatewayNames[0]
         if (first === 'shopify_payments') return 'Shopify Payments'
-        if (first === 'paypal') return 'PayPal'
+        
+        // Final sanity check for manual-like strings
+        const lowerFirst = first.toLowerCase()
+        if (lowerFirst.includes('rechnung')) return 'Rechnung'
+        if (lowerFirst.includes('vorkasse') || lowerFirst.includes('überweisung')) return 'Vorkasse / Überweisung'
+        
         return first
     }
     
