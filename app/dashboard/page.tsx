@@ -30,8 +30,10 @@ import {
   Star,
   RotateCcw,
   Lock,
-  UserX
+  UserX,
+  Eye
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
   DndContext,
   closestCenter,
@@ -95,6 +97,21 @@ export default function DashboardPage() {
   const [featuresLoading, setFeaturesLoading] = useState(true)
   const [features, setFeatures] = useState(DEFAULT_FEATURES)
   const [activeId, setActiveId] = useState<string | null>(null)
+  
+  // Privacy Mode State
+  const [isPrivacyMode, setIsPrivacyMode] = useState(false)
+
+  // Load Privacy Mode from localStorage
+  useEffect(() => {
+    const savedMode = localStorage.getItem('privacy_hide_amounts') === 'true'
+    setIsPrivacyMode(savedMode)
+  }, [])
+
+  const togglePrivacyMode = () => {
+    const newMode = !isPrivacyMode
+    setIsPrivacyMode(newMode)
+    localStorage.setItem('privacy_hide_amounts', String(newMode))
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -273,16 +290,28 @@ export default function DashboardPage() {
                 ? 'Admin-Dashboard: Sie können alle Daten im System verwalten.'
                 : 'Hier ist eine Übersicht über Ihre Rechnungen und Geschäftstätigkeiten.'
               }
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadDashboardData()}
-                className="ml-4 h-8"
-                disabled={loading}
-              >
-                <RotateCcw className={`w-3 h-3 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Aktualisieren
-              </Button>
+              }
+              <div className="flex items-center ml-4 gap-2">
+                 <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={togglePrivacyMode}
+                  className="h-8"
+                  title={isPrivacyMode ? "Beträge anzeigen" : "Beträge verbergen"}
+                >
+                  {isPrivacyMode ? <Eye className="w-4 h-4" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadDashboardData()}
+                  className="h-8"
+                  disabled={loading}
+                >
+                  <RotateCcw className={`w-3 h-3 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Aktualisieren
+                </Button>
+              </div>
             </p>
 
             {/* Error Message */}
