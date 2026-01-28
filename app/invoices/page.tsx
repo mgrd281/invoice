@@ -259,8 +259,8 @@ function InvoicesPageContent() {
   const [dateRange, setDateRange] = useState<{ from: string | null, to: string | null }>(() => {
     const from = searchParams.get('from')
     const to = searchParams.get('to')
-    const today = new Date().toISOString().split('T')[0]
-    return { from: from || today, to: to || today }
+    // Default to null (All time) instead of today to avoid hiding imported data
+    return { from: from || null, to: to || null }
   })
 
 
@@ -313,7 +313,9 @@ function InvoicesPageContent() {
     if (page !== pageNum) setPage(pageNum)
     if (limit !== limitNum) setLimit(limitNum)
     if (dateRange.from !== from || dateRange.to !== to) {
-      setDateRange({ from, to })
+      // Handle the case where the URL provides no dates
+      setDateRange({ from: from === new Date().toISOString().split('T')[0] && !searchParams.has('from') ? null : from, 
+                      to: to === new Date().toISOString().split('T')[0] && !searchParams.has('to') ? null : to })
     }
   }, [searchParams])
 
