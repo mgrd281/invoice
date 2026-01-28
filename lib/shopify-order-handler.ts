@@ -390,7 +390,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
     // Extract payment method from Shopify
     // Extract payment method from Shopify
     // 1. Derivate robust payment method label using shared logic
-    const paymentMethod = derivePaymentMethodLabel(order, []) 
+    let paymentMethod = derivePaymentMethodLabel(order, []) 
     log(`✅ Derivates payment method: ${paymentMethod}`)
 
     // Final fallback: Check order.payment_details if available (sometimes contains credit_card_company or similar)
@@ -472,7 +472,7 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
                     taxRateId: taxRate?.id
                 }))
             }
-        },
+        } as any,
         include: {
             customer: true,
             organization: true,
