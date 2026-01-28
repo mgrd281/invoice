@@ -73,6 +73,9 @@ export async function POST(req: NextRequest) {
     /* Fetch Project Structure Context */
     // In a real app, you might cache this or generate it dynamically
     const projectContext = `
+    RUNTIME ENVIRONMENT:
+    - OS Platform: ${process.platform} (linux = likely container/cloud, darwin = mac, win32 = windows)
+    
     CURRENT PROJECT STRUCTURE (Simplified):
     - app/
       - admin/ (Admin Panel)
@@ -102,8 +105,9 @@ export async function POST(req: NextRequest) {
                 3. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
                 4. BE AUTONOMOUS. Do not ask "which file?" if it's obvious from the project structure. make a reasonable assumption and proceed.
                 5. SYSTEM ACCESS: You *can* execute system commands on the user's machine.
-                   - To open Finder/Explorer: Output exactly \`[EXEC_CMD] open .\` (mac) or \`[EXEC_CMD] explorer .\` (win).
+                   - To open Finder/Explorer: Output exactly \`[EXEC_CMD] open .\` (mac/darwin) or \`[EXEC_CMD] explorer .\` (win32).
                    - To list files: \`[EXEC_CMD] ls -la\`
+                   - NOTE: If OS Platform is 'linux', you are likely in a container/server. 'open .' will NOT work. Explain this limitation to the user if they ask to open Finder.
                    - Use this sparingly and only when requested (e.g., "Go to finder", "Show me files").` },
                 ...historyMessages,
                 { role: "user", content: message }
@@ -121,9 +125,9 @@ export async function POST(req: NextRequest) {
                     await execAsync(cmd);
                     // Optionally append success message
                     // aiResponseText += "\n\n(System command executed successfully)";
-                } catch (err) {
+                } catch (err: any) {
                     console.error("Command Execution Failed:", err);
-                    aiResponseText += `\n\n(Error executing command: ${err})`;
+                    aiResponseText += `\n\n(System Command Failed: ${err.message || err}. \nNote: If you are in a Docker container (Linux), GUI commands like 'open' will not work on the host OS.)`;
                 }
             }
         }
