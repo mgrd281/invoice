@@ -67,7 +67,8 @@ export const authOptions: NextAuthOptions = {
                     id: user.id,
                     email: user.email,
                     name: user.name,
-                    organizationId: user.organizationId
+                    organizationId: user.organizationId,
+                    role: user.role
                 }
             }
         })
@@ -80,6 +81,8 @@ export const authOptions: NextAuthOptions = {
                 // @ts-ignore
                 session.user.organizationId = token.organizationId
                 // @ts-ignore
+                session.user.role = token.role
+                // @ts-ignore
                 session.user.isAdmin = token.role === 'ADMIN'
             }
             return session
@@ -89,10 +92,12 @@ export const authOptions: NextAuthOptions = {
                 token.sub = user.id
                 // @ts-ignore
                 token.organizationId = (user as any).organizationId
+                // @ts-ignore
+                token.role = (user as any).role
             }
 
             // If it's the initial sign in, or we need to refresh the organizationId
-            if (token.sub && !token.organizationId) {
+            if (token.sub && (!token.organizationId || !token.role)) {
                 const dbUser = await prisma.user.findUnique({
                     where: { id: token.sub as string }
                 })
