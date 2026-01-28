@@ -15,10 +15,16 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    let limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || 'all'
     const dateRange = searchParams.get('dateRange') || 'all'
+
+    // Handle "Unlimited" (-1)
+    const MAX_LIMIT = 2000
+    if (limit === -1) {
+      limit = MAX_LIMIT
+    }
 
     const skip = (page - 1) * limit
 

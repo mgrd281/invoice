@@ -172,7 +172,15 @@ function InvoicesPageContent() {
 
   // Pagination State
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
-  const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '50')) // Default limit set to 50 as requested
+  const [limit, setLimit] = useState(() => {
+    const urlLimit = searchParams.get('limit')
+    if (urlLimit) return parseInt(urlLimit)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('invoices_pageSize')
+      if (saved) return parseInt(saved)
+    }
+    return 50
+  })
   const [totalPages, setTotalPages] = useState(1)
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0)
   const [globalTotalCount, setGlobalTotalCount] = useState(0)
@@ -1998,45 +2006,64 @@ function InvoicesPageContent() {
         {/* Pagination Controls */}
         {
           displayedInvoices.length > 0 && !showSearchResults && (
-            <div className="flex items-center justify-between py-4">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between py-4 select-none">
+              <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-600">Zeige</span>
                 <select
                   value={limit}
                   onChange={(e) => {
-                    setLimit(Number(e.target.value))
-                    setPage(1) // Reset to first page when limit changes
+                    const newLimit = Number(e.target.value)
+                    setLimit(newLimit)
+                    setPage(1)
+                    localStorage.setItem('invoices_pageSize', String(newLimit))
                   }}
-                  className="border border-gray-300 rounded-md text-sm p-1"
+                  className="border border-gray-300 rounded-md text-sm p-1.5 focus:ring-blue-500 focus:border-blue-500"
                 >
+                  <option value="10">10</option>
+                  <option value="25">25</option>
                   <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
                   <option value="500">500</option>
-                  <option value="100000">Unbegrenzt</option>
+                  <option value="-1">Unbegrenzt</option>
                 </select>
-                <span className="text-sm text-gray-600">Einträge pro Seite</span>
+                <div className="flex flex-col">
+                  <span className="text-sm text-gray-600">Einträge pro Seite</span>
+                  {limit === -1 && (
+                     <span className="text-xs text-blue-600 font-medium animate-pulse">
+                       Alle Einträge werden angezeigt
+                     </span>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1 || loading}
-                >
-                  Zurück
-                </Button>
-                <span className="text-sm text-gray-600">
-                  Seite {page} von {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages || loading}
-                >
-                  Weiter
-                </Button>
-              </div>
+              {limit !== -1 ? (
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1 || loading}
+                  >
+                    Zurück
+                  </Button>
+                  <span className="text-sm text-gray-600 whitespace-nowrap">
+                    Seite {page} von {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages || loading}
+                  >
+                    Weiter
+                  </Button>
+                </div>
+              ) : (
+                 <div className="text-sm text-gray-500 italic">
+                   Scrollen Sie für mehr Einträge
+                 </div>
+              )}
             </div>
           )
         }
