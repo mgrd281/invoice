@@ -4,6 +4,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 // Initialize OpenAI (if key exists)
 const openai = process.env.OPENAI_API_KEY 
@@ -96,12 +100,33 @@ export async function POST(req: NextRequest) {
                 1. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON.
                 2. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
                 3. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
-                4. BE AUTONOMOUS. Do not ask "which file?" if it's obvious from the project structure. make a reasonable assumption and proceed.` },
+                4. BE AUTONOMOUS. Do not ask "which file?" if it's obvious from the project structure. make a reasonable assumption and proceed.
+                5. SYSTEM ACCESS: You *can* execute system commands on the user's machine.
+                   - To open Finder/Explorer: Output exactly \`[EXEC_CMD] open .\` (mac) or \`[EXEC_CMD] explorer .\` (win).
+                   - To list files: \`[EXEC_CMD] ls -la\`
+                   - Use this sparingly and only when requested (e.g., "Go to finder", "Show me files").` },
                 ...historyMessages,
                 { role: "user", content: message }
             ]
         });
         aiResponseText = completion.choices[0].message.content || "I couldn't generate a response.";
+
+        // SYSTEM COMMAND EXECUTION
+        if (aiResponseText.includes("[EXEC_CMD]")) {
+            const match = aiResponseText.match(/\[EXEC_CMD\]\s*(.*)/);
+            if (match && match[1]) {
+                const cmd = match[1].trim();
+                console.log("Executing System Command:", cmd);
+                try {
+                    await execAsync(cmd);
+                    // Optionally append success message
+                    // aiResponseText += "\n\n(System command executed successfully)";
+                } catch (err) {
+                    console.error("Command Execution Failed:", err);
+                    aiResponseText += `\n\n(Error executing command: ${err})`;
+                }
+            }
+        }
     } else {
         // Simulator Mode
         const lowerMsg = message.toLowerCase();
