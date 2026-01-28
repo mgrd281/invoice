@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 import { exec } from 'child_process';
-import { promisify }1;
+import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { CommandRouter } from '@/lib/agent/router';
