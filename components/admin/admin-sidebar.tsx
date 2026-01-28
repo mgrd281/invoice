@@ -80,6 +80,12 @@ const sidebarItems = [
         href: "/admin/paypal",
         icon: CreditCard,
         matcher: (pathname: string) => pathname.startsWith("/admin/paypal")
+    },
+    {
+        title: "Agent",
+        href: "/admin/agent",
+        icon: Bot, 
+        matcher: (pathname: string) => pathname.startsWith("/admin/agent")
     }
 ]
 
