@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, Bot, User as UserIcon, Terminal, Play, Pause, AlertTriangle, CheckCircle, Clock, GitBranch } from "lucide-react";
+import { Send, Bot, User as UserIcon, Terminal, Play, Pause, AlertTriangle, CheckCircle, Clock, GitBranch, Folder, X, FileCode, CornerLeftUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -80,8 +80,124 @@ export default function AgentPage() {
         }
     };
 
+    // File Manager State
+    const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
+    const [currentPath, setCurrentPath] = useState(".");
+    const [files, setFiles] = useState<any[]>([]);
+    const [viewingFile, setViewingFile] = useState<{path: string, content: string} | null>(null);
+
+    // Watch for Agent Commands
+    useEffect(() => {
+        if (messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.role === 'assistant' && lastMsg.content.includes("[OPEN_FileManager]")) {
+                setIsFileManagerOpen(true);
+                fetchFiles(".");
+            }
+        }
+    }, [messages]);
+
+    const fetchFiles = async (pathStr: string) => {
+        try {
+            const res = await fetch('/api/agent/files', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'LIST', path: pathStr })
+            });
+            const data = await res.json();
+            if (data.files) {
+                setFiles(data.files);
+                setCurrentPath(data.cwd);
+            }
+        } catch (e) {
+            toast.error("Failed to load files");
+        }
+    };
+
+    const loadFileContent = async (pathStr: string) => {
+        try {
+            const res = await fetch('/api/agent/files', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'READ', path: pathStr })
+            });
+            const data = await res.json();
+            if (data.content !== undefined) {
+                setViewingFile({ path: pathStr, content: data.content });
+            }
+        } catch (e) {
+            toast.error("Failed to read file");
+        }
+    };
+
     return (
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#F7F8FC]">
+        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#F7F8FC] relative">
+            {/* FILE MANAGER MODAL */}
+            {isFileManagerOpen && (
+                <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-8">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden border border-slate-200">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                    <Folder className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-800">File Manager</h3>
+                                    <p className="text-xs text-slate-500 font-mono">/{currentPath}</p>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setIsFileManagerOpen(false)}>
+                                <X className="w-5 h-5 text-slate-400" />
+                            </Button>
+                        </div>
+                        
+                        <div className="flex-1 flex overflow-hidden">
+                            {/* File List */}
+                            <div className={cn("flex-1 overflow-y-auto p-2 space-y-1 bg-white", viewingFile ? "w-1/3 border-r border-slate-100 hidden md:block" : "w-full")}>
+                                {currentPath !== "." && (
+                                    <div 
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer text-slate-600"
+                                        onClick={() => fetchFiles(currentPath.split('/').slice(0, -1).join('/') || '.')}
+                                    >
+                                        <CornerLeftUp className="w-4 h-4" />
+                                        <span className="text-sm font-medium">..</span>
+                                    </div>
+                                )}
+                                {files.sort((a,b) => (a.isDirectory === b.isDirectory ? 0 : a.isDirectory ? -1 : 1)).map((file: any) => (
+                                    <div 
+                                        key={file.path}
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group"
+                                        onClick={() => file.isDirectory ? fetchFiles(file.path) : loadFileContent(file.path)}
+                                    >
+                                        {file.isDirectory ? (
+                                            <Folder className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                        ) : (
+                                            <FileCode className="w-4 h-4 text-blue-500" />
+                                        )}
+                                        <span className="text-sm text-slate-700 font-medium group-hover:text-violet-600 truncate">{file.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* File Preview */}
+                            {viewingFile && (
+                                <div className="flex-[2] flex flex-col bg-slate-50">
+                                    <div className="p-2 border-b border-slate-100 flex items-center justify-between bg-white">
+                                        <span className="text-xs font-mono text-slate-500 h-6 flex items-center">{viewingFile.path}</span>
+                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setViewingFile(null)}>
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    <ScrollArea className="flex-1 p-4">
+                                        <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap">{viewingFile.content}</pre>
+                                    </ScrollArea>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* LEFT: CHAT AREA (60%) */}
             <div className="flex-1 flex flex-col border-r border-slate-200 bg-white">
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -97,12 +213,18 @@ export default function AgentPage() {
                             </div>
                         </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setMessages([])}>
-                        Clear Chat
-                    </Button>
+                    <div className="flex gap-2">
+                         <Button variant="ghost" size="icon" onClick={() => { setIsFileManagerOpen(true); fetchFiles("."); }} title="Open File Context">
+                             <Folder className="w-4 h-4 text-slate-500" />
+                         </Button>
+                         <Button variant="outline" size="sm" onClick={() => setMessages([])}>
+                            Clear Chat
+                         </Button>
+                    </div>
                 </div>
-
+                {/* ... existing chat UI ... */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" ref={scrollRef}>
+                    {/* ... existing messages map ... */}
                     {messages.length === 0 && (
                         <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8">
                             <Bot className="w-16 h-16 mb-4 opacity-20" />

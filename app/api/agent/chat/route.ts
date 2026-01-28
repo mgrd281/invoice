@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
@@ -6,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import fs from 'fs/promises';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
         const completion = await openai.chat.completions.create({
             model: "gpt-4-turbo-preview",
             messages: [
-                { role: "system", content: `You are an autonomous dev agent embedded in an admin app. You can plan tasks. 
+                { role: "system", content: `You are an autonomous dev agent embedded in an an admin app. You can plan tasks. 
                 
                 CONTEXT:
                 ${projectContext}
@@ -104,18 +105,30 @@ export async function POST(req: NextRequest) {
                 2. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
                 3. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
                 4. BE AUTONOMOUS. Do not ask "which file?" if it's obvious from the project structure. make a reasonable assumption and proceed.
-                5. SYSTEM ACCESS: You *can* execute system commands on the user's machine.
-                   - To open Finder/Explorer: Output exactly \`[EXEC_CMD] open .\` (mac/darwin) or \`[EXEC_CMD] explorer .\` (win32).
-                   - To list files: \`[EXEC_CMD] ls -la\`
-                   - NOTE: If OS Platform is 'linux', you are likely in a container/server. 'open .' will NOT work. Explain this limitation to the user if they ask to open Finder.
-                   - Use this sparingly and only when requested (e.g., "Go to finder", "Show me files").` },
+                5. FILE SYSTEM MASTERY: You have DIRECT access to read/write files and list directories.
+                   - To list files: \`[LIST_FILES path/to/dir]\` (e.g. [LIST_FILES app/api])
+                   - To read a file: \`[READ_FILE path/to/file]\`
+                   - To write a file: \`[WRITE_FILE path/to/file]\` followed by content. (Ideally use this sparingly, mostly for small fixes).
+                   - To Open a UI File Manager for the user: \`[OPEN_FileManager]\`.
+                6. SYSTEM ACCESS: You *can* execute system commands on the user's machine.
+                   - To open native Finder/Explorer: \`[EXEC_CMD] open .\` (mac) or \`[EXEC_CMD] explorer .\` (win).
+                   - NOTE: If OS Platform is 'linux', you are likely in a container/server. 'open .' will NOT work. Instead, ALWAYS use \`[OPEN_FileManager]\` if the user asks to open Finder/Files in Linux.
+                   - To execute shell commands: \`[EXEC_CMD] command arguments\`
+                   ` },
                 ...historyMessages,
                 { role: "user", content: message }
             ]
         });
         aiResponseText = completion.choices[0].message.content || "I couldn't generate a response.";
 
-        // SYSTEM COMMAND EXECUTION
+        // PARSE COMMANDS
+        
+        // 1. [OPEN_FileManager] - Handled on Frontend mostly, but we log it
+        if (aiResponseText.includes("[OPEN_FileManager]")) {
+            console.log("Triggering File Manager UI");
+        }
+
+        // 2. [EXEC_CMD]
         if (aiResponseText.includes("[EXEC_CMD]")) {
             const match = aiResponseText.match(/\[EXEC_CMD\]\s*(.*)/);
             if (match && match[1]) {
@@ -123,14 +136,46 @@ export async function POST(req: NextRequest) {
                 console.log("Executing System Command:", cmd);
                 try {
                     await execAsync(cmd);
-                    // Optionally append success message
-                    // aiResponseText += "\n\n(System command executed successfully)";
+                    aiResponseText += `\n\n(Executed: \`${cmd}\`)`;
                 } catch (err: any) {
                     console.error("Command Execution Failed:", err);
-                    aiResponseText += `\n\n(System Command Failed: ${err.message || err}. \nNote: If you are in a Docker container (Linux), GUI commands like 'open' will not work on the host OS.)`;
+                    aiResponseText += `\n\n(Command Failed: ${err.message || err}. \nNote: GUI commands require native OS.)`;
                 }
             }
         }
+
+        // 3. [LIST_FILES]
+        if (aiResponseText.includes("[LIST_FILES")) {
+            const match = aiResponseText.match(/\[LIST_FILES\s+(.*?)\]/);
+            if (match && match[1]) {
+                const requestedPath = match[1].trim();
+                try {
+                    const fullPath = path.resolve(process.cwd(), requestedPath);
+                    const files = await fs.readdir(fullPath);
+                    aiResponseText += `\n\n[FILE LIST OF ${requestedPath}]:\n` + files.join("\n");
+                } catch (err: any) {
+                    aiResponseText += `\n\n(Error listing files: ${err.message})`;
+                }
+            }
+        }
+
+         // 4. [READ_FILE]
+         if (aiResponseText.includes("[READ_FILE")) {
+            const match = aiResponseText.match(/\[READ_FILE\s+(.*?)\]/);
+            if (match && match[1]) {
+                const requestedPath = match[1].trim();
+                try {
+                    const fullPath = path.resolve(process.cwd(), requestedPath);
+                    const content = await fs.readFile(fullPath, 'utf-8');
+                    // Truncate if too long to prevent token explosion
+                    const snippet = content.length > 2000 ? content.substring(0, 2000) + "\n...(truncated)" : content;
+                    aiResponseText += `\n\n[CONTENT OF ${requestedPath}]:\n\`\`\`\n${snippet}\n\`\`\``;
+                } catch (err: any) {
+                    aiResponseText += `\n\n(Error reading file: ${err.message})`;
+                }
+            }
+        }
+        
     } else {
         // Simulator Mode
         const lowerMsg = message.toLowerCase();
@@ -154,6 +199,8 @@ export async function POST(req: NextRequest) {
                  };
                  aiResponseText = isArabic ? "تم إنشاء المهمة! المعرف: #T-123. في قائمة الانتظار للتنفيذ." : "Task created! ID: #T-123. Queued for execution.";
             }
+        } else if (lowerMsg.includes("finder") || lowerMsg.includes("files")) {
+             aiResponseText = "[OPEN_FileManager] Opening File Manager for you...";
         } else {
             if (isArabic) {
                  aiResponseText = "أنا وكيل Antigravity. يمكنني إصلاح الأخطاء وإضافة الميزات وتحسين الكود. جرب قول '/fix expenses page'. (وضع المحاكاة - لم يتم العثور على مفتاح OpenAI)";
