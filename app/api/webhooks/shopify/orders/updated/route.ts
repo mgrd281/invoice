@@ -49,15 +49,10 @@ export async function POST(req: NextRequest) {
         // We only care about orders/updated (though the file path implies this, logic is good)
         // Check for paid status
         const financialStatus = body.financial_status
+        console.log(`DEBUG: Webhook for order ${body.name}, Financial Status: ${financialStatus}`)
 
-        if (financialStatus !== 'paid') {
-            // We only trigger on PAID. 
-            // Note: If you want to trigger on "authorized" for instant delivery before capture, change this.
-            // But user requirement says "Zahlung als bezahlt markieren" (Mark as paid) -> Send key.
-            return NextResponse.json({ message: 'Order not paid, skipping' })
-        }
-
-        console.log(`🔄 Webhook: Order ${body.name} (${body.id}) is PAID. Processing digital products...`)
+        // Proceed even if not paid, but processDigitalProductOrder will handle the delay
+        console.log(`🔄 Webhook: Order ${body.name} (${body.id}) received. Processing digital products...`)
 
         // 2. Find Organization
         let organization = null
@@ -117,6 +112,7 @@ export async function POST(req: NextRequest) {
         const results = []
 
         for (const item of lineItems) {
+            console.log(`DEBUG: Processing item ${item.title} (Product ID: ${item.product_id})`)
             const result = await processDigitalProductOrder(
                 String(item.product_id), // Shopify Product ID
                 shopifyOrderId,
@@ -126,10 +122,11 @@ export async function POST(req: NextRequest) {
                 item.title, // Product Title
                 String(item.variant_id), // Shopify Variant ID
                 undefined, // Salutation (optional)
-                true, // shouldSendEmail: TRUE because it's PAID now
+                financialStatus === 'paid', // shouldSendEmail: TRUE only if PAID
                 customerId, // Pass the linked customer ID
                 item.quantity // Pass the quantity
             )
+            console.log(`DEBUG: Result for ${item.title}:`, JSON.stringify(result))
             results.push(result)
         }
 

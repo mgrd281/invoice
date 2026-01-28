@@ -62,7 +62,7 @@ export async function getAvailableKey(digitalProductId: string, shopifyVariantId
     })
 }
 
-export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string, emailSent: boolean = true, customerId?: string) {
+export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyOrderId: string, emailSent: boolean = true, customerId?: string, shopifyVariantId?: string) {
     return prisma.licenseKey.update({
         where: { id: keyId },
         data: {
@@ -70,6 +70,7 @@ export async function markKeyAsUsed(keyId: string, orderNumber: string, shopifyO
             usedAt: new Date(),
             orderId: orderNumber,
             shopifyOrderId: shopifyOrderId,
+            shopifyVariantId: shopifyVariantId, // Store the variant that requested this key
             customerId: customerId, // Link to customer
             // We use 'any' cast here to avoid TS errors until client is regenerated
             emailSent: emailSent,
@@ -92,12 +93,14 @@ export async function processDigitalProductOrder(
     customerId?: string,
     quantity: number = 1
 ) {
+    console.log(`DEBUG: processDigitalProductOrder for Product ${shopifyProductId}, Order ${orderNumber}, shouldSend: ${shouldSendEmail}, quantity: ${quantity}`)
     const digitalProduct = await getDigitalProductByShopifyId(shopifyProductId)
 
     if (!digitalProduct) {
-        console.log(`Digital product not found for Shopify Product ID: ${shopifyProductId}`)
+        console.log(`DEBUG: [FAIL] Digital product NOT found in database for Shopify Product ID: ${shopifyProductId}`)
         return { success: false, error: 'Product not configured as digital product' }
     }
+    console.log(`DEBUG: Found Digital Product: ${digitalProduct.title} (ID: ${digitalProduct.id})`)
 
     // 1. Check if we should even proceed for Vorkasse if paid check is needed
     // If autoSendVorkasse is false, we don't send automatically even if paid.
@@ -107,11 +110,17 @@ export async function processDigitalProductOrder(
     }
 
     // 2. Check for existing keys for this order/product to ensure idempotency
+    // We search for keys for this order and product. Variant mismatch is common if general keys were assigned.
     const existingKeys = await prisma.licenseKey.findMany({
         where: {
             digitalProductId: digitalProduct.id,
             shopifyOrderId: shopifyOrderId,
-            shopifyVariantId: shopifyVariantId || null
+            // We search for keys regardless of variant ID if they were assigned to this order,
+            // OR we match the variant ID.
+            OR: [
+                { shopifyVariantId: shopifyVariantId || null },
+                { shopifyVariantId: null } // Fallback to check if general keys were reserved
+            ]
         }
     })
 
@@ -145,7 +154,7 @@ export async function processDigitalProductOrder(
             for(let i=0; i<needed; i++) {
                 const newKey = await getAvailableKey(digitalProduct.id, shopifyVariantId)
                 if (newKey) {
-                    await markKeyAsUsed(newKey.id, orderNumber, shopifyOrderId, false, customerId)
+                    await markKeyAsUsed(newKey.id, orderNumber, shopifyOrderId, false, customerId, shopifyVariantId)
                     keysToProcess.push(newKey)
                 }
             }
@@ -166,7 +175,7 @@ export async function processDigitalProductOrder(
                 })
                 return { success: false, error: 'Not enough keys available' }
             }
-            await markKeyAsUsed(key.id, orderNumber, shopifyOrderId, false, customerId)
+            await markKeyAsUsed(key.id, orderNumber, shopifyOrderId, shouldSendEmail, customerId, shopifyVariantId)
             keysToProcess.push(key)
         }
     }
