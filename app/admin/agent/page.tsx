@@ -210,67 +210,121 @@ export default function AgentPage() {
 
     return (
         <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#F7F8FC] relative">
-            {/* FILE MANAGER MODAL */}
+            {/* MODERN AGENT WORKSPACE OVERLAY */}
             {isFileManagerOpen && (
-                <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-8">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden border border-slate-200">
-                        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                                    <Folder className="w-5 h-5" />
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-[90vw] h-[85vh] flex flex-col overflow-hidden border border-white/20 ring-1 ring-black/5">
+                        
+                        {/* Header */}
+                        <div className="h-16 px-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-200">
+                                    <Terminal className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-800">File Manager</h3>
-                                    <p className="text-xs text-slate-500 font-mono">/{currentPath}</p>
+                                    <h2 className="font-bold text-lg text-slate-800 tracking-tight">Agent Workspace</h2>
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-xs font-mono text-slate-500">EXECUTION_MODE_ACTIVE</span>
+                                        <span className="text-xs text-slate-300">|</span>
+                                        <span className="text-xs font-mono text-slate-500">/{currentPath}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => setIsFileManagerOpen(false)}>
-                                <X className="w-5 h-5 text-slate-400" />
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <Button variant="outline" size="sm" className="hidden md:flex gap-2" onClick={() => fetchFiles(".")}>
+                                    <Loader2 className="w-3 h-3" /> Refresh
+                                </Button>
+                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100" onClick={() => setIsFileManagerOpen(false)}>
+                                    <X className="w-5 h-5 text-slate-400" />
+                                </Button>
+                            </div>
                         </div>
-                        
+
+                        {/* Main Content Grid */}
                         <div className="flex-1 flex overflow-hidden">
-                            {/* File List */}
-                            <div className={cn("flex-1 overflow-y-auto p-2 space-y-1 bg-white", viewingFile ? "w-1/3 border-r border-slate-100 hidden md:block" : "w-full")}>
-                                {currentPath !== "." && (
-                                    <div 
-                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer text-slate-600"
-                                        onClick={() => fetchFiles(currentPath.split('/').slice(0, -1).join('/') || '.')}
-                                    >
-                                        <CornerLeftUp className="w-4 h-4" />
-                                        <span className="text-sm font-medium">..</span>
+                            
+                            {/* LEFT: Context & File Navigation (35%) */}
+                            <div className="w-[350px] flex flex-col border-r border-slate-100 bg-slate-50/50">
+                                <div className="p-4 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Project Files</h3>
+                                    {currentPath !== "." && (
+                                        <div 
+                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm cursor-pointer text-slate-600 transition-all mb-2"
+                                            onClick={() => fetchFiles(currentPath.split('/').slice(0, -1).join('/') || '.')}
+                                        >
+                                            <CornerLeftUp className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Back</span>
+                                        </div>
+                                    )}
+                                    <div className="space-y-1">
+                                         {files.sort((a,b) => (a.isDirectory === b.isDirectory ? 0 : a.isDirectory ? -1 : 1)).map((file: any) => (
+                                            <div 
+                                                key={file.path}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all group",
+                                                    viewingFile?.path === file.path ? "bg-violet-100 text-violet-700" : "hover:bg-white hover:shadow-sm text-slate-600"
+                                                )}
+                                                onClick={() => file.isDirectory ? fetchFiles(file.path) : loadFileContent(file.path)}
+                                            >
+                                                {file.isDirectory ? (
+                                                    <Folder className={cn("w-4 h-4", viewingFile?.path === file.path ? "text-violet-500" : "text-amber-400 fill-amber-400")} />
+                                                ) : (
+                                                    <FileCode className={cn("w-4 h-4", viewingFile?.path === file.path ? "text-violet-500" : "text-slate-400")} />
+                                                )}
+                                                <span className="text-sm font-medium truncate">{file.name}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                )}
-                                {files.sort((a,b) => (a.isDirectory === b.isDirectory ? 0 : a.isDirectory ? -1 : 1)).map((file: any) => (
-                                    <div 
-                                        key={file.path}
-                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group"
-                                        onClick={() => file.isDirectory ? fetchFiles(file.path) : loadFileContent(file.path)}
-                                    >
-                                        {file.isDirectory ? (
-                                            <Folder className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                        ) : (
-                                            <FileCode className="w-4 h-4 text-blue-500" />
-                                        )}
-                                        <span className="text-sm text-slate-700 font-medium group-hover:text-violet-600 truncate">{file.name}</span>
-                                    </div>
-                                ))}
+                                </div>
                             </div>
 
-                            {/* File Preview */}
-                            {viewingFile && (
-                                <div className="flex-[2] flex flex-col bg-slate-50">
-                                    <div className="p-2 border-b border-slate-100 flex items-center justify-between bg-white">
-                                        <span className="text-xs font-mono text-slate-500 h-6 flex items-center">{viewingFile.path}</span>
-                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setViewingFile(null)}>
-                                            <X className="w-4 h-4" />
+                            {/* CENTER: Work Area / Preview (65%) */}
+                            <div className="flex-1 flex flex-col bg-white relative">
+                                {viewingFile ? (
+                                    <>
+                                        <div className="h-10 border-b border-slate-100 flex items-center justify-between px-4 bg-slate-50/30">
+                                            <div className="flex items-center gap-2">
+                                                <FileCode className="w-4 h-4 text-violet-500" />
+                                                <span className="text-xs font-mono text-slate-600">{viewingFile.path}</span>
+                                            </div>
+                                            <div className="text-[10px] text-slate-400">READ-ONLY MODE</div>
+                                        </div>
+                                        <ScrollArea className="flex-1 p-0">
+                                            <div className="p-4 min-h-full bg-[#1e1e1e] text-slate-300 font-mono text-xs leading-relaxed selection:bg-violet-500/30">
+                                                <pre>{viewingFile.content}</pre>
+                                            </div>
+                                        </ScrollArea>
+                                    </>
+                                ) : (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-slate-300 p-10 bg-slate-50/30">
+                                        <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+                                            <Bot className="w-10 h-10 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-xl font-semibold text-slate-600">Ready for Instructions</h3>
+                                        <p className="max-w-sm text-center mt-2 text-slate-400">Select a file to inspect or use the input below to command the agent to modify this workspace.</p>
+                                    </div>
+                                )}
+
+                                {/* Quick Command Bar (Floating) */}
+                                <div className="absolute bottom-6 left-6 right-6">
+                                    <div className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-2 flex items-center gap-2 ring-1 ring-black/5">
+                                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shrink-0">
+                                            <Bot className="w-4 h-4" />
+                                        </div>
+                                        <Input 
+                                            className="border-0 bg-transparent focus-visible:ring-0 text-sm h-10 shadow-none placeholder:text-slate-400"
+                                            placeholder="Ask Agent to edit this file or run a command..."
+                                            value={input}
+                                            onChange={e => setInput(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                        />
+                                        <Button size="sm" className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-md" onClick={sendMessage}>
+                                            <Send className="w-4 h-4 mr-2" /> Execute
                                         </Button>
                                     </div>
-                                    <ScrollArea className="flex-1 p-4">
-                                        <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap">{viewingFile.content}</pre>
-                                    </ScrollArea>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
