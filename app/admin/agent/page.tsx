@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, Bot, User as UserIcon, Terminal, Play, Pause, AlertTriangle, CheckCircle, Clock, GitBranch, Folder, X, FileCode, CornerLeftUp } from "lucide-react";
+import { Send, Bot, User as UserIcon, Terminal, Play, Pause, AlertTriangle, CheckCircle, Clock, GitBranch, Folder, X, FileCode, CornerLeftUp, Link, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -137,6 +137,77 @@ export default function AgentPage() {
         }
     };
 
+    // Message Parser Component
+    const parseMessage = (content: string) => {
+        const parts = [];
+        const lines = content.split('\n');
+        
+        let currentText = "";
+        
+        lines.forEach((line, idx) => {
+            if (line.includes('[STEP]')) {
+                if (currentText) { parts.push({ type: 'text', content: currentText }); currentText = ""; }
+                parts.push({ type: 'step', content: line.replace('[STEP]', '').trim() });
+            } else if (line.includes('[OPEN_URL')) {
+                if (currentText) { parts.push({ type: 'text', content: currentText }); currentText = ""; }
+                const match = line.match(/\[OPEN_URL\s+(.*?)\]/);
+                if (match) parts.push({ type: 'action', action: 'OPEN_URL', value: match[1] });
+            } else if (line.includes('[EXEC_CMD]')) {
+                 if (currentText) { parts.push({ type: 'text', content: currentText }); currentText = ""; }
+                 parts.push({ type: 'terminal', content: line.replace('[EXEC_CMD]', '').trim() });
+            } else if (line.includes('[OPEN_FileManager]')) {
+                 if (currentText) { parts.push({ type: 'text', content: currentText }); currentText = ""; }
+                 parts.push({ type: 'action', action: 'OPEN_FILE_MANAGER', value: 'File Manager' });
+            } else {
+                currentText += line + "\n";
+            }
+        });
+        if (currentText) parts.push({ type: 'text', content: currentText });
+
+        return parts.map((part, i) => {
+            if (part.type === 'step') {
+                return (
+                    <div key={i} className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 my-1">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        {part.content}
+                    </div>
+                );
+            }
+            if (part.type === 'action') {
+                return (
+                    <div key={i} className="flex items-center gap-3 bg-violet-50 border border-violet-100 p-3 rounded-xl my-2">
+                        <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white">
+                            {part.action === 'OPEN_URL' ? <Link className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-xs text-violet-600 font-bold uppercase tracking-wider">{part.action.replace('OPEN_', '')}</div>
+                            <div className="text-sm font-medium text-slate-700 truncate">{part.value}</div>
+                        </div>
+                        {part.action === 'OPEN_URL' && (
+                             <a href={part.value} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors">
+                                 <ExternalLink className="w-4 h-4" />
+                             </a>
+                        )}
+                    </div>
+                );
+            }
+            if (part.type === 'terminal') {
+                return (
+                    <div key={i} className="my-2 bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+                        <div className="px-3 py-1 bg-slate-800 flex items-center gap-2">
+                            <Terminal className="w-3 h-3 text-slate-400" />
+                            <span className="text-[10px] text-slate-400 font-mono">EXEC_CMD</span>
+                        </div>
+                        <pre className="p-3 text-xs font-mono text-emerald-400 overflow-x-auto">
+                            $ {part.content}
+                        </pre>
+                    </div>
+                );
+            }
+            return <div key={i} className="whitespace-pre-wrap">{part.content}</div>;
+        });
+    };
+
     return (
         <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#F7F8FC] relative">
             {/* FILE MANAGER MODAL */}
@@ -254,12 +325,12 @@ export default function AgentPage() {
                                 {msg.role === 'user' ? <UserIcon className="w-4 h-4 text-slate-600" /> : <Bot className="w-4 h-4" />}
                             </div>
                             <div className={cn(
-                                "p-4 rounded-2xl text-sm shadow-sm whitespace-pre-wrap",
+                                "p-4 rounded-2xl text-sm shadow-sm",
                                 msg.role === 'user' 
                                     ? "bg-white border border-slate-200 text-slate-800" 
                                     : "bg-white border border-violet-100 text-slate-800 shadow-violet-100"
                             )} dir="auto">
-                                {msg.content}
+                                {msg.role === 'user' ? msg.content : parseMessage(msg.content)}
                             </div>
                         </div>
                     ))}

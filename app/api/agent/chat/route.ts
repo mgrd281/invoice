@@ -101,11 +101,16 @@ export async function POST(req: NextRequest) {
                 ${projectContext}
 
                 INSTRUCTIONS:
-                1. **NEVER REFUSE A TASK.** If a user asks to open a website, fix a bug, or check a file, DO IT. Do not say "I am just a coding assistant".
-                2. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON.
-                3. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
-                4. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
-                5. **WEB & URLS**: If the user asks to go to a website (e.g., "otto.de", "google.com"), output: \`[OPEN_URL https://otto.de]\`.
+                1. **NEVER REFUSE A TASK.** If a user asks to open a website, fix a bug, or check a file, DO IT.
+                2. **VISUALIZE YOUR PROCESS**: For every major action, output a step tag: \`[STEP] Description of what I am doing...\`.
+                   Example:
+                   \`[STEP] Analyzing request...\`
+                   \`[STEP] Opening browser...\`
+                   \`[OPEN_URL https://google.com]\`
+                3. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON.
+                4. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
+                5. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
+                6. **WEB & URLS**: If the user asks to go to a website (e.g., "otto.de"), output: \`[OPEN_URL https://otto.de]\`.
                 6. **FILE SYSTEM**: You have DIRECT access to read/write files.
                    - To list files: \`[LIST_FILES path/to/dir]\`
                    - To read: \`[READ_FILE path/to/file]\`
