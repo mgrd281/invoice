@@ -51,12 +51,28 @@ export async function POST(req: NextRequest) {
     let aiResponseText = "";
     let detectedTask = null;
 
+    /* Fetch History if conversation exists */
+    let historyMessages: any[] = [];
+    if (convoId) {
+        const rawHistory = await prisma.agentMessage.findMany({
+            where: { conversationId: convoId },
+            orderBy: { createdAt: 'desc' },
+            take: 10
+        });
+        // Reverse to chronological order and map
+        historyMessages = rawHistory.reverse().map(m => ({
+            role: m.role,
+            content: m.content
+        }));
+    }
+
     if (openai) {
         // Simple Agent Implementation
         const completion = await openai.chat.completions.create({
             model: "gpt-4-turbo-preview",
             messages: [
-                { role: "system", content: "You are an autonomous dev agent embedded in an admin app. You can plan tasks. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON. IMPORTANT: Always reply in the same language as the user. If the user speaks Arabic, reply in Arabic. If the user speaks German, reply in German." },
+                { role: "system", content: "You are an autonomous dev agent embedded in an admin app. You can plan tasks. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages." },
+                ...historyMessages,
                 { role: "user", content: message }
             ]
         });
