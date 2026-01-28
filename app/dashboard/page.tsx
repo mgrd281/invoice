@@ -322,7 +322,7 @@ export default function DashboardPage() {
                 <Euro className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className={cn("text-2xl font-bold text-green-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>
                   {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                 </div>
                 <p className="text-xs text-gray-600">
@@ -340,7 +340,7 @@ export default function DashboardPage() {
                 <CheckCircle className="h-4 w-4 text-emerald-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-medium text-emerald-600/90">
+                <div className={cn("text-lg font-medium text-emerald-600/90", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>
                   {stats.paidInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                 </div>
                 <p className="text-xs text-gray-600">
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                 <FileText className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{stats.totalInvoices}</div>
+                <div className={cn("text-2xl font-bold text-blue-600", isPrivacyMode && "blur-md opacity-40 select-none transition-all duration-300")}>{stats.totalInvoices}</div>
                 <p className="text-xs text-gray-600">
                   {stats.totalInvoices > 0
                     ? `${stats.paidInvoicesCount} bezahlt, ${stats.openInvoicesCount} offen`
