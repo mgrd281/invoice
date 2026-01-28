@@ -56,29 +56,40 @@ export async function POST(req: NextRequest) {
         const completion = await openai.chat.completions.create({
             model: "gpt-4-turbo-preview",
             messages: [
-                { role: "system", content: "You are an autonomous dev agent embedded in an admin app. You can plan tasks. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON." },
+                { role: "system", content: "You are an autonomous dev agent embedded in an admin app. You can plan tasks. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON. IMPORTANT: Always reply in the same language as the user. If the user speaks Arabic, reply in Arabic. If the user speaks German, reply in German." },
                 { role: "user", content: message }
             ]
         });
         aiResponseText = completion.choices[0].message.content || "I couldn't generate a response.";
     } else {
         // Simulator Mode
-        if (message.includes("fix") || message.includes("add") || message.includes("update")) {
-            aiResponseText = "I have analyzed your request. I propose the following plan:\n\n1. Analyze `page.tsx`\n2. Create a new branch `fix/ui-update`\n3. Apply changes.\n\nType 'Approve' to proceed.";
+        const lowerMsg = message.toLowerCase();
+        const isArabic = /[\u0600-\u06FF]/.test(message);
+
+        if (lowerMsg.includes("fix") || lowerMsg.includes("add") || lowerMsg.includes("update") || (isArabic && (message.includes("إصلاح") || message.includes("إضافة") || message.includes("تحديث")))) {
+             if (isArabic) {
+                aiResponseText = "لقد قمت بتحليل طلبك. أقترح الخطة التالية:\n\n1. تحليل `page.tsx`\n2. إنشاء فرع جديد `fix/ui-update`\n3. تطبيق التغييرات.\n\nاكتب 'موافق' للمتابعة.";
+            } else {
+                aiResponseText = "I have analyzed your request. I propose the following plan:\n\n1. Analyze `page.tsx`\n2. Create a new branch `fix/ui-update`\n3. Apply changes.\n\nType 'Approve' to proceed.";
+            }
             
             // Mock Task Detection
-            if (message.toLowerCase().includes("approve")) {
+            if (lowerMsg.includes("approve") || lowerMsg.includes("موافق")) {
                  // Actually create the task
                  detectedTask = {
-                     title: "Optimize UI based on chat",
-                     description: "User requested UI optimization.",
+                     title: isArabic ? "تحسين واجهة المستخدم بناءً على المحادثة" : "Optimize UI based on chat",
+                     description: isArabic ? "طلب المستخدم تحسين واجهة المستخدم." : "User requested UI optimization.",
                      status: "QUEUED",
                      riskLevel: "LOW"
                  };
-                 aiResponseText = "Task created! ID: #T-123. Queued for execution.";
+                 aiResponseText = isArabic ? "تم إنشاء المهمة! المعرف: #T-123. في قائمة الانتظار للتنفيذ." : "Task created! ID: #T-123. Queued for execution.";
             }
         } else {
-            aiResponseText = "I am the Antigravity Agent. I can fix bugs, add features, and optimize code. Try saying '/fix expenses page'. (Simulator Mode - No OpenAI Key found)";
+            if (isArabic) {
+                 aiResponseText = "أنا وكيل Antigravity. يمكنني إصلاح الأخطاء وإضافة الميزات وتحسين الكود. جرب قول '/fix expenses page'. (وضع المحاكاة - لم يتم العثور على مفتاح OpenAI)";
+            } else {
+                 aiResponseText = "I am the Antigravity Agent. I can fix bugs, add features, and optimize code. Try saying '/fix expenses page'. (Simulator Mode - No OpenAI Key found)";
+            }
         }
     }
 

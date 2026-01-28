@@ -129,7 +129,7 @@ export default function AgentPage() {
                                 msg.role === 'user' 
                                     ? "bg-white border border-slate-200 text-slate-800" 
                                     : "bg-white border border-violet-100 text-slate-800 shadow-violet-100"
-                            )}>
+                            )} dir="auto">
                                 {msg.content}
                             </div>
                         </div>
@@ -158,6 +158,7 @@ export default function AgentPage() {
                             onKeyDown={handleKeyDown}
                             placeholder="Describe a task or fix..."
                             className="w-full min-h-[50px] max-h-[150px] p-3 pr-12 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none"
+                            dir="auto"
                             rows={1}
                         />
                         <Button 
