@@ -36,8 +36,8 @@ export const DEFAULT_FEATURES = [
     {
         id: 'csv-import',
         href: '/upload',
-        title: 'CSV-Import',
-        description: 'Shopify-Bestellungen importieren',
+        title: 'CSV-Import & Belegverarbeitung',
+        description: 'Shopify-Bestellungen & Belege (OCR) importieren',
         icon: Upload,
         iconBg: 'bg-gradient-to-r from-purple-500 to-purple-600',
         cardClass: 'hover:shadow-lg transition-shadow cursor-pointer'
