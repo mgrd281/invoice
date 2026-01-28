@@ -340,7 +340,7 @@ export default function DashboardPage() {
                 <CheckCircle className="h-4 w-4 text-emerald-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-emerald-600">
+                <div className="text-xl font-semibold text-emerald-600/90">
                   {stats.paidInvoicesAmount.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
                 </div>
                 <p className="text-xs text-gray-600">
