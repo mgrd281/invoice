@@ -261,7 +261,7 @@ export default function DashboardPage() {
           {/* Welcome Section */}
           <div className="mb-8 relative z-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-              Willkommen zurück{user ? `, ${user.firstName}` : ''}!
+              Willkommen zurück{user?.firstName ? `, ${user.firstName.charAt(0).toUpperCase() + user.firstName.slice(1)}` : ''}!
               {user?.isAdmin && (
                 <span className="bg-red-100 text-red-800 text-sm font-medium px-2.5 py-0.5 rounded-full border border-red-200">
                   ADMIN
