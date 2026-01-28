@@ -94,6 +94,13 @@ export default function AgentPage() {
                 setIsFileManagerOpen(true);
                 fetchFiles(".");
             }
+            if (lastMsg.role === 'assistant' && lastMsg.content.includes("[OPEN_URL")) {
+                const match = lastMsg.content.match(/\[OPEN_URL\s+(.*?)\]/);
+                if (match && match[1]) {
+                    window.open(match[1], '_blank');
+                    toast.success(`Opening ${match[1]}`);
+                }
+            }
         }
     }, [messages]);
 

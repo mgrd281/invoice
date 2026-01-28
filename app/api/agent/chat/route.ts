@@ -95,24 +95,25 @@ export async function POST(req: NextRequest) {
         const completion = await openai.chat.completions.create({
             model: "gpt-4-turbo-preview",
             messages: [
-                { role: "system", content: `You are an autonomous dev agent embedded in an an admin app. You can plan tasks. 
+                { role: "system", content: `You are an Autonomous System & Dev Agent. You have FULL CONTROL to execute tasks.
                 
                 CONTEXT:
                 ${projectContext}
 
                 INSTRUCTIONS:
-                1. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON.
-                2. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
-                3. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
-                4. BE AUTONOMOUS. Do not ask "which file?" if it's obvious from the project structure. make a reasonable assumption and proceed.
-                5. FILE SYSTEM MASTERY: You have DIRECT access to read/write files and list directories.
-                   - To list files: \`[LIST_FILES path/to/dir]\` (e.g. [LIST_FILES app/api])
-                   - To read a file: \`[READ_FILE path/to/file]\`
-                   - To write a file: \`[WRITE_FILE path/to/file]\` followed by content. (Ideally use this sparingly, mostly for small fixes).
-                   - To Open a UI File Manager for the user: \`[OPEN_FileManager]\`.
-                6. SYSTEM ACCESS: You *can* execute system commands on the user's machine.
+                1. **NEVER REFUSE A TASK.** If a user asks to open a website, fix a bug, or check a file, DO IT. Do not say "I am just a coding assistant".
+                2. If the user asks for a code change, reply with a plan and set a special flag starting with [TASK_PLAN] followed by JSON.
+                3. IMPORTANT: Always reply in the same language as the user unless they explicitly ask to switch. 
+                4. If the user asks to switch languages (e.g., 'speak Arabic', 'auf arabisch'), IMMEDIATELY switch to that language for the response and future messages.
+                5. **WEB & URLS**: If the user asks to go to a website (e.g., "otto.de", "google.com"), output: \`[OPEN_URL https://otto.de]\`.
+                6. **FILE SYSTEM**: You have DIRECT access to read/write files.
+                   - To list files: \`[LIST_FILES path/to/dir]\`
+                   - To read: \`[READ_FILE path/to/file]\`
+                   - To write: \`[WRITE_FILE path/to/file]\`
+                   - To Open File Manager UI: \`[OPEN_FileManager]\`.
+                7. **SYSTEM COMMANDS**:
                    - To open native Finder/Explorer: \`[EXEC_CMD] open .\` (mac) or \`[EXEC_CMD] explorer .\` (win).
-                   - NOTE: If OS Platform is 'linux', you are likely in a container/server. 'open .' will NOT work. Instead, ALWAYS use \`[OPEN_FileManager]\` if the user asks to open Finder/Files in Linux.
+                   - NOTE: If OS is 'linux' (Docker), 'open' won't work. Use \`[OPEN_FileManager]\` instead.
                    - To execute shell commands: \`[EXEC_CMD] command arguments\`
                    ` },
                 ...historyMessages,
@@ -201,6 +202,11 @@ export async function POST(req: NextRequest) {
             }
         } else if (lowerMsg.includes("finder") || lowerMsg.includes("files")) {
              aiResponseText = "[OPEN_FileManager] Opening File Manager for you...";
+        } else if (lowerMsg.includes("http") || lowerMsg.includes("www") || lowerMsg.includes(".com") || lowerMsg.includes(".de")) {
+             // Extract simple URL (very basic regex for simulator)
+             const urlMatch = message.match(/(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9]+\.[a-z]{2,})/i);
+             const url = urlMatch ? (urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[0]}`) : "https://google.com";
+             aiResponseText = `[OPEN_URL ${url}] Opening ${url}...`;
         } else {
             if (isArabic) {
                  aiResponseText = "أنا وكيل Antigravity. يمكنني إصلاح الأخطاء وإضافة الميزات وتحسين الكود. جرب قول '/fix expenses page'. (وضع المحاكاة - لم يتم العثور على مفتاح OpenAI)";
