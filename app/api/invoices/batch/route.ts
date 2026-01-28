@@ -69,6 +69,8 @@ export async function POST(request: NextRequest) {
         // Handle Batch Import (Existing Logic)
         const { invoices, importTarget = 'invoices', accountingType = 'income' } = body
 
+        console.log(`Batch import started: ${invoices?.length} records, Target: ${importTarget}`)
+
         if (!invoices || !Array.isArray(invoices)) {
             return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
         }
@@ -125,39 +127,44 @@ export async function POST(request: NextRequest) {
                     })
 
                     if (!existingInvoice) {
-                        const newInvoice = await prisma.invoice.create({
-                            data: {
-                                organizationId: org.id,
-                                customerId: customer.id,
-                                templateId: template.id,
-                                invoiceNumber: invoice.number,
-                                issueDate: new Date(invoice.date),
-                                dueDate: invoice.dueDate ? new Date(invoice.dueDate) : new Date(invoice.date),
-                                status: mapStatusToPrisma(invoice.status),
-                                totalNet: invoice.subtotal,
-                                totalTax: invoice.taxAmount,
-                                totalGross: invoice.total,
-                                documentKind: invoice.document_kind,
-                                orderNumber: invoice.orderNumber || invoice.shopifyOrderNumber,
-                                paymentMethod: invoice.paymentMethod,
-                                settings: {
-                                    paymentMethod: invoice.paymentMethod || '-'
-                                },
-                                items: {
-                                    create: invoice.items.map((item: any) => ({
-                                        description: item.description,
-                                        quantity: item.quantity,
-                                        unitPrice: item.unitPrice,
-                                        taxRateId: taxRate.id,
-                                        netAmount: item.netAmount,
-                                        grossAmount: item.grossAmount,
-                                        taxAmount: item.taxAmount,
-                                        ean: item.ean
-                                    }))
+                        try {
+                            const newInvoice = await prisma.invoice.create({
+                                data: {
+                                    organizationId: org.id,
+                                    customerId: customer.id,
+                                    templateId: template.id,
+                                    invoiceNumber: invoice.number,
+                                    issueDate: new Date(invoice.date),
+                                    dueDate: invoice.dueDate ? new Date(invoice.dueDate) : new Date(invoice.date),
+                                    status: mapStatusToPrisma(invoice.status),
+                                    totalNet: invoice.subtotal,
+                                    totalTax: invoice.taxAmount,
+                                    totalGross: invoice.total,
+                                    documentKind: invoice.document_kind,
+                                    orderNumber: invoice.orderNumber || invoice.shopifyOrderNumber,
+                                    paymentMethod: invoice.paymentMethod,
+                                    settings: {
+                                        paymentMethod: invoice.paymentMethod || '-'
+                                    },
+                                    items: {
+                                        create: invoice.items.map((item: any) => ({
+                                            description: item.description,
+                                            quantity: item.quantity,
+                                            unitPrice: item.unitPrice,
+                                            taxRateId: taxRate.id,
+                                            netAmount: item.netAmount,
+                                            grossAmount: item.grossAmount,
+                                            taxAmount: item.taxAmount,
+                                            ean: item.ean
+                                        }))
+                                    }
                                 }
-                            }
-                        })
-                        await logInvoiceEvent(newInvoice.id, 'CREATED', 'Rechnung importiert')
+                            })
+                            await logInvoiceEvent(newInvoice.id, 'CREATED', 'Rechnung importiert')
+                        } catch (createErr) {
+                            console.error(`Prisma create error for invoice ${invoice.number}:`, createErr)
+                            throw createErr
+                        }
                     } else {
                         console.log(`Invoice ${invoice.number} already exists. Skipping invoice creation.`)
                     }

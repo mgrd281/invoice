@@ -176,45 +176,47 @@ export function determineDocumentStatus(csvData: any, kind: DocumentKind): Docum
   const financialStatus = csvData.financialStatus?.toLowerCase() || ''
 
   // Use explicit German status if available
-  if (statusDeutsch) {
-    switch (statusDeutsch.toLowerCase()) {
-      case 'bezahlt':
-        return DocumentStatus.BEZAHLT
-      case 'offen':
-        return DocumentStatus.OFFEN
-      case 'teilweise bezahlt':
-        return DocumentStatus.TEILWEISE_BEZAHLT
-      case 'überfällig':
-        return DocumentStatus.UEBERFAELLIG
-      case 'storniert':
-        return DocumentStatus.STORNIERT
-      case 'gutschrift':
-        return DocumentStatus.GUTSCHRIFT
-    }
+  const lowerStatus = statusDeutsch.toLowerCase().trim()
+  if (lowerStatus) {
+    if (lowerStatus === 'bezahlt' || lowerStatus === 'paid') return DocumentStatus.BEZAHLT
+    if (lowerStatus === 'offen' || lowerStatus === 'pending' || lowerStatus === 'open') return DocumentStatus.OFFEN
+    if (lowerStatus === 'teilweise bezahlt' || lowerStatus === 'partially paid' || lowerStatus === 'partially_paid') return DocumentStatus.TEILWEISE_BEZAHLT
+    if (lowerStatus === 'überfällig' || lowerStatus === 'overdue') return DocumentStatus.UEBERFAELLIG
+    if (lowerStatus === 'storniert' || lowerStatus === 'cancelled' || lowerStatus === 'voided') return DocumentStatus.STORNIERT
+    if (lowerStatus === 'gutschrift' || lowerStatus === 'refunded' || lowerStatus === 'credit note') return DocumentStatus.GUTSCHRIFT
   }
 
   // Map from financial status
-  switch (financialStatus) {
+  const lowerFinancial = financialStatus.toLowerCase().trim()
+  switch (lowerFinancial) {
     case 'paid':
+    case 'bezahlt':
+    case 'success':
       return DocumentStatus.BEZAHLT
     case 'pending':
+    case 'offen':
+    case 'authorized':
+    case 'open':
       return DocumentStatus.OFFEN
     case 'partial':
     case 'partially_paid':
+    case 'teilweise bezahlt':
       return DocumentStatus.TEILWEISE_BEZAHLT
-    case 'authorized':
-      return DocumentStatus.OFFEN
     case 'refunded':
+    case 'erstattet':
+    case 'gutschrift':
       return kind === DocumentKind.CANCELLATION ? DocumentStatus.STORNIERT : DocumentStatus.GUTSCHRIFT
     case 'partially_refunded':
       return DocumentStatus.GUTSCHRIFT
     case 'voided':
+    case 'storniert':
+    case 'cancelled':
       return DocumentStatus.STORNIERT
     default:
       // Default based on document kind
       if (kind === DocumentKind.CANCELLATION) {
         return DocumentStatus.STORNIERT
-      } else if (kind === DocumentKind.CREDIT_NOTE) {
+      } else if (kind === DocumentKind.CREDIT_NOTE || kind === DocumentKind.REFUND_FULL || kind === DocumentKind.REFUND_PARTIAL) {
         return DocumentStatus.GUTSCHRIFT
       } else {
         return DocumentStatus.OFFEN

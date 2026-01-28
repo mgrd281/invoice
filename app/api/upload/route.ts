@@ -470,8 +470,13 @@ export async function POST(request: NextRequest) {
         order.statusDeutsch = getColumnValue(record, ['Status_Deutsch', 'Status', 'Bestellstatus']) || ''
         order.grund = getColumnValue(record, ['Grund']) || ''
         order.originalRechnung = getColumnValue(record, ['Original_Rechnung', 'Originalrechnung']) || ''
-        order.financialStatus = getColumnValue(record, ['Financial Status', 'Finanzstatus']) || ''
-        order.paymentMethod = getColumnValue(record, ['Payment Method', 'Payment Gateway Names', 'Gateway', 'Payment', 'Zahlungsmethode', 'Zahlungsart']) || ''
+        order.financialStatus = getColumnValue(record, ['Financial Status', 'Finanzstatus', 'financial_status']) || ''
+        order.paymentMethod = getColumnValue(record, ['Payment Method', 'Payment Gateway Names', 'Gateway', 'Payment', 'Zahlungsmethode', 'Zahlungsart', 'gateway']) || ''
+
+        // Debug logging for specific problematic orders if needed
+        if (order.orderNumber.includes('3666') || order.orderNumber.includes('1001')) {
+            console.log(`[DEBUG] Order ${order.orderNumber} raw financialStatus: "${order.financialStatus}"`)
+        }
 
         // Calculate tax amount if not provided - unitPrice already includes tax (Brutto)
         if (!order.taxAmount) {
@@ -533,6 +538,10 @@ export async function POST(request: NextRequest) {
 
         const documentKind = determineDocumentKind(csvData)
         const documentStatus = determineDocumentStatus(csvData, documentKind)
+
+        if (firstOrder.orderNumber.includes('3666') || firstOrder.orderNumber.includes('1001')) {
+            console.log(`[DEBUG] Order ${firstOrder.orderNumber} resolved to Kind: ${documentKind}, Status: ${documentStatus}`)
+        }
 
         // Calculate totals with correct signs - unitPrice already includes tax (Brutto)
         // For each item: extract netto price first, then calculate totals
