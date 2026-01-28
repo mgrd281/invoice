@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { log } from '@/lib/logger'
 import { DocumentKind } from '@/lib/document-types'
+import { normalizeSource } from '@/lib/traffic-source'
 
 // Helper to map Prisma Invoice to InvoiceData (compatible with PDF generator)
 export function mapPrismaInvoiceToData(invoice: any) {
@@ -473,6 +474,11 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
         })
     }
 
+
+    
+    // Normalize Traffic Source
+    const trafficSource = normalizeSource(order)
+
     const newInvoice = await prisma.invoice.create({
         data: {
             organizationId: organization.id,
@@ -498,6 +504,11 @@ export async function handleOrderCreate(order: any, shopDomain: string | null) {
             settings: {
                 paymentMethod: paymentMethod
             },
+            // Traffic Source Tracking
+            trafficSourceKey: trafficSource.sourceKey,
+            trafficSourceLabel: trafficSource.sourceLabel,
+            trafficSourceRaw: trafficSource.rawReferrer,
+            utmJson: trafficSource.utmJson,
             items: {
                 create: items.map((item: any) => ({
                     description: item.description,

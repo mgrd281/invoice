@@ -436,6 +436,10 @@ model Invoice {
   footerText      String?
   settings        Json?
   paymentMethod   String?
+  trafficSourceKey   String?
+  trafficSourceLabel String?
+  trafficSourceRaw   String?
+  utmJson            Json?
   orderNumber     String?
   dunningLogs     DunningLog[]
   auditLog        AuditLog?        @relation(fields: [auditLogId], references: [id])

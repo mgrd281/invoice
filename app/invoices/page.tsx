@@ -70,6 +70,40 @@ function getPaymentMethodDisplay(method: string | undefined) {
   )
 }
 
+function getTrafficSourceBadge(key: string | null, label: string | null) {
+  if (!key) return <span className="text-gray-400 text-xs">-</span>
+  
+  let className = "bg-gray-100 text-gray-700"
+  
+  switch(key.toLowerCase()) {
+    case 'google':
+      className = "bg-blue-100 text-blue-700" 
+      break
+    case 'facebook':
+    case 'instagram':
+      className = "bg-purple-100 text-purple-700"
+      break
+    case 'tiktok':
+      className = "bg-pink-100 text-pink-700"
+      break
+    case 'email':
+      className = "bg-yellow-100 text-yellow-700"
+      break
+    case 'idealo':
+      className = "bg-orange-100 text-orange-700"
+      break
+    case 'direct':
+      className = "bg-gray-100 text-gray-600"
+      break
+  }
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${className}`}>
+      {label || key}
+    </span>
+  )
+}
+
 function getGermanStatus(status: string) {
   if (!status) return ''
   const s = status.toUpperCase()
@@ -1775,6 +1809,7 @@ function InvoicesPageContent() {
                   </TableHead>
                   <TableHead>Betrag</TableHead>
                   <TableHead>Zahlung</TableHead>
+                  <TableHead>Quelle</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
@@ -1854,6 +1889,9 @@ function InvoicesPageContent() {
                         <span className="text-sm text-gray-700">
                           {getPaymentMethodDisplay(invoice.paymentMethod || invoice.settings?.paymentMethod)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {getTrafficSourceBadge(invoice.trafficSourceKey, invoice.trafficSourceLabel)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
