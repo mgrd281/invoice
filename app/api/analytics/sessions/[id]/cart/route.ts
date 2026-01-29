@@ -28,6 +28,17 @@ export async function POST(
             }
         });
 
+        // NEW: Sync latest cart state to the main session record for "Live View"
+        await prisma.visitorSession.update({
+            where: { id: sessionId },
+            data: {
+                cartSnapshot: items, // Store current items JSON
+                totalValue: parseFloat(totalValue),
+                itemsCount: parseInt(itemsCount),
+                lastActiveAt: new Date()
+            }
+        });
+
         return NextResponse.json({ success: true, snapshot });
     } catch (error: any) {
         console.error('[Cart Snapshot] Error:', error);
